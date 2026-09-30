@@ -1,0 +1,66 @@
+{
+  "title": "APEX hub + game: choose the structure",
+  "question": "Three layouts for the new home (Daily Quali, Perfect Season, Free Practice) and the F1 vibe on track. The dice dealt these; lock one, steer, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "The Starting Grid",
+      "kicker": "THE ROLL",
+      "lineage": "the painted grid and five-light start gantry",
+      "thesis": "Home is a top-down starting grid: each mode is a grid slot, today's Daily Quali takes pole, and the five red lights above count down to tomorrow's puzzle.",
+      "palette": ["#2e3136", "#eeede6", "#d7263d", "#ff6a13", "#a259ff", "#29cc6a", "#f5c518"],
+      "materials": ["painted asphalt grid boxes", "five-light start gantry", "pit board", "seven-segment timing digits"],
+      "viewport": "Phone: the lights gantry at the top (lights = hours to tomorrow's puzzle), then grid slots down the asphalt: P1 Daily Quali (circuit outline, your 6 lap rows), P2 Perfect Season (record, e.g. 7–0), P3 Free Practice. Tap a slot and the car rolls in, then lights out and you race.",
+      "risk": "The grid metaphor must not hide the three mode names; each slot needs a big plain label.",
+      "raised": [
+        { "from": "seven-segment display", "raise": "Timing and the countdown use a segment-digit display with ghost (unlit) segments; rev lights on the race display follow the same rule: unlit LEDs are drawn too." }
+      ],
+      "wireframe": { "cols": 6, "rows": 12, "regions": [
+        { "label": "5 lights countdown", "x": 0, "y": 0, "w": 6, "h": 2, "accent": true },
+        { "label": "P1 Daily Quali", "x": 0, "y": 2, "w": 4, "h": 3, "accent": true },
+        { "label": "P2 Season", "x": 2, "y": 5, "w": 4, "h": 3 },
+        { "label": "P3 Practice", "x": 0, "y": 8, "w": 4, "h": 2 },
+        { "label": "W / L · streak", "x": 0, "y": 10, "w": 6, "h": 2 }
+      ] },
+      "comp": ".impeccable/mocks/decision/assigned.webp"
+    },
+    {
+      "id": "timetable",
+      "label": "Race Weekend Timetable",
+      "lineage": "the event timetable: FP, Quali, Race",
+      "thesis": "Home is a race weekend schedule: Practice, Qualifying and the Season are sessions in one ruled timetable, each with a live status, a countdown and a chequered 'done' stamp when finished (the playfootball.games FT stamp).",
+      "palette": ["#1d2024", "#eeede6", "#ff6a13", "#a259ff", "#29cc6a", "#f5c518"],
+      "materials": ["ruled session timetable", "chequered stamp", "pit board"],
+      "viewport": "A header with today's circuit and countdown, then three full-width session rows (time, name, status, CTA), then your record strip.",
+      "risk": "Closest to the football hubs; clean and clear, but the least F1-specific.",
+      "wireframe": { "cols": 6, "rows": 12, "regions": [
+        { "label": "Today · circuit · countdown", "x": 0, "y": 0, "w": 6, "h": 3, "accent": true },
+        { "label": "QUALI (daily)", "x": 0, "y": 3, "w": 6, "h": 2, "accent": true },
+        { "label": "SEASON", "x": 0, "y": 5, "w": 6, "h": 2 },
+        { "label": "PRACTICE", "x": 0, "y": 7, "w": 6, "h": 2 },
+        { "label": "Record · streak", "x": 0, "y": 9, "w": 6, "h": 3 }
+      ] },
+      "comp": ".impeccable/mocks/decision/timetable.webp"
+    },
+    {
+      "id": "wheel",
+      "label": "The Steering Wheel",
+      "lineage": "a formula car's steering wheel and dash",
+      "thesis": "Home is the steering wheel: the central display shows today's circuit and your record, the rotary switches pick the mode, and the rev-light strip across the top fills with your daily progress.",
+      "palette": ["#101113", "#2c2e33", "#ff6a13", "#29cc6a", "#d7263d", "#a259ff"],
+      "materials": ["carbon wheel", "LED rev-light strip", "rotary switches", "dash display"],
+      "viewport": "Wheel silhouette filling the screen, rev lights along the top, mode dials on the grips, a big central screen with the circuit and a lights-out button.",
+      "risk": "A playful gimmick; dials are slower to scan than labels, and the wheel crowds small phones.",
+      "wireframe": { "cols": 6, "rows": 12, "regions": [
+        { "label": "Rev lights = progress", "x": 0, "y": 0, "w": 6, "h": 1, "accent": true },
+        { "label": "Dial: mode", "x": 0, "y": 2, "w": 1, "h": 6 },
+        { "label": "Dash: circuit + record", "x": 1, "y": 2, "w": 4, "h": 6, "accent": true },
+        { "label": "Dial: circuit", "x": 5, "y": 2, "w": 1, "h": 6 },
+        { "label": "Lights out", "x": 1, "y": 9, "w": 4, "h": 2, "accent": true }
+      ] },
+      "comp": ".impeccable/mocks/decision/wheel.webp"
+    }
+  ],
+  "reroll": true,
+  "steer": true
+}

@@ -84,7 +84,7 @@ export function GateSlider({
 
   return (
     <div>
-      <div className="mb-1.5 text-center font-mono text-[12px] text-paint/85" aria-live="polite">
+      <div className="mb-1.5 text-center text-[14px] font-medium text-paint/85" aria-live="polite">
         {readout}
         {fine < 0.6 && <span className="ml-2 text-ink">FINE ×{Math.round(1 / fine)}</span>}
       </div>

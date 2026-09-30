@@ -136,6 +136,11 @@ function makeTextures(ctx: CanvasRenderingContext2D): Textures {
   };
 }
 
+/** The track's asphalt as a data URL, so DOM surfaces (the hub) share the canvas material. */
+export function asphaltDataUrl(): string {
+  return noiseTexture(256, hex(PALETTE.asphalt), 10, { rate: 0.02, light: 26, dark: 14 }, 11).toDataURL("image/png");
+}
+
 /** Smooth a per-index profile with a circular moving average. */
 function smooth(a: Float64Array, half: number): Float64Array {
   const n = a.length;

@@ -1,0 +1,121 @@
+SURFACE CONCEPT SEED (key: 7b8d7b65; mode: experience; source: api; approved pool: c3b204a1eed6; 306/564 human-approved; rerun with --scope surface --mode experience --from 7b8d7b65 --candidate-count 7 to reproduce this roll against this catalog revision)
+DEALT INDICES: 4, 1, 7 (index 4 leads)
+  After ordering the task's grounded structural candidates by resonance,
+  deal candidates 4, 1, 7 of your own grounded list to the
+  table; index 4 leads, and the deal never points at a challenger.
+  The deal is the roll, not a suggestion: the dice decide which structures
+  reach the user, so the ranking rut stays broken while the user still gets a
+  real choice, and the full ranked list stays yours. In an attended run,
+  present the three dealt structures as full cards of equal salience, the
+  lead carrying kicker THE ROLL, with steer and re-roll, and let the user
+  lock one in; the world is already settled, so this choice is composition.
+  Visualize every dealt card: with image generation available and a
+  comp-led default (.impeccable/config.json buildPath; the page toggle
+  handles the exception), declare a comp per card and generate after
+  serving, lead first; otherwise author each card's wireframe field (see
+  serve-question --schema) and the page draws the schematic. Carry the
+  recorded default in the payload as buildPath with toggle: true. Locking a card
+  approves its comp: a surface round that put three visualized structures on
+  the table replaces the three-option comp round in visualize.md. Re-roll
+  yourself only when every dealt structure fails audience identification or
+  product clarity on named factual grounds.
+  The assignment exists to refuse the model's ranking rut, never to outrank
+  the user or the brief. Never expose assignment metadata in user-facing labels.
+CHALLENGERS:
+  1. a seamless cyclorama passing from black night through cobalt and rose into white day, where light alone creates an infinite horizon behind the actors
+     SOURCE ID: stagecraft-theater-lighting-cyclorama-dawn
+     CREATIVE SPARK: The curved wall begins as depthless black; a low cobalt band appears, rose gathers above it, and the actors acquire shadows before the stage becomes day.
+     SYSTEM GRAMMAR:
+       - Palette/material: depthless cyc black as ground, a low cobalt horizon band as structure, rose gathering above it, white-day wash reserved for the fully active state
+       - Type/composition: lighting-plot stencil caps for cue names with tabular numerals, content held in horizontal horizon bands stacked from dark to light
+       - Topology/navigation: Organize atmosphere by horizon band, time phase, subject relation, and transition interval.
+       - Controls/state: Raise, blend, hold, and compare with night, first light, dawn, day, and blackout states.
+       - Responsive/motion: Offer discrete atmospheric phases with labels and patterns so color is never the sole signal.
+     WEB LEVERAGE: A scrubbable cue timeline binds horizon bands to actor and scene state, making each light transition inspectable while named cue states remain deep-linkable and text-equivalent.
+     QUALITY BAR: board https://impeccable.style/worlds/cards/stagecraft-theater-lighting-cyclorama-dawn.webp · hero https://impeccable.style/worlds/cards/stagecraft-theater-lighting-cyclorama-dawn-hero.webp
+  2. an alien forest understory at nightfall, where luminescent spore canopies, breathing ground-veins, and slow light rain make botany feel newly invented
+     SOURCE ID: dream-surreal-impossible-worlds-luminescent-alien-understory
+     CREATIVE SPARK: The path lights itself two steps ahead: spores drift up like inverted rain and the roots pulse softly with something like attention.
+     SYSTEM GRAMMAR:
+       - Palette/material: near-black loam as ground, spore glow in cyan and lilac, root veins pulsing pale green, the brightest white bloom reserved for the focused element
+       - Type/composition: thin phosphor sans that brightens on approach, labels blooming beside their growths, no fixed grid, composition following the vein network's branching
+       - Topology/navigation: paths reveal by proximity glow; destinations announce themselves as distant pulses.
+       - Controls/state: touching a growth wakes it; attention, dormancy, and bloom are luminance states with afterglow.
+       - Responsive/motion: glow trails shorten on phones; pulses slow to still gradients under
+     WEB LEVERAGE: Pointer-proximity light fields and additive canvas glow make attention itself the illumination model.
+     QUALITY BAR: board https://impeccable.style/worlds/cards/dream-surreal-impossible-worlds-luminescent-alien-understory.webp · hero https://impeccable.style/worlds/cards/dream-surreal-impossible-worlds-luminescent-alien-understory-hero.webp
+  3. an advertising wall calendar from a printing house, a painted figure filling the upper sheet and a tear-off date pad below carrying the merchant's name in gold-line lettering
+     SOURCE ID: vernacular-ephemera-calendar-pinup-pad
+     CREATIVE SPARK: the top half is a painting somebody was paid real money for, the bottom half is twelve months of thin paper, and across the middle in gold script is the name of a hardware store that closed in 1968.
+     SYSTEM GRAMMAR:
+       - Palette/material: warm painted flesh and saturated satin reds over a cream board, with a thin gold rule separating plate from pad
+       - Type/composition: a script merchant line under the plate, a month name in condensed caps, and the date grid set small and even beneath it
+       - Topology/navigation: time is the only axis, and moving forward tears a leaf away to expose the next month against the same painted plate
+       - Controls/state: controls are date cells, today takes a printed ring, past dates gray toward the board, and the pad thins as months go
+       - Responsive/motion: the plate crops to a square on narrow frames while the pad stays legible, and motion is a single leaf tearing free
+     WEB LEVERAGE: a date grid bound to live state, css transforms tearing the top leaf away, and responsive cropping of the painted plate
+     QUALITY BAR: board https://impeccable.style/worlds/cards/vernacular-ephemera-calendar-pinup-pad.webp · hero https://impeccable.style/worlds/cards/vernacular-ephemera-calendar-pinup-pad-hero.webp
+  4. a white gallery hung with black-and-white wave canvases, flat paint that flexes and strobes as visitors change their viewing distance
+     SOURCE ID: design-canon-riley-moire-gallery
+     CREATIVE SPARK: The paintings hold perfectly still and yet the floor seems to tip, black lines swelling like a sea you can hear somewhere behind your own eyes.
+     SYSTEM GRAMMAR:
+       - Palette/material: flat matte black and gallery white only, no mixed grays, contrast generated optically by line frequency, the tightest interval acting as the accent
+       - Type/composition: a sparse neutral grotesk held clear of the waves in white margins, one caption per canvas, the composition itself a ruled monochrome field
+       - Topology/navigation: the room is a sequence of vantage distances; each canvas holds a near, mid, and far reading and rewards deliberate approach
+       - Controls/state: state rides the pattern itself; line frequency tightens toward points that want attention and relaxes wherever nothing is asked
+       - Responsive/motion: wave frequency recalculates against device pixel density so the shimmer survives every screen
+     WEB LEVERAGE: SVG patterns modulated by scroll position and IntersectionObserver let a flat page flex as if the retina were being played
+     QUALITY BAR: board https://impeccable.style/worlds/cards/design-canon-riley-moire-gallery.webp · hero https://impeccable.style/worlds/cards/design-canon-riley-moire-gallery-hero.webp
+  5. an interactive type specimen, where dragging an axis slider morphs a whole grid of glyphs in real time
+     SOURCE ID: variable-font-specimen
+     CREATIVE SPARK: A single giant letter fills the screen. You drag the weight slider and it thickens from hairline to black under your finger, live. Below, a grid of every glyph breathes in step, and a monospace readout counts the axis values.
+     SYSTEM GRAMMAR:
+       - Palette/material: Near-white paper and ink black with one foundry accent; flat surfaces, generous negative space, no ornament so the letterforms carry everything.
+       - Type/composition: The specimen face at enormous display size against tiny monospace UI labels; a strict measure and baseline grid; hierarchy by scale contrast alone.
+       - Topology/navigation: Move by axis slider, by glyph cell, and by size and specimen view.
+       - Controls/state: Drag, type, and pin; moving an axis remaps every glyph on the page continuously and updates the live coordinate readout.
+       - Responsive/motion: reduced-motion snaps between named instances instead of animating the interpolation.
+     WEB LEVERAGE: Bind range inputs to CSS font-variation-settings through a custom property, so one slider drives font-variation across the entire glyph grid with no per-glyph JavaScript.
+     QUALITY BAR: board https://impeccable.style/worlds/cards/variable-font-specimen.webp · hero https://impeccable.style/worlds/cards/variable-font-specimen-hero.webp
+  6. the seven-segment display family, bedside clocks, gas-station price totems, scoreboards, and microwave panels all speaking one eight-cell mask where unlit segments are designed too
+     SOURCE ID: signals-instruments-seven-segment-alarm-clock
+     CREATIVE SPARK: At 3am the bedroom hour hangs as four red digits; by noon the same alphabet quotes gasoline at two meters tall, and at the stadium the score slams from 98 to 100 with nothing sliding, segments simply dying and igniting.
+     SYSTEM GRAMMAR:
+       - Palette/material: lit segments in LED red, amber, or scoreboard green on matte near-black ground, unlit segments held as faint ghost cells; red glow owns the night register
+       - Type/composition: one eight-cell mask makes every glyph, digits ranked in fixed slots with the colon or decimal as its own cell; absence is drawn as deliberately as light
+       - Topology/navigation: the layout is a rigid mask of cells, from four bedside digits to a price totem's stack; place never moves, only which segments light
+       - Controls/state: modes cycle by held buttons, set digits blink while everything else holds; the flashing 12:00 of an unset clock is the canonical error state
+       - Responsive/motion: cells scale as whole units and never reflow mid-glyph; every change is an instant segment swap
+     WEB LEVERAGE: CSS grid and clip-path build a true segment mask with ghost cells, and a shared worker keeps blink phase synchronized across every open tab
+     QUALITY BAR: board https://impeccable.style/worlds/cards/signals-instruments-seven-segment-alarm-clock.webp · hero https://impeccable.style/worlds/cards/signals-instruments-seven-segment-alarm-clock-hero.webp
+A challenger wins only when its fused result beats the grounded list on
+  audience identification and product clarity. It may change task topology or
+  interaction, but never the committed visual identity.
+When you can view images, open the QUALITY BAR board and hero for any
+challenger you weigh seriously and for the world you build. They exist as a
+craft bar, the finish level and commitment the build is expected to reach,
+never as a mockup to copy; your surface serves this product, not that render.
+PRODUCT.md and DESIGN.md constrain every surface candidate's identity
+vocabulary; they do not cancel task-level composition. The seed never
+authorizes a new palette, type system, material world, or unfamiliar control
+behavior.
+The CREATIVE SPARK is a complete visual system, not a theme or decorative
+reference. Translate every supplied system rule into the product: palette and
+material, type and composition, topology, controls and states, and adaptation.
+Keep the source's visible character, scale, rhythm, and interaction instead of
+reducing vivid grammar to generic nouns. When the source is already a credible
+interface language, commit to it across navigation, content, controls, and
+states. Otherwise keep a literal carrier only when it becomes functional.
+Ambitious motion, spatial media, or interaction is welcome when it strengthens
+the product without weakening semantics, performance, or fallback behavior.
+TELEMETRY: after the user's choice resolves, rerun this script once with
+  --kind <assigned|pick|challenger|canon> --from 7b8d7b65 --scope surface --mode experience,
+  adding --chosen <challenger-id> when a dealt challenger won and keeping
+  --register <safer|bolder> when the resolved round came from a steered hand.
+  One ping per resolved attended round. The ping is anonymous, the card kind
+  plus the catalog id when one won; your grounded candidates' names never
+  leave the machine, and the ping is skipped automatically when DO_NOT_TRACK
+  or IMPECCABLE_NO_TELEMETRY is set.
+A user- or brief-pinned decision beats the roll, always.
+DEALT INDICES (restated for truncated readers): 4, 1, 7; index
+4 leads. Present all three dealt structures; seed key 7b8d7b65.

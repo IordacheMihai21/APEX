@@ -211,15 +211,43 @@ function drawCar(ctx: CanvasRenderingContext2D, l: Livery) {
   ctx.stroke();
 }
 
-function drawShadow(ctx: CanvasRenderingContext2D) {
-  // stacked, offset silhouettes = cheap soft shadow without canvas filters
-  ctx.fillStyle = "rgba(0,0,0,0.09)";
-  for (let k = 0; k < 7; k++) {
-    const g = 0.03 * k;
-    ctx.beginPath();
-    ctx.roundRect(-2.8 - g, -0.95 - g, 5.7 + 2 * g, 1.9 + 2 * g, 0.4 + g);
-    ctx.fill();
+/**
+ * Soft shadow shaped like the car: the player sprite's silhouette filled black,
+ * then blurred (canvas filter where supported, otherwise a ring of low-alpha
+ * offset copies). No hard edge anywhere.
+ */
+function shadowFrom(src: HTMLCanvasElement): HTMLCanvasElement {
+  const sil = document.createElement("canvas");
+  sil.width = src.width;
+  sil.height = src.height;
+  const sc = sil.getContext("2d")!;
+  sc.drawImage(src, 0, 0);
+  sc.globalCompositeOperation = "source-in";
+  sc.fillStyle = "#000";
+  sc.fillRect(0, 0, sil.width, sil.height);
+  const out = document.createElement("canvas");
+  out.width = src.width;
+  out.height = src.height;
+  const oc: CanvasRenderingContext2D = out.getContext("2d")!;
+  const blur = Math.round(0.14 * PPM);
+  // Safari before 18 has no canvas filter: detect by whether the property sticks
+  oc.filter = "blur(1px)";
+  const hasFilter = oc.filter === "blur(1px)";
+  oc.filter = "none";
+  if (hasFilter) {
+    oc.filter = `blur(${blur}px)`;
+    oc.globalAlpha = 0.85;
+    oc.drawImage(sil, 0, 0);
+  } else {
+    const steps = 12;
+    for (let r = 1; r <= 3; r++)
+      for (let k = 0; k < steps; k++) {
+        const a = (k / steps) * Math.PI * 2;
+        oc.globalAlpha = 0.05;
+        oc.drawImage(sil, Math.cos(a) * r * blur * 0.4, Math.sin(a) * r * blur * 0.4);
+      }
   }
+  return out;
 }
 
 export class CarSprites {
@@ -234,11 +262,9 @@ export class CarSprites {
     drawCar(pc, LIVERIES.player);
     const [g, gc] = sprite();
     drawCar(gc, LIVERIES.ghost);
-    const [s, sc] = sprite();
-    drawShadow(sc);
     this.player = p;
     this.ghost = g;
-    this.shadow = s;
+    this.shadow = shadowFrom(p);
   }
 
   /**
@@ -246,13 +272,14 @@ export class CarSprites {
    * out by scaling it up (a map marker, not a 20-pixel-long speck).
    */
   draw(ctx: CanvasRenderingContext2D, x: number, y: number, heading: number, px: number, ghost: boolean) {
-    const k = Math.max(1, (26 * px) / CAR_LENGTH);
+    // never smaller than ~40 CSS px long, so the livery and wings read at play scale
+    const k = Math.max(1, (40 * px) / CAR_LENGTH);
     const L = this.spriteLength * k;
     const Wd = this.spriteWidth * k;
     ctx.save();
     ctx.translate(x, y);
     // shadow: offset in world space (sun fixed to the world), drawn before rotating
-    ctx.globalAlpha = ghost ? 0.25 : 0.7;
+    ctx.globalAlpha = ghost ? 0.2 : 0.55;
     ctx.save();
     ctx.translate(0.35 * k, -0.45 * k);
     ctx.rotate(heading);

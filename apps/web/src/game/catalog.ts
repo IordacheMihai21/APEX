@@ -6,23 +6,24 @@ export interface TrackInfo {
   country: string;
   /** Street circuits get walls tight to the track instead of run-off. */
   style?: "permanent" | "street";
+  flag: string;
 }
 
 /** Display catalog (venue names only). Order = picker order. */
 export const CATALOG: TrackInfo[] = [
-  { id: "monza", name: "Monza", country: "Italy" },
-  { id: "spa", name: "Spa-Francorchamps", country: "Belgium" },
-  { id: "silverstone", name: "Silverstone", country: "Great Britain" },
-  { id: "suzuka", name: "Suzuka", country: "Japan" },
-  { id: "monaco", name: "Monaco", country: "Monaco", style: "street" },
-  { id: "interlagos", name: "Interlagos", country: "Brazil" },
-  { id: "hungaroring", name: "Hungaroring", country: "Hungary" },
-  { id: "red-bull-ring", name: "Spielberg", country: "Austria" },
-  { id: "zandvoort", name: "Zandvoort", country: "Netherlands" },
-  { id: "austin", name: "Austin", country: "United States" },
-  { id: "barcelona", name: "Barcelona", country: "Spain" },
-  { id: "imola", name: "Imola", country: "Italy" },
-  { id: "kestrel", name: "Kestrel", country: "Test circuit" },
+  { id: "monza", name: "Monza", country: "Italy", flag: "🇮🇹" },
+  { id: "spa", name: "Spa-Francorchamps", country: "Belgium", flag: "🇧🇪" },
+  { id: "silverstone", name: "Silverstone", country: "Great Britain", flag: "🇬🇧" },
+  { id: "suzuka", name: "Suzuka", country: "Japan", flag: "🇯🇵" },
+  { id: "monaco", name: "Monaco", country: "Monaco", style: "street", flag: "🇲🇨" },
+  { id: "interlagos", name: "Interlagos", country: "Brazil", flag: "🇧🇷" },
+  { id: "hungaroring", name: "Hungaroring", country: "Hungary", flag: "🇭🇺" },
+  { id: "red-bull-ring", name: "Spielberg", country: "Austria", flag: "🇦🇹" },
+  { id: "zandvoort", name: "Zandvoort", country: "Netherlands", flag: "🇳🇱" },
+  { id: "austin", name: "Austin", country: "United States", flag: "🇺🇸" },
+  { id: "barcelona", name: "Barcelona", country: "Spain", flag: "🇪🇸" },
+  { id: "imola", name: "Imola", country: "Italy", flag: "🇮🇹" },
+  { id: "kestrel", name: "Kestrel", country: "Test circuit", flag: "🏁" },
 ];
 
 const files = import.meta.glob<GameTrack>("../../../../data/tracks/*.json", { import: "default" });

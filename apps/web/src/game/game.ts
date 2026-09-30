@@ -19,8 +19,33 @@ import { CATALOG } from "./catalog";
 import { Scenery } from "./scenery";
 import { C, lossColor } from "./palette";
 import { type PersonalBest, loadPB, logEvent, savePB } from "./storage";
+import { type Grade, type GroupGrade, gradeFor } from "../modes/grading";
+import { type DriveState, driveState } from "./drive";
+import { engine, soundEnabled } from "./audio";
 
-export type Phase = "setup" | "race" | "result";
+export type Phase = "setup" | "lights" | "race" | "result";
+export type Mode = "daily" | "season" | "practice";
+
+export interface GameOptions {
+  mode: Mode;
+  /** Laps allowed in this session (null = unlimited). */
+  lapLimit: number | null;
+  /** Laps already used today / this round (restored from storage). */
+  lapsUsed?: number;
+  /** Season: the rival pole to beat. */
+  rivalMs?: number;
+  /** Line to start from (e.g. the last line raced today). */
+  startKnots?: number[];
+  /** Session already over (daily finished today): results only. */
+  locked?: boolean;
+}
+
+export interface LapEvent {
+  lapTimeMs: number;
+  grades: Grade[];
+  allPurple: boolean;
+  knots: number[];
+}
 
 export interface CornerLoss {
   name: string;
@@ -36,6 +61,9 @@ export interface RunResult {
   pbBeforeMs: number | null;
   newPb: boolean;
   losses: CornerLoss[]; // worst first
+  /** One colour per corner group, lap order. */
+  grades: GroupGrade[];
+  allPurple: boolean;
 }
 
 export interface Snapshot {
@@ -54,11 +82,28 @@ export interface Snapshot {
   attempts: number;
   /** True once the line differs from what was last raced. */
   edited: boolean;
+  mode: Mode;
+  /** Start lights lit (0–5) during the "lights" phase. */
+  lights: number;
+  /** Corner-group tiles of the lap in progress (colours known, revealed as the car passes). */
+  grades: GroupGrade[] | null;
+  revealed: number;
+  /** Running gap to the perfect lap at the car's position (ms, + = behind). */
+  liveDeltaMs: number;
+  drive: DriveState;
+  lapsUsed: number;
+  lapLimit: number | null;
+  locked: boolean;
+  rivalMs: number | null;
 }
 
 /** Race playback runs this many times faster than the simulated lap. */
-export const PLAYBACK_SPEED = 5;
-const RACE_TRACK_PX = 26;
+export const PLAYBACK_SPEED = 4;
+/** Race camera: track width on screen at low / top speed (zooms out as speed builds). */
+const RACE_TRACK_PX_SLOW = 70;
+const RACE_TRACK_PX_FAST = 44;
+const LIGHT_MS_FIRST = 700;
+const LIGHT_MS_REPEAT = 380;
 const PUCK_HIT_PX = 26;
 
 export interface Insets {
@@ -112,7 +157,30 @@ export class Game {
   private mode: "none" | "pan" | "pinch" | "puck" | "tap" = "none";
   private pinch0: { dist: number; scale: number; world: [number, number] } | null = null;
 
-  constructor(track: GameTrack) {
+  readonly opts: GameOptions;
+  /** Called after every completed lap; the mode controller persists it. */
+  onLap: ((e: LapEvent) => void) | null = null;
+  private lapsUsed: number;
+  private locked: boolean;
+  private lightsT0 = 0;
+  private lightsHold = 0;
+  private lightMs = LIGHT_MS_FIRST;
+  private lightsLit = 0;
+  private grades: GroupGrade[] | null = null;
+  // race effects
+  private shake: [number, number] = [0, 0];
+  private skids: number[] = []; // x1,y1,x2,y2 quadruples
+  private prevWheels: [number, number, number, number] | null = null;
+  private prevSpeed = 0;
+  private sparks: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
+  /** Screen-space wind streaks at the frame edges above ~200 km/h (heading-up cam: they fall downward). */
+  private streaks: { x: number; y: number; len: number; v: number }[] = [];
+  private raceKmh = 0;
+
+  constructor(track: GameTrack, opts: GameOptions = { mode: "practice", lapLimit: null }) {
+    this.opts = opts;
+    this.lapsUsed = opts.lapsUsed ?? 0;
+    this.locked = !!opts.locked;
     this.track = track;
     this.pt = prepareTrack(track);
     this.controls = trackControls(this.pt);
@@ -131,8 +199,9 @@ export class Game {
     this.scenery = new Scenery(this.pt, track, style, significant);
 
     this.pb = loadPB(track.id, track.version);
-    // Returning players continue from their best line; new players start on the centerline.
-    const start = this.pb?.knotOffsets.length === this.pt.k ? this.pb.knotOffsets : new Array(this.pt.k).fill(0);
+    // Continue from the session's last line, else (practice) your best line, else the centerline.
+    const pbLine = opts.mode === "practice" && this.pb?.knotOffsets.length === this.pt.k ? this.pb.knotOffsets : null;
+    const start = opts.startKnots?.length === this.pt.k ? opts.startKnots : (pbLine ?? new Array(this.pt.k).fill(0));
     this.z = expandGates(this.pt, this.controls, start, this.limit);
     this.lineXY = this.resolve();
     if (this.pb) this.pbSim = simulateLap({ track: this.pt, line: { knotOffsets: this.pb.knotOffsets }, car });
@@ -155,7 +224,12 @@ export class Game {
 
   private buildSnapshot(): Snapshot {
     let speed = 0;
-    if (this.sim && this.phase !== "setup") speed = this.sampleAt(this.sim, this.raceT).speed * 3.6;
+    let liveDelta = 0;
+    if (this.sim && (this.phase === "race" || this.phase === "result")) {
+      speed = this.sampleAt(this.sim, this.raceT).speed * 3.6;
+      const i = this.indexAt(this.sim, this.raceT);
+      liveDelta = this.sim.samples.elapsedMs[i] - this.reference.samples.elapsedMs[i];
+    }
     return {
       phase: this.phase,
       complex: this.sel.complex,
@@ -169,6 +243,20 @@ export class Game {
       pbMs: this.pb?.lapTimeMs ?? null,
       attempts: this.attempts,
       edited: this.lastRaced !== this.z.join(","),
+      mode: this.opts.mode,
+      lights: this.phase === "lights" ? this.lightsLit : 0,
+      grades: this.grades,
+      revealed: this.grades
+        ? this.phase === "result"
+          ? this.grades.length
+          : this.grades.filter((g) => g.revealAtMs <= this.raceT).length
+        : 0,
+      liveDeltaMs: liveDelta,
+      drive: driveState(this.phase === "lights" ? 0 : speed),
+      lapsUsed: this.lapsUsed,
+      lapLimit: this.opts.lapLimit,
+      locked: this.locked,
+      rivalMs: this.opts.rivalMs ?? null,
     };
   }
 
@@ -410,17 +498,53 @@ export class Game {
     if (this.phase !== "setup") return;
     const sim = simulateLap({ track: this.pt, line: { knotOffsets: this.z }, car });
     if (!sim.valid) return; // expandGates keeps lines valid; defensive only
+    if (this.locked || (this.opts.lapLimit !== null && this.lapsUsed >= this.opts.lapLimit)) return;
     this.sim = sim;
+    this.grades = this.computeGrades(sim);
     this.raceT = 0;
-    this.phase = "race";
+    this.phase = "lights";
+    this.lightsT0 = performance.now();
+    this.lightsLit = 0;
+    // lights hold 0.2–1.0 s after the fifth, like the real start; shorter from the second lap on
+    this.lightsHold = 200 + Math.random() * 800;
+    this.lightMs = this.attempts === 0 ? LIGHT_MS_FIRST : LIGHT_MS_REPEAT;
+    this.skids = [];
+    this.prevWheels = null;
+    this.sparks = [];
+    this.prevSpeed = 0;
     this.lastRaced = this.z.join(",");
-    this.camera.animateTo(sim.samples.x[0], sim.samples.y[0], RACE_TRACK_PX / this.track.widthMeters, this.headingAt(0) - Math.PI / 2, 450);
-    logEvent("run_started", { track: this.track.id });
+    this.camera.animateTo(sim.samples.x[0], sim.samples.y[0], RACE_TRACK_PX_SLOW / this.track.widthMeters, this.headingAt(0) - Math.PI / 2, 450);
+    if (soundEnabled()) engine.resume();
+    logEvent("run_started", { track: this.track.id, mode: this.opts.mode });
+    this.emit();
+  }
+
+  /** Per corner group: time lost vs the perfect lap, its colour, and when its tile reveals. */
+  private computeGrades(sim: SimulationResult): GroupGrade[] {
+    const cmp = compareRuns(sim, this.reference).corners;
+    const corners = this.track.corners;
+    const deltas = new Array(this.controls.complexes.length).fill(0);
+    corners.forEach((c, j) => {
+      const g = this.complexOfCorner.get(c.name) ?? this.nearestComplex(c.name);
+      if (g >= 0) deltas[g] += cmp[j].deltaMs;
+    });
+    return this.controls.complexes.map((cx, i) => {
+      const last = corners.findIndex((c) => c.name === cx.corners[cx.corners.length - 1]);
+      const startIdx = corners[last].timingStartIndex;
+      const endIdx = corners[(last + 1) % corners.length].timingStartIndex;
+      const revealAtMs = endIdx <= startIdx ? sim.rawLapTimeMs : sim.samples.elapsedMs[endIdx];
+      return { name: cx.name, deltaMs: deltas[i], grade: gradeFor(deltas[i]), revealAtMs };
+    });
+  }
+
+  /** End the session: results stay visible but no more laps. */
+  lock() {
+    this.locked = true;
     this.emit();
   }
 
   skip() {
-    if (this.phase === "race" && this.sim) this.finishRace();
+    if ((this.phase === "race" || this.phase === "lights") && this.sim) this.finishRace();
   }
 
   private finishRace() {
@@ -435,6 +559,9 @@ export class Game {
       this.pbSim = sim;
     }
     this.attempts++;
+    this.lapsUsed++;
+    const grades = this.grades ?? this.computeGrades(sim);
+    const allPurple = grades.every((g) => g.grade === "purple");
     this.result = {
       lapTimeMs: sim.lapTimeMs,
       targetMs: this.reference.lapTimeMs,
@@ -444,9 +571,14 @@ export class Game {
       losses: cmp.corners
         .map((c) => ({ name: c.name, deltaMs: c.deltaMs, complex: this.complexOfCorner.get(c.name) ?? this.nearestComplex(c.name) }))
         .sort((a, b) => b.deltaMs - a.deltaMs),
+      grades,
+      allPurple,
     };
     this.phase = "result";
+    if (this.opts.lapLimit !== null && this.lapsUsed >= this.opts.lapLimit) this.locked = true;
+    engine.silence();
     this.frameResult();
+    this.onLap?.({ lapTimeMs: sim.lapTimeMs, grades: grades.map((g) => g.grade), allPurple, knots: this.z.slice() });
     logEvent("run_completed", { track: this.track.id, lapTimeMs: sim.lapTimeMs, deltaMs: this.result.deltaTargetMs, newPb, attempt: this.attempts });
     this.emit();
   }
@@ -472,7 +604,7 @@ export class Game {
 
   /** Back to setup, at the group containing `cornerName`, or the worst one from the last run. */
   adjust(cornerName?: string) {
-    if (this.phase === "race") return;
+    if (this.phase === "race" || this.phase === "lights" || this.locked) return;
     let target = this.sel.complex;
     if (cornerName) target = this.complexOfCorner.get(cornerName) ?? this.nearestComplex(cornerName);
     else if (this.result) {
@@ -483,6 +615,20 @@ export class Game {
     this.result = null;
     logEvent("retry_clicked", { track: this.track.id, corner: cornerName ?? null });
     this.selectGate(target, 0);
+  }
+
+  /** Sample index the car is at, at race time tMs. */
+  private indexAt(sim: SimulationResult, tMs: number): number {
+    const e = sim.samples.elapsedMs;
+    let lo = 0;
+    let hi = e.length - 1;
+    const t = Math.max(0, Math.min(tMs, sim.rawLapTimeMs));
+    while (hi - lo > 1) {
+      const m = (lo + hi) >> 1;
+      if (e[m] <= t) lo = m;
+      else hi = m;
+    }
+    return lo;
   }
 
   private sampleAt(sim: SimulationResult, tMs: number) {
@@ -524,7 +670,8 @@ export class Game {
   }
 
   private showMinimap() {
-    return this.phase !== "result";
+    // the race HUD owns the top of the screen during lights and the lap
+    return this.phase === "setup";
   }
 
   /** Gate puck position on screen. */
@@ -686,30 +833,117 @@ export class Game {
     this.lastFrame = now;
     let animating = this.camera.tick(now);
 
-    if (this.phase === "race" && this.sim) {
+    if (this.phase === "lights") {
+      // Five lamps light one by one, hold, then black out: lights out and away we go.
+      const t = now - this.lightsT0;
+      const lit = Math.min(5, Math.floor(t / this.lightMs));
+      if (lit !== this.lightsLit) {
+        this.lightsLit = lit;
+        this.emit();
+      }
+      if (soundEnabled()) engine.update(9000 + lit * 600 + Math.random() * 300, 1, 0);
+      if (t >= 5 * this.lightMs + this.lightsHold) {
+        this.phase = "race";
+        this.lastEmit = 0;
+        this.emit();
+      }
+      animating = true;
+    } else if (this.phase === "race" && this.sim) {
       this.raceT += dt * 1000 * PLAYBACK_SPEED;
       const p = this.sampleAt(this.sim, this.raceT);
+      const kmh = p.speed * 3.6;
+      const speed01 = Math.min(1, kmh / 340);
       if (!this.camera.animating) {
-        // Heading-up follow cam, smoothed so it reads like an onboard map.
+        // Heading-up chase cam: close and tight in slow corners, pulling back and
+        // looking further ahead as speed builds, so the pace reads on screen.
         const k = Math.min(1, dt * 4);
-        const look = 30;
+        const look = 12 + p.speed * 0.55;
         this.camera.x += (p.x + Math.cos(p.heading) * look - this.camera.x) * k;
         this.camera.y += (p.y + Math.sin(p.heading) * look - this.camera.y) * k;
         let da = p.heading - Math.PI / 2 - this.camera.angle;
         while (da > Math.PI) da -= 2 * Math.PI;
         while (da < -Math.PI) da += 2 * Math.PI;
-        this.camera.angle += da * Math.min(1, dt * 2.2);
+        this.camera.angle += da * Math.min(1, dt * 2.6);
+        // tuned for a ~400 px wide phone; bigger screens get a proportionally closer camera
+        const viewK = Math.min(2.2, Math.max(1, Math.min(this.camera.w, this.camera.h) / 420));
+        const targetPx = (RACE_TRACK_PX_SLOW + (RACE_TRACK_PX_FAST - RACE_TRACK_PX_SLOW) * speed01) * viewK;
+        const targetScale = targetPx / this.track.widthMeters;
+        this.camera.scale += (targetScale - this.camera.scale) * Math.min(1, dt * 1.6);
       }
-      if (now - this.lastEmit > 66) {
+      // camera shake above ~260 km/h (kerbs, bumps), off for reduced motion
+      const amp = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : Math.max(0, (kmh - 260) / 90) * 1.3;
+      this.shake = [(Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp];
+      this.updateEffects(p, dt);
+      this.raceKmh = kmh;
+      this.updateStreaks(kmh, dt);
+      if (soundEnabled()) {
+        const d = driveState(kmh);
+        engine.update(d.rpm, d.gear, speed01);
+      }
+      if (now - this.lastEmit > 50) {
         this.lastEmit = now;
         this.emit();
       }
       if (this.raceT >= this.sim.rawLapTimeMs) this.finishRace();
       animating = true;
-    }
+    } else this.shake = [0, 0];
+    if (this.sparks.length) animating = true;
+    if (this.phase !== "race") this.streaks = [];
     if (!animating && !this.dirty) return;
     this.dirty = false;
     this.render();
+  }
+
+  private updateStreaks(kmh: number, dt: number) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.streaks = [];
+      return;
+    }
+    const { w, h } = this.camera;
+    const speedK = Math.max(0, (kmh - 200) / 140);
+    // spawn in the outer 22% of the frame, never over the car in the middle
+    if (Math.random() < speedK * dt * 40) {
+      const edge = Math.random() < 0.5 ? Math.random() * w * 0.22 : w - Math.random() * w * 0.22;
+      this.streaks.push({ x: edge, y: -40, len: 30 + 90 * speedK, v: 900 + 1600 * speedK });
+    }
+    for (const st of this.streaks) st.y += st.v * dt;
+    this.streaks = this.streaks.filter((st) => st.y - st.len < h);
+  }
+
+  /** Tyre marks under heavy braking and floor sparks at top speed. */
+  private updateEffects(p: { x: number; y: number; heading: number; speed: number }, dt: number) {
+    const c = Math.cos(p.heading);
+    const s = Math.sin(p.heading);
+    const rear = (lat: number): [number, number] => [p.x - c * 1.6 - s * lat, p.y - s * 1.6 + c * lat];
+    const [lx, ly] = rear(0.8);
+    const [rx, ry] = rear(-0.8);
+    const simDt = dt * PLAYBACK_SPEED;
+    const decel = simDt > 0 ? (this.prevSpeed - p.speed) / simDt : 0;
+    if (this.prevWheels && decel > 22 && this.skids.length < 12000) {
+      const [plx, ply, prx, pry] = this.prevWheels;
+      this.skids.push(plx, ply, lx, ly, prx, pry, rx, ry);
+    }
+    this.prevWheels = [lx, ly, rx, ry];
+    this.prevSpeed = p.speed;
+    // sparks: titanium skid blocks touching down at very high speed
+    if (p.speed * 3.6 > 285 && Math.random() < dt * 18) {
+      for (let k = 0; k < 6; k++) {
+        const spread = (Math.random() - 0.5) * 10;
+        this.sparks.push({
+          x: p.x - c * 2.4,
+          y: p.y - s * 2.4,
+          vx: -c * (18 + Math.random() * 20) - s * spread,
+          vy: -s * (18 + Math.random() * 20) + c * spread,
+          life: 0.18 + Math.random() * 0.2,
+        });
+      }
+    }
+    for (const sp of this.sparks) {
+      sp.x += sp.vx * dt;
+      sp.y += sp.vy * dt;
+      sp.life -= dt;
+    }
+    this.sparks = this.sparks.filter((sp) => sp.life > 0);
   }
 
   private render() {
@@ -721,8 +955,23 @@ export class Game {
     ctx.fillStyle = this.scenery.groundColor;
     ctx.fillRect(0, 0, this.canvas!.width, this.canvas!.height);
 
+    cam.x += this.shake[0] / cam.scale;
+    cam.y += this.shake[1] / cam.scale;
     cam.apply(ctx, this.dpr);
+    cam.x -= this.shake[0] / cam.scale;
+    cam.y -= this.shake[1] / cam.scale;
     this.scenery.draw(ctx, px);
+    if (this.skids.length && this.phase !== "setup") {
+      ctx.strokeStyle = "rgba(8,8,10,0.34)";
+      ctx.lineWidth = 0.32;
+      ctx.lineCap = "butt";
+      ctx.beginPath();
+      for (let i = 0; i < this.skids.length; i += 4) {
+        ctx.moveTo(this.skids[i], this.skids[i + 1]);
+        ctx.lineTo(this.skids[i + 2], this.skids[i + 3]);
+      }
+      ctx.stroke();
+    }
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
 
@@ -747,15 +996,41 @@ export class Game {
     if (this.phase === "setup") this.drawGateLines(ctx, px);
 
     if (this.phase !== "setup" && this.sim) {
-      if (this.pbSim && this.phase === "race") {
+      if (this.pbSim && this.phase === "race" && this.opts.mode === "practice") {
         const g = this.sampleAt(this.pbSim, this.raceT);
         this.cars.draw(ctx, g.x, g.y, g.heading, px, true);
       }
       const p = this.sampleAt(this.sim, this.raceT);
       this.cars.draw(ctx, p.x, p.y, p.heading, px, false);
+      if (this.sparks.length) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineCap = "round";
+        for (const sp of this.sparks) {
+          const a = Math.max(0, Math.min(1, sp.life / 0.25));
+          ctx.strokeStyle = `rgba(255,${170 + Math.round(60 * a)},90,${a})`;
+          ctx.lineWidth = Math.max(0.12, 1.4 * px);
+          ctx.beginPath();
+          ctx.moveTo(sp.x, sp.y);
+          ctx.lineTo(sp.x - sp.vx * 0.03, sp.y - sp.vy * 0.03);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
     }
 
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    if (this.phase === "race" && this.streaks.length) {
+      ctx.strokeStyle = `rgba(238,237,230,${0.05 + 0.1 * Math.min(1, Math.max(0, (this.raceKmh - 200) / 140))})`;
+      ctx.lineWidth = 1.2;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      for (const st of this.streaks) {
+        ctx.moveTo(st.x, st.y);
+        ctx.lineTo(st.x, st.y - st.len);
+      }
+      ctx.stroke();
+    }
     if (this.phase === "setup") {
       this.drawCornerLabels(ctx);
       this.drawPucks(ctx);

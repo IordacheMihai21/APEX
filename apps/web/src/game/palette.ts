@@ -1,3 +1,5 @@
+import { GRADE_LIMITS_MS } from "../modes/grading";
+
 /**
  * Canvas colours. Keep in sync with the @theme tokens in index.css.
  * Timing colours follow motorsport sector-timing convention.
@@ -17,10 +19,10 @@ export const C = {
   board: "#0c0d0f",
 } as const;
 
-/** Colour for time lost in one corner segment vs the target line. */
+/** Colour for time lost in one corner segment vs the target line (same scale as the lap tiles). */
 export function lossColor(deltaMs: number): string {
-  if (deltaMs <= 20) return C.purple;
-  if (deltaMs <= 120) return C.green;
-  if (deltaMs <= 300) return C.yellow;
+  if (deltaMs <= GRADE_LIMITS_MS.purple) return C.purple;
+  if (deltaMs <= GRADE_LIMITS_MS.green) return C.green;
+  if (deltaMs <= GRADE_LIMITS_MS.yellow) return C.yellow;
   return C.kerb;
 }
