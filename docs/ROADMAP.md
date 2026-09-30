@@ -36,7 +36,7 @@ Guiding question at every step: **does this make Draw → Race → Retry better?
   - Banking support (Zandvoort) if players notice.
   - Legal review of venue names before a commercial launch (DATA_SOURCES.md).
 
-## ✅ Phase 2 — Browser prototype (built 2026-09-30, awaiting playtest)
+## ✅ Phase 2 — Browser prototype (built 2026-09-30; drawing replaced in 2b)
 
 `apps/web` (Vite 8 + React 19 + Tailwind 4, Canvas 2D). All 12 real
 circuits + Kestrel via a picker (`?track=`), Monza by default.
@@ -68,6 +68,35 @@ Playtest questions (the plan's "stop and test" gate):
 
 Known gaps: no sound or haptics; corner labels are detector numbers
 (T-numbers don't match real ones yet); no onboarding beyond hints.
+
+## ✅ Phase 2b — Input redesign: gates instead of drawing (2026-09-30)
+
+Why: drawing couldn't be precise on both phone and PC. Finger pointing has
+~1–1.5 mm absolute precision and needs ~8–10 mm targets (Fitts' law touch
+studies), while the physics rewards ~5–10 cm precision on a 12–15 m track.
+Mobile games solve this with coarse + fine controls (8 Ball Pool's aiming
+wheel) and variable-gain sliders (iOS scrubbing). Racing theory already
+splits a corner into turn-in / apex / exit, which is exactly our knot model.
+
+What changed:
+- **No drawing.** The line starts on the centerline (or your best line), so
+  **the first race is one tap.**
+- **Corner groups and gates:** only corners that slow the car (≥ 12 km/h
+  speed drop) get gates; linked corners (chicanes, esses) share one group, at
+  most 3 corners per group; straights are interpolated. Monza: 6 groups /
+  27 gates; Monaco: 9 / 56.
+- **Precision slider:** tap = absolute; drag = relative at half gain
+  (≈ 12 cm per finger-σ); dragging away from the bar gives up to ~8× finer
+  control (≈ 3 cm). Keyboard nudges of 5 cm / 50 cm.
+- **Track-up camera:** the map rotates so you drive up the screen at the
+  selected gate, so slider left = track left.
+- **Results link to corners:** "T12 +0.90" jumps to the group that owns it.
+- **Targets are computed in the same control space** (`expandGates`), so a
+  perfect score is always reachable (tested for every track).
+
+Verified: Monza centreline 1:23.86 → fixing the Ascari group alone gains
+1.24 s; slider tap/drag/fine gains measured at −3.00 m / 2.62 m per 100 px /
+0.59 m per 100 px.
 
 ## ▷ Phase 2 — original requirements (kept for reference)
 

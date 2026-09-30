@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { APEX_FORMULA as car, type GameTrack, PHYSICS_VERSION, fitDrawing, prepareTrack, simulateLap } from "../src";
+import { APEX_FORMULA as car, type GameTrack, PHYSICS_VERSION, expandGates, fitDrawing, prepareTrack, simulateLap, trackControls, usableHalfWidth } from "../src";
 import { drawOffsets } from "./helpers";
 
 const dir = resolve(import.meta.dirname, "../../../data/tracks");
@@ -22,6 +22,12 @@ describe.each(tracks.map((t) => [t.name, t] as const))("%s", (_name, track) => {
   it("optimal line is valid and reproduces the published target exactly", () => {
     expect(opt.valid).toBe(true);
     expect(opt.lapTimeMs).toBe(track.optimalTimeMs);
+  });
+
+  it("the target is reachable: the optimal line is exactly expressible with the player's gates", () => {
+    const ctl = trackControls(pt);
+    expect(track.controls?.complexes.length).toBeGreaterThan(0);
+    expect(expandGates(pt, ctl, track.optimalLine!.knotOffsets, usableHalfWidth(pt, car))).toEqual(track.optimalLine!.knotOffsets);
   });
 
   it("the centerline is clearly slower than the optimal line", () => {

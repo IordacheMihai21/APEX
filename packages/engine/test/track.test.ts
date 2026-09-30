@@ -63,3 +63,19 @@ describe("real-circuit import", () => {
     }
   });
 });
+
+describe("player controls (gates)", () => {
+  it("groups a chicane into one corner group so its linked gates are edited together", async () => {
+    const { prepareTrack, trackControls } = await import("../src");
+    const ctl = trackControls(prepareTrack(loadTrack("monza")));
+    const ascari = ctl.complexes.find((c) => c.corners.includes("T10"))!;
+    expect(ascari.corners).toEqual(["T10", "T11", "T12"]);
+  });
+
+  it("keeps every group small enough for one screen", async () => {
+    const { prepareTrack, trackControls } = await import("../src");
+    for (const id of ["monaco", "austin", "suzuka"]) {
+      for (const c of trackControls(prepareTrack(loadTrack(id))).complexes) expect(c.corners.length).toBeLessThanOrEqual(3);
+    }
+  });
+});

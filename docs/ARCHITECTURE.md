@@ -102,6 +102,14 @@ ingestion also turned out simple enough for TypeScript. Python remains the
 choice for heavier R&D (FastF1 telemetry comparison, F1DB import), whose
 output is a `TrackSpec`, never a lap time.
 
+**ADR-9: Players set gates, not draw lines** (supersedes the "draw" part
+of ADR-1). The racing line is still one offset per knot. Knots near corners
+that slow the car are *gates*; the rest are interpolated (`expandGates`,
+idempotent). Gates are grouped into corner groups (`lineControls`), stored in
+the track JSON (`controls`), and the published optimum is computed inside
+this control space, so the target is always reachable. `fitDrawing` remains
+in the engine but is unused by the game.
+
 **ADR-8: Real circuits are data, not code.** The raw source is pinned in
 `data/raw/`, the per-circuit config (id, display name, width, direction
 fixes) lives in `real-circuits.ts`, and every built track must pass

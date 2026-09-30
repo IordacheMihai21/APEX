@@ -11,8 +11,6 @@ import "@fontsource/ibm-plex-mono/600";
 import "./index.css";
 import { App } from "./App";
 
-if (import.meta.env.DEV) void import("./game/devtools");
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />

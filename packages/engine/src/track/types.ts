@@ -49,6 +49,12 @@ export interface GameTrack {
   sectors: TrackSector[];
   /** Centerline indices where the racing line's lateral offset is a free parameter. */
   lineKnots: number[];
+  /**
+   * Player controls: corner groups and their gates (see line/controls.ts).
+   * Stored so client, server and optimiser always agree; the optimal line
+   * is computed within this control space, so the target is reachable.
+   */
+  controls?: { complexes: import("../line/controls").Complex[] };
   optimalLine: { knotOffsets: number[] } | null;
   optimalTimeMs: number | null;
   physicsVersion: string;

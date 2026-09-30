@@ -100,7 +100,17 @@ player's intent (turn-in, apex, exit) and throws away hand tremor. It also
 makes submissions tiny (24 numbers), easy to validate, and the same
 representation the optimizer searches.
 
-### Drawing → line (`fitDrawing`)
+### Player controls: gates (`line/controls.ts`)
+
+The game no longer uses freehand drawing. Players set **gates**: the knots at
+corners that cost at least 12 km/h on the centerline lap. Every other knot
+is interpolated linearly between neighbouring gates, then limits are
+enforced, iterated to a fixed point. The published `optimalLine` is
+optimised in this same space, so targets are exactly reachable. It costs
+0.1–1.3 s against an unconstrained optimum, which is irrelevant because
+everyone plays in the same space.
+
+### Drawing → line (`fitDrawing`, not used by the game since Phase 2b)
 
 1. Densify the stroke to ≤ ½ centerline step.
 2. Project each sample onto the centerline, tracking **locally** (±40 m

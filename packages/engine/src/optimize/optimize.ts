@@ -11,6 +11,11 @@ export interface OptimizeOptions {
   maxEvaluations?: number;
   /** What to minimise (default: raw lap time). Used to build comparison lines. */
   objective?: (r: SimulationResult) => number;
+  /**
+   * Map a candidate knot vector to a valid one (default: enforceLimits).
+   * E.g. expandGates, to optimise only the player-controlled gates.
+   */
+  project?: (z: number[]) => number[];
 }
 
 export interface OptimizeResult {
@@ -31,7 +36,7 @@ export interface OptimizeResult {
 export function optimizeLine(pt: PreparedTrack, opts: OptimizeOptions = {}): OptimizeResult {
   const car = opts.car ?? APEX_FORMULA;
   const lim = usableHalfWidth(pt, car);
-  const project = (z: number[]) => enforceLimits(pt, z, lim);
+  const project = opts.project ?? ((z: number[]) => enforceLimits(pt, z, lim));
   let evaluations = 0;
   const score = (z: number[]) => {
     evaluations++;

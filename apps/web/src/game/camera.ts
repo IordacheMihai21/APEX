@@ -1,30 +1,51 @@
-/** World (metres, y up) ↔ screen (CSS px, y down). The camera looks at (x, y). */
+/**
+ * World (metres, y up) ↔ screen (CSS px, y down), with rotation.
+ * The camera looks at (x, y); `angle` rotates the world clockwise on screen,
+ * so a heading of angle + π/2 points straight up.
+ */
 export class Camera {
   x = 0;
   y = 0;
   scale = 1; // CSS px per metre
+  angle = 0;
   w = 1;
   h = 1;
-  /** Screen-space point the camera centre maps to (lets overlays offset the view). */
-  ox = 0.5;
-  oy = 0.5;
 
-  private anim: { from: [number, number, number]; to: [number, number, number]; t0: number; ms: number } | null = null;
+  private anim: { from: number[]; to: number[]; t0: number; ms: number } | null = null;
 
   toScreen(wx: number, wy: number): [number, number] {
-    return [(wx - this.x) * this.scale + this.w * this.ox, this.h * this.oy - (wy - this.y) * this.scale];
+    const dx = wx - this.x;
+    const dy = wy - this.y;
+    const c = Math.cos(this.angle);
+    const s = Math.sin(this.angle);
+    const rx = dx * c + dy * s;
+    const ry = -dx * s + dy * c;
+    return [this.w / 2 + rx * this.scale, this.h / 2 - ry * this.scale];
   }
 
   toWorld(sx: number, sy: number): [number, number] {
-    return [(sx - this.w * this.ox) / this.scale + this.x, this.y - (sy - this.h * this.oy) / this.scale];
+    const rx = (sx - this.w / 2) / this.scale;
+    const ry = -(sy - this.h / 2) / this.scale;
+    const c = Math.cos(this.angle);
+    const s = Math.sin(this.angle);
+    return [this.x + rx * c - ry * s, this.y + rx * s + ry * c];
   }
 
   apply(ctx: CanvasRenderingContext2D, dpr: number) {
-    const s = this.scale * dpr;
-    ctx.setTransform(s, 0, 0, -s, dpr * (this.w * this.ox - this.x * this.scale), dpr * (this.h * this.oy + this.y * this.scale));
+    const k = this.scale * dpr;
+    const c = Math.cos(this.angle);
+    const s = Math.sin(this.angle);
+    // Derivation: sx = w/2 + s·(c·dx + s·dy);  sy = h/2 + s·(s·dx − c·dy)
+    ctx.setTransform(
+      k * c,
+      k * s,
+      k * s,
+      -k * c,
+      dpr * (this.w / 2 - this.scale * (c * this.x + s * this.y)),
+      dpr * (this.h / 2 - this.scale * (s * this.x - c * this.y)),
+    );
   }
 
-  /** Zoom by factor k keeping screen point (sx, sy) fixed. */
   zoomAt(k: number, sx: number, sy: number, min: number, max: number) {
     const [wx, wy] = this.toWorld(sx, sy);
     this.scale = Math.min(max, Math.max(min, this.scale * k));
@@ -35,32 +56,35 @@ export class Camera {
   }
 
   panBy(dxPx: number, dyPx: number) {
-    this.x -= dxPx / this.scale;
-    this.y += dyPx / this.scale;
+    const [ax, ay] = this.toWorld(0, 0);
+    const [bx, by] = this.toWorld(dxPx, dyPx);
+    this.x -= bx - ax;
+    this.y -= by - ay;
     this.anim = null;
   }
 
-  animateTo(x: number, y: number, scale: number, ms = 380) {
+  animateTo(x: number, y: number, scale: number, angle = this.angle, ms = 420) {
+    // rotate the short way round
+    let a = angle;
+    while (a - this.angle > Math.PI) a -= 2 * Math.PI;
+    while (a - this.angle < -Math.PI) a += 2 * Math.PI;
     if (ms <= 0 || matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      this.x = x;
-      this.y = y;
-      this.scale = scale;
+      Object.assign(this, { x, y, scale, angle: a });
       this.anim = null;
       return;
     }
-    this.anim = { from: [this.x, this.y, this.scale], to: [x, y, scale], t0: performance.now(), ms };
+    this.anim = { from: [this.x, this.y, this.scale, this.angle], to: [x, y, scale, a], t0: performance.now(), ms };
   }
 
-  /** Advance any running animation; returns true while animating. */
   tick(now: number): boolean {
     if (!this.anim) return false;
     const { from, to, t0, ms } = this.anim;
     const u = Math.min(1, (now - t0) / ms);
-    const e = 1 - (1 - u) * (1 - u) * (1 - u); // ease-out cubic
+    const e = 1 - (1 - u) * (1 - u) * (1 - u);
     this.x = from[0] + (to[0] - from[0]) * e;
     this.y = from[1] + (to[1] - from[1]) * e;
-    // interpolate zoom geometrically so it feels even
     this.scale = from[2] * Math.pow(to[2] / from[2], e);
+    this.angle = from[3] + (to[3] - from[3]) * e;
     if (u >= 1) this.anim = null;
     return true;
   }

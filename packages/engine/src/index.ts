@@ -10,3 +10,4 @@ export * from "./physics/simulate";
 export * from "./physics/version";
 export * from "./math/spline";
 export * from "./optimize/optimize";
+export * from "./line/controls";

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CATALOG, loadTrack } from "./game/catalog";
 import { Game, PLAYBACK_SPEED, type Snapshot } from "./game/game";
+import { GateSlider } from "./ui/GateSlider";
 import { PitBoard } from "./ui/PitBoard";
 import { delta, lapTime } from "./ui/format";
 
@@ -96,13 +97,24 @@ function GameView({ game }: { game: Game }) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.key === "z" && (e.metaKey || e.ctrlKey)) || e.key === "Backspace") {
+      if (e.target instanceof HTMLElement && e.target.closest("[role=dialog]")) return;
+      const k = e.key;
+      if ((k === "z" && (e.metaKey || e.ctrlKey)) || k === "Backspace") {
         e.preventDefault();
         game.undo();
-      } else if (e.key === "Enter") {
-        if (s.phase === "edit") game.race();
+      } else if (s.phase === "setup" && (k === "ArrowLeft" || k === "ArrowRight")) {
+        e.preventDefault();
+        // ← moves the car left on track (positive offset = left of travel)
+        game.nudge((k === "ArrowLeft" ? 1 : -1) * (e.shiftKey ? 0.5 : 0.05));
+      } else if (s.phase === "setup" && (k === "Tab" || k === "ArrowUp" || k === "ArrowDown")) {
+        e.preventDefault();
+        game.stepGate(k === "ArrowUp" || (k === "Tab" && !e.shiftKey) ? 1 : -1);
+      } else if (s.phase === "setup" && (k === "]" || k === "[")) {
+        game.stepComplex(k === "]" ? 1 : -1);
+      } else if (k === "Enter") {
+        if (s.phase === "setup") game.race();
         else if (s.phase === "result") game.adjust();
-      } else if (e.key === "Escape" && s.phase === "race") game.skip();
+      } else if (k === "Escape" && s.phase === "race") game.skip();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -110,14 +122,35 @@ function GameView({ game }: { game: Game }) {
 
   return (
     <>
-      <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-label={`${game.track.name} circuit. Draw your racing line.`} />
-
-      {(s.phase === "draw" || s.phase === "edit") && <ViewControls game={game} />}
+      <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-label={`${game.track.name} circuit`} />
+      {s.phase === "setup" && <ViewControls game={game} />}
+      {s.phase === "setup" && <SetupPanel s={s} game={game} />}
       {s.phase === "race" && <RaceHud s={s} game={game} />}
       {s.phase === "result" && s.result && <ResultPanel s={s} game={game} />}
-      {(s.phase === "draw" || s.phase === "edit") && <DrawBar s={s} game={game} />}
     </>
   );
+}
+
+/** Reports a panel's size to the game so the camera frames around it. */
+function useInset(game: Game, side: "bottom" | "right", enabled = true) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !enabled) return;
+    const ro = new ResizeObserver(() => {
+      const r = el.getBoundingClientRect();
+      const parent = el.offsetParent?.getBoundingClientRect();
+      if (!parent) return;
+      if (side === "bottom") game.setInsets({ bottom: parent.bottom - r.top, right: 0 });
+      else game.setInsets({ right: parent.right - r.left, bottom: 0 });
+    });
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      game.setInsets({ bottom: 0, right: 0 });
+    };
+  }, [game, side, enabled]);
+  return ref;
 }
 
 const btn =
@@ -138,55 +171,107 @@ function ViewControls({ game }: { game: Game }) {
       <button className={`${c} text-[11px]`} onClick={() => game.showOverview()} aria-label="Show the whole track">
         ALL
       </button>
+      <button className={`${c} text-[11px]`} onClick={() => game.recenter()} aria-label="Back to the selected corner">
+        FIT
+      </button>
     </div>
   );
 }
 
-function DrawBar({ s, game }: { s: Snapshot; game: Game }) {
-  const pct = Math.round(s.progress * 100);
+/** Compact chip text; the selected chip (and small groups) spell the label out. */
+function gateChip(g: { label: string; corner?: string }, selected: boolean, count: number) {
+  const full = selected || count <= 4;
+  if (g.label === "Apex") return full ? `APEX ${g.corner ?? ""}`.trim() : (g.corner ?? "A");
+  if (g.label === "Turn-in") return full ? "TURN-IN" : "IN";
+  if (g.label === "Exit") return full ? "EXIT" : "OUT";
+  if (g.label === "Approach") return full ? "APPROACH" : "APP";
+  if (g.label === "Track-out") return full ? "TRACK-OUT" : "TO";
+  return full ? "MID" : "•";
+}
+
+function SetupPanel({ s, game }: { s: Snapshot; game: Game }) {
+  const ref = useInset(game, "bottom");
+  const cx = game.controls.complexes[s.complex];
+  const total = game.controls.complexes.length;
+  const inside = cx.direction === "mixed" ? null : cx.direction;
+  const first = s.attempts === 0 && s.pbMs === null;
+  const nav = "grid h-10 w-10 shrink-0 place-items-center rounded-md border border-white/12 font-mono text-lg text-paint hover:border-white/30";
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 px-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-      {s.hint && (
-        <div
-          key={s.hint.text}
-          role={s.hint.tone === "error" ? "alert" : "status"}
-          className={`rise pointer-events-auto flex max-w-md items-center gap-3 rounded-md border bg-board/90 px-3 py-2 text-[14px] leading-snug backdrop-blur-sm ${
-            s.hint.tone === "error" ? "border-kerb text-paint" : "border-white/10 text-center text-paint/85"
-          }`}
-        >
-          <span className="flex-1">{s.hint.text}</span>
-          {s.rewindTo && (
-            <button className="shrink-0 rounded border border-kerb px-2.5 py-1.5 font-medium text-paint hover:bg-kerb/20" onClick={() => game.rewindToProblem()}>
-              Redraw from {s.rewindTo}
+    <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center px-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+      <div className="w-full max-w-lg rounded-lg border border-white/10 bg-board/92 p-3 backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <button className={nav} onClick={() => game.stepComplex(-1)} aria-label="Previous corner">
+            ‹
+          </button>
+          <div className="min-w-0 flex-1 text-center leading-none">
+            <div className="font-display text-[26px] font-black tracking-[0.04em] text-paint">{cx.name}</div>
+            <div className="mt-1 font-mono text-[10px] tracking-[0.14em] text-steel">
+              CORNER {s.complex + 1} OF {total}
+            </div>
+          </div>
+          <button className={nav} onClick={() => game.stepComplex(1)} aria-label="Next corner">
+            ›
+          </button>
+        </div>
+
+        <div className="mt-3 flex flex-wrap justify-center gap-1.5" role="tablist" aria-label="Points in this corner">
+          {cx.gates.map((g, i) => (
+            <button
+              key={g.knot}
+              role="tab"
+              aria-selected={i === s.gate}
+              onClick={() => game.selectGate(s.complex, i)}
+              aria-label={g.label === "Apex" && g.corner ? `Apex ${g.corner}` : g.label}
+              className={`h-8 min-w-8 rounded-full border px-2.5 font-mono text-[11px] tracking-[0.06em] ${
+                i === s.gate ? "border-ink bg-ink text-board" : "border-white/15 text-paint/80 hover:border-white/35"
+              }`}
+            >
+              {gateChip(g, i === s.gate, cx.gates.length)}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
+          <button className={nav} onClick={() => game.nudge(0.05)} aria-label="Move 5 cm left">
+            ◂
+          </button>
+          <div className="min-w-0 flex-1">
+            <GateSlider
+              offset={s.offset}
+              limit={s.limit}
+              inside={inside}
+              onBegin={() => {
+                game.beginEdit();
+                return game.getSnapshot().offset;
+              }}
+              onChange={(v) => game.setOffset(v)}
+              onEnd={() => game.endEdit()}
+            />
+          </div>
+          <button className={nav} onClick={() => game.nudge(-0.05)} aria-label="Move 5 cm right">
+            ▸
+          </button>
+        </div>
+
+        <p className="mt-2 text-center text-[13px] leading-snug text-paint/60">
+          {first
+            ? "Race the centre line first to see where time is lost, or place the car at each white line."
+            : "Tap the bar to place the car. Drag for fine control, and slide your finger away from the bar for even finer."}
+        </p>
+
+        <div className="mt-3 flex gap-2">
+          <button className={btn} onClick={() => game.undo()} disabled={!s.canUndo}>
+            Undo
+          </button>
+          {s.pbMs !== null && (
+            <button className={btn} onClick={() => game.loadBest()}>
+              Best line
             </button>
           )}
+          <button className={`${primary} flex-1`} onClick={() => game.race()}>
+            Race
+          </button>
         </div>
-      )}
-      <div className="pointer-events-auto flex w-full max-w-md items-center gap-2 rounded-lg border border-white/10 bg-board/90 p-2 backdrop-blur-sm">
-        <div className="min-w-0 flex-1 px-1.5">
-          {s.phase === "draw" ? (
-            <>
-              <div className="flex justify-between font-mono text-[10px] tracking-[0.14em] text-steel">
-                <span>LAP DRAWN</span>
-                <span className="tabular-nums">{pct}%</span>
-              </div>
-              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-asphalt" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Lap drawn">
-                <div className="h-full bg-ink transition-[width] duration-150" style={{ width: `${pct}%` }} />
-              </div>
-            </>
-          ) : (
-            <div className="font-mono text-[10px] tracking-[0.14em] text-steel">LINE READY</div>
-          )}
-        </div>
-        <button className={btn} onClick={() => game.undo()} disabled={!s.canUndo}>
-          Undo
-        </button>
-        <button className={btn} onClick={() => game.clear()} disabled={!s.canUndo}>
-          Clear
-        </button>
-        <button className={primary} onClick={() => game.race()} disabled={s.phase !== "edit"}>
-          Race
-        </button>
       </div>
     </div>
   );
@@ -216,35 +301,36 @@ function RaceHud({ s, game }: { s: Snapshot; game: Game }) {
 
 function ResultPanel({ s, game }: { s: Snapshot; game: Game }) {
   const r = s.result!;
-  const worst = r.losses.filter((l) => l.deltaMs > 50).slice(0, 3);
+  const worst = r.losses.filter((l) => l.deltaMs > 50 && l.complex >= 0).slice(0, 3);
+  const wide = typeof window !== "undefined" && window.innerWidth >= 720;
+  const ref = useInset(game, wide ? "right" : "bottom");
   return (
-    <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 p-3 pb-[max(12px,env(safe-area-inset-bottom))] min-[720px]:inset-x-auto min-[720px]:top-0 min-[720px]:right-0 min-[720px]:w-[400px] min-[720px]:justify-center min-[720px]:p-6">
+    <div ref={ref} className="absolute inset-x-0 bottom-0 flex flex-col gap-3 p-3 pb-[max(12px,env(safe-area-inset-bottom))] min-[720px]:inset-x-auto min-[720px]:top-0 min-[720px]:right-0 min-[720px]:w-[400px] min-[720px]:justify-center min-[720px]:p-6">
       <PitBoard r={r} />
       <div className="rise rounded-lg border border-white/10 bg-board/90 p-3 backdrop-blur-sm [animation-delay:250ms]">
-        <p className="text-[14px] leading-snug text-paint/85">
-          {worst.length === 0 ? (
-            <>You matched the target line everywhere. Nothing left to find.</>
-          ) : (
-            <>
-              Most time lost at{" "}
-              {worst.map((l, i) => (
-                <span key={l.name}>
-                  {i > 0 && (i === worst.length - 1 ? " and " : ", ")}
-                  <span className="font-mono font-medium text-paint">{l.name}</span>{" "}
-                  <span className="font-mono text-yellow">{delta(l.deltaMs)}</span>
-                </span>
+        {worst.length === 0 ? (
+          <p className="text-[14px] leading-snug text-paint/85">You matched the target line everywhere. Nothing left to find.</p>
+        ) : (
+          <>
+            <p className="font-mono text-[10px] tracking-[0.14em] text-steel">MOST TIME LOST · TAP TO FIX</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {worst.map((l) => (
+                <button
+                  key={l.name}
+                  onClick={() => game.adjust(l.name)}
+                  className="rounded-md border border-white/15 px-3 py-2 font-mono text-[14px] hover:border-white/40"
+                >
+                  <span className="font-medium text-paint">{l.name}</span> <span className="text-yellow">{delta(l.deltaMs)}</span>
+                </button>
               ))}
-              . Target lap {lapTime(r.targetMs)}.
-            </>
-          )}
-        </p>
+            </div>
+            <p className="mt-2 text-[13px] text-paint/60">Target lap {lapTime(r.targetMs)}.</p>
+          </>
+        )}
         <Legend />
         <div className="mt-3 flex gap-2">
           <button className={`${primary} flex-1`} onClick={() => game.adjust()} autoFocus>
-            Adjust line
-          </button>
-          <button className={btn} onClick={() => game.redraw()}>
-            Draw new line
+            Improve line
           </button>
         </div>
       </div>
