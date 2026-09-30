@@ -8,7 +8,7 @@ import { useRef, useState } from "react";
  *    track), so finger size stops mattering.
  *  - Slide the finger away from the bar while dragging for finer control
  *    (variable-speed scrubbing, as in iOS media sliders).
- *  - Arrow keys nudge 5 cm (Shift: 50 cm); the ‹ › buttons nudge 5 cm.
+ *  - Arrow keys nudge 5 cm (Shift: 50 cm); the nudge buttons move 5 cm.
  */
 export function GateSlider({
   offset,

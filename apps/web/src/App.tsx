@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CATALOG, loadTrack } from "./game/catalog";
 import { Game, PLAYBACK_SPEED, type Snapshot } from "./game/game";
 import { GateSlider } from "./ui/GateSlider";
+import { ChevronDown, ChevronLeft, ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, WholeTrack } from "./ui/icons";
 import { PitBoard } from "./ui/PitBoard";
 import { delta, lapTime } from "./ui/format";
 
@@ -43,7 +44,7 @@ export function App() {
             className="min-w-0 truncate rounded px-1 font-display text-[19px] font-bold uppercase leading-none tracking-[0.04em] text-steel hover:text-paint"
             aria-label={`Track: ${info.name}. Change track`}
           >
-            / {info.name} <span aria-hidden="true" className="text-[13px]">▾</span>
+            / {info.name} <ChevronDown className="inline h-4 w-4 align-[-1px]" />
           </button>
         </div>
         {game && <PbChip game={game} />}
@@ -162,17 +163,17 @@ function ViewControls({ game }: { game: Game }) {
   const c = "grid h-10 w-10 place-items-center rounded-md border border-white/12 bg-board/80 font-mono text-lg text-paint hover:border-white/30";
   return (
     <div className="absolute top-3 left-3 flex flex-col gap-2">
-      <button className={c} onClick={() => game.zoom(1.4)} aria-label="Zoom in">
-        +
+      <button className={c} onClick={() => game.zoom(1.4)} aria-label="Zoom in" title="Zoom in">
+        <Plus />
       </button>
-      <button className={c} onClick={() => game.zoom(1 / 1.4)} aria-label="Zoom out">
-        −
+      <button className={c} onClick={() => game.zoom(1 / 1.4)} aria-label="Zoom out" title="Zoom out">
+        <Minus />
       </button>
-      <button className={`${c} text-[11px]`} onClick={() => game.showOverview()} aria-label="Show the whole track">
-        ALL
+      <button className={c} onClick={() => game.showOverview()} aria-label="Show the whole track" title="Whole track">
+        <WholeTrack />
       </button>
-      <button className={`${c} text-[11px]`} onClick={() => game.recenter()} aria-label="Back to the selected corner">
-        FIT
+      <button className={c} onClick={() => game.recenter()} aria-label="Back to the selected corner" title="Back to corner">
+        <Frame />
       </button>
     </div>
   );
@@ -201,7 +202,7 @@ function SetupPanel({ s, game }: { s: Snapshot; game: Game }) {
       <div className="w-full max-w-lg rounded-lg border border-white/10 bg-board/92 p-3 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <button className={nav} onClick={() => game.stepComplex(-1)} aria-label="Previous corner">
-            ‹
+            <ChevronLeft />
           </button>
           <div className="min-w-0 flex-1 text-center leading-none">
             <div className="font-display text-[26px] font-black tracking-[0.04em] text-paint">{cx.name}</div>
@@ -210,7 +211,7 @@ function SetupPanel({ s, game }: { s: Snapshot; game: Game }) {
             </div>
           </div>
           <button className={nav} onClick={() => game.stepComplex(1)} aria-label="Next corner">
-            ›
+            <ChevronRight />
           </button>
         </div>
 
@@ -233,7 +234,7 @@ function SetupPanel({ s, game }: { s: Snapshot; game: Game }) {
 
         <div className="mt-3 flex items-center gap-2">
           <button className={nav} onClick={() => game.nudge(0.05)} aria-label="Move 5 cm left">
-            ◂
+            <NudgeLeft />
           </button>
           <div className="min-w-0 flex-1">
             <GateSlider
@@ -249,7 +250,7 @@ function SetupPanel({ s, game }: { s: Snapshot; game: Game }) {
             />
           </div>
           <button className={nav} onClick={() => game.nudge(-0.05)} aria-label="Move 5 cm right">
-            ▸
+            <NudgeRight />
           </button>
         </div>
 

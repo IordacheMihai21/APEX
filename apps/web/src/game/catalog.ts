@@ -4,6 +4,8 @@ export interface TrackInfo {
   id: string;
   name: string;
   country: string;
+  /** Street circuits get walls tight to the track instead of run-off. */
+  style?: "permanent" | "street";
 }
 
 /** Display catalog (venue names only). Order = picker order. */
@@ -12,7 +14,7 @@ export const CATALOG: TrackInfo[] = [
   { id: "spa", name: "Spa-Francorchamps", country: "Belgium" },
   { id: "silverstone", name: "Silverstone", country: "Great Britain" },
   { id: "suzuka", name: "Suzuka", country: "Japan" },
-  { id: "monaco", name: "Monaco", country: "Monaco" },
+  { id: "monaco", name: "Monaco", country: "Monaco", style: "street" },
   { id: "interlagos", name: "Interlagos", country: "Brazil" },
   { id: "hungaroring", name: "Hungaroring", country: "Hungary" },
   { id: "red-bull-ring", name: "Spielberg", country: "Austria" },

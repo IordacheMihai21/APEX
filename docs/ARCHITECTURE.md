@@ -28,7 +28,13 @@ APEX/
 game state, pointer input and Canvas rendering outside React; React renders
 only the overlays (HUD, pit board, controls) from a snapshot via
 `useSyncExternalStore`. Tracks load lazily from `data/tracks` (one chunk each).
-`src/game/devtools.ts` is a dev-only playtest driver.
+Rendering is an aerial view: `src/game/scenery.ts` builds the circuit
+surroundings once (grass/urban ground, tarmac run-off, gravel traps on the
+outside of corners the car slows for, barriers, kerbs, edge lines, grid) as
+world-space `Path2D`s filled with small procedural textures, and hides any
+barrier that would cross another section of track. `src/game/car.ts`
+pre-renders a top-down formula car and its shadow to sprites. A frame costs
+~0.2–0.5 ms of main-thread time on a DPR-2 phone canvas.
 
 Planned additions (not created yet, to avoid empty scaffolding):
 `supabase/` + `apps/api` (Phase 4),

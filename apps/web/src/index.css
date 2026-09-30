@@ -61,3 +61,8 @@ canvas {
 @media (prefers-reduced-motion: reduce) {
   .board-in, .rise { animation: none; }
 }
+
+::selection {
+  background: var(--color-ink);
+  color: var(--color-board);
+}

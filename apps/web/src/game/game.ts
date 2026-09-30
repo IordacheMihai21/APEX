@@ -14,6 +14,9 @@ import {
   usableHalfWidth,
 } from "@apex/engine";
 import { Camera } from "./camera";
+import { CarSprites } from "./car";
+import { CATALOG } from "./catalog";
+import { Scenery } from "./scenery";
 import { C, lossColor } from "./palette";
 import { type PersonalBest, loadPB, logEvent, savePB } from "./storage";
 
@@ -73,7 +76,8 @@ export class Game {
   readonly camera = new Camera();
   private readonly reference: SimulationResult;
   private readonly bbox: [number, number, number, number];
-  private readonly centerPath: Path2D;
+  private readonly scenery: Scenery;
+  private readonly cars = new CarSprites();
   /** complex index for each gated corner name */
   private readonly complexOfCorner = new Map<string, number>();
 
@@ -122,9 +126,9 @@ export class Game {
       Math.max(...xs.map((p) => p[0])),
       Math.max(...xs.map((p) => p[1])),
     ];
-    this.centerPath = new Path2D();
-    track.centerline.forEach(([x, y], i) => (i ? this.centerPath.lineTo(x, y) : this.centerPath.moveTo(x, y)));
-    this.centerPath.closePath();
+    const style = CATALOG.find((t) => t.id === track.id)?.style ?? "permanent";
+    const significant = new Set(this.controls.complexes.flatMap((c) => c.corners));
+    this.scenery = new Scenery(this.pt, track, style, significant);
 
     this.pb = loadPB(track.id, track.version);
     // Returning players continue from their best line; new players start on the centerline.
@@ -714,48 +718,41 @@ export class Game {
     const cam = this.camera;
     const px = 1 / cam.scale;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = C.tarmac;
+    ctx.fillStyle = this.scenery.groundColor;
     ctx.fillRect(0, 0, this.canvas!.width, this.canvas!.height);
 
     cam.apply(ctx, this.dpr);
+    this.scenery.draw(ctx, px);
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
-    const W = this.track.widthMeters;
-    ctx.strokeStyle = C.runoff;
-    ctx.lineWidth = W + 18;
-    ctx.stroke(this.centerPath);
-    ctx.strokeStyle = C.paint;
-    ctx.lineWidth = W + Math.max(0.9, 2.2 * px);
-    ctx.stroke(this.centerPath);
-    ctx.strokeStyle = C.asphalt;
-    ctx.lineWidth = W - Math.max(0.1, 0.2 * px);
-    ctx.stroke(this.centerPath);
-    if (cam.scale * W > 30) this.drawKerbs(ctx);
-    this.drawStartLine(ctx);
-    if (this.phase === "setup") this.drawChevrons(ctx, px);
 
     if (this.phase === "result" && this.sim) this.drawHeatmap(ctx, px);
     else {
       const { x, y } = this.lineXY;
-      ctx.strokeStyle = this.phase === "race" ? C.inkDim : C.ink;
-      ctx.lineWidth = (this.phase === "race" ? 2.4 : 3) * px;
-      ctx.beginPath();
+      const path = new Path2D();
       for (let i = 0; i <= this.pt.n; i++) {
         const j = i % this.pt.n;
-        if (i) ctx.lineTo(x[j], y[j]);
-        else ctx.moveTo(x[j], y[j]);
+        if (i) path.lineTo(x[j], y[j]);
+        else path.moveTo(x[j], y[j]);
       }
-      ctx.stroke();
+      if (this.phase === "setup") {
+        ctx.strokeStyle = "rgba(0,0,0,0.45)";
+        ctx.lineWidth = 5.5 * px;
+        ctx.stroke(path);
+      }
+      ctx.strokeStyle = this.phase === "race" ? C.inkDim : C.ink;
+      ctx.lineWidth = (this.phase === "race" ? 2 : 3) * px;
+      ctx.stroke(path);
     }
     if (this.phase === "setup") this.drawGateLines(ctx, px);
 
     if (this.phase !== "setup" && this.sim) {
       if (this.pbSim && this.phase === "race") {
         const g = this.sampleAt(this.pbSim, this.raceT);
-        this.drawCar(ctx, g.x, g.y, g.heading, px, true);
+        this.cars.draw(ctx, g.x, g.y, g.heading, px, true);
       }
       const p = this.sampleAt(this.sim, this.raceT);
-      this.drawCar(ctx, p.x, p.y, p.heading, px, false);
+      this.cars.draw(ctx, p.x, p.y, p.heading, px, false);
     }
 
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -765,68 +762,6 @@ export class Game {
     }
     if (this.phase === "result") this.drawLossLabels(ctx);
     if (this.showMinimap()) this.drawMinimap(ctx);
-  }
-
-  /** Red/white kerbs on the inside of each gated corner, so "inside" is obvious. */
-  private drawKerbs(ctx: CanvasRenderingContext2D) {
-    const { n, cx, cy, nx, ny, step } = this.pt;
-    const W = this.track.widthMeters;
-    const seg = Math.max(1, Math.round(3 / step));
-    ctx.lineWidth = 1.2;
-    ctx.lineCap = "butt";
-    for (const c of this.track.corners) {
-      if (!this.complexOfCorner.has(c.name)) continue;
-      const side = c.direction === "left" ? 1 : -1;
-      const len = (c.endIndex - c.startIndex + n) % n;
-      for (let o = 0, k = 0; o < len; o += seg, k++) {
-        const i = (c.startIndex + o) % n;
-        const j = (c.startIndex + Math.min(len, o + seg)) % n;
-        ctx.strokeStyle = k % 2 ? C.paint : C.kerb;
-        ctx.beginPath();
-        ctx.moveTo(cx[i] + side * nx[i] * (W / 2 - 0.4), cy[i] + side * ny[i] * (W / 2 - 0.4));
-        ctx.lineTo(cx[j] + side * nx[j] * (W / 2 - 0.4), cy[j] + side * ny[j] * (W / 2 - 0.4));
-        ctx.stroke();
-      }
-    }
-    ctx.lineCap = "round";
-  }
-
-  private drawStartLine(ctx: CanvasRenderingContext2D) {
-    const [x0, y0] = this.track.centerline[0];
-    const [x1, y1] = this.track.centerline[1];
-    const a = Math.atan2(y1 - y0, x1 - x0);
-    const W = this.track.widthMeters;
-    ctx.save();
-    ctx.translate(x0, y0);
-    ctx.rotate(a);
-    const cell = W / 8;
-    for (let r = 0; r < 2; r++)
-      for (let c = 0; c < 8; c++) {
-        ctx.fillStyle = (r + c) % 2 ? C.paint : C.board;
-        ctx.fillRect(r * cell - cell, -W / 2 + c * cell, cell, cell);
-      }
-    ctx.restore();
-  }
-
-  private drawChevrons(ctx: CanvasRenderingContext2D, px: number) {
-    const { n, cx, cy, step } = this.pt;
-    const every = Math.max(1, Math.round(120 / step));
-    const size = Math.min(this.track.widthMeters * 0.25, 12 * px);
-    ctx.strokeStyle = "rgba(236,235,228,0.14)";
-    ctx.lineWidth = Math.max(0.5, 2 * px);
-    for (let i = Math.round(40 / step); i < n; i += every) {
-      const j = (i + 1) % n;
-      const a = Math.atan2(cy[j] - cy[i], cx[j] - cx[i]);
-      ctx.save();
-      ctx.translate(cx[i], cy[i]);
-      ctx.rotate(a);
-      ctx.beginPath();
-      ctx.moveTo(-size * 0.5, size * 0.7);
-      ctx.lineTo(size * 0.5, 0);
-      ctx.lineTo(-size * 0.5, -size * 0.7);
-      ctx.stroke();
-      ctx.restore();
-    }
   }
 
   /** Cross-track lines at the current group's gates; the selected one is bright. */
@@ -873,40 +808,16 @@ export class Game {
     });
   }
 
-  private drawCar(ctx: CanvasRenderingContext2D, x: number, y: number, heading: number, px: number, ghost: boolean) {
-    const k = Math.max(1, (10 * px) / 2);
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(heading);
-    ctx.scale(k, k);
-    ctx.globalAlpha = ghost ? 0.4 : 1;
-    ctx.fillStyle = C.board;
-    for (const [wx, wy] of [[1.7, 0.8], [1.7, -0.8], [-1.6, 0.85], [-1.6, -0.85]]) ctx.fillRect(wx - 0.35, wy - 0.22, 0.7, 0.44);
-    ctx.fillStyle = ghost ? C.paint : C.ink;
-    ctx.beginPath();
-    ctx.moveTo(2.9, 0);
-    ctx.lineTo(1.2, 0.28);
-    ctx.lineTo(-0.4, 0.55);
-    ctx.lineTo(-2.3, 0.5);
-    ctx.lineTo(-2.3, -0.5);
-    ctx.lineTo(-0.4, -0.55);
-    ctx.lineTo(1.2, -0.28);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillRect(2.4, -0.95, 0.35, 1.9);
-    ctx.fillRect(-2.7, -0.8, 0.4, 1.6);
-    if (!ghost) {
-      ctx.fillStyle = C.paint;
-      ctx.fillRect(-0.2, -0.18, 0.7, 0.36);
-    }
-    ctx.restore();
-  }
-
   private drawHeatmap(ctx: CanvasRenderingContext2D, px: number) {
     const { x, y } = this.lineXY;
     const corners = this.track.corners;
     const n = this.pt.n;
     const cmp = compareRuns(this.sim!, this.reference).corners;
+    const all = new Path2D();
+    for (let i = 0; i <= n; i++) i ? all.lineTo(x[i % n], y[i % n]) : all.moveTo(x[0], y[0]);
+    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.lineWidth = 7.5 * px;
+    ctx.stroke(all);
     ctx.lineWidth = 4.5 * px;
     corners.forEach((c, j) => {
       const a = c.timingStartIndex;

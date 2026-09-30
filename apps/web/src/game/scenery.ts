@@ -1,0 +1,484 @@
+import { type GameTrack, type PreparedTrack, curvature } from "@apex/engine";
+
+/**
+ * Aerial-view circuit scenery for Canvas 2D.
+ *
+ * Everything static is built once: geometry as world-space Path2D objects,
+ * surfaces as small procedural textures used as world-anchored patterns.
+ * A frame only fills/strokes cached paths, which keeps it cheap on phones.
+ *
+ * Layer order (bottom → top): grass + mowing stripes → tarmac run-off →
+ * gravel traps → barriers → track asphalt → edge lines → kerbs → start
+ * line + grid boxes. The car sprite lives in car.ts.
+ */
+
+export type CircuitStyle = "permanent" | "street";
+
+const PALETTE = {
+  grass: "#2c4426",
+  grassLight: "#35512e",
+  gravel: "#a39277",
+  runoff: "#474c53",
+  asphalt: "#2e3136",
+  paint: "#eeede6",
+  kerbRed: "#c42b2f",
+  kerbWhite: "#eeede6",
+  barrier: "#c3c7cc",
+  tyreWall: "#141517",
+  wall: "#9aa0a6",
+  concrete: "#43484e",
+};
+
+/** Deterministic PRNG so textures look the same on every load. */
+function rng(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function canvas(size: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  return [c, c.getContext("2d")!];
+}
+
+/** Per-pixel noise around a base colour, plus sparse speckles (aggregate, pebbles, blades). */
+function noiseTexture(size: number, base: [number, number, number], amp: number, speckle: { rate: number; light: number; dark: number }, seed: number) {
+  const [c, ctx] = canvas(size);
+  const img = ctx.createImageData(size, size);
+  const r = rng(seed);
+  // low-frequency blotches: a few soft value offsets on a coarse grid
+  const grid = 8;
+  const coarse = Array.from({ length: grid * grid }, () => (r() - 0.5) * amp * 1.2);
+  const lf = (x: number, y: number) => {
+    const gx = (x / size) * grid;
+    const gy = (y / size) * grid;
+    const x0 = Math.floor(gx) % grid;
+    const y0 = Math.floor(gy) % grid;
+    const x1 = (x0 + 1) % grid;
+    const y1 = (y0 + 1) % grid;
+    const fx = gx - Math.floor(gx);
+    const fy = gy - Math.floor(gy);
+    const a = coarse[y0 * grid + x0] * (1 - fx) + coarse[y0 * grid + x1] * fx;
+    const b = coarse[y1 * grid + x0] * (1 - fx) + coarse[y1 * grid + x1] * fx;
+    return a * (1 - fy) + b * fy;
+  };
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      let v = (r() - 0.5) * amp + lf(x, y);
+      const s = r();
+      if (s < speckle.rate) v += speckle.light;
+      else if (s < speckle.rate * 2) v -= speckle.dark;
+      const i = (y * size + x) * 4;
+      img.data[i] = Math.max(0, Math.min(255, base[0] + v));
+      img.data[i + 1] = Math.max(0, Math.min(255, base[1] + v));
+      img.data[i + 2] = Math.max(0, Math.min(255, base[2] + v * 0.9));
+      img.data[i + 3] = 255;
+    }
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
+
+function hex(h: string): [number, number, number] {
+  const n = parseInt(h.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+interface Textures {
+  concrete: CanvasPattern;
+  asphalt: CanvasPattern;
+  runoff: CanvasPattern;
+  grass: CanvasPattern;
+  stripes: CanvasPattern;
+  gravel: CanvasPattern;
+}
+
+function makeTextures(ctx: CanvasRenderingContext2D): Textures {
+  const pattern = (src: HTMLCanvasElement, metresPerTile: number, angle = 0) => {
+    const p = ctx.createPattern(src, "repeat")!;
+    const k = metresPerTile / src.width;
+    p.setTransform(new DOMMatrix().rotate(angle).scale(k, k));
+    return p;
+  };
+  const asphalt = noiseTexture(256, hex(PALETTE.asphalt), 10, { rate: 0.02, light: 26, dark: 14 }, 11);
+  const runoff = noiseTexture(256, hex(PALETTE.runoff), 12, { rate: 0.015, light: 22, dark: 12 }, 12);
+  const grass = noiseTexture(256, hex(PALETTE.grass), 14, { rate: 0.05, light: 12, dark: 10 }, 13);
+  const gravel = noiseTexture(256, hex(PALETTE.gravel), 26, { rate: 0.12, light: 34, dark: 40 }, 14);
+  // urban paving: noise plus a faint slab grid
+  const concrete = noiseTexture(256, hex(PALETTE.concrete), 8, { rate: 0.01, light: 14, dark: 10 }, 15);
+  const cctx = concrete.getContext("2d")!;
+  cctx.strokeStyle = "rgba(0,0,0,0.18)";
+  cctx.lineWidth = 2;
+  for (let k = 0; k <= 256; k += 64) {
+    cctx.beginPath();
+    cctx.moveTo(k, 0);
+    cctx.lineTo(k, 256);
+    cctx.moveTo(0, k);
+    cctx.lineTo(256, k);
+    cctx.stroke();
+  }
+  // mowing stripes: one light band per tile, rotated in world space
+  const [st, sctx] = canvas(64);
+  sctx.fillStyle = "rgba(255,255,255,0)";
+  sctx.fillRect(0, 0, 64, 64);
+  sctx.fillStyle = "rgba(96,140,72,0.075)";
+  sctx.fillRect(0, 0, 32, 64);
+  return {
+    concrete: pattern(concrete, 8),
+    asphalt: pattern(asphalt, 5),
+    runoff: pattern(runoff, 6),
+    grass: pattern(grass, 9),
+    stripes: pattern(st, 30, 32),
+    gravel: pattern(gravel, 4),
+  };
+}
+
+/** Smooth a per-index profile with a circular moving average. */
+function smooth(a: Float64Array, half: number): Float64Array {
+  const n = a.length;
+  const out = new Float64Array(n);
+  let sum = 0;
+  for (let o = -half; o <= half; o++) sum += a[(o + n) % n];
+  for (let i = 0; i < n; i++) {
+    out[i] = sum / (2 * half + 1);
+    sum += a[(i + half + 1) % n] - a[(i - half + n) % n];
+  }
+  return out;
+}
+
+export class Scenery {
+  private tex: Textures | null = null;
+  private readonly W: number;
+  private readonly centre = new Path2D();
+  private readonly paved = new Path2D();
+  private readonly gravel = new Path2D();
+  private readonly barriers = new Path2D();
+  private readonly tyres = new Path2D();
+  private readonly kerbRed = new Path2D();
+  private readonly kerbWhite = new Path2D();
+  private readonly grid = new Path2D();
+  private readonly bounds: [number, number, number, number];
+
+  constructor(
+    private pt: PreparedTrack,
+    private track: GameTrack,
+    private style: CircuitStyle,
+    /** Corners that slow the car (get gravel traps and wide run-off). */
+    private significant: Set<string>,
+  ) {
+    this.W = track.widthMeters;
+    track.centerline.forEach(([x, y], i) => (i ? this.centre.lineTo(x, y) : this.centre.moveTo(x, y)));
+    this.centre.closePath();
+    const xs = track.leftBoundary.concat(track.rightBoundary);
+    const pad = 400;
+    this.bounds = [
+      Math.min(...xs.map((p) => p[0])) - pad,
+      Math.min(...xs.map((p) => p[1])) - pad,
+      Math.max(...xs.map((p) => p[0])) + pad,
+      Math.max(...xs.map((p) => p[1])) + pad,
+    ];
+    this.buildRunoff();
+    this.buildKerbs();
+    this.buildGrid();
+  }
+
+  // ---------------------------------------------------------------- geometry
+  private gridIndex: Map<string, number[]> | null = null;
+  private static readonly CELL = 25;
+
+  /**
+   * True if (x, y), placed `dist` metres beside centerline index i, is actually
+   * closer to a different stretch of track. Used to hide barriers and tyre walls
+   * that would cut across a neighbouring section (chicanes, hairpins, crossovers).
+   */
+  private foreign(x: number, y: number, i: number, dist: number): boolean {
+    const { cx, cy, n, step } = this.pt;
+    const C = Scenery.CELL;
+    if (!this.gridIndex) {
+      this.gridIndex = new Map();
+      for (let k = 0; k < n; k++) {
+        const key = `${Math.floor(cx[k] / C)},${Math.floor(cy[k] / C)}`;
+        const list = this.gridIndex.get(key);
+        if (list) list.push(k);
+        else this.gridIndex.set(key, [k]);
+      }
+    }
+    const own = Math.round(40 / step);
+    const r = Math.ceil(dist / C) + 1;
+    const gx = Math.floor(x / C);
+    const gy = Math.floor(y / C);
+    const limit = (dist - 0.5) * (dist - 0.5);
+    for (let a = -r; a <= r; a++)
+      for (let b = -r; b <= r; b++) {
+        const list = this.gridIndex.get(`${gx + a},${gy + b}`);
+        if (!list) continue;
+        for (const k of list) {
+          const di = Math.min((k - i + n) % n, (i - k + n) % n);
+          if (di <= own) continue;
+          const dx = cx[k] - x;
+          const dy = cy[k] - y;
+          if (dx * dx + dy * dy < limit) return true;
+        }
+      }
+    return false;
+  }
+
+  /** Point at centerline index i, offset laterally by d metres (+ = left). */
+  private at(i: number, d: number): [number, number] {
+    const { cx, cy, nx, ny, n } = this.pt;
+    const j = ((i % n) + n) % n;
+    return [cx[j] + nx[j] * d, cy[j] + ny[j] * d];
+  }
+
+  /** Closed band between two lateral offset profiles over [from, from+len]. */
+  private band(path: Path2D, from: number, len: number, inner: (i: number) => number, outer: (i: number) => number) {
+    const a: [number, number][] = [];
+    const b: [number, number][] = [];
+    for (let o = 0; o <= len; o++) {
+      a.push(this.at(from + o, inner(from + o)));
+      b.push(this.at(from + o, outer(from + o)));
+    }
+    a.forEach(([x, y], k) => (k ? path.lineTo(x, y) : path.moveTo(x, y)));
+    for (let k = b.length - 1; k >= 0; k--) path.lineTo(b[k][0], b[k][1]);
+    path.closePath();
+  }
+
+  /**
+   * Run-off per side: paved strip, gravel trap on the outside of slow
+   * corners, then a barrier. Street circuits get walls tight to the track.
+   */
+  private buildRunoff() {
+    const { n, step, cx, cy } = this.pt;
+    const W2 = this.W / 2;
+    const m = (metres: number) => Math.round(metres / step);
+    // Offsets on the inside of a bend must stay inside its radius, or the
+    // offset curve folds back on itself (loops). kappa > 0 = left-hand bend.
+    const kappa = smooth(curvature(cx, cy, Math.max(1, m(8))), m(10));
+    const maxOffset = (i: number, side: 1 | -1) => {
+      const k = kappa[((i % n) + n) % n] * side;
+      return k > 1e-4 ? 0.8 / k : Infinity;
+    };
+    const pavedL = new Float64Array(n);
+    const pavedR = new Float64Array(n);
+    const gravelL = new Float64Array(n);
+    const gravelR = new Float64Array(n);
+    const street = this.style === "street";
+    pavedL.fill(street ? 0.6 : 3);
+    pavedR.fill(street ? 0.6 : 3);
+    if (!street) {
+      for (const c of this.track.corners) {
+        const slow = this.significant.has(c.name);
+        const out = c.direction === "left" ? { paved: pavedR, gravel: gravelR } : { paved: pavedL, gravel: gravelL };
+        const a = c.startIndex - m(50);
+        const len = ((c.endIndex - c.startIndex + n) % n) + m(50) + m(90);
+        for (let o = 0; o <= len; o++) {
+          const t = o / len;
+          const bell = Math.sin(Math.PI * Math.min(1, t * 1.15)) ** 0.7; // widest just after the apex
+          const i = (a + o + n) % n;
+          out.paved[i] = Math.max(out.paved[i], 3 + (slow ? 7 : 9) * bell);
+          if (slow) out.gravel[i] = Math.max(out.gravel[i], 22 * bell);
+        }
+      }
+    }
+    const pl = smooth(pavedL, m(12));
+    const pr = smooth(pavedR, m(12));
+    const gl = smooth(gravelL, m(12));
+    const gr = smooth(gravelR, m(12));
+    const clamp = (i: number, side: 1 | -1, d: number) => Math.min(d, maxOffset(i, side));
+    // paved run-off (both sides, full lap)
+    this.band(this.paved, 0, n, () => W2, (i) => clamp(i, 1, W2 + pl[(i + n) % n]));
+    this.band(this.paved, 0, n, () => -W2, (i) => -clamp(i, -1, W2 + pr[(i + n) % n]));
+    // gravel traps: bands only where present
+    const traps = (g: Float64Array, p: Float64Array, side: 1 | -1) => {
+      let i = 0;
+      while (i < n) {
+        if (g[i] < 0.5) {
+          i++;
+          continue;
+        }
+        let j = i;
+        while (j < n && g[j] >= 0.5) j++;
+        this.band(
+          this.gravel,
+          i,
+          j - i,
+          (k) => side * clamp(k, side, W2 + p[k % n]),
+          (k) => side * clamp(k, side, W2 + p[k % n] + g[k % n]),
+        );
+        i = j;
+      }
+    };
+    traps(gl, pl, 1);
+    traps(gr, pr, -1);
+    // barriers
+    const verge = street ? 0.4 : 9;
+    for (const side of [1, -1] as const) {
+      const p = side > 0 ? pl : pr;
+      const g = side > 0 ? gl : gr;
+      let pen = false;
+      for (let i = 0; i <= n; i++) {
+        // continuous: the barrier sits just beyond the gravel, or at the verge distance
+        const d = side * clamp(i, side, W2 + p[i % n] + Math.max(g[i % n] + 2, verge));
+        const [x, y] = this.at(i, d);
+        if (this.foreign(x, y, i % n, Math.abs(d))) {
+          pen = false; // break the rail where it would cross another section
+          continue;
+        }
+        if (pen) this.barriers.lineTo(x, y);
+        else this.barriers.moveTo(x, y);
+        pen = true;
+      }
+      // tyre walls where there's a gravel trap
+      for (let i = 0; i < n; i += Math.max(1, m(1.2))) {
+        if (g[i] < 4) continue;
+        const dd = clamp(i, side, W2 + p[i] + g[i] + 1.1);
+        const [x, y] = this.at(i, side * dd);
+        if (this.foreign(x, y, i, dd)) continue;
+        this.tyres.moveTo(x + 0.5, y);
+        this.tyres.arc(x, y, 0.5, 0, Math.PI * 2);
+      }
+    }
+  }
+
+  /** Red/white kerb blocks: inside of each corner, outside on entry and exit. */
+  private buildKerbs() {
+    const { n, step } = this.pt;
+    const W2 = this.W / 2;
+    const block = Math.max(1, Math.round(1.6 / step));
+    const m = (metres: number) => Math.round(metres / step);
+    const run = (from: number, len: number, side: 1 | -1) => {
+      for (let o = 0, k = 0; o < len; o += block, k++) {
+        const a = from + o;
+        const e = from + Math.min(len, o + block);
+        // taper the first and last block so kerbs start and end cleanly
+        const taper = (x: number) => Math.min(1, x / m(3), (len - x) / m(3));
+        const w0 = 1.1 * taper(o);
+        const w1 = 1.1 * taper(Math.min(len, o + block));
+        const q = [this.at(a, side * (W2 - 0.25)), this.at(e, side * (W2 - 0.25)), this.at(e, side * (W2 - 0.25 + w1)), this.at(a, side * (W2 - 0.25 + w0))];
+        const path = k % 2 ? this.kerbWhite : this.kerbRed;
+        q.forEach(([x, y], z) => (z ? path.lineTo(x, y) : path.moveTo(x, y)));
+        path.closePath();
+      }
+    };
+    // Full kerbs (inside + outside on entry and exit) only on corners the car
+    // slows for; a gentle bend gets at most a short inside kerb at the apex.
+    const { cx, cy } = this.pt;
+    const k = curvature(cx, cy, Math.max(1, m(8)));
+    for (const c of this.track.corners) {
+      const inside: 1 | -1 = c.direction === "left" ? 1 : -1;
+      if (this.significant.has(c.name)) {
+        const len = (c.endIndex - c.startIndex + n) % n;
+        run(c.startIndex - m(4), len + m(8), inside);
+        run(c.startIndex - m(22), m(24), (-inside) as 1 | -1);
+        run(c.apexIndex, ((c.endIndex - c.apexIndex + n) % n) + m(26), (-inside) as 1 | -1);
+      } else if (Math.abs(k[c.apexIndex]) > 1 / 150) {
+        run(c.apexIndex - m(12), m(24), inside);
+      }
+    }
+  }
+
+  /** Staggered grid slots behind the start line. */
+  private buildGrid() {
+    const { step } = this.pt;
+    const W2 = this.W / 2;
+    for (let slot = 0; slot < 10; slot++) {
+      const back = Math.round((10 + slot * 8) / step);
+      const side = slot % 2 ? -1 : 1;
+      const i = -back;
+      const c = side * W2 * 0.45;
+      const [ax, ay] = this.at(i, c - 1.4);
+      const [bx, by] = this.at(i, c + 1.4);
+      const [cx, cy] = this.at(i - Math.round(1.6 / step), c - 1.4);
+      const [dx, dy] = this.at(i - Math.round(1.6 / step), c + 1.4);
+      this.grid.moveTo(cx, cy);
+      this.grid.lineTo(ax, ay);
+      this.grid.lineTo(bx, by);
+      this.grid.lineTo(dx, dy);
+    }
+  }
+
+  // ---------------------------------------------------------------- drawing
+  /** Flat ground colour to clear the whole screen with before drawing. */
+  get groundColor() {
+    return this.style === "street" ? PALETTE.concrete : PALETTE.grass;
+  }
+
+  /** Everything under the racing line. `px` = one CSS pixel in metres. */
+  draw(ctx: CanvasRenderingContext2D, px: number) {
+    if (!this.tex) this.tex = makeTextures(ctx);
+    const t = this.tex;
+    const detailed = px < 0.9; // textures and small props only when zoomed in enough to see them
+    const [x0, y0, x1, y1] = this.bounds;
+
+    const street = this.style === "street";
+    ctx.fillStyle = street ? (detailed ? t.concrete : PALETTE.concrete) : detailed ? t.grass : PALETTE.grass;
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    if (detailed && !street) {
+      ctx.fillStyle = t.stripes;
+      ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    }
+
+    ctx.fillStyle = detailed ? t.runoff : PALETTE.runoff;
+    ctx.fill(this.paved);
+    ctx.fillStyle = detailed ? t.gravel : PALETTE.gravel;
+    ctx.fill(this.gravel);
+
+    // barrier: soft shadow then the rail (hidden when zoomed far out, where it reads as an outline)
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    if (px < 2.5) {
+      ctx.strokeStyle = "rgba(0,0,0,0.35)";
+      ctx.lineWidth = Math.max(1.4, 3 * px);
+      ctx.stroke(this.barriers);
+      ctx.strokeStyle = street ? PALETTE.wall : PALETTE.barrier;
+      ctx.lineWidth = Math.max(street ? 1.1 : 0.45, 1.2 * px);
+      ctx.stroke(this.barriers);
+      if (detailed) {
+        ctx.fillStyle = PALETTE.tyreWall;
+        ctx.fill(this.tyres);
+      }
+    }
+
+    // track: paint band slightly wider than the asphalt = white edge lines
+    const edge = Math.max(0.3, 1.3 * px);
+    ctx.strokeStyle = PALETTE.paint;
+    ctx.lineWidth = this.W + 0.2;
+    ctx.stroke(this.centre);
+    ctx.strokeStyle = detailed ? t.asphalt : PALETTE.asphalt;
+    ctx.lineWidth = this.W - 2 * edge;
+    ctx.stroke(this.centre);
+
+    if (detailed) {
+      ctx.fillStyle = PALETTE.kerbRed;
+      ctx.fill(this.kerbRed);
+      ctx.fillStyle = PALETTE.kerbWhite;
+      ctx.fill(this.kerbWhite);
+      ctx.strokeStyle = PALETTE.paint;
+      ctx.lineWidth = 0.22;
+      ctx.stroke(this.grid);
+    }
+    this.drawStartLine(ctx);
+  }
+
+  private drawStartLine(ctx: CanvasRenderingContext2D) {
+    const [x0, y0] = this.track.centerline[0];
+    const [x1, y1] = this.track.centerline[1];
+    const a = Math.atan2(y1 - y0, x1 - x0);
+    const W = this.W;
+    ctx.save();
+    ctx.translate(x0, y0);
+    ctx.rotate(a);
+    const rows = 2;
+    const cols = 12;
+    const cell = W / cols;
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++) {
+        ctx.fillStyle = (r + c) % 2 ? PALETTE.paint : "#111214";
+        ctx.fillRect(r * cell - cell, -W / 2 + c * cell, cell, cell);
+      }
+    ctx.restore();
+  }
+}
