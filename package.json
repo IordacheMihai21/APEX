@@ -1,0 +1,19 @@
+{
+  "name": "apex",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "tools/*"],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build:tracks": "tsx tools/track-builder/src/build-tracks.ts",
+    "compare": "tsx tools/track-builder/src/compare-lines.ts",
+    "check": "tsx tools/track-builder/src/check-tracks.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3",
+    "@types/node": "^24.0.0"
+  }
+}
