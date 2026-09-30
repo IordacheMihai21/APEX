@@ -24,8 +24,14 @@ APEX/
 └── docs/
 ```
 
+`apps/web` (Phase 2): Vite + React + Tailwind. `src/game/game.ts` owns all
+game state, pointer input and Canvas rendering outside React; React renders
+only the overlays (HUD, pit board, controls) from a snapshot via
+`useSyncExternalStore`. Tracks load lazily from `data/tracks` (one chunk each).
+`src/game/devtools.ts` is a dev-only playtest driver.
+
 Planned additions (not created yet, to avoid empty scaffolding):
-`apps/web` (Phase 2), `supabase/` + `apps/api` (Phase 4),
+`supabase/` + `apps/api` (Phase 4),
 `tools/f1db-importer`, `tools/telemetry-analysis` (Phase 7, Python).
 
 ## Data flow

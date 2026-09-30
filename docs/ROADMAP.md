@@ -36,7 +36,40 @@ Guiding question at every step: **does this make Draw → Race → Retry better?
   - Banking support (Zandvoort) if players notice.
   - Legal review of venue names before a commercial launch (DATA_SOURCES.md).
 
-## ▶ Phase 2 — Browser prototype (next)
+## ✅ Phase 2 — Browser prototype (built 2026-09-30, awaiting playtest)
+
+`apps/web` (Vite 8 + React 19 + Tailwind 4, Canvas 2D). All 12 real
+circuits + Kestrel via a picker (`?track=`), Monza by default.
+
+- **Drawing at 40 px track width** with a camera that looks ahead after each
+  lift. One-finger drag off the dot pans, pinch/wheel/+/− zoom, minimap tap
+  jumps, ALL shows the whole track.
+- **Straight skipping:** tap further along a straight to jump there (no corner
+  may be skipped). This cut a scripted Monza lap from 86 strokes to 28 drawn
+  strokes + 29 taps.
+- **Validation with a way out:** off-track or cut sections are highlighted
+  in red, with "Redraw from T5", which rewinds to the stroke before the problem.
+- **Fine-tune:** entry/apex/exit knot markers are draggable once the lap is complete.
+- **Race:** car follows its simulated speed profile at ×5, follow-cam, speed and
+  timer HUD, and the personal-best ghost car.
+- **Result:** pit board (lap / target delta / PB delta) plus a per-corner
+  heatmap in sector-timing colours and labels on the three worst corners.
+  "Adjust line" goes back to the markers; "Draw new line" starts over.
+- PBs in localStorage keyed by track, version and physics version; a local
+  event log (`apex.events`) records the playtest metrics.
+
+Playtest questions (the plan's "stop and test" gate):
+- **Attempts per player** (1–2 weak … 10+ strong).
+- How long does a first lap take to draw? (Target: under a minute; Monza
+  needs ~25–40 gestures.) If too long, try corner-by-corner drawing or a
+  lower default zoom for returning players.
+- Do players use the markers (adjust) or redraw? The event log shows it.
+- Is ×5 playback the right length (Monza ≈ 16 s, Spa ≈ 19 s)?
+
+Known gaps: no sound or haptics; corner labels are detector numbers
+(T-numbers don't match real ones yet); no onboarding beyond hints.
+
+## ▷ Phase 2 — original requirements (kept for reference)
 
 Build `apps/web` (Vite + React + TS + Tailwind, Canvas 2D). One track
 (suggest Monza or Spielberg: few corners, iconic, long straights make exit

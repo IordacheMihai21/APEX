@@ -2,13 +2,19 @@
   "name": "apex",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*", "tools/*"],
+  "workspaces": [
+    "packages/*",
+    "tools/*",
+    "apps/*"
+  ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
     "build:tracks": "tsx tools/track-builder/src/build-tracks.ts",
     "compare": "tsx tools/track-builder/src/compare-lines.ts",
-    "check": "tsx tools/track-builder/src/check-tracks.ts"
+    "check": "tsx tools/track-builder/src/check-tracks.ts",
+    "dev": "npm run dev -w @apex/web",
+    "build:web": "npm run build -w @apex/web"
   },
   "devDependencies": {
     "tsx": "^4.23.15",
