@@ -5,18 +5,17 @@ import { GRADE_LIMITS_MS } from "../modes/grading";
  * Timing colours follow motorsport sector-timing convention.
  */
 export const C = {
-  tarmac: "#1d2024", // page / infield
-  runoff: "#262a30",
-  asphalt: "#33383f",
-  paint: "#ecebe4", // track edge lines
+  night: "#0a0b0d", // page ground
+  asphalt: "#262a31",
+  paint: "#f2f2ee", // track edge lines
   ink: "#ff6a13", // the player's line (safety orange)
   inkDim: "rgba(255,106,19,0.35)",
-  kerb: "#d7263d",
+  kerb: "#e5332a",
   purple: "#a259ff", // on target
   green: "#29cc6a", // small loss
   yellow: "#f5c518", // moderate loss
-  steel: "#8b939c",
-  board: "#0c0d0f",
+  steel: "#9aa1ab",
+  board: "#121418",
 } as const;
 
 /** Colour for time lost in one corner segment vs the target line (same scale as the lap tiles). */

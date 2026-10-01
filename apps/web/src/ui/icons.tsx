@@ -74,3 +74,9 @@ export const Share = (p: IconProps) => (
     <path d="M5 13v6h14v-6" />
   </Svg>
 );
+export const Undo = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9 14L4 9l5-5" />
+    <path d="M4 9h10.5a5.5 5.5 0 010 11H11" />
+  </Svg>
+);

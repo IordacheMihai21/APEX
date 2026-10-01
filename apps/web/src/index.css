@@ -1,23 +1,28 @@
 @import "tailwindcss";
 
-/* Keep colours in sync with src/game/palette.ts */
+/*
+ * APEX tokens. Broadcast-dark ground, white type, orange = you, and the four
+ * sector colours as the only feedback language. Canvas colours live in
+ * src/game/palette.ts and must match these values.
+ */
 @theme {
-  --color-tarmac: #1d2024;
-  --color-runoff: #262a30;
-  --color-asphalt: #33383f;
-  --color-paint: #ecebe4;
-  --color-ink: #ff6a13;
-  --color-kerb: #d7263d;
-  --color-purple: #a259ff;
-  --color-green: #29cc6a;
-  --color-yellow: #f5c518;
-  --color-steel: #8b939c;
-  --color-board: #0c0d0f;
-  --color-slot: #17191d;
+  --color-night: #0a0b0d; /* page ground, broadcast black */
+  --color-board: #121418; /* panels */
+  --color-graphite: #1c1f25; /* raised / hover */
+  --color-line: #2b2f37; /* hairlines */
+  --color-asphalt: #262a31; /* slider track, empty tiles */
+  --color-paint: #f2f2ee; /* type and painted lines */
+  --color-steel: #9aa1ab; /* secondary type */
+  --color-ink: #ff6a13; /* the player: car, line, primary action */
+  --color-purple: #a259ff; /* on the perfect line */
+  --color-green: #29cc6a; /* close */
+  --color-yellow: #f5c518; /* slow */
+  --color-kerb: #e5332a; /* far off; also kerbs */
+  --color-lamp: #ff2b1a; /* start-light glass only */
 
-  --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
-  --font-body: "Barlow", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  /* one family, three widths: wide for display and times, normal for copy, condensed for labels */
+  --font-display: "Archivo Variable", "Archivo", system-ui, sans-serif;
+  --font-body: "Archivo Variable", "Archivo", system-ui, sans-serif;
 }
 
 html,
@@ -25,11 +30,45 @@ body,
 #root {
   height: 100%;
   margin: 0;
-  background: var(--color-tarmac);
+  background: var(--color-night);
   color: var(--color-paint);
   font-family: var(--font-body);
+  font-stretch: 100%;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
+  font-feature-settings: "tnum" 0;
+}
+
+/* Wide display: headlines, corner names, lap times. */
+.wide {
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+}
+/* Condensed label: small uppercase captions and data labels. */
+.label {
+  font-stretch: 72%;
+  font-weight: 650;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-steel);
+}
+/* Tabular figures for any time or count that updates. */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The cut: one angled edge (the motorsport graphic's slant) on primary
+ * actions and the tower's position plates. Four vertices, nothing more.
+ */
+.cut {
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.cut-l {
+  clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%);
 }
 
 canvas {
@@ -44,46 +83,59 @@ canvas {
   outline-offset: 2px;
 }
 
-/* The pit board is held out over the pit wall: it swings in and settles. */
-@keyframes board-in {
-  0% { transform: translateX(115%) rotate(5deg); }
-  70% { transform: translateX(-2%) rotate(-1.2deg); }
-  100% { transform: translateX(0) rotate(0); }
-}
-.board-in { animation: board-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-
-@keyframes rise {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
-}
-.rise { animation: rise 260ms ease-out both; }
-
-@media (prefers-reduced-motion: reduce) {
-  .board-in, .rise { animation: none; }
-}
-
 ::selection {
   background: var(--color-ink);
-  color: var(--color-board);
+  color: var(--color-night);
+}
+
+/* Panels wipe in from the left edge, like a broadcast graphic. */
+@keyframes wipe-in {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.wipe-in {
+  animation: wipe-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Lap tiles flip in as the car passes each corner group. */
 @keyframes tile-flip {
-  0% { transform: rotateX(90deg); }
-  100% { transform: rotateX(0); }
+  0% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0);
+  }
 }
-.tile-flip { animation: tile-flip 240ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.tile-flip {
+  animation: tile-flip 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 
-/* Asphalt for DOM surfaces (hub): layered noise, no image files. */
+/* Tower rows light up as they are timed. */
+@keyframes row-flash {
+  0% {
+    background-color: rgba(242, 242, 238, 0.28);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.row-flash {
+  animation: row-flash 700ms ease-out both;
+}
+
+/* Fallback ground for DOM surfaces when the canvas asphalt is unavailable. */
 .asphalt {
-  background-color: #2b2e33;
-  background-image:
-    radial-gradient(rgba(255,255,255,0.05) 0.6px, transparent 0.8px),
-    radial-gradient(rgba(0,0,0,0.25) 0.7px, transparent 0.9px);
-  background-size: 5px 5px, 7px 7px;
-  background-position: 0 0, 2px 3px;
+  background-color: #23262c;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tile-flip { animation: none; }
+  .wipe-in,
+  .tile-flip,
+  .row-flash {
+    animation: none;
+  }
 }

@@ -8,7 +8,7 @@ export function Gantry({ lit, size = "md", label }: { lit: number; size?: "sm" |
   return (
     <div className={`flex justify-center ${gap}`} role="img" aria-label={label ?? `${lit} of 5 start lights on`}>
       {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className="flex flex-col gap-1.5 rounded-md border border-white/8 bg-[#0a0a0b] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_6px_14px_rgba(0,0,0,0.5)]">
+        <div key={i} className="flex flex-col gap-1.5 border border-line bg-[#060607] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_6px_14px_rgba(0,0,0,0.5)]">
           {[0, 1].map((j) => (
             <span
               key={j}

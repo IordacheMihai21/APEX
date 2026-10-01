@@ -5,6 +5,13 @@ primary_target: "src/App.tsx"
 related_targets: ["src/ui/Hub.tsx","src/game/game.ts"]
 ---
 
+---
+version: 1
+slug: "src-app-tsx"
+primary_target: "src/App.tsx"
+related_targets: ["src/ui/Hub.tsx","src/game/game.ts"]
+---
+
 # APEX game surface: hub + Daily Quali / Perfect Season / Free Practice
 
 Scope: the whole web app (home hub, setup, race, result). Visitor mode: Experience.
@@ -16,7 +23,7 @@ Memorable moment: lights out, then the lap's corner tiles reveal one by one as t
 
 THESIS: Home is a starting grid, not a card menu. Modes are painted grid slots on asphalt, today's puzzle on pole, the start-light gantry is the clock. Refuses the category's grid of same-size game cards.
 
-OWN-WORLD: textured asphalt ground; white painted grid brackets; black gantry with five red lamp pods (ghost lamps visible when off); pit board with slotted digits; seven-segment timing digits with ghost segments; sector colours purple / green / yellow / red as the only feedback language; safety orange = you. Big Shoulders Display for slot labels, Barlow for copy, Plex Mono only for data.
+OWN-WORLD: broadcast-dark ground (night/board/graphite with hairline rules), textured asphalt and white painted grid boxes on the hub; black gantry with five red lamp pods (ghost lamps when off); the corner tower, a left-edge timing tower that runs through setup, race and result; seven-segment digits only for the gantry clock and in-car speed; sector colours purple/green/yellow/red as the only feedback language; safety orange = you. One family, Archivo Variable, at three widths (wide display and times, normal copy, condensed labels). Square corners and one angled cut on primary actions and position plates. (Revised 2026-10-01 via /frontend-design, replacing Big Shoulders, Barlow, Plex Mono and the pit board.)
 
 STORY: see today's circuit on pole and the lights counting down, tap Lights out, set gates, race; each lap reveals a row of corner tiles; win on an all-purple row; share the grid; chase 12–0 in Season; practise freely.
 

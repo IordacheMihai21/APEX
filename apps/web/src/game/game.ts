@@ -95,6 +95,8 @@ export interface Snapshot {
   lapLimit: number | null;
   locked: boolean;
   rivalMs: number | null;
+  /** Tower highlight: selected corner group (setup) or the one the car is in (race); -1 none. */
+  activeGroup: number;
 }
 
 /** Race playback runs this many times faster than the simulated lap. */
@@ -257,6 +259,14 @@ export class Game {
       lapLimit: this.opts.lapLimit,
       locked: this.locked,
       rivalMs: this.opts.rivalMs ?? null,
+      activeGroup:
+        this.phase === "setup"
+          ? this.sel.complex
+          : this.phase === "lights"
+            ? 0
+            : this.phase === "race" && this.grades
+              ? Math.min(this.grades.length - 1, this.grades.filter((g) => g.revealAtMs <= this.raceT).length)
+              : -1,
     };
   }
 
@@ -1117,7 +1127,7 @@ export class Game {
   }
 
   private drawCornerLabels(ctx: CanvasRenderingContext2D) {
-    ctx.font = "500 11px 'IBM Plex Mono', monospace";
+    ctx.font = "700 11px 'Archivo Variable', system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const c of this.track.corners) {
@@ -1131,7 +1141,7 @@ export class Game {
   private drawLossLabels(ctx: CanvasRenderingContext2D) {
     if (!this.result) return;
     const worst = this.result.losses.filter((l) => l.deltaMs > 50).slice(0, 3);
-    ctx.font = "600 12px 'IBM Plex Mono', monospace";
+    ctx.font = "700 12px 'Archivo Variable', system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const l of worst) {

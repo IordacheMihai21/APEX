@@ -4,8 +4,6 @@ import { CATALOG, loadTrack } from "./game/catalog";
 import { Game, type Mode, type Snapshot } from "./game/game";
 import { DAILY_LAPS, type DailyRecord, dailyNumber, loadDaily, msToNextDay, recordLap, shareText } from "./modes/daily";
 import { GRADE_EMOJI, type Grade, gradeFor } from "./modes/grading";
-
-const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 import {
   type RoundOutcome,
   SEASON_LAPS,
@@ -18,13 +16,16 @@ import {
   rivalMs,
   seasonDone,
 } from "./modes/season";
+import { CornerTower } from "./ui/CornerTower";
+import { GateSlider } from "./ui/GateSlider";
 import { type HubAction, Hub } from "./ui/Hub";
 import { LapGrid } from "./ui/LapGrid";
 import { RaceHud } from "./ui/RaceHud";
-import { GateSlider } from "./ui/GateSlider";
-import { ChevronLeft, ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, Share, SoundOff, SoundOn, WholeTrack } from "./ui/icons";
-import { PitBoard } from "./ui/PitBoard";
 import { delta, lapTime } from "./ui/format";
+import { ChevronLeft, Frame, Minus, NudgeLeft, NudgeRight, Plus, Share, SoundOff, SoundOn, Undo, WholeTrack } from "./ui/icons";
+import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
+
+const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 
 type Screen = { kind: "hub" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number };
 
@@ -35,6 +36,8 @@ function initialScreen(): Screen {
   if (mode === "practice" && CATALOG.some((t) => t.id === track)) return { kind: "play", mode, trackId: track! };
   return { kind: "hub" };
 }
+
+const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice" };
 
 export function App() {
   const [screen, setScreen] = useState<Screen>(initialScreen);
@@ -67,32 +70,35 @@ export function App() {
     setSound(!sound);
   };
 
+  const track = screen.kind === "play" ? CATALOG.find((t) => t.id === screen.trackId) : null;
+
   return (
     <div className="grid h-dvh grid-rows-[auto_1fr] overflow-hidden select-none">
-      <header className="flex items-center justify-between gap-3 border-b border-white/5 bg-tarmac px-3 pt-[max(10px,env(safe-area-inset-top))] pb-2.5">
-        <div className="flex min-w-0 items-center gap-2">
+      <header className="flex h-[52px] items-stretch justify-between border-b border-line bg-night pt-[env(safe-area-inset-top)]">
+        <div className="flex min-w-0 items-stretch">
           {screen.kind === "play" && (
-            <button
-              onClick={() => setScreen({ kind: "hub" })}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-white/12 text-paint hover:border-white/30"
-              aria-label="Back to the grid"
-            >
+            <button onClick={() => setScreen({ kind: "hub" })} className="grid w-12 shrink-0 place-items-center border-r border-line text-paint hover:bg-graphite" aria-label="Back to the grid">
               <ChevronLeft />
             </button>
           )}
-          <span className="font-display text-[26px] font-black leading-none tracking-[0.06em] text-paint">APEX</span>
-          {screen.kind === "play" && (
-            <span className="min-w-0 truncate font-display text-[19px] font-bold uppercase leading-none tracking-[0.04em] text-steel">
-              / {MODE_LABEL[screen.mode]} · {CATALOG.find((t) => t.id === screen.trackId)?.name}
+          <div className="flex min-w-0 items-center gap-3 px-3">
+            <span className="wide text-[20px] leading-none tracking-[0.02em] text-paint">
+              APEX<span className="text-steel">/</span>
             </span>
-          )}
+            {track && screen.kind === "play" && (
+              <div className="min-w-0 leading-tight">
+                <div className="label truncate">{MODE_LABEL[screen.mode]}</div>
+                <div className="truncate text-[14px] font-bold text-paint">{track.name}</div>
+              </div>
+            )}
+          </div>
         </div>
         <button
           onClick={toggleSound}
           aria-pressed={sound}
           aria-label={sound ? "Engine sound on. Turn off" : "Engine sound off. Turn on"}
           title={sound ? "Sound on" : "Sound off"}
-          className={`grid h-9 w-9 shrink-0 place-items-center rounded-md border hover:border-white/30 ${sound ? "border-ink/60 text-ink" : "border-white/12 text-steel"}`}
+          className={`grid w-12 shrink-0 place-items-center border-l border-line hover:bg-graphite ${sound ? "text-ink" : "text-steel"}`}
         >
           {sound ? <SoundOn /> : <SoundOff />}
         </button>
@@ -113,7 +119,6 @@ export function App() {
 
       {picking && (
         <TrackPicker
-          current=""
           onPick={(id) => {
             setPicking(false);
             setScreen({ kind: "play", mode: "practice", trackId: id });
@@ -125,8 +130,6 @@ export function App() {
     </div>
   );
 }
-
-const MODE_LABEL: Record<Mode, string> = { daily: "Quali", season: "Season", practice: "Practice" };
 
 function useSnapshot(game: Game): Snapshot {
   return useSyncExternalStore(game.subscribe, game.getSnapshot);
@@ -141,7 +144,7 @@ function Play({ mode, trackId, onNext }: { mode: Mode; trackId: string; onNext: 
   const [game, setGame] = useState<Game | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [daily, setDaily] = useState<DailyRecord | null>(null);
-  const [round, setRound] = useState<{ outcome: RoundOutcome; laps: Grade[][]; store: SeasonStore } | null>(null);
+  const [round, setRound] = useState<Round>(null);
   const [practiceLaps, setPracticeLaps] = useState<Grade[][]>([]);
 
   useEffect(() => {
@@ -182,7 +185,7 @@ function Play({ mode, trackId, onNext }: { mode: Mode; trackId: string; onNext: 
     };
   }, [mode, trackId]);
 
-  if (!game) return <div className="grid h-full place-items-center font-mono text-sm text-steel">{error ?? "Loading circuit…"}</div>;
+  if (!game) return <div className="label grid h-full place-items-center">{error ?? "Loading circuit"}</div>;
   return <GameView game={game} daily={daily} round={round} practiceLaps={practiceLaps} onNext={onNext} />;
 }
 
@@ -202,11 +205,21 @@ function GameView({
   onNext: (trackId: string | null) => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const tower = useRef<HTMLDivElement>(null);
   const s = useSnapshot(game);
 
   useEffect(() => {
     game.attach(canvas.current!);
     return () => game.detach();
+  }, [game]);
+
+  // the tower owns the left edge: keep the camera's subject clear of it
+  useEffect(() => {
+    const el = tower.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => game.setInsets({ left: el.getBoundingClientRect().width + 8 }));
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [game]);
 
   useEffect(() => {
@@ -234,30 +247,45 @@ function GameView({
     return () => window.removeEventListener("keydown", onKey);
   }, [game, s.phase, s.locked]);
 
-  const groupNames = game.controls.complexes.map((c) => c.name);
-  // Laps shown on the result board: the whole session for daily/season.
+  const names = game.controls.complexes.map((c) => c.name);
   const lapRows = s.mode === "daily" ? (daily?.laps.map((l) => l.grades) ?? []) : s.mode === "season" ? (round?.laps ?? []) : practiceLaps;
+  const racing = s.phase === "race" || s.phase === "lights";
+  const showGrades = s.grades && (s.phase === "result" || s.phase === "setup");
+  const rows = names.map((name, i) => {
+    const g = s.grades?.[i];
+    const visible = g && (showGrades || (racing && i < s.revealed));
+    return { name, grade: visible ? g.grade : null, deltaMs: visible ? g.deltaMs : null };
+  });
+  const lap = Math.min(s.lapsUsed + (s.phase === "result" ? 0 : 1), s.lapLimit ?? Infinity);
+  const header = s.lapLimit !== null ? `Lap ${Math.max(1, lap)}/${s.lapLimit}` : "Practice";
 
   return (
     <>
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-label={`${game.track.name} circuit`} />
+      <div ref={tower} className="absolute top-2 left-2">
+        <CornerTower
+          rows={rows}
+          active={s.activeGroup}
+          header={header}
+          live={racing}
+          onSelect={s.phase === "setup" && !s.locked ? (i) => game.selectGate(i, 0) : s.phase === "result" && !s.locked ? (i) => game.adjust(game.controls.complexes[i].corners[0]) : undefined}
+        />
+      </div>
       {s.phase === "setup" && !s.locked && <ViewControls game={game} />}
-      {s.phase === "setup" && !s.locked && <SetupPanel s={s} game={game} />}
+      {s.phase === "setup" && !s.locked && <ControlBar s={s} game={game} />}
       {s.phase === "setup" && s.locked && daily && <LockedNote daily={daily} game={game} onHub={() => onNext(null)} />}
-      {(s.phase === "race" || s.phase === "lights") && <RaceHud s={s} onSkip={() => game.skip()} groupNames={groupNames} />}
-      {s.phase === "result" && s.result && (
-        <ResultPanel s={s} game={game} lapRows={lapRows} daily={daily} round={round} onNext={onNext} groupNames={groupNames} />
-      )}
+      {racing && <RaceHud s={s} onSkip={() => game.skip()} />}
+      {s.phase === "result" && s.result && <ResultSheet s={s} game={game} lapRows={lapRows} daily={daily} round={round} onNext={onNext} names={names} />}
     </>
   );
 }
 
 /** Reports a panel's size to the game so the camera frames around it. */
-function useInset(game: Game, side: "bottom" | "right", enabled = true) {
+function useInset(game: Game, side: "bottom" | "right") {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
-    if (!el || !enabled) return;
+    if (!el) return;
     const ro = new ResizeObserver(() => {
       const r = el.getBoundingClientRect();
       const parent = el.offsetParent?.getBoundingClientRect();
@@ -270,91 +298,81 @@ function useInset(game: Game, side: "bottom" | "right", enabled = true) {
       ro.disconnect();
       game.setInsets({ bottom: 0, right: 0 });
     };
-  }, [game, side, enabled]);
+  }, [game, side]);
   return ref;
 }
 
-const btn =
-  "rounded-md border border-white/12 bg-board/80 px-3.5 py-2.5 font-body text-[15px] font-medium text-paint backdrop-blur-sm transition-colors hover:border-white/30 disabled:opacity-35 disabled:hover:border-white/12";
-const primary =
-  "rounded-md bg-ink px-5 py-2.5 font-display text-[20px] font-black uppercase leading-none tracking-[0.08em] text-board transition-transform active:scale-[0.97] disabled:bg-asphalt disabled:text-steel";
-
 function ViewControls({ game }: { game: Game }) {
-  const c = "grid h-10 w-10 place-items-center rounded-md border border-white/12 bg-board/80 font-mono text-lg text-paint hover:border-white/30";
   return (
-    <div className="absolute top-3 left-3 flex flex-col gap-2">
-      <button className={c} onClick={() => game.zoom(1.4)} aria-label="Zoom in" title="Zoom in">
+    <div className="absolute top-[140px] right-2 flex flex-col">
+      <button className={`${iconBtn} border-b-0`} onClick={() => game.zoom(1.4)} aria-label="Zoom in" title="Zoom in">
         <Plus />
       </button>
-      <button className={c} onClick={() => game.zoom(1 / 1.4)} aria-label="Zoom out" title="Zoom out">
+      <button className={`${iconBtn} border-b-0`} onClick={() => game.zoom(1 / 1.4)} aria-label="Zoom out" title="Zoom out">
         <Minus />
       </button>
-      <button className={c} onClick={() => game.showOverview()} aria-label="Show the whole track" title="Whole track">
+      <button className={`${iconBtn} border-b-0`} onClick={() => game.showOverview()} aria-label="Show the whole track" title="Whole track">
         <WholeTrack />
       </button>
-      <button className={c} onClick={() => game.recenter()} aria-label="Back to the selected corner" title="Back to corner">
+      <button className={iconBtn} onClick={() => game.recenter()} aria-label="Back to the selected corner" title="Back to corner">
         <Frame />
       </button>
     </div>
   );
 }
 
-/** Compact chip text; the selected chip (and small groups) spell the label out. */
-function gateChip(g: { label: string; corner?: string }, selected: boolean, count: number): React.ReactNode {
+/** Segment text; the selected segment (and small groups) spell the label out. */
+function gateLabel(g: { label: string; corner?: string }, selected: boolean, count: number): React.ReactNode {
   const full = selected || count <= 4;
-  if (g.label === "Apex") return full ? `APEX ${g.corner ?? ""}`.trim() : (g.corner ?? "A");
-  if (g.label === "Turn-in") return full ? "TURN-IN" : "IN";
-  if (g.label === "Exit") return full ? "EXIT" : "OUT";
-  if (g.label === "Approach") return full ? "APPROACH" : "APP";
-  if (g.label === "Track-out") return full ? "TRACK-OUT" : "TO";
-  return full ? "MID" : <span className="block h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />;
+  if (g.label === "Apex") return full ? `Apex ${g.corner ?? ""}`.trim() : (g.corner ?? "A");
+  if (g.label === "Turn-in") return full ? "Turn-in" : "In";
+  if (g.label === "Exit") return full ? "Exit" : "Out";
+  if (g.label === "Approach") return full ? "Approach" : "App";
+  if (g.label === "Track-out") return full ? "Track-out" : "TO";
+  return full ? "Mid" : <span className="block h-1.5 w-1.5 bg-current" aria-hidden="true" />;
 }
 
-function SetupPanel({ s, game }: { s: Snapshot; game: Game }) {
+/**
+ * Setup controls as a lower-third: the corner and point in one line, the
+ * points as a segmented strip, the precision slider, and the start.
+ */
+function ControlBar({ s, game }: { s: Snapshot; game: Game }) {
   const ref = useInset(game, "bottom");
   const cx = game.controls.complexes[s.complex];
-  const total = game.controls.complexes.length;
   const inside = cx.direction === "mixed" ? null : cx.direction;
-  const first = s.attempts === 0 && s.lapsUsed === 0;
-  const nav = "grid h-10 w-10 shrink-0 place-items-center rounded-md border border-white/12 font-mono text-lg text-paint hover:border-white/30";
+  const gate = cx.gates[s.gate];
   return (
-    <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center px-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-      <div className="w-full max-w-lg rounded-lg border border-white/10 bg-board/92 p-3 backdrop-blur-sm">
-        <SessionStrip s={s} />
-        <div className="flex items-center gap-2">
-          <button className={nav} onClick={() => game.stepComplex(-1)} aria-label="Previous corner">
-            <ChevronLeft />
-          </button>
-          <div className="min-w-0 flex-1 text-center leading-none">
-            <div className="font-display text-[26px] font-black tracking-[0.04em] text-paint">{cx.name}</div>
-            <div className="mt-1 font-mono text-[10px] tracking-[0.14em] text-steel">
-              CORNER {s.complex + 1} OF {total}
-            </div>
-          </div>
-          <button className={nav} onClick={() => game.stepComplex(1)} aria-label="Next corner">
-            <ChevronRight />
-          </button>
+    <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center min-[720px]:px-3 min-[720px]:pb-3">
+      <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/94 px-3 pt-2.5 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:border">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="wide truncate text-[20px] leading-none uppercase text-paint">
+            {cx.name}
+            <span className="ml-2 text-[13px] text-ink">{gate.label === "Apex" && gate.corner ? `Apex ${gate.corner}` : gate.label}</span>
+          </h2>
+          <span className="label shrink-0">
+            Corner {s.complex + 1}/{game.controls.complexes.length}
+          </span>
         </div>
 
-        <div className="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] min-[420px]:justify-center" role="tablist" aria-label="Points in this corner">
+        <div className="mt-2.5 flex overflow-x-auto border border-line [scrollbar-width:none]" role="tablist" aria-label="Points in this corner">
           {cx.gates.map((g, i) => (
             <button
               key={g.knot}
               role="tab"
               aria-selected={i === s.gate}
-              onClick={() => game.selectGate(s.complex, i)}
               aria-label={g.label === "Apex" && g.corner ? `Apex ${g.corner}` : g.label}
-              className={`grid h-8 min-w-8 shrink-0 place-items-center rounded-full border px-2.5 font-mono text-[11px] tracking-[0.06em] ${
-                i === s.gate ? "border-ink bg-ink text-board" : "border-white/15 text-paint/80 hover:border-white/35"
+              onClick={() => game.selectGate(s.complex, i)}
+              className={`grid h-9 min-w-10 shrink-0 place-items-center border-r border-line px-2.5 text-[12px] font-bold whitespace-nowrap uppercase tracking-[0.04em] last:border-r-0 [font-stretch:85%] ${cx.gates.length <= 5 ? "flex-1" : "flex-none"} ${
+                i === s.gate ? "bg-paint text-night" : "text-paint/80 hover:bg-graphite"
               }`}
             >
-              {gateChip(g, i === s.gate, cx.gates.length)}
+              {gateLabel(g, i === s.gate, cx.gates.length)}
             </button>
           ))}
         </div>
 
         <div className="mt-3 flex items-center gap-2">
-          <button className={nav} onClick={() => game.nudge(0.05)} aria-label="Move 5 cm left">
+          <button className={iconBtn} onClick={() => game.nudge(0.05)} aria-label="Move 5 cm left">
             <NudgeLeft />
           </button>
           <div className="min-w-0 flex-1">
@@ -370,49 +388,25 @@ function SetupPanel({ s, game }: { s: Snapshot; game: Game }) {
               onEnd={() => game.endEdit()}
             />
           </div>
-          <button className={nav} onClick={() => game.nudge(-0.05)} aria-label="Move 5 cm right">
+          <button className={iconBtn} onClick={() => game.nudge(-0.05)} aria-label="Move 5 cm right">
             <NudgeRight />
           </button>
         </div>
 
-        <p className="mt-2 text-center text-[13px] leading-snug text-paint/60">
-          {first
-            ? "Race the centre line first to see where time is lost, or place the car at each white line."
-            : "Tap the bar to place the car. Drag for fine control, and slide your finger away from the bar for even finer."}
-        </p>
-
         <div className="mt-3 flex gap-2">
-          <button className={btn} onClick={() => game.undo()} disabled={!s.canUndo}>
-            Undo
+          <button className={iconBtn} onClick={() => game.undo()} disabled={!s.canUndo} aria-label="Undo" title="Undo">
+            <Undo />
           </button>
           {s.pbMs !== null && s.mode === "practice" && (
-            <button className={btn} onClick={() => game.loadBest()}>
+            <button className={secondaryBtn} onClick={() => game.loadBest()}>
               Best line
             </button>
           )}
-          <button className={`${primary} flex-1`} onClick={() => game.race()}>
+          <button className={`${primaryBtn} flex-1`} onClick={() => game.race()}>
             Lights out
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function SessionStrip({ s }: { s: Snapshot }) {
-  if (s.mode === "practice") return null;
-  const lap = Math.min(s.lapsUsed + 1, s.lapLimit ?? 0);
-  return (
-    <div className="mb-2.5 flex items-center justify-between border-b border-white/8 pb-2 font-mono text-[10px] tracking-[0.14em] text-steel">
-      <span>{s.mode === "daily" ? `QUALI #${dailyNumber()}` : `RIVAL POLE ${lapTime(s.rivalMs ?? 0)}`}</span>
-      <span className="flex items-center gap-1.5">
-        LAP {lap} / {s.lapLimit}
-        <span className="flex gap-0.5" aria-hidden="true">
-          {Array.from({ length: s.lapLimit ?? 0 }, (_, i) => (
-            <span key={i} className={`h-2 w-2 rounded-full ${i < s.lapsUsed ? "bg-steel/50" : i === s.lapsUsed ? "bg-ink" : "bg-white/15"}`} />
-          ))}
-        </span>
-      </span>
     </div>
   );
 }
@@ -442,20 +436,30 @@ function ShareButton({ text }: { text: string }) {
     }
   };
   return (
-    <button className={`${primary} flex flex-1 items-center justify-center gap-2`} onClick={share}>
-      <Share className="h-5 w-5" /> {done ? "Copied" : "Share"}
+    <button className={`${primaryBtn} flex-1`} onClick={share}>
+      <Share className="h-4 w-4" /> {done ? "Copied" : "Share result"}
     </button>
   );
 }
 
-function ResultPanel({
+/** One timing line: label left, value right. */
+function TimingLine({ label, value, tone = "text-paint" }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-t border-line py-1.5">
+      <span className="label">{label}</span>
+      <span className={`num text-[15px] font-bold ${tone}`}>{value}</span>
+    </div>
+  );
+}
+
+function ResultSheet({
   s,
   game,
   lapRows,
   daily,
   round,
   onNext,
-  groupNames,
+  names,
 }: {
   s: Snapshot;
   game: Game;
@@ -463,7 +467,7 @@ function ResultPanel({
   daily: DailyRecord | null;
   round: Round;
   onNext: (trackId: string | null) => void;
-  groupNames: string[];
+  names: string[];
 }) {
   const r = s.result!;
   const worst = r.losses.filter((l) => l.deltaMs > 50 && l.complex >= 0).slice(0, 3);
@@ -478,11 +482,11 @@ function ResultPanel({
   let actions: React.ReactNode;
   if (s.mode === "daily" && daily && daily.status !== "playing") {
     headline = daily.status === "won" ? "Perfect lap" : "Out of laps";
-    body = daily.status === "won" ? `Every corner purple on lap ${daily.laps.length} of ${DAILY_LAPS}.` : `The perfect lap was ${lapTime(r.targetMs)}. New circuit in ${countdown}.`;
+    body = daily.status === "won" ? `Every corner purple on lap ${daily.laps.length} of ${DAILY_LAPS}.` : `New circuit in ${countdown}.`;
     actions = (
       <>
         <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI)} />
-        <button className={btn} onClick={() => onNext(null)}>
+        <button className={secondaryBtn} onClick={() => onNext(null)}>
           Grid
         </button>
       </>
@@ -494,61 +498,82 @@ function ResultPanel({
     headline = round.outcome === "won" ? "Pole position" : "Rival keeps pole";
     body = done
       ? wins === SEASON_ROUNDS
-        ? "12–0. The perfect season. You did the impossible."
-        : `Season over: ${wins}–${run.results.length - wins}. The perfect season is still out there.`
+        ? "12–0. The perfect season."
+        : `Season over at ${wins}–${run.results.length - wins}. The perfect season is still out there.`
       : `Season ${wins}–${run.results.length - wins} after round ${run.results.length} of ${SEASON_ROUNDS}.`;
     actions = done ? (
       <>
-        <button className={`${primary} flex-1`} onClick={() => onNext(currentTrack(newSeason().run!))}>
+        <button className={`${primaryBtn} flex-1`} onClick={() => onNext(currentTrack(newSeason().run!))}>
           New season
         </button>
-        <button className={btn} onClick={() => onNext(null)}>
+        <button className={secondaryBtn} onClick={() => onNext(null)}>
           Grid
         </button>
       </>
     ) : (
-      <button className={`${primary} flex-1`} onClick={() => onNext(currentTrack(loadSeason().run!))}>
+      <button className={`${primaryBtn} flex-1`} onClick={() => onNext(currentTrack(loadSeason().run!))}>
         Next race
       </button>
     );
   } else {
-    headline = r.allPurple ? "Perfect lap" : s.mode === "practice" ? "Lap complete" : `${(s.lapLimit ?? 0) - s.lapsUsed} laps left`;
-    body = r.allPurple
-      ? "Every corner purple."
-      : s.mode === "season"
-        ? `Beat ${lapTime(s.rivalMs ?? 0)} to take pole.`
-        : "Purple every corner for the perfect lap. Tap a corner to fix it.";
+    const left = (s.lapLimit ?? 0) - s.lapsUsed;
+    headline = r.allPurple ? "Perfect lap" : s.mode === "practice" ? "Lap complete" : `${left} ${left === 1 ? "lap" : "laps"} left`;
+    body = r.allPurple ? "Every corner purple." : s.mode === "season" ? `Beat ${lapTime(s.rivalMs ?? 0)} to take pole.` : "Tap a corner to fix it.";
     actions = (
-      <button className={`${primary} flex-1`} onClick={() => game.adjust()} autoFocus>
+      <button className={`${primaryBtn} flex-1`} onClick={() => game.adjust()} autoFocus>
         Improve line
       </button>
     );
   }
 
+  const vsRival = s.mode === "season" && s.rivalMs !== null ? r.lapTimeMs - s.rivalMs : null;
+  const pbDelta = r.pbBeforeMs === null ? null : r.lapTimeMs - r.pbBeforeMs;
+
   return (
     <div
       ref={ref}
-      className="absolute inset-x-0 bottom-0 flex max-h-full flex-col gap-2 overflow-y-auto p-3 pb-[max(12px,env(safe-area-inset-bottom))] min-[720px]:inset-x-auto min-[720px]:top-0 min-[720px]:right-0 min-[720px]:w-[400px] min-[720px]:justify-center min-[720px]:p-6"
+      className="absolute inset-x-0 bottom-0 max-h-[78%] overflow-y-auto min-[720px]:inset-x-auto min-[720px]:top-2 min-[720px]:right-2 min-[720px]:bottom-2 min-[720px]:max-h-none min-[720px]:w-[380px]"
     >
-      <PitBoard r={r} rivalMs={s.mode === "season" ? s.rivalMs : null} />
-      <div className="rise rounded-lg border border-white/10 bg-board/92 p-3 backdrop-blur-sm [animation-delay:200ms]">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-[26px] font-black uppercase leading-none tracking-[0.03em] text-paint">{headline}</h2>
+      <div className="wipe-in border-t border-line bg-night/95 px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:h-full min-[720px]:border">
+        {/* timing card */}
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <div className="label">Lap time</div>
+            <div className="wide num text-[34px] leading-none text-paint">{lapTime(r.lapTimeMs)}</div>
+          </div>
+          <div className={`cut-l num px-3 py-1.5 text-[15px] font-bold ${r.allPurple ? "bg-purple text-night" : "bg-graphite text-paint"}`}>
+            {r.allPurple ? "Perfect" : delta(r.deltaTargetMs)}
+          </div>
+        </div>
+        <div className="mt-2">
+          <TimingLine label="Perfect lap" value={lapTime(r.targetMs)} />
+          {vsRival !== null && <TimingLine label={`Rival pole ${lapTime(s.rivalMs!)}`} value={delta(vsRival)} tone={vsRival < 0 ? "text-ink" : "text-paint"} />}
+          <TimingLine
+            label={pbDelta === null ? "Personal best" : r.newPb ? "New personal best" : "Personal best"}
+            value={pbDelta === null ? "First lap" : delta(pbDelta)}
+            tone={pbDelta === null || r.newPb ? "text-ink" : "text-paint"}
+          />
+        </div>
+
+        {/* outcome and the lap board */}
+        <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-line pt-3">
+          <h2 className="wide text-[20px] leading-none uppercase text-paint">{headline}</h2>
           {s.mode !== "practice" && (
-            <span className="font-mono text-[11px] tracking-[0.1em] text-steel">
+            <span className="label num">
               {lapRows.length}/{total}
             </span>
           )}
         </div>
-        <p className="mt-1.5 text-[14px] leading-snug text-paint/80">{body}</p>
+        <p className="mt-1.5 text-[14px] leading-snug text-paint/75">{body}</p>
         <div className="mt-2.5">
-          <LapGrid rows={lapRows} total={total} cols={groupNames.length} labels={groupNames} />
+          <LapGrid rows={lapRows} total={total} cols={names.length} labels={names} />
         </div>
         {!s.locked && worst.length > 0 && (
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="mt-3 grid grid-cols-3 border border-line">
             {worst.map((l) => (
-              <button key={l.name} onClick={() => game.adjust(l.name)} className="rounded-md border border-white/15 px-2 py-2 font-mono text-[13px] whitespace-nowrap hover:border-white/40">
-                <span className="font-medium text-paint">{l.name}</span> <span className={GRADE_TEXT[gradeFor(l.deltaMs)]}>{delta(l.deltaMs)}</span>
+              <button key={l.name} onClick={() => game.adjust(l.name)} className="border-r border-line px-2 py-2 text-left last:border-r-0 hover:bg-graphite">
+                <span className="block text-[13px] font-bold text-paint [font-stretch:85%]">{l.name}</span>
+                <span className={`num block text-[13px] font-semibold ${GRADE_TEXT[gradeFor(l.deltaMs)]}`}>{delta(l.deltaMs)}</span>
               </button>
             ))}
           </div>
@@ -565,16 +590,16 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
   const countdown = useCountdown();
   const info = CATALOG.find((t) => t.id === game.track.id)!;
   return (
-    <div className="absolute inset-x-0 bottom-0 flex justify-center p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-      <div className="w-full max-w-lg rounded-lg border border-white/10 bg-board/92 p-3">
-        <h2 className="font-display text-[26px] font-black uppercase leading-none text-paint">{daily.status === "won" ? "Perfect lap" : "Out of laps"}</h2>
-        <p className="mt-1.5 text-[14px] text-paint/80">New circuit in {countdown}.</p>
+    <div className="absolute inset-x-0 bottom-0 flex justify-center">
+      <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/95 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+        <h2 className="wide text-[20px] leading-none uppercase text-paint">{daily.status === "won" ? "Perfect lap" : "Out of laps"}</h2>
+        <p className="mt-1.5 text-[14px] text-paint/75">New circuit in {countdown}.</p>
         <div className="mt-3">
           <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={game.controls.complexes.length} />
         </div>
         <div className="mt-3 flex gap-2">
           <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI)} />
-          <button className={btn} onClick={onHub}>
+          <button className={secondaryBtn} onClick={onHub}>
             Grid
           </button>
         </div>
@@ -595,19 +620,18 @@ function DailySummary({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div role="dialog" aria-label="Today's result" className="rise w-full max-w-sm rounded-lg border border-white/10 bg-board p-4" onClick={(e) => e.stopPropagation()}>
-        <p className="font-mono text-[11px] tracking-[0.12em] text-steel">
-          QUALI #{dailyNumber()} · {info.name.toUpperCase()}
+    <div className="fixed inset-0 z-10 flex items-center justify-center bg-night/75 p-4" onClick={onClose}>
+      <div role="dialog" aria-label="Today's result" className="wipe-in w-full max-w-sm border border-line bg-board p-4" onClick={(e) => e.stopPropagation()}>
+        <h2 className="wide text-[20px] leading-none uppercase text-paint">{daily.status === "won" ? `Perfect on lap ${daily.laps.length}` : "Out of laps"}</h2>
+        <p className="mt-1.5 text-[14px] text-paint/75">
+          Daily quali #{dailyNumber()}, {info.name}. Next circuit in {countdown}.
         </p>
-        <h2 className="mt-1 font-display text-[30px] font-black uppercase leading-none text-paint">{daily.status === "won" ? `Perfect on lap ${daily.laps.length}` : "Out of laps"}</h2>
         <div className="mt-3">
           <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={cols} />
         </div>
-        <p className="mt-3 text-[14px] text-paint/80">Next circuit in {countdown}.</p>
         <div className="mt-3 flex gap-2">
           <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI)} />
-          <button className={btn} onClick={onClose}>
+          <button className={secondaryBtn} onClick={onClose}>
             Close
           </button>
         </div>
@@ -618,16 +642,16 @@ function DailySummary({ onClose }: { onClose: () => void }) {
 
 function Legend() {
   const items: [string, string][] = [
-    ["bg-purple", "perfect ≤.05s"],
-    ["bg-green", "≤0.15s"],
-    ["bg-yellow", "≤0.4s"],
-    ["bg-kerb", "more"],
+    ["bg-purple", "Perfect ≤.05s"],
+    ["bg-green", "≤.15s"],
+    ["bg-yellow", "≤.4s"],
+    ["bg-kerb", "More"],
   ];
   return (
-    <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[10px] tracking-[0.06em] whitespace-nowrap text-steel">
+    <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1">
       {items.map(([c, t]) => (
-        <span key={t} className="flex items-center gap-1.5">
-          <span className={`h-1 w-4 shrink-0 rounded-full ${c}`} />
+        <span key={t} className="label flex items-center gap-1.5 whitespace-nowrap">
+          <span className={`h-2 w-2 shrink-0 ${c}`} />
           {t}
         </span>
       ))}
@@ -635,29 +659,23 @@ function Legend() {
   );
 }
 
-function TrackPicker({ current, onPick, onClose }: { current: string; onPick: (id: string) => void; onClose: () => void }) {
+function TrackPicker({ onPick, onClose }: { onPick: (id: string) => void; onClose: () => void }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-10 flex items-start justify-center bg-black/60 p-4 pt-16" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-label="Choose a circuit"
-        className="rise w-full max-w-sm overflow-hidden rounded-lg border border-white/10 bg-board"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <ul className="max-h-[70dvh] overflow-y-auto py-1">
-          {CATALOG.map((t) => (
-            <li key={t.id}>
-              <button
-                onClick={() => onPick(t.id)}
-                className={`flex w-full items-baseline justify-between px-4 py-2.5 text-left hover:bg-white/5 ${t.id === current ? "text-ink" : "text-paint"}`}
-              >
-                <span className="font-display text-[20px] font-bold uppercase tracking-[0.04em]">{t.name}</span>
-                <span className="font-mono text-[11px] text-steel">{t.country}</span>
+    <div className="fixed inset-0 z-10 flex items-start justify-center bg-night/75 p-4 pt-16" onClick={onClose}>
+      <div role="dialog" aria-label="Choose a circuit" className="wipe-in w-full max-w-sm border border-line bg-board" onClick={(e) => e.stopPropagation()}>
+        <div className="label border-b border-line px-4 py-2.5 text-paint">Free practice · choose a circuit</div>
+        <ul className="max-h-[70dvh] overflow-y-auto">
+          {CATALOG.map((t, i) => (
+            <li key={t.id} className="border-b border-line/70 last:border-b-0">
+              <button onClick={() => onPick(t.id)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-graphite">
+                <span className="cut-l num grid h-6 w-7 shrink-0 place-items-center bg-graphite text-[11px] font-bold text-steel">{i + 1}</span>
+                <span className="wide flex-1 truncate text-[15px] uppercase text-paint">{t.name}</span>
+                <span className="label">{t.country}</span>
               </button>
             </li>
           ))}

@@ -19,8 +19,8 @@ interface Livery {
 }
 
 const LIVERIES: Record<"player" | "ghost", Livery> = {
-  player: { body: "#ff6a13", bodyDark: "#b8430a", accent: "#eeede6", helmet: "#f5c518" },
-  ghost: { body: "#d9dde2", bodyDark: "#8e949b", accent: "#2e3136", helmet: "#eeede6" },
+  player: { body: "#ff6a13", bodyDark: "#b8430a", accent: "#f2f2ee", helmet: "#f5c518" },
+  ghost: { body: "#d9dde2", bodyDark: "#8e949b", accent: "#2e3136", helmet: "#f2f2ee" },
 };
 
 const CARBON = "#16171a";

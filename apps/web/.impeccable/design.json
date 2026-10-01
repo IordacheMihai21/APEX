@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-30T22:57:13.002Z",
+  "generatedAt": "2026-10-01T07:56:50.484Z",
   "title": "Design System: APEX",
   "extensions": {
     "colorMeta": {
@@ -67,19 +67,19 @@
       "kerb": {
         "role": "feedback",
         "displayName": "Kerb Red",
-        "canonical": "oklch(57.1% 0.209 21.1)",
+        "canonical": "oklch(60.2% 0.215 28.5)",
         "tonalRamp": [
-          "#2f0000",
-          "#5a0000",
-          "#860013",
-          "#b60a2c",
-          "#e23b4a",
-          "#ff6e72",
-          "#ff9c9b",
-          "#ffdddb"
+          "#220000",
+          "#4f0000",
+          "#810002",
+          "#bd0000",
+          "#e7352c",
+          "#ff6b5b",
+          "#ffb0a3",
+          "#ffe6e1"
         ]
       },
-      "lamp-red": {
+      "lamp": {
         "role": "tertiary",
         "displayName": "Lamp Red",
         "canonical": "oklch(64.2% 0.244 29.9)",
@@ -94,140 +94,144 @@
           "#ffd9cc"
         ]
       },
-      "tarmac": {
+      "night": {
         "role": "neutral",
-        "displayName": "Tarmac",
-        "canonical": "oklch(24.2% 0.009 255.6)",
+        "displayName": "Night",
+        "canonical": "oklch(14.9% 0.005 264.5)",
         "tonalRamp": [
-          "#090b0f",
-          "#222529",
-          "#3f4246",
-          "#5f6165",
-          "#808286",
+          "#0a0b0d",
+          "#242527",
+          "#414244",
+          "#606164",
+          "#818285",
           "#a3a5a8",
           "#c7c9cc",
-          "#eeeeef"
-        ]
-      },
-      "runoff": {
-        "role": "neutral",
-        "displayName": "Run-off",
-        "canonical": "oklch(28.4% 0.012 258.4)",
-        "tonalRamp": [
-          "#080b10",
-          "#21252b",
-          "#3e4248",
-          "#5e6167",
-          "#7f8388",
-          "#a2a5aa",
-          "#c7c9cd",
-          "#edeef0"
-        ]
-      },
-      "asphalt": {
-        "role": "neutral",
-        "displayName": "Asphalt",
-        "canonical": "oklch(33.9% 0.014 256.8)",
-        "tonalRamp": [
-          "#080b10",
-          "#21252c",
-          "#3d4249",
-          "#5d6268",
-          "#7e8389",
-          "#a1a5ab",
-          "#c6c9ce",
-          "#edeef1"
-        ]
-      },
-      "paint": {
-        "role": "neutral",
-        "displayName": "Paint",
-        "canonical": "oklch(93.9% 0.009 100.0)",
-        "tonalRamp": [
-          "#0b0b0a",
-          "#252523",
-          "#42423f",
-          "#62615e",
-          "#83827e",
-          "#a6a5a0",
-          "#cac9c3",
-          "#efeeeb"
-        ]
-      },
-      "steel": {
-        "role": "neutral",
-        "displayName": "Steel",
-        "canonical": "oklch(66.0% 0.016 251.2)",
-        "tonalRamp": [
-          "#090b0f",
-          "#21252a",
-          "#3d4348",
-          "#5c6269",
-          "#7c838c",
-          "#9ea6af",
-          "#c3cad2",
-          "#eceff2"
+          "#edeef2"
         ]
       },
       "board": {
         "role": "neutral",
         "displayName": "Board",
-        "canonical": "oklch(15.9% 0.005 264.4)",
-        "tonalRamp": [
-          "#0a0b0d",
-          "#242527",
-          "#414244",
-          "#606163",
-          "#818284",
-          "#a4a5a6",
-          "#c8c9ca",
-          "#eeeeef"
-        ]
-      },
-      "slot": {
-        "role": "neutral",
-        "displayName": "Slot",
-        "canonical": "oklch(21.3% 0.008 264.4)",
+        "canonical": "oklch(19.1% 0.009 264.3)",
         "tonalRamp": [
           "#090b0f",
           "#232529",
-          "#404246",
-          "#5f6165",
-          "#818286",
-          "#a3a5a8",
-          "#c8c9cc",
-          "#eeeeef"
+          "#404247",
+          "#5f6166",
+          "#808288",
+          "#a2a5ab",
+          "#c6c9cf",
+          "#ebeef4"
+        ]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "oklch(23.9% 0.012 264.3)",
+        "tonalRamp": [
+          "#090b10",
+          "#22252b",
+          "#3f4249",
+          "#5e6168",
+          "#7f828a",
+          "#a1a5ad",
+          "#c5c9d1",
+          "#eaeff7"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "canonical": "oklch(30.5% 0.016 264.3)",
+        "tonalRamp": [
+          "#080b12",
+          "#21252d",
+          "#3e424b",
+          "#5d616a",
+          "#7e828c",
+          "#a0a5af",
+          "#c4c9d4",
+          "#e9eff9"
+        ]
+      },
+      "asphalt": {
+        "role": "neutral",
+        "displayName": "Asphalt",
+        "canonical": "oklch(28.4% 0.014 261.7)",
+        "tonalRamp": [
+          "#080b11",
+          "#21252c",
+          "#3e424a",
+          "#5d6169",
+          "#7e838b",
+          "#a0a5ae",
+          "#c4c9d3",
+          "#e9eff8"
+        ]
+      },
+      "paint": {
+        "role": "neutral",
+        "displayName": "Paint",
+        "canonical": "oklch(96.0% 0.005 106.5)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#252522",
+          "#42423f",
+          "#61615e",
+          "#82827f",
+          "#a5a5a1",
+          "#c9c9c5",
+          "#efefeb"
+        ]
+      },
+      "steel": {
+        "role": "neutral",
+        "displayName": "Steel",
+        "canonical": "oklch(70.7% 0.017 257.2)",
+        "tonalRamp": [
+          "#070b12",
+          "#20252d",
+          "#3c424b",
+          "#5b626b",
+          "#7c838d",
+          "#9fa6b0",
+          "#c2cad4",
+          "#e8effa"
         ]
       }
     },
     "typographyMeta": {
-      "grid-numeral": {
-        "displayName": "Grid Numeral",
-        "purpose": "Painted grid positions beside hub slots, paint at 45%; 64px on desktop."
+      "display": {
+        "displayName": "Display (wide)",
+        "purpose": "The lap time on the timing card; wide 125%, tabular."
       },
       "headline": {
-        "displayName": "Headline",
-        "purpose": "Uppercase slot names, panel and dialog headlines, corner names; 24-30px."
+        "displayName": "Headline (wide)",
+        "purpose": "Sheet and dialog headlines, corner name, hub slot names, Lights out; uppercase 18-30px."
       },
       "title": {
-        "displayName": "Title",
-        "purpose": "Header breadcrumb and track picker rows, uppercase."
-      },
-      "button": {
-        "displayName": "Button",
-        "purpose": "Primary action labels only, uppercase."
+        "displayName": "Title (wide)",
+        "purpose": "Primary button labels and track picker rows, uppercase."
       },
       "body": {
-        "displayName": "Body",
-        "purpose": "Status sentences, readouts, secondary buttons."
-      },
-      "label": {
-        "displayName": "Label",
-        "purpose": "Uppercase keys and sub-lines in Barlow."
+        "displayName": "Body (normal)",
+        "purpose": "Status sentences, descriptions, slider readout, header track name."
       },
       "data": {
-        "displayName": "Data",
-        "purpose": "Plex Mono for numbers and their units only."
+        "displayName": "Data (normal, tabular)",
+        "purpose": "Timing-line values, delta plate, deltas."
+      },
+      "segment": {
+        "displayName": "Segment (condensed)",
+        "purpose": "Tower row names, gate tabs, adjust-cell corner names; 80-85% width."
+      },
+      "label": {
+        "displayName": "Label (condensed)",
+        "purpose": "Steel uppercase captions, keys and units; 72% width."
+      },
+      "button-secondary": {
+        "displayName": "Secondary Button",
+        "purpose": "Secondary and Skip button labels, normal width uppercase."
       }
     },
     "shadows": [
@@ -247,14 +251,9 @@
         "purpose": "Lit start lamps only."
       },
       {
-        "name": "pit-board",
-        "value": "0 18px 40px rgba(0,0,0,0.55)",
-        "purpose": "Result pit board held out over the wall."
-      },
-      {
-        "name": "slot-recess",
-        "value": "inset 0 -2px 0 rgba(255,255,255,0.04), inset 0 2px 0 rgba(0,0,0,0.5)",
-        "purpose": "Pit-board character cells."
+        "name": "led-glow",
+        "value": "0 0 8px <led colour>",
+        "purpose": "Lit rev LEDs only."
       },
       {
         "name": "knob",
@@ -264,14 +263,14 @@
     ],
     "motion": [
       {
-        "name": "board-in",
-        "value": "520ms cubic-bezier(0.2, 0.8, 0.2, 1); translateX(115%) rotate(5deg) -> -2%/-1.2deg -> 0",
-        "purpose": "Pit board swings in over the wall and settles."
+        "name": "wipe-in",
+        "value": "360ms cubic-bezier(0.16, 1, 0.3, 1); clip-path inset(0 100% 0 0) -> inset(0)",
+        "purpose": "Sheets and dialogs revealed left to right like a broadcast graphic."
       },
       {
-        "name": "rise",
-        "value": "260ms ease-out; opacity 0, translateY(8px) -> none",
-        "purpose": "Panels and dialogs entering."
+        "name": "row-flash",
+        "value": "700ms ease-out; background rgba(242,242,238,0.28) -> transparent",
+        "purpose": "Corner tower row lighting up as it is timed during the race."
       },
       {
         "name": "tile-flip",
@@ -280,19 +279,19 @@
       },
       {
         "name": "press",
-        "value": "transform scale(0.97) on :active",
-        "purpose": "Primary button press."
+        "value": "translateY(1px) on :active; brightness(1.1) on :hover",
+        "purpose": "Primary button."
       },
       {
         "name": "lamps",
-        "value": "stepped, no easing; instant blackout",
-        "purpose": "Start lights. All animations disabled under prefers-reduced-motion."
+        "value": "stepped, no easing; instant blackout; Lights out shown 900ms",
+        "purpose": "Start lights. wipe-in, tile-flip and row-flash are disabled under prefers-reduced-motion."
       }
     ],
     "breakpoints": [
       {
-        "name": "min-420",
-        "value": "420px"
+        "name": "max-520",
+        "value": "520px"
       },
       {
         "name": "min-560",
@@ -313,84 +312,93 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The player's one action per screen: Lights out, Race, Share.",
+      "description": "The player's one action per screen, square with one angled cut.",
       "html": "<button class=\"ds-btn-primary\">Lights out</button>",
-      "css": ".ds-btn-primary{background:var(--color-ink,#ff6a13);color:var(--color-board,#0c0d0f);border:0;border-radius:6px;padding:10px 20px;font-family:'Big Shoulders Display','Arial Narrow',sans-serif;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;line-height:1;cursor:pointer;transition:transform 150ms}.ds-btn-primary:active{transform:scale(0.97)}.ds-btn-primary:focus-visible{outline:2px solid var(--color-ink,#ff6a13);outline-offset:2px}.ds-btn-primary:disabled{background:var(--color-asphalt,#33383f);color:var(--color-steel,#8b939c)}"
+      "css": ".ds-btn-primary{background:var(--color-ink,#ff6a13);color:var(--color-night,#0a0b0d);border:0;border-radius:0;padding:12px 24px;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);font-family:'Archivo Variable',Archivo,system-ui,sans-serif;font-stretch:125%;font-weight:800;font-size:15px;letter-spacing:-0.005em;text-transform:uppercase;cursor:pointer;transition:filter 150ms,transform 150ms}.ds-btn-primary:hover{filter:brightness(1.1)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid var(--color-ink,#ff6a13);outline-offset:2px}.ds-btn-primary:disabled{background:var(--color-graphite,#1c1f25);color:var(--color-steel,#9aa1ab)}"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Undo, Load best, Back to grid: board with a faint white border.",
-      "html": "<button class=\"ds-btn-secondary\">Undo</button>",
-      "css": ".ds-btn-secondary{background:rgba(12,13,15,0.8);color:var(--color-paint,#ecebe4);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:10px 14px;font-family:Barlow,system-ui,sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:border-color 150ms}.ds-btn-secondary:hover{border-color:rgba(255,255,255,0.3)}.ds-btn-secondary:focus-visible{outline:2px solid var(--color-ink,#ff6a13);outline-offset:2px}.ds-btn-secondary:disabled{opacity:0.35}"
+      "description": "Load best, Restart, Back to grid: board with a hairline border.",
+      "html": "<button class=\"ds-btn-secondary\">Load best</button>",
+      "css": ".ds-btn-secondary{background:rgba(18,20,24,0.8);color:var(--color-paint,#f2f2ee);border:1px solid var(--color-line,#2b2f37);border-radius:0;padding:10px 16px;font-family:'Archivo Variable',Archivo,system-ui,sans-serif;font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:border-color 150ms}.ds-btn-secondary:hover{border-color:rgba(242,242,238,0.4)}.ds-btn-secondary:focus-visible{outline:2px solid var(--color-ink,#ff6a13);outline-offset:2px}.ds-btn-secondary:disabled{opacity:0.35}"
     },
     {
-      "name": "Gate Chips",
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "icon-button",
+      "description": "40px square with a stroked 18px icon; stacks join edge to edge.",
+      "html": "<button class=\"ds-btn-icon\" aria-label=\"Undo\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 14L4 9l5-5\"/><path d=\"M4 9h10a6 6 0 010 12h-3\"/></svg></button>",
+      "css": ".ds-btn-icon{display:grid;place-items:center;width:40px;height:40px;background:rgba(18,20,24,0.85);color:var(--color-paint,#f2f2ee);border:1px solid var(--color-line,#2b2f37);border-radius:0;cursor:pointer;transition:border-color 150ms}.ds-btn-icon:hover{border-color:rgba(242,242,238,0.4)}.ds-btn-icon:focus-visible{outline:2px solid var(--color-ink,#ff6a13);outline-offset:2px}"
+    },
+    {
+      "name": "Gate Tabs",
       "kind": "chip",
-      "refersTo": "gate-chip",
-      "description": "One pill per gate in the selected corner; selected is orange.",
-      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\">IN</button><button class=\"ds-chip ds-chip-on\">APEX 3</button><button class=\"ds-chip\">OUT</button></div>",
-      "css": ".ds-chips{display:flex;gap:6px;background:#0c0d0f;padding:10px}.ds-chip{height:32px;min-width:32px;padding:0 10px;border-radius:9999px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:var(--color-steel,#8b939c);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.06em;cursor:pointer}.ds-chip:hover{border-color:rgba(255,255,255,0.3)}.ds-chip-on{background:var(--color-ink,#ff6a13);border-color:var(--color-ink,#ff6a13);color:var(--color-board,#0c0d0f)}.ds-chip:focus-visible{outline:2px solid #ff6a13;outline-offset:2px}"
+      "refersTo": "gate-tab",
+      "description": "Joined condensed tabs for the points in a corner; selected inverts to paint.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab ds-tab-on\" role=\"tab\" aria-selected=\"true\">Turn-in</button><button class=\"ds-tab\" role=\"tab\">Apex T4</button><button class=\"ds-tab\" role=\"tab\">Exit</button></div>",
+      "css": ".ds-tabs{display:flex;width:320px;border:1px solid var(--color-line,#2b2f37);background:#0a0b0d}.ds-tab{flex:1;height:36px;border:0;border-right:1px solid var(--color-line,#2b2f37);background:transparent;color:rgba(242,242,238,0.8);font-family:'Archivo Variable',Archivo,system-ui,sans-serif;font-stretch:85%;font-weight:700;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer}.ds-tab:last-child{border-right:0}.ds-tab:hover{background:var(--color-graphite,#1c1f25)}.ds-tab-on,.ds-tab-on:hover{background:var(--color-paint,#f2f2ee);color:var(--color-night,#0a0b0d)}.ds-tab:focus-visible{outline:2px solid #ff6a13;outline-offset:2px}"
+    },
+    {
+      "name": "Corner Tower",
+      "kind": "custom",
+      "refersTo": "tower-row",
+      "description": "Left-edge timing tower: one row per corner group, angled position plates, inverted active row, 4px grade bar.",
+      "html": "<nav class=\"ds-tower\"><div class=\"ds-tower-h\">Lap 2/6</div><ol><li><button><b>1</b><span class=\"n\">T1–T3</span><span class=\"d r\">+1.10</span><i class=\"r\"></i></button></li><li><button class=\"on\"><b>2</b><span class=\"n\">T4</span><span class=\"d\">+0.62</span><i class=\"r\"></i></button></li><li><button><b>3</b><span class=\"n\">T5</span><span class=\"d y\">+0.21</span><i class=\"y\"></i></button></li><li><button><b>4</b><span class=\"n\">T6</span><span class=\"d g\">+0.12</span><i class=\"g\"></i></button></li><li><button><b>5</b><span class=\"n\">T7–T8</span><span class=\"d p\">+0.03</span><i class=\"p\"></i></button></li><li><button><b>6</b><span class=\"n\">T10</span></button></li></ol></nav>",
+      "css": ".ds-tower{width:172px;background:rgba(10,11,13,0.82);font-family:'Archivo Variable',Archivo,system-ui,sans-serif}.ds-tower-h{font-family:'Archivo Variable',Archivo,system-ui,sans-serif;font-stretch:72%;font-weight:650;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-steel,#9aa1ab);color:#f2f2ee;padding:6px 8px;border-bottom:1px solid #2b2f37;background:rgba(10,11,13,0.9)}.ds-tower ol{list-style:none;margin:0;padding:0}.ds-tower li{border-bottom:1px solid rgba(43,47,55,0.7)}.ds-tower li:last-child{border-bottom:0}.ds-tower button{position:relative;display:flex;align-items:center;gap:6px;width:100%;height:27px;padding:0 8px 0 0;border:0;background:transparent;color:#f2f2ee;text-align:left;cursor:pointer}.ds-tower button:hover{background:#1c1f25}.ds-tower button.on{background:#f2f2ee;color:#0a0b0d}.ds-tower b{display:grid;place-items:center;width:22px;height:100%;flex-shrink:0;background:#1c1f25;color:#9aa1ab;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;clip-path:polygon(8px 0,100% 0,100% 100%,0 100%)}.ds-tower .on b{background:#0a0b0d;color:#f2f2ee}.ds-tower .n{flex:1;font-size:12px;font-weight:700;font-stretch:80%}.ds-tower .d{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;margin-right:4px}.ds-tower .d.p{color:#a259ff}.ds-tower .d.g{color:#29cc6a}.ds-tower .d.y{color:#f5c518}.ds-tower .d.r{color:#e5332a}.ds-tower i{position:absolute;top:0;right:0;bottom:0;width:4px}.ds-tower i.p{background:#a259ff}.ds-tower i.g{background:#29cc6a}.ds-tower i.y{background:#f5c518}.ds-tower i.r{background:#e5332a}.ds-tower button:focus-visible{outline:2px solid #ff6a13;outline-offset:-2px}"
+    },
+    {
+      "name": "Timing Card",
+      "kind": "card",
+      "refersTo": "delta-plate",
+      "description": "Result head: wide lap time, angled delta plate, hairline timing lines.",
+      "html": "<div class=\"ds-timing\"><div class=\"top\"><div><div class=\"k\">Lap time</div><div class=\"t\">1:12.634</div></div><div class=\"plate\">+4.332</div></div><div class=\"ln\"><span class=\"k\">Perfect lap</span><span class=\"v\">1:08.302</span></div><div class=\"ln\"><span class=\"k\">Personal best</span><span class=\"v o\">First lap</span></div></div>",
+      "css": ".ds-timing{width:340px;background:rgba(10,11,13,0.95);border:1px solid #2b2f37;padding:12px;font-family:'Archivo Variable',Archivo,system-ui,sans-serif;color:#f2f2ee}.ds-timing .top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}.ds-timing .k{font-family:'Archivo Variable',Archivo,system-ui,sans-serif;font-stretch:72%;font-weight:650;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-steel,#9aa1ab)}.ds-timing .t{font-stretch:125%;font-weight:800;font-size:34px;line-height:1;letter-spacing:-0.005em;font-variant-numeric:tabular-nums}.ds-timing .plate{background:#1c1f25;padding:6px 12px;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;clip-path:polygon(8px 0,100% 0,100% 100%,0 100%)}.ds-timing .ln{display:flex;align-items:baseline;justify-content:space-between;border-top:1px solid #2b2f37;padding:6px 0;margin-top:0}.ds-timing .top+.ln{margin-top:8px}.ds-timing .v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}.ds-timing .v.o{color:#ff6a13}"
     },
     {
       "name": "Lap Grid",
       "kind": "custom",
       "refersTo": "lap-tile",
-      "description": "One row per lap, one tile per corner group, filled with its sector colour.",
-      "html": "<div class=\"ds-lapgrid\"><div class=\"ds-row\"><i class=\"p\"></i><i class=\"g\"></i><i class=\"p\"></i><i class=\"y\"></i><i class=\"r\"></i><i class=\"p\"></i></div><div class=\"ds-row\"><i class=\"p\"></i><i class=\"p\"></i><i class=\"p\"></i><i class=\"g\"></i><i class=\"live\"></i><i class=\"live\"></i></div><div class=\"ds-row\"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>",
-      "css": ".ds-lapgrid{display:flex;flex-direction:column;gap:6px;background:#0c0d0f;padding:12px;width:260px}.ds-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.ds-row i{height:20px;border-radius:3px;border:1px solid rgba(255,255,255,0.12)}.ds-row i.live{border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.05)}.ds-row i.p{background:#a259ff;border-color:#a259ff}.ds-row i.g{background:#29cc6a;border-color:#29cc6a}.ds-row i.y{background:#f5c518;border-color:#f5c518}.ds-row i.r{background:#d7263d;border-color:#d7263d}"
-    },
-    {
-      "name": "Start-Light Gantry",
-      "kind": "custom",
-      "refersTo": null,
-      "description": "Five black pods of two lamps; unlit lamps stay visible as dark glass.",
-      "html": "<div class=\"ds-gantry\"><div class=\"ds-pod\"><b class=\"on\"></b><b class=\"on\"></b></div><div class=\"ds-pod\"><b class=\"on\"></b><b class=\"on\"></b></div><div class=\"ds-pod\"><b class=\"on\"></b><b class=\"on\"></b></div><div class=\"ds-pod\"><b></b><b></b></div><div class=\"ds-pod\"><b></b><b></b></div></div>",
-      "css": ".ds-gantry{display:flex;gap:8px;justify-content:center;background:#0b0b0c;padding:12px}.ds-pod{display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:#0a0a0b;box-shadow:inset 0 1px 0 rgba(255,255,255,0.06),0 6px 14px rgba(0,0,0,0.5)}.ds-pod b{display:block;width:24px;height:24px;border-radius:9999px;background:radial-gradient(circle at 40% 35%,#2a1412 0%,#150808 60%,#0b0404 100%)}.ds-pod b.on{background:radial-gradient(circle at 40% 35%,#ffb3a8 0%,#ff2b1a 38%,#9e0f06 100%);box-shadow:0 0 14px 3px rgba(255,40,20,0.55)}"
-    },
-    {
-      "name": "Seven-Segment Readout",
-      "kind": "custom",
-      "refersTo": null,
-      "description": "Timing digits with ghost segments, skewed -6 degrees.",
-      "html": "<div class=\"ds-seg\"><svg viewBox=\"0 0 22 18\" height=\"36\"><g transform=\"skewX(-6) translate(1 0)\" fill=\"#ecebe4\"><g><polygon points=\"2,1 8,1 7,2.6 3,2.6\"/><polygon points=\"8.4,1.4 9,2 9,8.2 8.4,8.8 7.4,7.8 7.4,2.4\"/><polygon points=\"8.4,9.2 9,9.8 9,16 8.4,16.6 7.4,15.6 7.4,10.2\" opacity=\".1\"/><polygon points=\"2,17 8,17 7,15.4 3,15.4\"/><polygon points=\"1.6,9.2 1,9.8 1,16 1.6,16.6 2.6,15.6 2.6,10.2\"/><polygon points=\"1.6,1.4 1,2 1,8.2 1.6,8.8 2.6,7.8 2.6,2.4\" opacity=\".1\"/><polygon points=\"2.2,9 3,8.2 7,8.2 7.8,9 7,9.8 3,9.8\"/></g><g transform=\"translate(11 0)\"><polygon points=\"2,1 8,1 7,2.6 3,2.6\" opacity=\".1\"/><polygon points=\"8.4,1.4 9,2 9,8.2 8.4,8.8 7.4,7.8 7.4,2.4\"/><polygon points=\"8.4,9.2 9,9.8 9,16 8.4,16.6 7.4,15.6 7.4,10.2\"/><polygon points=\"2,17 8,17 7,15.4 3,15.4\" opacity=\".1\"/><polygon points=\"1.6,9.2 1,9.8 1,16 1.6,16.6 2.6,15.6 2.6,10.2\" opacity=\".1\"/><polygon points=\"1.6,1.4 1,2 1,8.2 1.6,8.8 2.6,7.8 2.6,2.4\" opacity=\".1\"/><polygon points=\"2.2,9 3,8.2 7,8.2 7.8,9 7,9.8 3,9.8\" opacity=\".1\"/></g></g></svg><span>KM/H</span></div>",
-      "css": ".ds-seg{display:inline-flex;flex-direction:column;gap:4px;background:#0c0d0f;padding:10px}.ds-seg span{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:#8b939c}"
-    },
-    {
-      "name": "Pit Board",
-      "kind": "card",
-      "refersTo": "pit-board",
-      "description": "Result board: mono row labels, one character per recessed slot.",
-      "html": "<div class=\"ds-board\"><div class=\"ds-brow\"><span class=\"k\">LAP</span><span class=\"v\"><i>1</i><i class=\"s\">:</i><i>2</i><i>9</i><i class=\"s\">.</i><i>4</i><i>1</i><i>7</i></span></div><div class=\"ds-brow\"><span class=\"k\">PB</span><span class=\"v o\"><i>-</i><i>0</i><i class=\"s\">.</i><i>2</i><i>1</i></span></div></div>",
-      "css": ".ds-board{display:flex;flex-direction:column;gap:8px;background:#0c0d0f;border:2px solid #3a3f46;border-radius:6px;padding:10px;font-size:32px;box-shadow:0 18px 40px rgba(0,0,0,0.55)}.ds-brow{display:flex;align-items:center;gap:12px}.ds-brow .k{width:36px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.12em;color:#8b939c}.ds-brow .v{display:flex;gap:3px;color:#ecebe4}.ds-brow .v.o{color:#ff6a13}.ds-brow i{font-style:normal;display:grid;place-items:center;height:1.18em;min-width:0.62em;border-radius:2px;background:#17191d;font-family:'Big Shoulders Display',sans-serif;font-weight:900;line-height:1;box-shadow:inset 0 -2px 0 rgba(255,255,255,0.04),inset 0 2px 0 rgba(0,0,0,0.5)}.ds-brow i.s{min-width:0.3em;background:transparent;box-shadow:none}"
-    },
-    {
-      "name": "Grid Slot",
-      "kind": "custom",
-      "refersTo": null,
-      "description": "Hub mode as a painted grid box on asphalt, no card.",
-      "html": "<div class=\"ds-ground\"><div class=\"ds-slot\"><span class=\"n\">1</span><h3>Daily<br>Quali</h3><p>6 laps to find the perfect line.</p></div></div>",
-      "css": ".ds-ground{background:#2b2e33;padding:16px 64px 16px 16px}.ds-slot{position:relative;width:240px;padding:14px 14px 20px;border-top:3px solid rgba(236,235,228,0.9);border-image:none;background:linear-gradient(to bottom,rgba(236,235,228,0.9),transparent) left/3px 100% no-repeat,linear-gradient(to bottom,rgba(236,235,228,0.9),transparent) right/3px 100% no-repeat}.ds-slot .n{position:absolute;top:4px;right:-12px;transform:translateX(100%);font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:52px;line-height:1;color:rgba(236,235,228,0.45)}.ds-slot h3{margin:0;font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:28px;line-height:0.92;letter-spacing:0.03em;text-transform:uppercase;color:#ecebe4}.ds-slot p{margin:10px 0 0;font-family:Barlow,sans-serif;font-size:14px;color:rgba(236,235,228,0.85)}"
+      "description": "One row per lap, one square tile per corner group, filled with its sector colour.",
+      "html": "<div class=\"ds-lapgrid\"><div class=\"ds-row\"><i class=\"r\"></i><i class=\"r\"></i><i class=\"y\"></i><i class=\"y\"></i><i class=\"r\"></i><i class=\"y\"></i></div><div class=\"ds-row\"><i class=\"p\"></i><i class=\"g\"></i><i class=\"p\"></i><i class=\"live\"></i><i class=\"live\"></i><i class=\"live\"></i></div><div class=\"ds-row\"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>",
+      "css": ".ds-lapgrid{display:flex;flex-direction:column;gap:6px;background:#0a0b0d;padding:12px;width:260px}.ds-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.ds-row i{height:20px;border:1px solid #2b2f37;background:rgba(10,11,13,0.3)}.ds-row i.live{border-color:rgba(242,242,238,0.35);background:rgba(242,242,238,0.05)}.ds-row i.p{background:#a259ff;border-color:#a259ff}.ds-row i.g{background:#29cc6a;border-color:#29cc6a}.ds-row i.y{background:#f5c518;border-color:#f5c518}.ds-row i.r{background:#e5332a;border-color:#e5332a}"
     },
     {
       "name": "Gate Slider",
       "kind": "input",
       "refersTo": null,
-      "description": "Track cross-section with painted edges, inside kerb and orange knob.",
+      "description": "Track cross-section: square asphalt bed, painted edges, inside kerb, orange knob.",
       "html": "<div class=\"ds-slider\" tabindex=\"0\" role=\"slider\" aria-valuenow=\"0\"><span class=\"e l\"></span><span class=\"kerb\"></span><span class=\"e r\"></span><span class=\"c\"></span><span class=\"knob\"></span></div>",
-      "css": ".ds-slider{position:relative;width:300px;height:56px;border-radius:6px;background:#33383f;cursor:ew-resize}.ds-slider:focus-visible{outline:2px solid #ff6a13;outline-offset:2px}.ds-slider .e{position:absolute;top:0;bottom:0;width:3px;background:#ecebe4}.ds-slider .l{left:0;border-radius:6px 0 0 6px}.ds-slider .r{right:0;border-radius:0 6px 6px 0}.ds-slider .kerb{position:absolute;top:0;bottom:0;left:3px;width:10px;background:repeating-linear-gradient(180deg,#d7263d 0 7px,#ecebe4 7px 14px)}.ds-slider .c{position:absolute;top:0;bottom:0;left:50%;width:1px;background:rgba(236,235,228,0.25)}.ds-slider .knob{position:absolute;top:50%;left:38%;width:32px;height:32px;transform:translate(-50%,-50%);border-radius:9999px;border:3px solid #ecebe4;background:#ff6a13;box-shadow:0 2px 10px rgba(0,0,0,0.5)}"
+      "css": ".ds-slider{position:relative;width:300px;height:48px;border:1px solid #2b2f37;background:#262a31;cursor:ew-resize}.ds-slider:focus-visible{outline:2px solid #ff6a13;outline-offset:2px}.ds-slider .e{position:absolute;top:0;bottom:0;width:3px;background:#f2f2ee}.ds-slider .l{left:0}.ds-slider .r{right:0}.ds-slider .kerb{position:absolute;top:0;bottom:0;left:3px;width:10px;background:repeating-linear-gradient(180deg,#e5332a 0 7px,#f2f2ee 7px 14px)}.ds-slider .c{position:absolute;top:0;bottom:0;left:50%;width:1px;background:rgba(242,242,238,0.25)}.ds-slider .knob{position:absolute;top:50%;left:50%;width:28px;height:28px;transform:translate(-50%,-50%);border-radius:9999px;border:3px solid #f2f2ee;background:#ff6a13;box-shadow:0 2px 10px rgba(0,0,0,0.5);box-sizing:border-box}"
+    },
+    {
+      "name": "Start-Light Gantry",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Five square black pods of two lamps; unlit lamps stay visible as dark glass.",
+      "html": "<div class=\"ds-gantry\"><div class=\"ds-pod\"><b class=\"on\"></b><b class=\"on\"></b></div><div class=\"ds-pod\"><b class=\"on\"></b><b class=\"on\"></b></div><div class=\"ds-pod\"><b class=\"on\"></b><b class=\"on\"></b></div><div class=\"ds-pod\"><b></b><b></b></div><div class=\"ds-pod\"><b></b><b></b></div></div>",
+      "css": ".ds-gantry{display:flex;gap:8px;justify-content:center;background:#0b0b0c;padding:12px}.ds-pod{display:flex;flex-direction:column;gap:6px;padding:6px;border:1px solid #2b2f37;background:#060607;box-shadow:inset 0 1px 0 rgba(255,255,255,0.06),0 6px 14px rgba(0,0,0,0.5)}.ds-pod b{display:block;width:24px;height:24px;border-radius:9999px;background:radial-gradient(circle at 40% 35%,#2a1412 0%,#150808 60%,#0b0404 100%)}.ds-pod b.on{background:radial-gradient(circle at 40% 35%,#ffb3a8 0%,#ff2b1a 38%,#9e0f06 100%);box-shadow:0 0 14px 3px rgba(255,40,20,0.55)}"
+    },
+    {
+      "name": "Seven-Segment Readout",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Hardware digits with ghost segments, skewed -6 degrees; in-car speed and the gantry countdown only.",
+      "html": "<div class=\"ds-seg\"><svg viewBox=\"0 0 22 18\" height=\"36\"><g transform=\"skewX(-6) translate(1 0)\" fill=\"#f2f2ee\"><g><polygon points=\"2,1 8,1 7,2.6 3,2.6\"/><polygon points=\"8.4,1.4 9,2 9,8.2 8.4,8.8 7.4,7.8 7.4,2.4\"/><polygon points=\"8.4,9.2 9,9.8 9,16 8.4,16.6 7.4,15.6 7.4,10.2\" opacity=\".1\"/><polygon points=\"2,17 8,17 7,15.4 3,15.4\"/><polygon points=\"1.6,9.2 1,9.8 1,16 1.6,16.6 2.6,15.6 2.6,10.2\"/><polygon points=\"1.6,1.4 1,2 1,8.2 1.6,8.8 2.6,7.8 2.6,2.4\" opacity=\".1\"/><polygon points=\"2.2,9 3,8.2 7,8.2 7.8,9 7,9.8 3,9.8\"/></g><g transform=\"translate(11 0)\"><polygon points=\"2,1 8,1 7,2.6 3,2.6\" opacity=\".1\"/><polygon points=\"8.4,1.4 9,2 9,8.2 8.4,8.8 7.4,7.8 7.4,2.4\"/><polygon points=\"8.4,9.2 9,9.8 9,16 8.4,16.6 7.4,15.6 7.4,10.2\"/><polygon points=\"2,17 8,17 7,15.4 3,15.4\" opacity=\".1\"/><polygon points=\"1.6,9.2 1,9.8 1,16 1.6,16.6 2.6,15.6 2.6,10.2\" opacity=\".1\"/><polygon points=\"1.6,1.4 1,2 1,8.2 1.6,8.8 2.6,7.8 2.6,2.4\" opacity=\".1\"/><polygon points=\"2.2,9 3,8.2 7,8.2 7.8,9 7,9.8 3,9.8\" opacity=\".1\"/></g></g></svg><span>km/h</span></div>",
+      "css": ".ds-seg{display:inline-flex;align-items:flex-end;gap:8px;background:#0a0b0d;border:1px solid #2b2f37;padding:10px}.ds-seg span{font-family:'Archivo Variable',Archivo,system-ui,sans-serif;font-stretch:72%;font-weight:650;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-steel,#9aa1ab)}"
     }
   ],
   "narrative": {
-    "northStar": "The Starting Grid at Dusk",
-    "overview": "APEX is drawn from the materials of a real circuit, not from app chrome. The ground is textured asphalt; structure is white paint on it (grid brackets, track edges, kerbs); instruments are the ones a paddock actually uses: a black start gantry with five red lamp pods, a pit board with slotted digits, seven-segment timing with its unlit segments still showing, a steering-wheel display with rev LEDs. The circuit itself is rendered from the air, grass, gravel, run-off and kerbs, with a detailed open-wheel car in the player's safety orange.\n\nThe world is dark, dense and quick. Panels are black boards laid over the circuit, not floating cards; the hub is a grid of painted slots on the tarmac, today's puzzle on pole. Colour is scarce on purpose: paint and steel on near-black, one orange that means \"you\", and the four sector-timing colours that mean \"how much time you lost\". Motion is mechanical: lamps step on, blackout is instant, the pit board swings in over the wall, tiles flip as the car passes each corner.\n\nIt is an independent game. Nothing borrows a series identity: no series logos, team liveries, driver likenesses or copied broadcast graphics; circuits are named by venue only.",
+    "northStar": "The Timing Tower at Night",
+    "overview": "APEX reads like a race broadcast laid over a circuit seen from the air. The ground is broadcast black; the circuit underneath is drawn from real materials (grass, gravel, run-off, red-and-white kerbs, a detailed open-wheel car in the player's safety orange). Over it sit the graphics a timing feed actually uses: a left-edge tower with one row per corner group, a lap clock box, a timing card with a wide lap time and a delta plate, square hairline panels that wipe in from the side. The paddock hardware stays where it is real: the five-pod start gantry, the in-car speed in seven-segment digits, the rev lights.\n\nThe world is clean, dark and dense. Everything is square, separated by 1px hairlines rather than cards and shadows; one angled cut marks the thing to press and the tower's position plates. One type family does all the talking at three widths: wide and heavy for times and names, normal for sentences, condensed for labels. Colour is scarce on purpose: paint and steel on near-black, one orange that means \"you\", and the four sector-timing colours that mean \"how much time you lost\". The hub keeps the starting grid: painted slots on textured asphalt, today's puzzle on pole, the gantry as the day's clock.\n\nIt is an independent game. Nothing borrows a series identity: no series logos, team liveries, driver likenesses or copied broadcast graphics; circuits are named by venue only.",
     "keyCharacteristics": [
-      "Asphalt ground, white-paint structure, black instrument boards.",
+      "Broadcast-black ground, square hairline panels, the circuit underneath.",
       "Safety orange is the player; purple/green/yellow/red is the grade; everything else is paint and steel.",
-      "Real timing hardware: ghost segments, dark-glass lamps, slotted pit-board digits.",
-      "Condensed, painted-on uppercase display type; mono only for data.",
-      "Stepped, mechanical motion; every animation drops under reduced motion."
+      "One family (Archivo) at three widths; tabular figures on every number that moves.",
+      "Square corners everywhere; one angled cut on primary actions and position plates.",
+      "The corner tower is the spine of setup, race and result.",
+      "Motion wipes and flashes like a graphics package; lamps step and black out; all of it drops under reduced motion."
     ],
     "rules": [
       {
@@ -400,36 +408,53 @@
       },
       {
         "name": "The Sector Colours Rule",
-        "body": "Purple, green, yellow and red mean time lost at a corner against the perfect line (≤50 / ≤150 / ≤400 / more ms, from `modes/grading.ts`) and nothing else. They speak on the lap tiles, the loss-coloured line and corner deltas on the canvas, the adjust chips and the legend. The pit board stays paint unless the whole lap is purple.",
+        "body": "Purple, green, yellow and red grade time lost at a corner against the perfect line (≤50 / ≤150 / ≤400 / more ms, from `modes/grading.ts`). In the interface they speak only on the tower's grade bars and deltas, the lap tiles, the loss-coloured line and corner deltas on the canvas, the adjust cells, the legend and the purple \"Perfect\" plate. The lap time, timing lines and season bar stay paint, steel and orange. Kerb red is also the kerb itself, and the rev lights keep their hardware green and blue (#3d7bff); those are the circuit and the car, not grades.",
         "section": "colors"
       },
       {
-        "name": "The Paint Is Structure Rule",
-        "body": "Structure is drawn as white paint on dark ground (3px brackets, edges, ticks), never as filled card surfaces.",
+        "name": "The Inversion Rule",
+        "body": "Selection and \"where you are\" is a paint plate with night text (the active tower row, the selected gate tab), never an orange fill.",
         "section": "colors"
       },
       {
-        "name": "The Mono Is Data Rule",
-        "body": "IBM Plex Mono appears only on numbers and their labels. Sentences are Barlow; names and actions are Big Shoulders.",
+        "name": "The Three Widths Rule",
+        "body": "Width is the hierarchy: wide for display, names and times; normal for copy; condensed for labels and corner segments. Never introduce a second family.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Any number that updates or sits in a column (times, deltas, counts, position plates) uses tabular figures.",
         "section": "typography"
       },
       {
         "name": "The Timing Face Rule",
-        "body": "Live timing (speed, delta, countdown) is drawn with seven-segment digits, not a font. Final lap times on the pit board use Big Shoulders 900 in slots.",
+        "body": "Seven-segment digits survive in two places only, the hub's gantry countdown and the in-car speed, because those are hardware readouts. Every other time is set in Archivo.",
         "section": "typography"
       },
       {
-        "name": "The Ghost Segment Rule",
-        "body": "Unlit hardware stays visible. Seven-segment digits draw their off segments at 8–20% opacity, start lamps show as dark glass, rev LEDs show as #141517 with a faint inset highlight. Nothing that is off is ever simply absent.",
+        "name": "The Flat Graphics Rule",
+        "body": "Broadcast graphics do not cast shadows. A panel, sheet, dialog, button or row is separated by a hairline and a tonal step, never by a drop shadow.",
         "section": "elevation"
+      },
+      {
+        "name": "The Ghost Segment Rule",
+        "body": "Unlit hardware stays visible. Seven-segment digits draw their off segments at 10–20% opacity, start lamps show as dark glass, rev LEDs show as graphite. Nothing that is off is ever simply absent.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Cut Rule",
+        "body": "The angled cut appears on primary actions and on plates that carry a position or delta, and nowhere else. One slant per element, four vertices, never stacked.",
+        "section": "shapes"
       }
     ],
     "dos": [
-      "Do keep safety orange (#ff6a13) for the player's line, car, choice and primary action only.",
-      "Do grade corners with purple ≤50 ms, green ≤150 ms, yellow ≤400 ms, red beyond, and keep those four colours for grading.",
-      "Do draw every unlit segment, lamp and LED as a ghost (8–20% segments, dark-glass lamps).",
-      "Do draw structure as 3px white paint on dark ground, and let hub content sit on the asphalt.",
-      "Do keep lamp motion stepped with an instant blackout, and turn off `board-in`, `rise` and `tile-flip` under reduced motion.",
+      "Do keep safety orange (#ff6a13) for the player's line, car, choice, record and primary action only.",
+      "Do grade corners with purple ≤50 ms, green ≤150 ms, yellow ≤400 ms, red beyond, and keep those four colours for grading in the interface.",
+      "Do set every number that updates in tabular figures, and choose width before size: wide for times and names, condensed for labels.",
+      "Do keep corners square and reserve the angled cut for primary actions and position or delta plates.",
+      "Do mark selection by inverting to paint on night.",
+      "Do draw every unlit segment, lamp and LED as a ghost.",
+      "Do keep lamp motion stepped with an instant blackout, and turn off `wipe-in`, `tile-flip` and `row-flash` under reduced motion.",
       "Do keep colours in `index.css` @theme and `game/palette.ts` in sync.",
       "Do name circuits by venue only."
     ],
@@ -437,9 +462,10 @@
       "Don't use series logos, team liveries, driver likenesses or copied broadcast graphics.",
       "Don't play any sound until the player switches it on.",
       "Don't put hub modes in same-size cards; they are grid slots.",
-      "Don't colour pit-board values with sector colours, except purple for an all-purple lap.",
-      "Don't set sentences in Plex Mono or data in Barlow.",
-      "Don't hide the off state of timing hardware."
+      "Don't round interface corners; rounds belong to lamps, knobs and map markers.",
+      "Don't put drop shadows on panels, sheets, dialogs or buttons.",
+      "Don't add a second type family or use seven-segment digits beyond the gantry countdown and the speed.",
+      "Don't colour the lap time, timing lines or season bar with sector colours, except the purple \"Perfect\" plate."
     ]
   }
 }

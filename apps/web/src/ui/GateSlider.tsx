@@ -84,9 +84,9 @@ export function GateSlider({
 
   return (
     <div>
-      <div className="mb-1.5 text-center text-[14px] font-medium text-paint/85" aria-live="polite">
+      <div className="num mb-1.5 text-center text-[13px] font-semibold text-paint/85" aria-live="polite">
         {readout}
-        {fine < 0.6 && <span className="ml-2 text-ink">FINE ×{Math.round(1 / fine)}</span>}
+        {fine < 0.6 && <span className="label ml-2 text-ink">Fine ×{Math.round(1 / fine)}</span>}
       </div>
       <div
         ref={bar}
@@ -101,11 +101,11 @@ export function GateSlider({
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerCancel={onUp}
-        className="relative h-14 cursor-ew-resize touch-none rounded-md bg-asphalt"
+        className="relative h-12 cursor-ew-resize touch-none border border-line bg-asphalt"
       >
         {/* painted edges */}
-        <span className="absolute inset-y-0 left-0 w-[3px] rounded-l-md bg-paint" />
-        <span className="absolute inset-y-0 right-0 w-[3px] rounded-r-md bg-paint" />
+        <span className="absolute inset-y-0 left-0 w-[3px] bg-paint" />
+        <span className="absolute inset-y-0 right-0 w-[3px] bg-paint" />
         {/* kerb on the inside edge */}
         {inside && (
           <span
@@ -121,11 +121,11 @@ export function GateSlider({
           />
         ))}
         <span
-          className="pointer-events-none absolute top-1/2 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[3px] border-paint bg-ink shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
+          className="pointer-events-none absolute top-1/2 grid h-7 w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[3px] border-paint bg-ink shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
           style={{ left: `${frac * 100}%` }}
         />
       </div>
-      <div className="mt-1 flex justify-between font-mono text-[10px] tracking-[0.12em] text-steel">
+      <div className="label mt-1 flex justify-between">
         <span className={inside === "left" ? "text-kerb" : ""}>{inside === "left" ? "INSIDE" : "LEFT"}</span>
         <span className={inside === "right" ? "text-kerb" : ""}>{inside === "right" ? "INSIDE" : "RIGHT"}</span>
       </div>

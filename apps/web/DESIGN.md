@@ -1,269 +1,324 @@
 ---
 name: APEX
-description: A daily racing-line game drawn as a circuit seen from the air, timed like a pit wall.
+description: A daily racing-line game drawn as a circuit seen from the air, timed like a broadcast timing tower.
 colors:
   ink: "#ff6a13"
   purple: "#a259ff"
   green: "#29cc6a"
   yellow: "#f5c518"
-  kerb: "#d7263d"
-  lamp-red: "#ff2b1a"
-  tarmac: "#1d2024"
-  runoff: "#262a30"
-  asphalt: "#33383f"
-  paint: "#ecebe4"
-  steel: "#8b939c"
-  board: "#0c0d0f"
-  slot: "#17191d"
+  kerb: "#e5332a"
+  lamp: "#ff2b1a"
+  night: "#0a0b0d"
+  board: "#121418"
+  graphite: "#1c1f25"
+  line: "#2b2f37"
+  asphalt: "#262a31"
+  paint: "#f2f2ee"
+  steel: "#9aa1ab"
 typography:
-  grid-numeral:
-    fontFamily: "Big Shoulders Display, Arial Narrow, sans-serif"
-    fontSize: "52px"
-    fontWeight: 900
+  display:
+    fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
+    fontSize: "34px"
+    fontWeight: 800
     lineHeight: 1
+    letterSpacing: "-0.005em"
+    fontFeature: "\"tnum\" 1"
+    fontVariation: "\"wdth\" 125"
   headline:
-    fontFamily: "Big Shoulders Display, Arial Narrow, sans-serif"
+    fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
+    fontSize: "20px"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "-0.005em"
+    fontVariation: "\"wdth\" 125"
+  headline-lg:
+    fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
     fontSize: "26px"
-    fontWeight: 900
-    lineHeight: 0.92
-    letterSpacing: "0.03em"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "-0.005em"
+  numeral:
+    fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
+    fontSize: "44px"
+    fontWeight: 800
+    lineHeight: 0.85
+    letterSpacing: "-0.005em"
   title:
-    fontFamily: "Big Shoulders Display, Arial Narrow, sans-serif"
-    fontSize: "20px"
-    fontWeight: 700
-    lineHeight: 1
-    letterSpacing: "0.04em"
-  button:
-    fontFamily: "Big Shoulders Display, Arial Narrow, sans-serif"
-    fontSize: "20px"
-    fontWeight: 900
-    lineHeight: 1
-    letterSpacing: "0.08em"
+    fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 800
+    lineHeight: 1.2
+    letterSpacing: "-0.005em"
+    fontVariation: "\"wdth\" 125"
   body:
-    fontFamily: "Barlow, system-ui, sans-serif"
+    fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.375
+    fontVariation: "\"wdth\" 100"
+  data:
+    fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 700
+    lineHeight: 1.2
+    fontFeature: "\"tnum\" 1"
+    fontVariation: "\"wdth\" 100"
+  segment:
+    fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
+    fontSize: "12px"
+    fontWeight: 700
+    lineHeight: 1
+    letterSpacing: "0.04em"
+    fontVariation: "\"wdth\" 80"
   label:
-    fontFamily: "Barlow, system-ui, sans-serif"
+    fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
+    fontSize: "11px"
+    fontWeight: 650
+    lineHeight: 1.2
+    letterSpacing: "0.1em"
+    fontVariation: "\"wdth\" 72"
+  button-secondary:
+    fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
     fontSize: "13px"
     fontWeight: 600
     lineHeight: 1.2
     letterSpacing: "0.06em"
-  data:
-    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
-    fontSize: "10px"
-    fontWeight: 400
-    lineHeight: 1
-    letterSpacing: "0.14em"
+    fontVariation: "\"wdth\" 100"
 rounded:
-  slot: "2px"
-  tile: "3px"
-  md: "6px"
-  lg: "8px"
+  none: "0px"
   full: "9999px"
 spacing:
   xs: "4px"
   sm: "6px"
   md: "8px"
-  panel: "10px"
-  lg: "12px"
+  row: "10px"
+  panel: "12px"
   xl: "16px"
 components:
   button-primary:
     backgroundColor: "{colors.ink}"
-    textColor: "{colors.board}"
-    typography: "{typography.button}"
-    rounded: "{rounded.md}"
-    padding: "10px 20px"
+    textColor: "{colors.night}"
+    typography: "{typography.title}"
+    rounded: "{rounded.none}"
+    padding: "12px 24px"
   button-primary-disabled:
-    backgroundColor: "{colors.asphalt}"
+    backgroundColor: "{colors.graphite}"
     textColor: "{colors.steel}"
   button-secondary:
     backgroundColor: "{colors.board}"
     textColor: "{colors.paint}"
-    rounded: "{rounded.md}"
-    padding: "10px 14px"
+    typography: "{typography.button-secondary}"
+    rounded: "{rounded.none}"
+    padding: "10px 16px"
   icon-button:
+    backgroundColor: "{colors.board}"
     textColor: "{colors.paint}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.none}"
     size: "40px"
-  gate-chip:
+  gate-tab:
+    textColor: "{colors.paint}"
+    typography: "{typography.segment}"
+    rounded: "{rounded.none}"
+    height: "36px"
+  gate-tab-selected:
+    backgroundColor: "{colors.paint}"
+    textColor: "{colors.night}"
+  tower-row:
+    backgroundColor: "{colors.night}"
+    textColor: "{colors.paint}"
+    typography: "{typography.segment}"
+    height: "27px"
+  tower-row-active:
+    backgroundColor: "{colors.paint}"
+    textColor: "{colors.night}"
+  tower-plate:
+    backgroundColor: "{colors.graphite}"
     textColor: "{colors.steel}"
-    typography: "{typography.data}"
-    rounded: "{rounded.full}"
-    height: "32px"
-  panel:
-    backgroundColor: "{colors.board}"
+    width: "22px"
+  sheet:
+    backgroundColor: "{colors.night}"
     textColor: "{colors.paint}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.none}"
     padding: "12px"
-  lap-tile:
-    rounded: "{rounded.tile}"
-    height: "clamp(14px, 3.2vh, 24px)"
-  pit-board:
+  dialog:
     backgroundColor: "{colors.board}"
     textColor: "{colors.paint}"
-    rounded: "{rounded.md}"
-    padding: "10px"
-  pit-board-slot:
-    backgroundColor: "{colors.slot}"
-    rounded: "{rounded.slot}"
+    rounded: "{rounded.none}"
+    padding: "16px"
+  delta-plate:
+    backgroundColor: "{colors.graphite}"
+    textColor: "{colors.paint}"
+    typography: "{typography.data}"
+    padding: "6px 12px"
+  lap-tile:
+    rounded: "{rounded.none}"
+    height: "clamp(14px, 3.2vh, 22px)"
 ---
 
 # Design System: APEX
 
 ## Overview
 
-**Creative North Star: "The Starting Grid at Dusk"**
+**Creative North Star: "The Timing Tower at Night"**
 
-APEX is drawn from the materials of a real circuit, not from app chrome. The ground is textured asphalt; structure is white paint on it (grid brackets, track edges, kerbs); instruments are the ones a paddock actually uses: a black start gantry with five red lamp pods, a pit board with slotted digits, seven-segment timing with its unlit segments still showing, a steering-wheel display with rev LEDs. The circuit itself is rendered from the air, grass, gravel, run-off and kerbs, with a detailed open-wheel car in the player's safety orange.
+APEX reads like a race broadcast laid over a circuit seen from the air. The ground is broadcast black; the circuit underneath is drawn from real materials (grass, gravel, run-off, red-and-white kerbs, a detailed open-wheel car in the player's safety orange). Over it sit the graphics a timing feed actually uses: a left-edge tower with one row per corner group, a lap clock box, a timing card with a wide lap time and a delta plate, square hairline panels that wipe in from the side. The paddock hardware stays where it is real: the five-pod start gantry, the in-car speed in seven-segment digits, the rev lights.
 
-The world is dark, dense and quick. Panels are black boards laid over the circuit, not floating cards; the hub is a grid of painted slots on the tarmac, today's puzzle on pole. Colour is scarce on purpose: paint and steel on near-black, one orange that means "you", and the four sector-timing colours that mean "how much time you lost". Motion is mechanical: lamps step on, blackout is instant, the pit board swings in over the wall, tiles flip as the car passes each corner.
+The world is clean, dark and dense. Everything is square, separated by 1px hairlines rather than cards and shadows; one angled cut marks the thing to press and the tower's position plates. One type family does all the talking at three widths: wide and heavy for times and names, normal for sentences, condensed for labels. Colour is scarce on purpose: paint and steel on near-black, one orange that means "you", and the four sector-timing colours that mean "how much time you lost". The hub keeps the starting grid: painted slots on textured asphalt, today's puzzle on pole, the gantry as the day's clock.
 
 It is an independent game. Nothing borrows a series identity: no series logos, team liveries, driver likenesses or copied broadcast graphics; circuits are named by venue only.
 
 **Key Characteristics:**
-- Asphalt ground, white-paint structure, black instrument boards.
+- Broadcast-black ground, square hairline panels, the circuit underneath.
 - Safety orange is the player; purple/green/yellow/red is the grade; everything else is paint and steel.
-- Real timing hardware: ghost segments, dark-glass lamps, slotted pit-board digits.
-- Condensed, painted-on uppercase display type; mono only for data.
-- Stepped, mechanical motion; every animation drops under reduced motion.
+- One family (Archivo) at three widths; tabular figures on every number that moves.
+- Square corners everywhere; one angled cut on primary actions and position plates.
+- The corner tower is the spine of setup, race and result.
+- Motion wipes and flashes like a graphics package; lamps step and black out; all of it drops under reduced motion.
 
 ## Colors
 
-A near-black motorsport palette: tarmac and board neutrals, painted off-white, one orange for the player and the sector-timing quartet for feedback.
+A broadcast-dark palette: four near-black neutrals in steps, painted off-white and steel for type, one orange for the player and the sector-timing quartet for feedback.
 
 ### Primary
-- **Safety Orange** (ink): the player. Their racing line on the canvas, their car livery, the primary action ("Lights out", "Race", "Share"), the gate slider knob, the selected chip, the current lap dot, a new personal best or beaten rival on the pit board, the sound toggle when on, the focus ring and text selection.
+- **Safety Orange** (ink): the player. Their racing line and car on the canvas, the primary action ("Lights out", "Improve line", "Share result"), the gate slider knob, the selected gate's name beside the corner headline, the current round on the season bar, a new personal best or a beaten rival in the timing lines, fine-mode on the slider, the sound toggle when on, the focus ring and text selection.
 
 ### Feedback (sector timing)
-- **Purple Sector** (purple): a corner group within 50 ms of the perfect line. Also a perfect-lap board and a live delta at or under 50 ms.
+- **Purple Sector** (purple): a corner group within 50 ms of the perfect line; the "Perfect" delta plate on an all-purple lap; the live "to perfect" delta at or under 50 ms.
 - **Green Sector** (green): within 150 ms.
 - **Yellow Sector** (yellow): within 400 ms.
-- **Kerb Red** (kerb): more than 400 ms off. Doubles as the kerb stripe on the gate slider and the "INSIDE" label, which is the same painted kerb the circuit uses.
+- **Kerb Red** (kerb): more than 400 ms off. The same red as the painted kerbs on the canvas and the kerb stripe and "INSIDE" label on the gate slider.
 
 ### Tertiary
-- **Lamp Red** (lamp-red): lit start-lamp glass only (radial from #ffb3a8 through lamp red to #9e0f06, with a red glow). Unlit lamps are dark glass (#2a1412 to #0b0404). Used in the gantry and the favicon.
+- **Lamp Red** (lamp): lit start-lamp glass only (radial from #ffb3a8 through lamp red to #9e0f06, with a red glow). Unlit lamps are dark glass (#2a1412 to #0b0404).
 
 ### Neutral
-- **Tarmac** (tarmac): the page, header and canvas infield; also the browser theme colour.
-- **Run-off** (runoff) and **Asphalt** (asphalt): track surfaces on the canvas; asphalt is the gate slider's track bed and the disabled primary button.
-- **Paint** (paint): all primary text and every painted line (grid brackets, track edges, slider edges). Dimmed with opacity (/85, /80, /70, /65, /45) for secondary copy, labels and grid numerals.
-- **Steel** (steel): data labels, units, secondary headers, the sound toggle when off.
-- **Board** (board): panels, pit board, HUD, dialogs, button text on orange. Used at 88–92% opacity with a small backdrop blur over the canvas.
-- **Slot** (slot): the recessed cells behind pit-board characters.
-- Borders are white at low alpha: 5–12% at rest, 30–45% on hover.
+- **Night** (night): the page, header, tower, sheets and HUD boxes (at 82–95% over the canvas); text on orange and on inverted rows.
+- **Board** (board): dialogs and the resting fill of secondary and icon buttons.
+- **Graphite** (graphite): the raised step: hover fill on rows and tabs, tower position plates, the delta plate, disabled primary, unlit rev LEDs.
+- **Line** (line): every hairline: panel borders, row dividers, tab separators, empty lap tiles, unplayed season rounds.
+- **Asphalt** (asphalt): the gate slider's track bed.
+- **Paint** (paint): primary type, painted lines (grid slots, slider edges), the inverted highlight, a won season round. Dimmed with opacity (/85, /80, /75, /40) for secondary copy and grid numerals.
+- **Steel** (steel): labels, units, inactive plate numerals, a lost season round (at 35%), the sound toggle when off.
 
 ### Named Rules
 **The You Are Orange Rule.** Safety orange marks the player and the player's next action, nothing else. If an orange element is not the player's line, car, choice, record or primary action, it is wrong.
 
-**The Sector Colours Rule.** Purple, green, yellow and red mean time lost at a corner against the perfect line (≤50 / ≤150 / ≤400 / more ms, from `modes/grading.ts`) and nothing else. They speak on the lap tiles, the loss-coloured line and corner deltas on the canvas, the adjust chips and the legend. The pit board stays paint unless the whole lap is purple.
+**The Sector Colours Rule.** Purple, green, yellow and red grade time lost at a corner against the perfect line (≤50 / ≤150 / ≤400 / more ms, from `modes/grading.ts`). In the interface they speak only on the tower's grade bars and deltas, the lap tiles, the loss-coloured line and corner deltas on the canvas, the adjust cells, the legend and the purple "Perfect" plate. The lap time, timing lines and season bar stay paint, steel and orange. Kerb red is also the kerb itself, and the rev lights keep their hardware green and blue (#3d7bff); those are the circuit and the car, not grades.
 
-**The Paint Is Structure Rule.** Structure is drawn as white paint on dark ground (3px brackets, edges, ticks), never as filled card surfaces.
+**The Inversion Rule.** Selection and "where you are" is a paint plate with night text (the active tower row, the selected gate tab), never an orange fill.
 
 ## Typography
 
-**Display Font:** Big Shoulders Display (with Arial Narrow), weights 700 and 900
-**Body Font:** Barlow (with system-ui), weights 400/500/600
-**Label/Mono Font:** IBM Plex Mono (with ui-monospace), weights 400/500/600
+**Display Font:** Archivo Variable at 125% width, 800 (with Archivo, system-ui)
+**Body Font:** Archivo Variable at 100% width, 400–700
+**Label Font:** Archivo Variable at 72–85% width, 650–700
 
-**Character:** A condensed, stencil-straight display face that reads as paint on a grid box or numbers on a pit board, over a plain humanist sans for sentences, with mono kept for readouts.
+**Character:** One grotesque stretched three ways, the way a broadcast package sets times wide and heavy, copy plain, and captions tight. The widths carry the hierarchy so no second family is needed.
 
 ### Hierarchy
-- **Grid numeral** (900, 52px, 64px on desktop, line-height 1): painted grid positions beside the hub slots, at paint/45.
-- **Headline** (900, 24–30px, line-height 0.92–1, 0.03em, uppercase): slot names, panel and dialog headlines, the corner name in setup. "Lights out" on the race screen runs at 34px with 0.1em.
-- **Title** (700, 19–20px, 0.04em, uppercase): header breadcrumb, track picker rows.
-- **Button** (900, 20–21px, 0.08em, uppercase): primary actions only.
-- **Body** (Barlow 400/500, 13–15px, line-height 1.375): status sentences, readouts, secondary buttons.
-- **Label** (Barlow 600, 11–13px, 0.06–0.1em, uppercase): record-strip keys, hub sub-lines, "Next quali in".
-- **Data** (Plex Mono 400/500, 10–11px, 0.12–0.14em, uppercase): units (KM/H), lap counters, board row labels (LAP / TGT / RIV / PB), slider ends, chip text, legend, canvas corner labels.
+- **Display** (wide 800, 34px, line-height 1, tabular): the lap time on the timing card.
+- **Headline** (wide 800, 18–22px, up to 30px on the hub at `lg`, line-height 0.95–1, uppercase): sheet and dialog headlines, the corner name in setup, hub slot names, "Lights out" on the race screen (26px, 0.04em). The lap clock runs 22–26px and stat values 20–24px, both tabular.
+- **Title** (wide 800, 15px, uppercase): primary button labels, track picker rows; the APEX wordmark at 19px.
+- **Body** (normal 400–600, 13–14px, line-height 1.375): status sentences, slot descriptions, the slider readout (13px 600, tabular), the track name in the header (14px 700).
+- **Data** (normal 700, 13–15px, tabular): timing-line values, the delta plate, deltas in the adjust cells and the live delta.
+- **Segment** (condensed 80–85%, 700, 12–13px): tower row names, gate tabs (uppercase, 0.04em), adjust-cell corner names.
+- **Label** (condensed 72%, 650, 11px, 0.1em, uppercase, steel): tower header, timing-line keys, record-strip keys, units, slider ends, legend, the mode line in the header.
+- **Secondary button** (normal 600, 12–13px, 0.06em, uppercase).
 
 ### Named Rules
-**The Mono Is Data Rule.** IBM Plex Mono appears only on numbers and their labels. Sentences are Barlow; names and actions are Big Shoulders.
+**The Three Widths Rule.** Width is the hierarchy: wide for display, names and times; normal for copy; condensed for labels and corner segments. Never introduce a second family.
 
-**The Timing Face Rule.** Live timing (speed, delta, countdown) is drawn with seven-segment digits, not a font. Final lap times on the pit board use Big Shoulders 900 in slots.
+**The Tabular Rule.** Any number that updates or sits in a column (times, deltas, counts, position plates) uses tabular figures.
+
+**The Timing Face Rule.** Seven-segment digits survive in two places only, the hub's gantry countdown and the in-car speed, because those are hardware readouts. Every other time is set in Archivo.
 
 ## Layout
 
-Mobile-first at 390px. Over the circuit canvas, controls dock to the bottom edge in a panel capped at 512px (setup, result, daily summary), the race HUD caps at 560px top and bottom, and from 720px the result column moves to a 400px right rail. Panels report their size back to the canvas so the camera frames the track around them. Safe-area insets pad the header and every bottom-docked panel (`max(12px, env(safe-area-inset-bottom))`).
+Mobile-first at 390px. The canvas fills the area under a 52px header; graphics dock to its edges. The corner tower sits top-left (8px inset), 84px wide on phones and 172px from 720px, where it gains deltas. The setup control bar, result sheet and locked note dock to the bottom edge at up to 560px wide; from 720px the result sheet becomes a 380px right rail inset 8px, and docked panels gain a full border. View controls stack top-right as a column of joined 40px icon buttons. The race HUD puts a 148–188px lap clock box top-right and a 320px onboard cluster bottom-centre. Panels report their size to the canvas so the camera frames the track around them. Safe-area insets pad the header and every bottom-docked panel (`max(12px, env(safe-area-inset-bottom))`).
 
-The hub is a vertical starting grid: slots at 62% width (236–400px), alternating left and right, pole on the left and deeper; from `lg` they sit in a two-column grid with the right column staggered 112px lower. The gantry spans the top; a four-cell record strip is pinned to the bottom edge.
+The hub is a vertical starting grid: slots at 62% width (236–400px), alternating sides, pole first and deeper; from `lg` a two-column grid with the right column staggered 112px lower. The gantry spans the top; a four-cell record strip is pinned to the bottom edge.
 
-Spacing runs on Tailwind's 4px step, and in practice tightly: 4–8px between related items, 10–12px panel padding and section gaps, 16px page gutter. Density is high by design; everything fits the first viewport on a phone.
+Spacing runs on a 4px step and runs tight: 4–8px between related items, 10px row padding, 12px panel padding, 16px page gutter and dialog padding. Rows and tabs are joined edge to edge with hairline dividers rather than gaps. Everything fits the first viewport on a phone.
 
 ## Elevation & Depth
 
-Depth comes from physical objects, not UI elevation. Panels are flat boards separated from the canvas by opacity and a light backdrop blur, with a 1px white/10 border. Shadows appear only where a real object hangs or sits proud: the gantry truss, the lamp pods, the pit board held out over the wall, the slider knob. Inset shadows recess the pit-board slots and unlit LEDs.
+Flat. Interface surfaces are night at 82–95% opacity over the canvas with a 2–3px backdrop blur, separated by 1px line hairlines; depth between interface layers is the tonal step night → board → graphite. Shadows exist only on physical hardware: the gantry and its pods, lit lamps and rev LEDs, and the slider knob.
 
 ### Shadow Vocabulary
 - **Gantry drop** (`box-shadow: 0 10px 24px rgba(0,0,0,0.5)`): the overhead truss on the hub.
 - **Lamp pod** (`box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 6px 14px rgba(0,0,0,0.5)`): each five-light pod.
 - **Lit lamp glow** (`box-shadow: 0 0 14px 3px rgba(255,40,20,0.55)`): lit lamps only.
-- **Pit board** (`box-shadow: 0 18px 40px rgba(0,0,0,0.55)`): the result board.
-- **Slot recess** (`box-shadow: inset 0 -2px 0 rgba(255,255,255,0.04), inset 0 2px 0 rgba(0,0,0,0.5)`): pit-board character cells.
+- **LED glow** (`box-shadow: 0 0 8px <led colour>`): lit rev LEDs only.
 - **Knob** (`box-shadow: 0 2px 10px rgba(0,0,0,0.5)`): the gate slider thumb.
 
 ### Named Rules
-**The Ghost Segment Rule.** Unlit hardware stays visible. Seven-segment digits draw their off segments at 8–20% opacity, start lamps show as dark glass, rev LEDs show as #141517 with a faint inset highlight. Nothing that is off is ever simply absent.
+**The Flat Graphics Rule.** Broadcast graphics do not cast shadows. A panel, sheet, dialog, button or row is separated by a hairline and a tonal step, never by a drop shadow.
+
+**The Ghost Segment Rule.** Unlit hardware stays visible. Seven-segment digits draw their off segments at 10–20% opacity, start lamps show as dark glass, rev LEDs show as graphite. Nothing that is off is ever simply absent.
 
 ## Shapes
 
-Small, machined corners. 2–3px on tiles and pit-board slots, 6px on buttons, pods, the pit board and the slider bed, 8px on panels and dialogs, full rounds only on lamps, LEDs, chips, dots and the knob. Digits are skewed 6 degrees like real timing displays. Painted lines are 3px. Kerbs are 7px red/paint stripes. Grid brackets are open at the back: a front line and two legs fading to transparent.
+Square. Every panel, button, tab, tile, row, plate, dialog and gantry pod has 0 radius. Full rounds are reserved for physical round things: lamps, the slider knob, the start dot on circuit outlines and gate markers on the canvas. One angled cut is the only other silhouette: a 10px slant off the bottom-right of primary buttons, and an 8px slant off the top-left of position plates and the delta plate. Painted lines are 3px; kerbs are 7px red/paint stripes; seven-segment digits are skewed 6 degrees. Grid slots are open at the back: a 3px front line and two legs fading to transparent.
+
+### Named Rules
+**The One Cut Rule.** The angled cut appears on primary actions and on plates that carry a position or delta, and nowhere else. One slant per element, four vertices, never stacked.
 
 ## Components
 
 ### Buttons
-Tactile, heavy, and one colour for the one action that matters.
-- **Shape:** gently squared (6px).
-- **Primary:** safety orange with board-black text, Big Shoulders 900 uppercase at 0.08em, 10–12px by 20px padding; presses to 97% scale. Disabled goes asphalt with steel text.
-- **Secondary:** board at 60–80% with a white/12–20 border and paint text; border brightens to white/30–45 on hover; disabled at 35% opacity.
-- **Icon buttons:** 36–40px squares, same border treatment, 18px stroked icons (24-grid, 2px stroke, round caps).
+Square, flat, one orange slab for the one action that matters.
+- **Shape:** square (0), with the cut on primary.
+- **Primary:** safety orange with night text, wide 800 uppercase at 15px, 12px by 24px padding; hover brightens to 110%, press drops 1px. Disabled goes graphite with steel text. One per screen.
+- **Secondary:** board at 80% with a 1px line border and paint text, 600 uppercase 13px at 0.06em; the border brightens to paint/40 on hover; disabled at 35% opacity.
+- **Icon buttons:** 40px squares, board at 85%, line border, 18px stroked icons (24 grid, 2px stroke, round caps). Stacked groups join by dropping the shared border.
 - **Focus:** a 2px safety-orange outline at 2px offset, global.
 
-### Chips
-- **Gate chips:** 32px pills with mono 11px labels, one per gate in the selected corner; abbreviated when there are many, spelled out when selected.
-- **Adjust chips (result):** 6px rounded, white/15 border, corner name in paint plus its delta in its sector colour.
+### Tabs (gate selector)
+- **Style:** a joined strip in a line-bordered box, 36px tall, condensed 700 uppercase 12px; tabs share width when there are five or fewer, otherwise scroll.
+- **State:** selected is the inverted paint plate; rest is paint/80, hover graphite.
 
-### Panels
-- **Corner Style:** 8px.
-- **Background:** board at 88–92% with backdrop blur over the canvas; solid board for dialogs over a black/60 scrim.
-- **Border:** 1px white/10.
-- **Internal Padding:** 10–12px (16px in dialogs).
-- Enter with `rise` (260ms ease-out, 8px up); the result panel is delayed 200ms behind the pit board.
+### Containers
+- **Sheets** (setup bar, result, locked note): night at 94–95% with a 3px blur, top hairline on phones and full hairline from 720px, 12px padding. They enter with `wipe-in` (360ms, `cubic-bezier(0.16, 1, 0.3, 1)`, revealed left to right).
+- **Dialogs** (track picker, today's result): solid board with a line border, 16px padding, over a night/75 scrim; also `wipe-in`.
+- **HUD boxes** (lap clock, onboard cluster): night at 88–90% with a line border and a label header row.
 
 ### Inputs / Fields
-- **Gate slider:** a 56px cross-section of the track in asphalt with 3px paint edges, a 7px kerb stripe on the inside edge, metre ticks, and a 32px orange knob ringed in 3px paint. Tap jumps, drag moves at reduced gain, pulling away from the bar enters fine mode (shown in orange). Readout above in Barlow, LEFT/RIGHT/INSIDE below in mono (INSIDE in kerb red).
+- **Gate slider:** a 48px cross-section of the track in asphalt with a line border, 3px paint edges, a 10px kerb stripe on the inside edge, metre ticks, and a 28px orange knob ringed in 3px paint. Tap jumps, drag moves at reduced gain, pulling away from the bar enters fine mode (labelled in orange). Readout above in 13px 600 tabular; LEFT/RIGHT/INSIDE below as labels, INSIDE in kerb red. 40px nudge buttons flank it.
 
 ### Navigation
-- **Header:** tarmac bar with the APEX wordmark (Big Shoulders 900, 26px), a steel breadcrumb of mode and venue, a back chevron to the grid, and the sound toggle on the right. Sound is off until the player turns it on.
+- **Header:** night, 52px, line bottom border, joined cells split by hairlines: a 48px back chevron cell, the APEX wordmark (wide 19px), a mode label over the track name, and the sound toggle cell on the right. Sound is off until the player turns it on.
 
-### Start-Light Gantry (signature)
-Five black pods (6px radius, white/8 border), two lamps each, sizes 16/24/36px. On the hub it is the day's clock, one pod per fifth of the day, with a seven-segment countdown beneath. On the race screen lamps step on one at a time, hold, and black out instantly; no easing on lights.
+### Corner Tower (signature)
+The broadcast timing tower turned to corners. A night/82 column with a blur, a label header ("Lap 2/6"), and one 27px row per corner group split by line/70 hairlines. Each row: an angled 22px graphite position plate (steel numeral), the corner name in condensed 700, the delta in its sector colour on wide screens, and a 4px grade bar on the right edge, the only colour on the tower. The active row inverts to paint with night text and a night plate. It is the same strip in all three phases: in setup a row jumps to that corner; in the race rows fill as the car clears them, each with `row-flash` (700ms paint/28 fading out); in the result a row opens that corner to fix.
 
-### Seven-Segment Timing (signature)
-SVG digits in a 10×18 cell, skewed −6 degrees, with ghost segments. Used for speed, live delta (purple at ≤50 ms, otherwise paint) and the hub countdown.
+### Timing Card (signature)
+The head of the result sheet: a "Lap time" label over the wide 34px lap time, an angled delta plate beside it (graphite with paint text, or purple "Perfect" on an all-purple lap), then timing lines, each a hairline row with a label key left and a tabular 15px 700 value right (orange for a new personal best or a beaten rival).
 
-### Lap Grid (signature)
-One row per lap, one tile per corner group. Empty rows are outlined at white/12; the live row is outlined at white/35 on white/5; graded tiles fill with their sector colour and flip in (`tile-flip`, 240ms) as the car leaves each group. Small size (10px, 2px radius) on the hub, medium (14–24px, 3px radius) elsewhere.
+### Lap Grid
+One row per lap, one square tile per corner group. Empty tiles are line-bordered on night/30; the live row is paint/35 on paint/5; graded tiles fill with their sector colour and flip in (`tile-flip`, 240ms) as the car leaves each group. 10px tiles on the hub, 14–22px elsewhere.
 
-### Pit Board (signature)
-A board-black plate with a 2px #3a3f46 frame, mono row labels (LAP, TGT or RIV, PB) and characters set one per recessed slot in Big Shoulders 900. It swings in from the right over the pit wall (`board-in`, 520ms, overshoot and settle). Values are paint, orange for a PB or beaten rival, purple only for an all-purple lap.
+### Season Bar
+Twelve 6px segments: won rounds paint, lost rounds steel/35, the current round orange, unplayed rounds line. No sector colours.
 
-### Steering-Wheel HUD (signature)
-A board panel at the top with a full-width row of rev LEDs, a 44px gear digit in a black cell, segment speed and delta, and mono units. The live lap tiles dock at the bottom.
+### Start-Light Gantry (signature hardware)
+Five square black pods (#060607, line border), two lamps each at 16/24/36px. On the hub it is the day's clock, one pod per fifth of the day, with a seven-segment countdown beneath; it hangs from a hatched truss. On the race screen lamps step on one at a time, hold, and black out instantly, then "Lights out" shows for 900ms. No easing on lights.
 
-### Grid Slot (signature)
-A painted box on the asphalt: 3px paint front line, side legs fading out toward the back, the grid numeral painted beside it. Content sits directly on the ground, no card. The hub ground is procedural asphalt with rubbered-in lines down each grid column.
+### Onboard Cluster
+A row of square rev LEDs (green building, the last three blue, all blue on the shift flash; unlit graphite), a wide 40px gear numeral, and the speed in seven-segment digits with ghost segments, units as labels.
+
+### Grid Slot
+A painted box on the asphalt: 3px paint front line, side legs fading out toward the back, the grid numeral (wide, paint/40, 40–52px) beside it. Content sits on the ground, no card. The hub ground is procedural asphalt with rubbered-in lines down each grid column.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep safety orange (#ff6a13) for the player's line, car, choice and primary action only.
-- **Do** grade corners with purple ≤50 ms, green ≤150 ms, yellow ≤400 ms, red beyond, and keep those four colours for grading.
-- **Do** draw every unlit segment, lamp and LED as a ghost (8–20% segments, dark-glass lamps).
-- **Do** draw structure as 3px white paint on dark ground, and let hub content sit on the asphalt.
-- **Do** keep lamp motion stepped with an instant blackout, and turn off `board-in`, `rise` and `tile-flip` under reduced motion.
+- **Do** keep safety orange (#ff6a13) for the player's line, car, choice, record and primary action only.
+- **Do** grade corners with purple ≤50 ms, green ≤150 ms, yellow ≤400 ms, red beyond, and keep those four colours for grading in the interface.
+- **Do** set every number that updates in tabular figures, and choose width before size: wide for times and names, condensed for labels.
+- **Do** keep corners square and reserve the angled cut for primary actions and position or delta plates.
+- **Do** mark selection by inverting to paint on night.
+- **Do** draw every unlit segment, lamp and LED as a ghost.
+- **Do** keep lamp motion stepped with an instant blackout, and turn off `wipe-in`, `tile-flip` and `row-flash` under reduced motion.
 - **Do** keep colours in `index.css` @theme and `game/palette.ts` in sync.
 - **Do** name circuits by venue only.
 
@@ -271,6 +326,7 @@ A painted box on the asphalt: 3px paint front line, side legs fading out toward 
 - **Don't** use series logos, team liveries, driver likenesses or copied broadcast graphics.
 - **Don't** play any sound until the player switches it on.
 - **Don't** put hub modes in same-size cards; they are grid slots.
-- **Don't** colour pit-board values with sector colours, except purple for an all-purple lap.
-- **Don't** set sentences in Plex Mono or data in Barlow.
-- **Don't** hide the off state of timing hardware.
+- **Don't** round interface corners; rounds belong to lamps, knobs and map markers.
+- **Don't** put drop shadows on panels, sheets, dialogs or buttons.
+- **Don't** add a second type family or use seven-segment digits beyond the gantry countdown and the speed.
+- **Don't** colour the lap time, timing lines or season bar with sector colours, except the purple "Perfect" plate.

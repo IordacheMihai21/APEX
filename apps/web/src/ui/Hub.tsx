@@ -7,6 +7,7 @@ import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/se
 import { Gantry } from "./Gantry";
 import { LapGrid } from "./LapGrid";
 import { Segments } from "./Segments";
+import { primaryBtn, secondaryBtn } from "./styles";
 
 export type HubAction = { kind: "daily" } | { kind: "daily-summary" } | { kind: "season"; fresh: boolean } | { kind: "practice" };
 
@@ -37,8 +38,8 @@ export function CircuitOutline({ track, className = "" }: { track: GameTrack; cl
   }, [track]);
   return (
     <svg viewBox="-6 -6 112 112" className={className} aria-hidden="true">
-      <path d={d.path} fill="none" stroke="#eeede6" strokeWidth={4.5} strokeLinejoin="round" />
-      <circle cx={d.start[0]} cy={d.start[1]} r={5} fill="#ff6a13" stroke="#0c0d0f" strokeWidth={2} />
+      <path d={d.path} fill="none" stroke="#f2f2ee" strokeWidth={4.5} strokeLinejoin="round" />
+      <circle cx={d.start[0]} cy={d.start[1]} r={5} fill="#ff6a13" stroke="#0a0b0d" strokeWidth={2} />
     </svg>
   );
 }
@@ -53,7 +54,7 @@ function GridSlot({ pos, side, pole = false, children }: { pos: number; side: "l
     <div className={`relative w-[62%] min-w-[236px] max-w-[400px] lg:w-full lg:max-w-none ${side === "right" ? "ml-auto" : ""}`}>
       <span
         aria-hidden="true"
-        className={`absolute top-1 ${side === "left" ? "-right-3 translate-x-full" : "-left-3 -translate-x-full"} font-display text-[52px] font-black leading-none text-paint/45 lg:text-[64px]`}
+        className={`absolute top-1 ${side === "left" ? "-right-3 translate-x-full" : "-left-3 -translate-x-full"} wide text-[44px] leading-none text-paint/40`}
       >
         {pos}
       </span>
@@ -103,8 +104,8 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   // rubbered-in lines where the cars pull away from each column of the grid
   const rubber =
     "linear-gradient(90deg, transparent 14%, rgba(8,8,10,0.22) 22%, transparent 30%, transparent 64%, rgba(8,8,10,0.2) 72%, transparent 80%)";
-  const primary = "rounded-md bg-ink px-5 py-3 font-display text-[21px] font-black uppercase leading-none tracking-[0.08em] text-board transition-transform active:scale-[0.97]";
-  const secondary = "rounded-md border border-white/20 bg-board/60 px-4 py-2.5 font-display text-[17px] font-bold uppercase leading-none tracking-[0.06em] text-paint hover:border-white/45";
+  const primary = primaryBtn;
+  const secondary = secondaryBtn;
 
   return (
     <div
@@ -117,19 +118,19 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
         <div className="mx-auto max-w-[560px] px-4 pt-2.5">
           <Gantry lit={lit} label={`Next Daily Quali in ${hms(left)}`} />
           <div className="mt-2.5 flex items-center justify-center gap-3">
-            <span className="text-[13px] font-medium tracking-[0.08em] text-paint/70 uppercase">Next quali in</span>
-            <Segments text={hms(left)} className="h-5" color="#ff3b2a" ghost={0.2} />
+            <span className="label text-paint/75">Next quali in</span>
+            <Segments text={hms(left)} className="h-5" color="#ff2b1a" ghost={0.2} />
           </div>
         </div>
       </section>
 
-      <div className="mx-auto max-w-[900px] px-4 pt-4 pb-24">
+      <div className="mx-auto max-w-[1040px] px-4 pt-4 pb-24 lg:pt-10">
         <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-x-24 lg:gap-y-10 lg:px-16">
           {/* P1: Daily Quali on pole */}
           <GridSlot pos={1} side="left" pole>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h2 className="font-display text-[28px] font-black uppercase leading-[0.92] tracking-[0.03em] text-paint [text-shadow:0_1px_0_rgba(0,0,0,0.6)]">
+                <h2 className="wide text-[26px] uppercase leading-[0.95] text-paint lg:text-[34px]">
                   Daily
                   <br />
                   Quali
@@ -153,7 +154,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
                     : "6 laps to find the perfect line. Purple every corner to win."}
             </p>
             <button className={`${finished ? secondary : primary} mt-3 w-full`} onClick={() => onAction(finished ? { kind: "daily-summary" } : { kind: "daily" })}>
-              {finished ? "See today's result" : daily.laps.length ? "Continue quali" : "Lights out"}
+              {finished ? "See today's result" : daily.laps.length ? "Continue" : "Lights out"}
             </button>
           </GridSlot>
 
@@ -161,11 +162,11 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           <div className="lg:pt-28">
             <GridSlot pos={2} side="right">
               <div className="flex items-baseline justify-between gap-2">
-                <h2 className="font-display text-[24px] font-black uppercase leading-[0.92] tracking-[0.03em] text-paint">
+                <h2 className="wide text-[20px] uppercase leading-[0.95] text-paint lg:text-[26px]">
                   Perfect <br className="hidden lg:block" />
                   Season
                 </h2>
-                <span className="shrink-0 font-display text-[30px] font-black leading-none whitespace-nowrap text-paint">
+                <span className="wide num shrink-0 text-[26px] leading-none whitespace-nowrap text-paint">
                   {run ? `${wins}–${losses}` : season.best ? `${season.best.wins}–${season.best.losses}` : "12–0"}
                 </span>
               </div>
@@ -179,7 +180,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
               <div className="mt-2.5 flex gap-1" aria-hidden="true">
                 {Array.from({ length: SEASON_ROUNDS }, (_, i) => {
                   const r = run?.results[i];
-                  return <span key={i} className={`h-1.5 flex-1 rounded-full ${r === "W" ? "bg-purple" : r === "L" ? "bg-kerb" : i === (run?.results.length ?? -1) ? "bg-paint/70" : "bg-white/15"}`} />;
+                  return <span key={i} className={`h-1.5 flex-1 ${r === "W" ? "bg-paint" : r === "L" ? "bg-steel/35" : i === (run?.results.length ?? -1) ? "bg-ink" : "bg-line"}`} />;
                 })}
               </div>
               <div className="mt-3 flex gap-2">
@@ -197,7 +198,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
 
           {/* P3: Free Practice */}
           <GridSlot pos={3} side="left">
-            <h2 className="font-display text-[24px] font-black uppercase leading-[0.92] tracking-[0.03em] text-paint">
+            <h2 className="wide text-[20px] uppercase leading-[0.95] text-paint lg:text-[26px]">
               Free <br className="hidden lg:block" />
               Practice
             </h2>
@@ -210,7 +211,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
       </div>
 
       {/* record strip, pinned to the bottom edge */}
-      <dl className="sticky bottom-0 z-[1] mx-auto grid max-w-[560px] grid-cols-4 gap-2 border-t border-white/10 bg-[#0e0f11]/95 px-3 pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] text-center backdrop-blur-sm min-[560px]:rounded-t-lg min-[560px]:border-x">
+      <dl className="sticky bottom-0 z-[1] mx-auto grid max-w-[560px] grid-cols-4 gap-2 border-t border-line bg-night/95 px-3 pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] text-center backdrop-blur-sm min-[560px]:border-x">
         {[
           ["Played", stats.played],
           ["Win %", winPct],
@@ -218,8 +219,8 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           ["Best", stats.bestStreak],
         ].map(([k, v]) => (
           <div key={k as string}>
-            <dd className="font-display text-[24px] font-black leading-none text-paint">{v}</dd>
-            <dt className="mt-1 text-[11px] font-semibold tracking-[0.1em] text-paint/65 uppercase">{k}</dt>
+            <dd className="wide num text-[20px] leading-none text-paint">{v}</dd>
+            <dt className="label mt-1">{k}</dt>
           </div>
         ))}
       </dl>
