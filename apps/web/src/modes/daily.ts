@@ -78,6 +78,20 @@ function loadAll(): Record<string, DailyRecord> {
   }
 }
 
+/** Every daily played on this device, oldest first. */
+export function allDailies(): DailyRecord[] {
+  return Object.values(loadAll())
+    .filter((r) => r.laps.length > 0)
+    .sort((a, b) => a.key.localeCompare(b.key));
+}
+
+/** How many days ended on each best medal (null = no medal). */
+export function medalDistribution(): { medal: Medal | null; days: number }[] {
+  const order: (Medal | null)[] = ["pole", "gold", "silver", "bronze", null];
+  const days = allDailies().map(bestMedal);
+  return order.map((medal) => ({ medal, days: days.filter((m) => m === medal).length }));
+}
+
 export function loadDaily(key = dateKey()): DailyRecord {
   return loadAll()[key] ?? { key, trackId: dailyTrack(key), laps: [], status: "playing" };
 }

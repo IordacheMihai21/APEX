@@ -21,7 +21,8 @@ export type HubAction =
   | { kind: "season"; fresh: boolean }
   | { kind: "practice" }
   | { kind: "practice-track"; trackId: string }
-  | { kind: "reaction" };
+  | { kind: "reaction" }
+  | { kind: "stats" };
 
 const PLAYBACK = 4;
 /** Before a season is drawn, the calendar shows the twelve circuits in catalog order. */
@@ -382,6 +383,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
               </span>
             </>
           )}
+          <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "stats" })}>
+            See your record
+          </button>
           <span className="sm:ml-auto">An independent game. Circuit names refer to venues only.</span>
         </p>
       </footer>

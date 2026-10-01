@@ -27,6 +27,7 @@ import { LapGrid } from "./ui/LapGrid";
 import { ADS_ON, AdSlot } from "./ui/Ads";
 import { RaceHud, SectorCells } from "./ui/RaceHud";
 import { Reaction } from "./ui/Reaction";
+import { Stats } from "./ui/Stats";
 import { SpeedTrace } from "./ui/SpeedTrace";
 import { MedalRow } from "./ui/Medals";
 import { MEDAL_NAME, medalFor, realPole } from "./modes/medals";
@@ -63,6 +64,7 @@ export function App() {
   };
   const [picking, setPicking] = useState(false);
   const [summary, setSummary] = useState(false);
+  const [stats, setStats] = useState(false);
   const [sound, setSound] = useState(soundEnabled);
 
   useEffect(() => {
@@ -83,6 +85,7 @@ export function App() {
     else if (a.kind === "daily-summary") setSummary(true);
     else if (a.kind === "practice") setPicking(true);
     else if (a.kind === "reaction") setScreen({ kind: "reaction" });
+    else if (a.kind === "stats") setStats(true);
     else if (a.kind === "practice-track") setScreen({ kind: "play", mode: "practice", trackId: a.trackId });
     else {
       const store = a.fresh ? newSeason() : loadSeason();
@@ -184,6 +187,7 @@ export function App() {
           onClose={() => setPicking(false)}
         />
       )}
+      {stats && <Stats onClose={() => setStats(false)} />}
       {summary && (
         <DailySummary
           onClose={() => setSummary(false)}
