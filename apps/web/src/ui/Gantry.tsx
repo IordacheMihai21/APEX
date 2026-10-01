@@ -16,7 +16,7 @@ export function Gantry({ lit, size = "md", label, sequence = false }: { lit: num
               style={sequence && i < lit ? { animationDelay: `${180 + i * 220}ms` } : undefined}
               className={`${lamp} rounded-full ${sequence && i < lit ? "lamp-seq" : ""} ${
                 i < lit
-                  ? "bg-[radial-gradient(circle_at_40%_35%,#ffb3a8_0%,#ff2b1a_38%,#9e0f06_100%)] shadow-[0_0_14px_3px_rgba(255,40,20,0.55)]"
+                  ? "bg-[radial-gradient(circle_at_40%_35%,#ffb3a8_0%,#ff2b1a_38%,#9e0f06_100%)] shadow-[0_0_6px_1px_rgba(255,40,20,0.45)]"
                   : "bg-[radial-gradient(circle_at_40%_35%,#2a1412_0%,#150808_60%,#0b0404_100%)]"
               }`}
             />

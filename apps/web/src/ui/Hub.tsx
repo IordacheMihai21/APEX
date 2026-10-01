@@ -3,6 +3,7 @@ import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES, type Outline } from "../game/outlines";
 import { DAILY_LAPS, dailyNumber, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
+import type { Grade } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
 import { Gantry } from "./Gantry";
 import { lapTime } from "./format";
@@ -53,13 +54,16 @@ export function CircuitOutline({ track, className = "" }: { track: GameTrack | s
 }
 
 /**
- * Today's circuit, drawn the way a broadcast map is: one quiet asphalt stroke,
- * the perfect line as a hairline inside it, and the car as an orange dot with
+ * Today's circuit, drawn the way a timing map is: one quiet asphalt stroke,
+ * today's best lap painted over it in sector colours (one stroke per corner
+ * group, lit in lap order), the perfect line as a hairline, and the car as an orange dot with
  * a tapering streak. The car runs the optimal lap at the speeds the physics
  * engine computes (×4, the game's playback), so the streak stretches on the
  * straights and shrinks under braking. The track draws itself in once.
  */
-function HeroCircuit({ id, o }: { id: string; o: Outline }) {
+const GRADE_STROKE: Record<Grade, string> = { purple: "#a259ff", green: "#29cc6a", yellow: "#f5c518", red: "#e5332a" };
+
+function HeroCircuit({ id, o, grades }: { id: string; o: Outline; grades: Grade[] | null }) {
   const reduce = useReducedMotion();
   const w = Math.max(o.width * 2.2, 20);
   const lineId = `line-${id}`;
@@ -71,6 +75,22 @@ function HeroCircuit({ id, o }: { id: string; o: Outline }) {
   return (
     <svg viewBox="0 0 1000 1000" className="hero-map h-full w-full overflow-visible" role="img" aria-label={`Map of ${CATALOG.find((t) => t.id === id)?.name}`}>
       <path className="draw draw-1" pathLength={1} d={o.ribbon} fill="none" stroke="#23262d" strokeWidth={w} strokeLinejoin="round" strokeLinecap="round" />
+      {grades &&
+        o.groups.map((g, i) =>
+          grades[i] ? (
+            <path
+              key={i}
+              className="sector-in"
+              style={{ "--d": `${1500 + i * 110}ms` } as React.CSSProperties}
+              d={g}
+              fill="none"
+              stroke={GRADE_STROKE[grades[i]]}
+              strokeWidth={w * 0.42}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ) : null,
+        )}
       <path id={lineId} className="draw draw-2" pathLength={1} d={o.line} fill="none" stroke="#f2f2ee" strokeOpacity={0.22} strokeWidth={2} strokeLinejoin="round" />
       {!reduce &&
         (
@@ -110,12 +130,18 @@ function HeroCircuit({ id, o }: { id: string; o: Outline }) {
   );
 }
 
-/** What the map is showing: the lap the player is hunting. */
-function PerfectLap({ o }: { o: Outline }) {
+/** What the map is showing: your best lap today against the lap you are hunting. */
+function MapCaption({ o, bestMs }: { o: Outline; bestMs: number | null }) {
   return (
-    <figcaption className="fade-in-late flex items-baseline justify-between gap-4 border-t border-line pt-3">
-      <span className="text-[13px] text-steel">The perfect lap, driven live</span>
-      <span className="wide num text-[15px] text-paint">{lapTime(o.lapMs)}</span>
+    <figcaption className="fade-in-late grid grid-cols-2 gap-4 border-t border-line pt-3">
+      <div>
+        <div className="text-[13px] text-steel">{bestMs === null ? "No lap yet today" : "Your best today"}</div>
+        <div className="wide num mt-1 text-[15px] text-paint">{bestMs === null ? "-:--.---" : lapTime(bestMs)}</div>
+      </div>
+      <div className="text-right">
+        <div className="text-[13px] text-steel">Perfect lap, driven live</div>
+        <div className="wide num mt-1 text-[15px] text-paint">{lapTime(o.lapMs)}</div>
+      </div>
     </figcaption>
   );
 }
@@ -143,6 +169,8 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   const losses = (run?.results.length ?? 0) - wins;
   const winPct = stats.played ? Math.round((stats.wins / stats.played) * 100) : 0;
   const lapsLeft = DAILY_LAPS - daily.laps.length;
+  // the lap the map paints: today's fastest
+  const best = daily.laps.reduce<(typeof daily.laps)[number] | null>((b, l) => (!b || l.lapTimeMs < b.lapTimeMs ? l : b), null);
   const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 
   return (
@@ -174,9 +202,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           {/* the map sits inline on phones, beside the copy from lg */}
           <figure className="mt-4 w-full max-w-[460px] self-center lg:hidden">
             <div className="h-[min(34vh,360px)] w-full">
-              <HeroCircuit id={daily.trackId} o={o} />
+              <HeroCircuit id={daily.trackId} o={o} grades={best?.grades ?? null} />
             </div>
-            <PerfectLap o={o} />
+            <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} />
           </figure>
 
           <div className="rise mt-4 max-w-[440px] lg:mt-10" style={d(620)}>
@@ -201,9 +229,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
 
         <figure className="hidden w-full max-w-[600px] justify-self-end lg:block">
           <div className="aspect-square w-full p-[4%]">
-            <HeroCircuit id={daily.trackId} o={o} />
+            <HeroCircuit id={daily.trackId} o={o} grades={best?.grades ?? null} />
           </div>
-          <PerfectLap o={o} />
+          <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} />
         </figure>
       </section>
 

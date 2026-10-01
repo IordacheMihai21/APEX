@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { setSoundEnabled, soundEnabled } from "./game/audio";
 import { CATALOG, loadTrack } from "./game/catalog";
+import { OUTLINES } from "./game/outlines";
 import { Game, type Mode, type Snapshot } from "./game/game";
 import { DAILY_LAPS, type DailyRecord, dailyNumber, loadDaily, msToNextDay, recordLap, shareText } from "./modes/daily";
 import { GRADE_EMOJI, type Grade, gradeFor } from "./modes/grading";
@@ -96,7 +97,7 @@ export function App() {
             </span>
             {track && screen.kind === "play" && (
               <div className="min-w-0 leading-tight">
-                <div className="label truncate">{MODE_LABEL[screen.mode]}</div>
+                <div className="caption truncate">{MODE_LABEL[screen.mode]}</div>
                 <div className="truncate text-[14px] font-bold text-paint">{track.name}</div>
               </div>
             )}
@@ -136,6 +137,23 @@ export function App() {
         />
       )}
       {summary && <DailySummary onClose={() => setSummary(false)} />}
+    </div>
+  );
+}
+
+/** While the circuit loads, its outline draws itself where the map will be. */
+function Loading({ trackId, error }: { trackId: string; error: string | null }) {
+  const o = OUTLINES[trackId];
+  return (
+    <div className="grid h-full place-items-center content-center gap-4 px-6 text-center">
+      {o && !error && (
+        <svg viewBox="0 0 1000 1000" className="hero-map h-40 w-40" aria-hidden="true">
+          <path className="draw draw-1 loading-loop" pathLength={1} d={o.outline} fill="none" stroke="#9aa1ab" strokeWidth={26} strokeLinejoin="round" />
+        </svg>
+      )}
+      <p className={`text-[14px] ${error ? "text-paint" : "text-steel"}`} role="status">
+        {error ? `This circuit did not load: ${error}. Go back to the grid and try again.` : `Loading ${CATALOG.find((t) => t.id === trackId)?.name ?? "the circuit"}`}
+      </p>
     </div>
   );
 }
@@ -194,7 +212,7 @@ function Play({ mode, trackId, onNext }: { mode: Mode; trackId: string; onNext: 
     };
   }, [mode, trackId]);
 
-  if (!game) return <div className="label grid h-full place-items-center">{error ?? "Loading circuit"}</div>;
+  if (!game) return <Loading trackId={trackId} error={error} />;
   return <GameView game={game} daily={daily} round={round} practiceLaps={practiceLaps} onNext={onNext} />;
 }
 
@@ -354,12 +372,12 @@ function ControlBar({ s, game }: { s: Snapshot; game: Game }) {
     <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center min-[720px]:px-3 min-[720px]:pb-3">
       <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/94 px-3 pt-2.5 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:border">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="wide truncate text-[20px] leading-none uppercase text-paint">
+          <h2 className="wide truncate text-[20px] leading-none text-paint">
             {cx.name}
             <span className="ml-2 text-[13px] text-ink">{gate.label === "Apex" && gate.corner ? `Apex ${gate.corner}` : gate.label}</span>
           </h2>
-          <span className="label shrink-0">
-            Corner {s.complex + 1}/{game.controls.complexes.length}
+          <span className="caption num shrink-0">
+            Corner {s.complex + 1} of {game.controls.complexes.length}
           </span>
         </div>
 
@@ -455,7 +473,7 @@ function ShareButton({ text }: { text: string }) {
 function TimingLine({ label, value, tone = "text-paint", order = 0 }: { label: string; value: string; tone?: string; order?: number }) {
   return (
     <div style={{ "--d": `${640 + order * 90}ms` } as React.CSSProperties} className="rise flex items-baseline justify-between gap-3 border-t border-line py-1.5">
-      <span className="label">{label}</span>
+      <span className="caption">{label}</span>
       <span className={`num text-[15px] font-bold ${tone}`}>{value}</span>
     </div>
   );
@@ -547,7 +565,7 @@ function ResultSheet({
         {/* timing card */}
         <div className="flex items-end justify-between gap-3">
           <div>
-            <div className="label">Lap time</div>
+            <div className="caption">Lap time</div>
             <Roll text={lapTime(r.lapTimeMs)} className="wide text-[34px] text-paint" />
           </div>
           <div className={`plate-in cut-l num px-3 py-1.5 text-[15px] font-bold ${r.allPurple ? "bg-purple text-night" : "bg-graphite text-paint"}`}>
@@ -567,10 +585,10 @@ function ResultSheet({
 
         {/* outcome and the lap board */}
         <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-line pt-3">
-          <h2 className="wide text-[20px] leading-none uppercase text-paint">{headline}</h2>
+          <h2 className="wide text-[20px] leading-none text-paint">{headline}</h2>
           {s.mode !== "practice" && (
-            <span className="label num">
-              {lapRows.length}/{total}
+            <span className="caption num">
+              Lap {lapRows.length} of {total}
             </span>
           )}
         </div>
@@ -602,7 +620,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
   return (
     <div className="absolute inset-x-0 bottom-0 flex justify-center">
       <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/95 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-        <h2 className="wide text-[20px] leading-none uppercase text-paint">{daily.status === "won" ? "Perfect lap" : "Out of laps"}</h2>
+        <h2 className="wide text-[20px] leading-none text-paint">{daily.status === "won" ? "Perfect lap" : "Out of laps"}</h2>
         <p className="mt-1.5 text-[14px] text-paint/75">New circuit in {countdown}.</p>
         <div className="mt-3">
           <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={game.controls.complexes.length} />
@@ -632,7 +650,7 @@ function DailySummary({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-night/75 p-4" onClick={onClose}>
       <div role="dialog" aria-label="Today's result" className="wipe-in w-full max-w-sm border border-line bg-board p-4" onClick={(e) => e.stopPropagation()}>
-        <h2 className="wide text-[20px] leading-none uppercase text-paint">{daily.status === "won" ? `Perfect on lap ${daily.laps.length}` : "Out of laps"}</h2>
+        <h2 className="wide text-[20px] leading-none text-paint">{daily.status === "won" ? `Perfect on lap ${daily.laps.length}` : "Out of laps"}</h2>
         <p className="mt-1.5 text-[14px] text-paint/75">
           Daily quali #{dailyNumber()}, {info.name}. Next circuit in {countdown}.
         </p>
@@ -652,15 +670,15 @@ function DailySummary({ onClose }: { onClose: () => void }) {
 
 function Legend() {
   const items: [string, string][] = [
-    ["bg-purple", "Perfect ≤.05s"],
-    ["bg-green", "≤.15s"],
-    ["bg-yellow", "≤.4s"],
-    ["bg-kerb", "More"],
+    ["bg-purple", "Perfect"],
+    ["bg-green", "Within 0.15s"],
+    ["bg-yellow", "Within 0.4s"],
+    ["bg-kerb", "Slower"],
   ];
   return (
     <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1">
       {items.map(([c, t]) => (
-        <span key={t} className="label flex items-center gap-1.5 whitespace-nowrap">
+        <span key={t} className="caption flex items-center gap-1.5 whitespace-nowrap">
           <span className={`h-2 w-2 shrink-0 ${c}`} />
           {t}
         </span>
@@ -678,14 +696,14 @@ function TrackPicker({ onPick, onClose }: { onPick: (id: string) => void; onClos
   return (
     <div className="fixed inset-0 z-10 flex items-start justify-center bg-night/75 p-4 pt-16" onClick={onClose}>
       <div role="dialog" aria-label="Choose a circuit" className="wipe-in w-full max-w-sm border border-line bg-board" onClick={(e) => e.stopPropagation()}>
-        <div className="label border-b border-line px-4 py-2.5 text-paint">Free practice · choose a circuit</div>
+        <div className="wide border-b border-line px-4 py-3 text-[15px] text-paint">Choose a circuit</div>
         <ul className="max-h-[70dvh] overflow-y-auto">
           {CATALOG.map((t, i) => (
             <li key={t.id} className="border-b border-line/70 last:border-b-0">
               <button onClick={() => onPick(t.id)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-graphite">
                 <span className="cut-l num grid h-6 w-7 shrink-0 place-items-center bg-graphite text-[11px] font-bold text-steel">{i + 1}</span>
-                <span className="wide flex-1 truncate text-[15px] uppercase text-paint">{t.name}</span>
-                <span className="label">{t.country}</span>
+                <span className="wide flex-1 truncate text-[15px] text-paint">{t.name}</span>
+                <span className="caption">{t.country}</span>
               </button>
             </li>
           ))}

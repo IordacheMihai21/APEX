@@ -66,13 +66,19 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith(".v1.json"))) {
   keyTimes[TIMING_KEYS] = 1;
   keyPoints[TIMING_KEYS] = 1;
 
-  // corner numbers sit off the outside of each apex
-  const corners = track.corners.map((c) => {
-    const i = c.apexIndex;
-    const side = c.direction === "left" ? -1 : 1;
-    const d = 46 / s;
-    const [x, y] = P(pt.cx[i] + side * pt.nx[i] * d, pt.cy[i] + side * pt.ny[i] * d);
-    return [c.name.replace(/^T/, ""), x, y];
+  // one open path per corner group (the game's grading unit), timing line to timing line, on the racing line
+  const corners = track.corners;
+  const groups = (track.controls?.complexes ?? []).map((cx) => {
+    const j0 = corners.findIndex((c) => c.name === cx.corners[0]);
+    const jl = corners.findIndex((c) => c.name === cx.corners[cx.corners.length - 1]);
+    const a = corners[j0].timingStartIndex;
+    const b = corners[(jl + 1) % corners.length].timingStartIndex;
+    const len = (b - a + n) % n || n;
+    const step = Math.max(1, Math.round(n / LINE_POINTS));
+    const pts: string[] = [];
+    for (let o = 0; o <= len; o += step) pts.push(line((a + o) % n).join(" "));
+    pts.push(line(b % n).join(" "));
+    return `M${pts.join("L")}`;
   });
 
   const [sx, sy] = centre(0);
@@ -83,7 +89,7 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith(".v1.json"))) {
     ribbon: path(LINE_POINTS, centre),
     line: path(LINE_POINTS, line),
     start: [sx, sy, +((Math.atan2(ty - sy, tx - sx) * 180) / Math.PI).toFixed(1)],
-    corners,
+    groups,
     keyTimes: keyTimes.join(";"),
     keyPoints: keyPoints.join(";"),
     lapMs: Math.round(totalMs),
@@ -104,8 +110,8 @@ export interface Outline {
   line: string;
   /** start line: x, y, heading in degrees */
   start: [number, number, number];
-  /** corner number labels: name, x, y */
-  corners: [string, number, number][];
+  /** one open path per corner group (controls.complexes order), along the optimal line */
+  groups: string[];
   /** animateMotion timing so a car laps at the optimal lap's speeds */
   keyTimes: string;
   keyPoints: string;
