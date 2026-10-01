@@ -92,6 +92,13 @@ every 12 days, so a revealed line could be remembered for the next visit;
 rotating conditions per cycle (wet, low-downforce car; GAME_PLAN C13) keeps
 repeat visits fresh.
 
+Also done: lights-out reaction test (9) at `/reaction`, stats page (6),
+installable app with offline play (7), race-weekend tie-in (10), mini-sector
+duel maps (8).
+
+Still open: weekly one-corner challenge (11), guess the circuit (12), TV-style
+replay director (13), and the server-side items (14-16).
+
 ## Recommended next batch
 
 In order of value per effort:

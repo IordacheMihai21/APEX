@@ -5,7 +5,7 @@ import { colourBlind, setColourBlind } from "./game/palette";
 import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
 import { OUTLINES } from "./game/outlines";
 import { LINE_STYLES, type LineStyle } from "@apex/engine";
-import { Game, type Mode, type Snapshot } from "./game/game";
+import { Game, type MapView, type Mode, type Snapshot } from "./game/game";
 import { DAILY_HINT_AFTER_LAPS, DAILY_LAPS, type DailyRecord, bestMedal, recordHint, dailyNumber, loadDaily, msToNextDay, recordLap, shareText } from "./modes/daily";
 import { GRADE_EMOJI, type Grade, gradeFor } from "./modes/grading";
 import {
@@ -653,6 +653,45 @@ function CoachRow({ name, deltaMs, game, hintsOpen, onHint }: { name: string; de
   );
 }
 
+const MAP_VIEW_NAME: Record<MapView, string> = { corners: "Corners", best: "Previous best", challenge: "Challenge" };
+
+/** What the circuit map shows after a lap: corner grades, or a mini-sector duel. */
+function MapViewSwitch({ s, game }: { s: Snapshot; game: Game }) {
+  return (
+    <div className="mt-3 border-t border-line pt-2.5">
+      <div className="grid border border-line" style={{ gridTemplateColumns: `repeat(${s.mapViews.length}, minmax(0, 1fr))` }} role="radiogroup" aria-label="Map shows">
+        {s.mapViews.map((v) => (
+          <button
+            key={v}
+            role="radio"
+            aria-checked={s.mapView === v}
+            onClick={() => game.setMapView(v)}
+            className={`h-8 border-r border-line text-[13px] font-semibold last:border-r-0 ${s.mapView === v ? "bg-paint text-night" : "text-paint/85 hover:bg-graphite"}`}
+          >
+            {MAP_VIEW_NAME[v]}
+          </button>
+        ))}
+      </div>
+      <p className="caption mt-1.5 flex flex-wrap gap-x-3">
+        {s.mapView === "corners" ? (
+          "Each corner coloured by time lost to the perfect lap."
+        ) : (
+          <>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 bg-ink" />
+              You were quicker
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className={`h-2 w-2 ${s.mapView === "challenge" ? "bg-paint" : "bg-steel"}`} />
+              {s.mapView === "challenge" ? "Challenger was quicker" : "Your previous best was quicker"}
+            </span>
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
 /** One timing line: label left, value right. */
 function TimingLine({ label, value, tone = "text-paint", order = 0 }: { label: string; value: string; tone?: string; order?: number }) {
   return (
@@ -811,6 +850,8 @@ function ResultSheet({
             tone={pbDelta === null || r.newPb ? "text-ink" : "text-paint"}
           />
         </div>
+
+        {s.mapViews.length > 1 && <MapViewSwitch s={s} game={game} />}
 
         {/* outcome and the lap board */}
         <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-line pt-3">

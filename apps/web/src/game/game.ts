@@ -86,6 +86,9 @@ export interface SectorTime {
   deltaMs: number;
 }
 
+/** The result map: corner grades against the perfect lap, or a mini-sector duel with your previous best or a challenger. */
+export type MapView = "corners" | "best" | "challenge";
+
 export interface Snapshot {
   phase: Phase;
   complex: number;
@@ -118,6 +121,9 @@ export interface Snapshot {
   challengeMs: number | null;
   /** Sector times completed so far this lap (all three on the result). */
   sectors: SectorTime[];
+  /** What the result map shows, and which comparisons are available. */
+  mapView: MapView;
+  mapViews: MapView[];
   /** Running the perfect lap as a demo (after the daily is over): nothing counts. */
   demo: boolean;
   /** The perfect line has been revealed and is drawn under yours. */
@@ -242,7 +248,8 @@ export class Game {
     if (opts.challengeKnots?.length === this.pt.k) {
       // re-simulated here, so the time on the link can't be anything but what that line drives
       const line = expandGates(this.pt, this.controls, opts.challengeKnots, this.limit);
-      this.challengeMs = simulateLap({ track: this.pt, line: { knotOffsets: line }, car }).lapTimeMs;
+      this.challengeSim = simulateLap({ track: this.pt, line: { knotOffsets: line }, car });
+      this.challengeMs = this.challengeSim.lapTimeMs;
       this.pace = this.paceTarget();
     }
     this.snap = this.buildSnapshot();
@@ -296,6 +303,8 @@ export class Game {
       paceLabel: this.pace.label,
       challengeMs: this.challengeMs,
       demo: this.demo,
+      mapView: this.mapView,
+      mapViews: this.mapViews(),
       perfectShown: this.perfectXY !== null,
       sectors:
         this.sectorPlan && (this.phase === "race" || this.phase === "result")
@@ -602,6 +611,8 @@ export class Game {
     this.grades = this.computeGrades(sim);
     this.sectorPlan = this.planSectors(sim);
     this.pace = this.paceTarget();
+    this.prevBestSim = this.pbSim;
+    if (this.mapView === "best" && !this.prevBestSim) this.mapView = "corners";
     this.raceT = 0;
     this.phase = "lights";
     this.lightsT0 = performance.now();
@@ -689,6 +700,25 @@ export class Game {
 
   skip() {
     if ((this.phase === "race" || this.phase === "lights") && this.sim) this.demo ? this.finishDemo() : this.finishRace();
+  }
+
+  private challengeSim: SimulationResult | null = null;
+  /** Your best lap as it stood before the lap just driven, for the duel map. */
+  private prevBestSim: SimulationResult | null = null;
+  private mapView: MapView = "corners";
+
+  private mapViews(): MapView[] {
+    const v: MapView[] = ["corners"];
+    if (this.prevBestSim) v.push("best");
+    if (this.challengeSim) v.push("challenge");
+    return v;
+  }
+
+  setMapView(view: MapView) {
+    if (!this.mapViews().includes(view)) return;
+    this.mapView = view;
+    this.dirty = true;
+    this.emit();
   }
 
   private demo = false;
@@ -1303,7 +1333,11 @@ export class Game {
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
 
-    if (this.phase === "result" && this.sim) this.drawHeatmap(ctx, px);
+    if (this.phase === "result" && this.sim) {
+      const other = this.mapView === "best" ? this.prevBestSim : this.mapView === "challenge" ? this.challengeSim : null;
+      if (other) this.drawDuel(ctx, px, other, this.mapView === "challenge" ? C.paint : C.steel);
+      else this.drawHeatmap(ctx, px);
+    }
     else {
       const { x, y } = this.lineXY;
       const path = new Path2D();
@@ -1432,6 +1466,39 @@ export class Game {
       ctx.fill();
       ctx.stroke();
     });
+  }
+
+  /**
+   * Mini-sector duel (the "track dominance" map): the lap split into 25
+   * equal-length mini-sectors, each drawn in the colour of whichever lap was
+   * quicker through it; orange is you.
+   */
+  private drawDuel(ctx: CanvasRenderingContext2D, px: number, other: SimulationResult, otherColour: string) {
+    const sim = this.sim!;
+    const { x, y } = this.lineXY;
+    const n = this.pt.n;
+    const segs = 25;
+    const all = new Path2D();
+    for (let i = 0; i <= n; i++) i ? all.lineTo(x[i % n], y[i % n]) : all.moveTo(x[0], y[0]);
+    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.lineWidth = 7.5 * px;
+    ctx.stroke(all);
+    ctx.lineWidth = 4.5 * px;
+    const at = (s: SimulationResult, i: number) => (i >= n ? s.rawLapTimeMs : s.samples.elapsedMs[i]);
+    for (let k = 0; k < segs; k++) {
+      const a = Math.floor((k * n) / segs);
+      const b = Math.floor(((k + 1) * n) / segs);
+      const mine = at(sim, b) - at(sim, a);
+      const theirs = at(other, b) - at(other, a);
+      ctx.strokeStyle = Math.abs(mine - theirs) < 5 ? "#5c6168" : mine < theirs ? C.ink : otherColour;
+      ctx.beginPath();
+      for (let i = a; i <= Math.min(b, n); i++) {
+        const j = i % n;
+        if (i === a) ctx.moveTo(x[j], y[j]);
+        else ctx.lineTo(x[j], y[j]);
+      }
+      ctx.stroke();
+    }
   }
 
   private drawHeatmap(ctx: CanvasRenderingContext2D, px: number) {
