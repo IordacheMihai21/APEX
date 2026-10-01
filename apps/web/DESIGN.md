@@ -285,6 +285,9 @@ Square, flat, one orange slab for the one action that matters.
 - **Layering:** button rules live in `@layer components` so position and size utilities still override them.
 - **Focus:** a 2px safety-orange outline at 2px offset, global.
 
+### Setup bar (line styles first)
+Corner name (wide 20px), "Corner N of M" caption and a small "Next" outline button (chevron; "First corner" on the last). Below, the **line row**: a joined three-way radio group (Early apex / Classic / Late apex, 40px tall, 14px 600, selected = paint fill with night text), with a one-line caption explaining the selected style, or "Your own line…" once the gates have been fine-tuned away from it. **Fine-tune** (a secondary button in the action row, remembered per device) opens the gate tabs, slider and nudges; closed by default so a lap is a handful of taps.
+
 ### Tabs (gate selector)
 - **Style:** a joined strip in a line-bordered box, 36px tall, condensed 700 uppercase 12px; tabs share width when there are five or fewer, otherwise scroll.
 - **State:** selected is the inverted paint plate; rest is paint/80, hover graphite.

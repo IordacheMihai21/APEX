@@ -34,7 +34,7 @@ Modes (confirmed 2026-10-01):
   locked until tomorrow. After each lap, every corner group gets a colour:
   purple = within 0.05 s of the target, green = close, yellow = slow,
   red = far off. Each lap earns a **medal** by lap time against per-circuit
-  targets calibrated to the same driving precision (Bronze 1.5 m, Silver
+  targets calibrated to the same driving precision (Bronze 2.0 m, Silver
   0.75 m, Gold 0.3 m of gate error); **Pole = a lap with every corner purple**,
   the impossible tier, and it ends the day. The streak counts days with at
   least Bronze. Shareable medal + emoji grid.

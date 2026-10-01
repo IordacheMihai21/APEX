@@ -3,6 +3,7 @@ import {
   type Complex,
   type GameTrack,
   type LineControls,
+  type LineStyle,
   type PreparedTrack,
   type SimulationResult,
   compareRuns,
@@ -10,6 +11,7 @@ import {
   prepareTrack,
   resolveLine,
   simulateLap,
+  styleGates,
   trackControls,
   usableHalfWidth,
 } from "@apex/engine";
@@ -74,6 +76,8 @@ export interface Snapshot {
   offset: number;
   /** Max |offset| with all four wheels on track. */
   limit: number;
+  /** The one-tap style the selected corner group is set to, or null once fine-tuned away from it. */
+  style: LineStyle | null;
   canUndo: boolean;
   raceTimeMs: number;
   raceSpeedKmh: number;
@@ -238,6 +242,7 @@ export class Game {
       gate: this.sel.gate,
       offset: this.z[this.selectedGate().knot],
       limit: this.limit,
+      style: this.styleOf(this.sel.complex),
       canUndo: this.history.length > 0,
       raceTimeMs: this.raceT,
       raceSpeedKmh: speed,
@@ -366,6 +371,46 @@ export class Game {
     if (prev && prev.join(",") === this.z.join(",")) this.history.pop();
     else logEvent("gate_set", { track: this.track.id, complex: this.complex().name, gate: this.selectedGate().label });
     this.emit();
+  }
+
+  /** Raw gate offsets of each one-tap style per corner group, computed once. */
+  private styleCache = new Map<string, Map<number, number>>();
+  /** Per corner group: the style last applied and the gate values it produced (after track limits). */
+  private applied = new Map<number, { style: LineStyle; values: Map<number, number> }>();
+
+  private styleTargets(complex: number, style: LineStyle): Map<number, number> {
+    const key = `${complex}:${style}`;
+    let t = this.styleCache.get(key);
+    if (!t) this.styleCache.set(key, (t = styleGates(this.pt, this.controls.complexes[complex], style, this.limit)));
+    return t;
+  }
+
+  /** The style a group is still set to: the last one applied, as long as its gates haven't moved (5 cm). */
+  private styleOf(complex: number): LineStyle | null {
+    const a = this.applied.get(complex);
+    if (!a) return null;
+    return [...a.values].every(([k, v]) => Math.abs(this.z[k] - v) <= 0.05) ? a.style : null;
+  }
+
+  /** Set every gate of the selected corner group to a one-tap style (one undo step). */
+  applyStyle(style: LineStyle) {
+    if (this.phase !== "setup") return;
+    const t = this.styleTargets(this.sel.complex, style);
+    if (t.size === 0) return;
+    this.history.push(this.z);
+    const next = this.z.slice();
+    for (const [k, v] of t) next[k] = v;
+    this.z = expandGates(this.pt, this.controls, next, this.limit);
+    this.applied.set(this.sel.complex, { style, values: new Map([...t.keys()].map((k) => [k, this.z[k]])) });
+    this.lineXY = this.resolve();
+    this.dirty = true;
+    logEvent("style_set", { track: this.track.id, complex: this.complex().name, style });
+    this.emit();
+  }
+
+  /** Move to the next corner group (wrapping), selecting its first gate. */
+  nextComplex() {
+    this.selectGate((this.sel.complex + 1) % this.controls.complexes.length, 0);
   }
 
   nudge(deltaM: number) {

@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import { setSoundEnabled, soundEnabled } from "./game/audio";
 import { CATALOG, loadTrack } from "./game/catalog";
 import { OUTLINES } from "./game/outlines";
+import { LINE_STYLES, type LineStyle } from "@apex/engine";
 import { Game, type Mode, type Snapshot } from "./game/game";
 import { DAILY_LAPS, type DailyRecord, bestMedal, dailyNumber, loadDaily, msToNextDay, recordLap, shareText } from "./modes/daily";
 import { GRADE_EMOJI, type Grade, gradeFor } from "./modes/grading";
@@ -27,7 +28,7 @@ import { MedalRow } from "./ui/Medals";
 import { MEDAL_NAME, medalFor } from "./modes/medals";
 import { Roll } from "./ui/Roll";
 import { delta, lapTime } from "./ui/format";
-import { ChevronLeft, Frame, Minus, NudgeLeft, NudgeRight, Plus, Share, SoundOff, SoundOn, Undo, WholeTrack } from "./ui/icons";
+import { ChevronLeft, ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, Share, SoundOff, SoundOn, Undo, WholeTrack } from "./ui/icons";
 import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
@@ -365,66 +366,123 @@ function gateLabel(g: { label: string; corner?: string }, selected: boolean, cou
  * Setup controls as a lower-third: the corner and point in one line, the
  * points as a segmented strip, the precision slider, and the start.
  */
+const STYLE_NAME: Record<LineStyle, string> = { early: "Early apex", classic: "Classic", late: "Late apex" };
+const STYLE_HINT: Record<LineStyle, string> = {
+  early: "Turn in early, then run wide on the exit.",
+  classic: "Outside, inside at the apex, outside again.",
+  late: "Stay wide, apex late, straighter exit.",
+};
+
+function useFineTune(): [boolean, (v: boolean) => void] {
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem("apex.finetune") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const set = (v: boolean) => {
+    setOpen(v);
+    try {
+      localStorage.setItem("apex.finetune", v ? "1" : "0");
+    } catch {
+      /* preference just won't persist */
+    }
+  };
+  return [open, set];
+}
+
 function ControlBar({ s, game }: { s: Snapshot; game: Game }) {
   const ref = useInset(game, "bottom");
+  const [fine, setFine] = useFineTune();
   const cx = game.controls.complexes[s.complex];
   const inside = cx.direction === "mixed" ? null : cx.direction;
   const gate = cx.gates[s.gate];
+  const last = s.complex === game.controls.complexes.length - 1;
   return (
     <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center min-[720px]:px-3 min-[720px]:pb-3">
       <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/94 px-3 pt-2.5 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:border">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="wide truncate text-[20px] leading-none text-paint">
             {cx.name}
-            <span className="ml-2 text-[13px] text-ink">{gate.label === "Apex" && gate.corner ? `Apex ${gate.corner}` : gate.label}</span>
+            {fine && <span className="ml-2 text-[13px] text-ink">{gate.label === "Apex" && gate.corner ? `Apex ${gate.corner}` : gate.label}</span>}
           </h2>
-          <span className="caption num shrink-0">
-            Corner {s.complex + 1} of {game.controls.complexes.length}
+          <span className="flex shrink-0 items-center gap-2">
+            <span className="caption num">
+              Corner {s.complex + 1} of {game.controls.complexes.length}
+            </span>
+            <button className="btn-line inline-flex items-center gap-1 border border-paint/20 py-1 pr-1.5 pl-2.5 text-[13px] font-semibold text-paint/90" onClick={() => game.nextComplex()}>
+              {last ? "First corner" : "Next"}
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </span>
         </div>
 
-        <div className="mt-2.5 flex overflow-x-auto border border-line [scrollbar-width:none]" role="tablist" aria-label="Points in this corner">
-          {cx.gates.map((g, i) => (
+        {/* the one-tap line for this corner */}
+        <div className="mt-2.5 grid grid-cols-3 border border-line" role="radiogroup" aria-label="Line through this corner">
+          {LINE_STYLES.map((st) => (
             <button
-              key={g.knot}
-              role="tab"
-              aria-selected={i === s.gate}
-              aria-label={g.label === "Apex" && g.corner ? `Apex ${g.corner}` : g.label}
-              onClick={() => game.selectGate(s.complex, i)}
-              className={`grid h-9 min-w-10 shrink-0 place-items-center border-r border-line px-2.5 text-[12px] font-bold whitespace-nowrap uppercase tracking-[0.04em] last:border-r-0 [font-stretch:85%] ${cx.gates.length <= 5 ? "flex-1" : "flex-none"} ${
-                i === s.gate ? "bg-paint text-night" : "text-paint/80 hover:bg-graphite"
-              }`}
+              key={st}
+              role="radio"
+              aria-checked={s.style === st}
+              onClick={() => game.applyStyle(st)}
+              className={`style-pick h-10 border-r border-line text-[14px] font-semibold last:border-r-0 ${s.style === st ? "bg-paint text-night" : "text-paint/85 hover:bg-graphite"}`}
             >
-              {gateLabel(g, i === s.gate, cx.gates.length)}
+              {STYLE_NAME[st]}
             </button>
           ))}
         </div>
+        <p className="caption mt-1.5 min-h-[17px]">{s.style ? STYLE_HINT[s.style] : "Your own line. Pick a style to start from one, or fine-tune each point."}</p>
 
-        <div className="mt-3 flex items-center gap-2">
-          <button className={iconBtn} onClick={() => game.nudge(0.05)} aria-label="Move 5 cm left">
-            <NudgeLeft />
-          </button>
-          <div className="min-w-0 flex-1">
-            <GateSlider
-              offset={s.offset}
-              limit={s.limit}
-              inside={inside}
-              onBegin={() => {
-                game.beginEdit();
-                return game.getSnapshot().offset;
-              }}
-              onChange={(v) => game.setOffset(v)}
-              onEnd={() => game.endEdit()}
-            />
-          </div>
-          <button className={iconBtn} onClick={() => game.nudge(-0.05)} aria-label="Move 5 cm right">
-            <NudgeRight />
-          </button>
-        </div>
+        {fine && (
+          <>
+            <div className="mt-2.5 flex overflow-x-auto border border-line [scrollbar-width:none]" role="tablist" aria-label="Points in this corner">
+              {cx.gates.map((g, i) => (
+                <button
+                  key={g.knot}
+                  role="tab"
+                  aria-selected={i === s.gate}
+                  aria-label={g.label === "Apex" && g.corner ? `Apex ${g.corner}` : g.label}
+                  onClick={() => game.selectGate(s.complex, i)}
+                  className={`grid h-9 min-w-10 shrink-0 place-items-center border-r border-line px-2.5 text-[12px] font-bold whitespace-nowrap uppercase tracking-[0.04em] last:border-r-0 [font-stretch:85%] ${cx.gates.length <= 5 ? "flex-1" : "flex-none"} ${
+                    i === s.gate ? "bg-paint text-night" : "text-paint/80 hover:bg-graphite"
+                  }`}
+                >
+                  {gateLabel(g, i === s.gate, cx.gates.length)}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-3 flex items-center gap-2">
+              <button className={iconBtn} onClick={() => game.nudge(0.05)} aria-label="Move 5 cm left">
+                <NudgeLeft />
+              </button>
+              <div className="min-w-0 flex-1">
+                <GateSlider
+                  offset={s.offset}
+                  limit={s.limit}
+                  inside={inside}
+                  onBegin={() => {
+                    game.beginEdit();
+                    return game.getSnapshot().offset;
+                  }}
+                  onChange={(v) => game.setOffset(v)}
+                  onEnd={() => game.endEdit()}
+                />
+              </div>
+              <button className={iconBtn} onClick={() => game.nudge(-0.05)} aria-label="Move 5 cm right">
+                <NudgeRight />
+              </button>
+            </div>
+          </>
+        )}
 
         <div className="mt-3 flex gap-2">
           <button className={iconBtn} onClick={() => game.undo()} disabled={!s.canUndo} aria-label="Undo" title="Undo">
             <Undo />
+          </button>
+          <button className={secondaryBtn} onClick={() => setFine(!fine)} aria-expanded={fine}>
+            {fine ? "Done" : "Fine-tune"}
           </button>
           {s.pbMs !== null && s.mode === "practice" && (
             <button className={secondaryBtn} onClick={() => game.loadBest()}>

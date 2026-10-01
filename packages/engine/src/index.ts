@@ -11,3 +11,4 @@ export * from "./physics/version";
 export * from "./math/spline";
 export * from "./optimize/optimize";
 export * from "./line/controls";
+export * from "./line/styles";

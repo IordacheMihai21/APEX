@@ -7,7 +7,9 @@
  * Medal times are calibrated per circuit to the same driving precision, since
  * circuits differ ~3x in how much a metre of error costs: each medal is the
  * median lap of the optimal line with Gaussian error of a set size on every
- * gate the player controls (bronze 1.5 m, silver 0.75 m, gold 0.3 m).
+ * gate the player controls (bronze 2.0 m, silver 0.75 m, gold 0.3 m). Bronze is
+ * set so that choosing a good one-tap line style per corner (engine/line/styles.ts)
+ * reaches it on most circuits; Silver and Gold need fine-tuning.
  * Usage: npx tsx tools/track-builder/src/build-outlines.ts
  */
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -18,7 +20,7 @@ const BOX = 1000;
 const LINE_POINTS = 320;
 const OUTLINE_POINTS = 140;
 const TIMING_KEYS = 64;
-const MEDAL_SIGMA_M = { bronze: 1.5, silver: 0.75, gold: 0.3 } as const;
+const MEDAL_SIGMA_M = { bronze: 2.0, silver: 0.75, gold: 0.3 } as const;
 const MEDAL_SAMPLES = 41;
 
 /** Median lap (ms) of the optimal line with N(0, sigma) metres added to each player gate. Deterministic per track. */
