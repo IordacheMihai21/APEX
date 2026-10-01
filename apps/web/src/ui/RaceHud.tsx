@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { REV_LEDS } from "../game/drive";
 import type { Snapshot } from "../game/game";
+import type { Grade, GroupGrade } from "../modes/grading";
 import { Gantry } from "./Gantry";
 import { Segments } from "./Segments";
 import { lapTime } from "./format";
@@ -20,11 +21,46 @@ function RevLights({ leds, shift }: { leds: number; shift: boolean }) {
   );
 }
 
+const SPLIT_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
+const SPLIT_BAR: Record<Grade, string> = { purple: "bg-purple", green: "bg-green", yellow: "bg-yellow", red: "bg-kerb" };
+
+/** A short haptic tick where the device supports it (phones); silent elsewhere. */
+const buzz = (ms: number) => {
+  try {
+    navigator.vibrate?.(ms);
+  } catch {
+    /* not supported */
+  }
+};
+
+/** Broadcast split: the group just cleared and its gap, in its sector colour, for a moment. */
+function useSplit(s: Snapshot) {
+  const [split, setSplit] = useState<GroupGrade | null>(null);
+  const seen = useRef(0);
+  useEffect(() => {
+    if (s.phase !== "race") {
+      seen.current = 0;
+      return;
+    }
+    if (s.revealed > seen.current && s.grades) {
+      const g = s.grades[s.revealed - 1];
+      seen.current = s.revealed;
+      setSplit(g);
+      if (g.grade === "purple") buzz(35);
+      const t = setTimeout(() => setSplit((cur) => (cur === g ? null : cur)), 1600);
+      return () => clearTimeout(t);
+    }
+  }, [s.phase, s.revealed, s.grades]);
+  return s.phase === "race" ? split : null;
+}
+
 export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
   const [lightsOut, setLightsOut] = useState(false);
+  const split = useSplit(s);
   const prev = useRef(s.phase);
   useEffect(() => {
     if (prev.current === "lights" && s.phase === "race") {
+      buzz(20);
       setLightsOut(true);
       const t = setTimeout(() => setLightsOut(false), 900);
       prev.current = s.phase;
@@ -51,14 +87,28 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
         <div className="px-2 pt-1.5 pb-2">
           <div className="wide num text-[20px] leading-none text-paint min-[720px]:text-[26px]">{lapTime(s.raceTimeMs)}</div>
           <div className="mt-1.5 flex items-baseline justify-between">
-            <span className="label">To perfect</span>
-            <span className={`num text-[14px] font-bold ${d <= 50 ? "text-purple" : "text-paint"}`}>
+            <span className="label">To {s.paceLabel}</span>
+            <span className={`num text-[14px] font-bold ${d <= 0 ? "text-green" : "text-paint"}`}>
               {d >= 0 ? "+" : "−"}
               {(Math.abs(d) / 1000).toFixed(2)}
             </span>
           </div>
         </div>
       </div>
+
+      {/* split for the corner group just cleared */}
+      {split && (
+        <div key={split.name} className="split-in pointer-events-none absolute top-[106px] right-2 flex w-[148px] items-stretch border border-line bg-night/90 min-[720px]:top-[118px] min-[720px]:w-[188px]">
+          <span className={`w-[4px] shrink-0 ${SPLIT_BAR[split.grade]}`} />
+          <span className="flex flex-1 items-baseline justify-between gap-2 px-2 py-1.5">
+            <span className="text-[13px] font-bold text-paint [font-stretch:85%]">{split.name}</span>
+            <span className={`num text-[14px] font-bold ${SPLIT_TEXT[split.grade]}`}>
+              {split.deltaMs >= 0 ? "+" : "−"}
+              {(Math.abs(split.deltaMs) / 1000).toFixed(3)}
+            </span>
+          </span>
+        </div>
+      )}
 
       {/* start lights */}
       {(s.phase === "lights" || lightsOut) && (

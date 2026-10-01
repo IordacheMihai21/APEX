@@ -15,6 +15,7 @@ import {
   trackControls,
   usableHalfWidth,
 } from "@apex/engine";
+import { MEDAL_COLOR, MEDAL_NAME, type Medal, medalFor, nextMedal } from "../modes/medals";
 import { Camera } from "./camera";
 import { CarSprites } from "./car";
 import { CATALOG } from "./catalog";
@@ -92,8 +93,10 @@ export interface Snapshot {
   /** Corner-group tiles of the lap in progress (colours known, revealed as the car passes). */
   grades: GroupGrade[] | null;
   revealed: number;
-  /** Running gap to the perfect lap at the car's position (ms, + = behind). */
+  /** Running gap to the pace target at the car's position (ms, + = behind). */
   liveDeltaMs: number;
+  /** What the live gap and the pace marker measure against: the next medal above your best, or the perfect lap. */
+  paceLabel: string;
   drive: DriveState;
   lapsUsed: number;
   lapLimit: number | null;
@@ -109,7 +112,7 @@ export const PLAYBACK_SPEED = 4;
 const RACE_TRACK_PX_SLOW = 70;
 const RACE_TRACK_PX_FAST = 44;
 const LIGHT_MS_FIRST = 700;
-const LIGHT_MS_REPEAT = 380;
+const LIGHT_MS_REPEAT = 240;
 const PUCK_HIT_PX = 26;
 
 export interface Insets {
@@ -234,7 +237,7 @@ export class Game {
     if (this.sim && (this.phase === "race" || this.phase === "result")) {
       speed = this.sampleAt(this.sim, this.raceT).speed * 3.6;
       const i = this.indexAt(this.sim, this.raceT);
-      liveDelta = this.sim.samples.elapsedMs[i] - this.reference.samples.elapsedMs[i];
+      liveDelta = this.sim.samples.elapsedMs[i] - this.reference.samples.elapsedMs[i] * this.pace.scale;
     }
     return {
       phase: this.phase,
@@ -259,6 +262,7 @@ export class Game {
           : this.grades.filter((g) => g.revealAtMs <= this.raceT).length
         : 0,
       liveDeltaMs: liveDelta,
+      paceLabel: this.pace.label,
       drive: driveState(this.phase === "lights" ? 0 : speed),
       lapsUsed: this.lapsUsed,
       lapLimit: this.opts.lapLimit,
@@ -556,12 +560,13 @@ export class Game {
     if (this.locked || (this.opts.lapLimit !== null && this.lapsUsed >= this.opts.lapLimit)) return;
     this.sim = sim;
     this.grades = this.computeGrades(sim);
+    this.pace = this.paceTarget();
     this.raceT = 0;
     this.phase = "lights";
     this.lightsT0 = performance.now();
     this.lightsLit = 0;
     // lights hold 0.2–1.0 s after the fifth, like the real start; shorter from the second lap on
-    this.lightsHold = 200 + Math.random() * 800;
+    this.lightsHold = this.attempts === 0 ? 200 + Math.random() * 800 : 150 + Math.random() * 300;
     this.lightMs = this.attempts === 0 ? LIGHT_MS_FIRST : LIGHT_MS_REPEAT;
     this.skids = [];
     this.prevWheels = null;
@@ -572,6 +577,31 @@ export class Game {
     if (soundEnabled()) engine.resume();
     logEvent("run_started", { track: this.track.id, mode: this.opts.mode });
     this.emit();
+  }
+
+  /** Pace for this lap: the next medal above your personal best (by time), or the perfect lap once Gold is yours. */
+  private pace: { label: string; medal: Medal | "perfect"; scale: number } = { label: "Perfect", medal: "perfect", scale: 1 };
+
+  private paceTarget(): { label: string; medal: Medal | "perfect"; scale: number } {
+    const pbMedal = this.pb ? medalFor(this.track.id, this.pb.lapTimeMs, []) : null;
+    const next = nextMedal(this.track.id, pbMedal);
+    if (!next || next.ms === null) return { label: "Perfect", medal: "perfect", scale: 1 };
+    return { label: MEDAL_NAME[next.medal], medal: next.medal, scale: next.ms / this.reference.lapTimeMs };
+  }
+
+  /** Where a car at the pace target would be now, on the player's own line (so it never shows the perfect line). */
+  private pacePoint(sim: SimulationResult): { x: number; y: number } {
+    const e = this.reference.samples.elapsedMs;
+    const t = this.raceT / this.pace.scale;
+    let lo = 0;
+    let hi = e.length - 1;
+    if (t >= e[hi]) return { x: sim.samples.x[0], y: sim.samples.y[0] };
+    while (hi - lo > 1) {
+      const m = (lo + hi) >> 1;
+      if (e[m] <= t) lo = m;
+      else hi = m;
+    }
+    return { x: sim.samples.x[lo], y: sim.samples.y[lo] };
   }
 
   /** Per corner group: time lost vs the perfect lap, its colour, and when its tile reveals. */
@@ -1051,9 +1081,20 @@ export class Game {
     if (this.phase === "setup") this.drawGateLines(ctx, px);
 
     if (this.phase !== "setup" && this.sim) {
-      if (this.pbSim && this.phase === "race" && this.opts.mode === "practice") {
+      if (this.pbSim && this.phase === "race") {
         const g = this.sampleAt(this.pbSim, this.raceT);
         this.cars.draw(ctx, g.x, g.y, g.heading, px, true);
+      }
+      if (this.phase === "race") {
+        // pace marker: a ring in the target medal's colour, riding your own line
+        const m = this.pacePoint(this.sim);
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, 7 * px, 0, Math.PI * 2);
+        ctx.lineWidth = 2.5 * px;
+        ctx.strokeStyle = this.pace.medal === "perfect" ? MEDAL_COLOR.pole : MEDAL_COLOR[this.pace.medal];
+        ctx.fillStyle = "rgba(10,11,13,0.55)";
+        ctx.fill();
+        ctx.stroke();
       }
       const p = this.sampleAt(this.sim, this.raceT);
       this.cars.draw(ctx, p.x, p.y, p.heading, px, false);

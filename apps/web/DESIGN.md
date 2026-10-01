@@ -318,6 +318,11 @@ Twelve 6px segments: won rounds paint, lost rounds steel/35, the current round o
 ### Start-Light Gantry (signature hardware)
 Five square black pods (#060607, line border), two lamps each at 16/24/36px. On the hub it is the day's clock, one pod per fifth of the day, with a seven-segment countdown beneath; it hangs from a hatched truss. On the race screen lamps step on one at a time, hold, and black out instantly, then "Lights out" shows for 900ms. No easing on lights.
 
+### Race: pace marker, ghost and splits
+- **Pace target:** the lap clock's second line reads "To Bronze/Silver/Gold/Perfect": the next medal above your personal best (Perfect once Gold is yours). Delta in tabular 14px bold, green when ahead, paint when behind.
+- **Pace marker:** a ring (7 px radius, 2.5 px stroke) in the target medal's colour with a night/55 fill, riding *your own* line where a car at the target pace would be, so it never reveals the perfect line. Your personal-best ghost (pale livery at low alpha) runs in every mode.
+- **Splits:** as each corner group is cleared, a split plate slides in under the lap clock (same width; a 4px sector-colour bar, group name in 13px condensed bold, gap in tabular 14px in the sector colour) for 1.6s. A purple split gives a 35 ms haptic tick on phones; lights out gives 20 ms.
+
 ### Onboard Cluster
 A row of square rev LEDs (green building, the last three blue, all blue on the shift flash; unlit graphite), a wide 40px gear numeral, and the speed in seven-segment digits with ghost segments, units as labels.
 

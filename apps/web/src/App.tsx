@@ -266,6 +266,8 @@ function GameView({
       } else if (s.phase === "setup" && (k === "Tab" || k === "ArrowUp" || k === "ArrowDown")) {
         e.preventDefault();
         game.stepGate(k === "ArrowUp" || (k === "Tab" && !e.shiftKey) ? 1 : -1);
+      } else if (s.phase === "setup" && (k === "1" || k === "2" || k === "3")) {
+        game.applyStyle(LINE_STYLES[Number(k) - 1]);
       } else if (s.phase === "setup" && (k === "]" || k === "[")) {
         game.stepComplex(k === "]" ? 1 : -1);
       } else if (k === "Enter") {
@@ -433,6 +435,7 @@ function ControlBar({ s, game }: { s: Snapshot; game: Game }) {
           ))}
         </div>
         <p className="caption mt-1.5 min-h-[17px]">{s.style ? STYLE_HINT[s.style] : "Your own line. Pick a style to start from one, or fine-tune each point."}</p>
+        <p className="caption mt-0.5 hidden text-steel/70 [@media(hover:hover)_and_(min-width:720px)]:block">Keys: 1, 2, 3 for a style, ] for the next corner, Enter to race.</p>
 
         {fine && (
           <>
