@@ -318,6 +318,13 @@ Twelve 6px segments: won rounds paint, lost rounds steel/35, the current round o
 ### Start-Light Gantry (signature hardware)
 Five square black pods (#060607, line border), two lamps each at 16/24/36px. On the hub it is the day's clock, one pod per fifth of the day, with a seven-segment countdown beneath; it hangs from a hatched truss. On the race screen lamps step on one at a time, hold, and black out instantly, then "Lights out" shows for 900ms. No easing on lights.
 
+### Sectors, real pole, speed trace, perfect-lap reveal, colour-blind mode
+- **Sectors:** three cells under the lap clock (a 3px bar that fills from the left as the line is crossed, "S1" in 11px condensed, the time from 720px); the result sheet repeats them larger with times to the thousandth and a swatch legend (Perfect sector / Your best / Slower). F1 rules: purple = within 0.05 s of the perfect lap's sector, green = personal best on this circuit, yellow = slower.
+- **Real 2025 pole:** a timing line on every result ("Real 2025 pole 1:09.511", gap in ink when beaten); on the hub, a caption row under the medal ladder only where the pole can be beaten before perfection ("Beat the real 2025 pole" / "Faster than the real 2025 pole by 0.211s"). Times only, never names.
+- **Speed trace:** after the lap grid on the result sheet: speed (km/h, 50-step gridlines) against distance, perfect lap in a 1.1px purple line, yours in 1.4px orange, the slower gap shaded red at 22%, corner numbers along the bottom (crowded labels left as ticks), a touch/hover cursor with "T7 263 / 264 km/h".
+- **Watch the perfect lap:** only once the daily is locked; a demo run with "Perfect lap" in purple in the HUD and all splits purple, then the perfect line stays drawn under yours.
+- **Colour-blind colours:** a header toggle (palette icon, ink when on) swaps the four timing colours for an Okabe-Ito set (blue, bluish green, yellow, reddish purple) in both the CSS tokens and the canvas; copy never names a colour ("Every corner perfect").
+
 ### Challenge links
 A `?vs=` link opens Free Practice on the challenger's circuit. The setup bar shows "Challenge: beat 1:08.515" (13px paint, time tabular bold); the HUD's pace target becomes "To Challenge" with a paint-coloured ring; the result sheet adds a "Challenge 1:08.515" timing line (ink when beaten) and the headline "Challenge beaten". A practice result offers a secondary "Challenge" share button beside Improve line.
 

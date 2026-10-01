@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { setSoundEnabled, soundEnabled } from "./game/audio";
+import { colourBlind, setColourBlind } from "./game/palette";
 import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
 import { OUTLINES } from "./game/outlines";
 import { LINE_STYLES, type LineStyle } from "@apex/engine";
@@ -31,7 +32,7 @@ import { MEDAL_NAME, medalFor, realPole } from "./modes/medals";
 import { challengeUrl, decodeChallenge } from "./modes/challenge";
 import { Roll } from "./ui/Roll";
 import { delta, lapTime } from "./ui/format";
-import { ChevronLeft, ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, Share, SoundOff, SoundOn, Undo, WholeTrack } from "./ui/icons";
+import { ChevronLeft, ChevronRight, ColourBlind, Frame, Minus, NudgeLeft, NudgeRight, Plus, Share, SoundOff, SoundOn, Undo, WholeTrack } from "./ui/icons";
 import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
@@ -83,6 +84,12 @@ export function App() {
     }
   };
 
+  const [cb, setCb] = useState(colourBlind);
+  const toggleColourBlind = () => {
+    setColourBlind(!cb);
+    setCb(!cb);
+  };
+
   const toggleSound = () => {
     setSoundEnabled(!sound);
     setSound(!sound);
@@ -111,6 +118,16 @@ export function App() {
             )}
           </div>
         </div>
+        <span className="flex">
+        <button
+          onClick={toggleColourBlind}
+          aria-pressed={cb}
+          aria-label={cb ? "Colour-blind colours on. Turn off" : "Colour-blind colours off. Turn on"}
+          title={cb ? "Colour-blind colours: on" : "Colour-blind colours: off"}
+          className={`grid w-12 shrink-0 place-items-center border-l border-line hover:bg-graphite ${cb ? "text-ink" : "text-steel"}`}
+        >
+          <ColourBlind />
+        </button>
         <button
           onClick={toggleSound}
           aria-pressed={sound}
@@ -120,6 +137,7 @@ export function App() {
         >
           {sound ? <SoundOn /> : <SoundOff />}
         </button>
+        </span>
       </header>
 
       <div className={`grid min-h-0 grid-cols-[minmax(0,1fr)] ${ADS_ON ? "xl:grid-cols-[176px_minmax(0,1fr)_176px] 2xl:grid-cols-[316px_minmax(0,1fr)_316px]" : ""}`}>
@@ -668,7 +686,7 @@ function ResultSheet({
   if (s.mode === "daily" && daily && daily.status !== "playing") {
     const dayMedal = bestMedal(daily);
     headline = daily.status === "won" ? "Pole" : dayMedal ? `${MEDAL_NAME[dayMedal]} today` : "Out of laps";
-    body = daily.status === "won" ? `Every corner purple on lap ${daily.laps.length} of ${DAILY_LAPS}.` : `New circuit in ${countdown}.`;
+    body = daily.status === "won" ? `Every corner perfect on lap ${daily.laps.length} of ${DAILY_LAPS}.` : `New circuit in ${countdown}.`;
     actions = (
       <>
         <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI, daily.bestKnots && challengeUrl({ trackId: daily.trackId, knots: daily.bestKnots }))} />
@@ -708,7 +726,7 @@ function ResultSheet({
     const left = (s.lapLimit ?? 0) - s.lapsUsed;
     const beat = s.challengeMs !== null && r.lapTimeMs < s.challengeMs;
     headline = r.allPurple ? "Pole" : beat ? "Challenge beaten" : s.mode === "practice" ? "Lap complete" : `${left} ${left === 1 ? "lap" : "laps"} left`;
-    body = r.allPurple ? "Every corner purple." : s.mode === "season" ? `Beat ${lapTime(s.rivalMs ?? 0)} to take pole.` : "Tap a corner to fix it.";
+    body = r.allPurple ? "Every corner perfect." : s.mode === "season" ? `Beat ${lapTime(s.rivalMs ?? 0)} to take pole.` : "Tap a corner to fix it.";
     actions = (
       <>
         <button className={`${primaryBtn} flex-1`} onClick={() => game.adjust()} autoFocus>
@@ -751,7 +769,20 @@ function ResultSheet({
           <MedalRow trackId={game.track.id} medal={lapMedal} lapTimeMs={r.lapTimeMs} stamp={!!lapMedal && r.newPb} />
           <div className="border-t border-line pt-2 pb-1">
             <SectorCells sectors={s.sectors} large />
-            <p className="caption mt-1">Purple: the perfect lap's sector. Green: your best.</p>
+            <p className="caption mt-1 flex flex-wrap gap-x-3">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 bg-purple" />
+                Perfect sector
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 bg-green" />
+                Your best
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 bg-yellow" />
+                Slower
+              </span>
+            </p>
           </div>
           {s.challengeMs !== null && (
             <TimingLine label={`Challenge ${lapTime(s.challengeMs)}`} value={delta(r.lapTimeMs - s.challengeMs)} tone={r.lapTimeMs < s.challengeMs ? "text-ink" : "text-paint"} />
@@ -815,7 +846,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
         <h2 className="wide text-[20px] leading-none text-paint">{dayHeadline(daily)}</h2>
         <p className="mt-1.5 text-[14px] text-paint/75">
           New circuit in {countdown}.
-          {game.getSnapshot().perfectShown ? " The perfect line is drawn in purple under yours." : ""}
+          {game.getSnapshot().perfectShown ? " The perfect line is now drawn under yours." : ""}
         </p>
         <div className="mt-3">
           <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={game.controls.complexes.length} />

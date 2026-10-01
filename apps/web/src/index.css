@@ -26,6 +26,14 @@
   --font-body: "Archivo Variable", "Archivo", system-ui, sans-serif;
 }
 
+/* Colour-blind timing colours (Okabe-Ito based); see game/palette.ts. */
+:root[data-palette="cb"] {
+  --color-purple: #5aa9ff;
+  --color-green: #009e73;
+  --color-yellow: #f0e442;
+  --color-kerb: #cc79a7;
+}
+
 html,
 body,
 #root {

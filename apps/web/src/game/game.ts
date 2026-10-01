@@ -1346,7 +1346,7 @@ export class Game {
         ctx.beginPath();
         ctx.arc(m.x, m.y, 7 * px, 0, Math.PI * 2);
         ctx.lineWidth = 2.5 * px;
-        ctx.strokeStyle = this.pace.medal === "perfect" ? MEDAL_COLOR.pole : this.pace.medal === "challenge" ? C.paint : MEDAL_COLOR[this.pace.medal];
+        ctx.strokeStyle = this.pace.medal === "perfect" || this.pace.medal === "pole" ? C.purple : this.pace.medal === "challenge" ? C.paint : MEDAL_COLOR[this.pace.medal];
         ctx.fillStyle = "rgba(10,11,13,0.55)";
         ctx.fill();
         ctx.stroke();

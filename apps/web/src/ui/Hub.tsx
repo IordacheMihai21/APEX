@@ -64,7 +64,7 @@ export function CircuitOutline({ track, className = "" }: { track: GameTrack | s
  * engine computes (×4, the game's playback), so the streak stretches on the
  * straights and shrinks under braking. The track draws itself in once.
  */
-const GRADE_STROKE: Record<Grade, string> = { purple: "#a259ff", green: "#29cc6a", yellow: "#f5c518", red: "#e5332a" };
+const GRADE_STROKE: Record<Grade, string> = { purple: "var(--color-purple)", green: "var(--color-green)", yellow: "var(--color-yellow)", red: "var(--color-kerb)" };
 
 function HeroCircuit({ id, o, grades }: { id: string; o: Outline; grades: Grade[] | null }) {
   const reduce = useReducedMotion();

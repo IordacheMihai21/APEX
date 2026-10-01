@@ -36,7 +36,7 @@ export function MedalLadder({ trackId, best }: { trackId: string; best: Medal | 
               <MedalDisc medal={m} earned={on} size={14} />
               <span className={`text-[13px] font-semibold ${on ? "text-paint" : "text-steel"}`}>{MEDAL_NAME[m]}</span>
             </span>
-            <span className={`num text-[13px] ${on ? "text-paint" : "text-steel"}`}>{m === "pole" ? "All purple" : lapTime(t[m])}</span>
+            <span className={`num text-[13px] ${on ? "text-paint" : "text-steel"}`}>{m === "pole" ? "Every corner" : lapTime(t[m])}</span>
           </li>
         );
       })}
@@ -67,7 +67,7 @@ export function MedalRow({ trackId, medal, lapTimeMs, stamp }: { trackId: string
       {next && (
         <span className="caption num text-right">
           {next.ms === null ? (
-            <>Pole needs every corner purple</>
+            <>Pole needs every corner perfect</>
           ) : (
             <>
               {MEDAL_NAME[next.medal]} at {lapTime(next.ms)}, <span className="text-paint">{((lapTimeMs - next.ms) / 1000).toFixed(3)}s</span> to find

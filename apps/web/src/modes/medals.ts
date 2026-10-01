@@ -14,7 +14,7 @@ export const MEDALS: Medal[] = ["bronze", "silver", "gold", "pole"];
 export const MEDAL_NAME: Record<Medal, string> = { bronze: "Bronze", silver: "Silver", gold: "Gold", pole: "Pole" };
 
 /** Medal discs: metal tones for the three, sector purple for Pole. */
-export const MEDAL_COLOR: Record<Medal, string> = { bronze: "#c8834f", silver: "#c3c8d0", gold: "#e2b13c", pole: "#a259ff" };
+export const MEDAL_COLOR: Record<Medal, string> = { bronze: "#c8834f", silver: "#c3c8d0", gold: "#e2b13c", pole: "var(--color-purple)" };
 
 export const MEDAL_EMOJI: Record<Medal, string> = { bronze: "🥉", silver: "🥈", gold: "🥇", pole: "🟪" };
 

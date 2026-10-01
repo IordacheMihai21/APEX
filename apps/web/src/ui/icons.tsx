@@ -8,6 +8,7 @@ import {
   CornersOut,
   type Icon,
   MapTrifold,
+  Palette,
   Minus as PhMinus,
   Plus as PhPlus,
   ShareNetwork,
@@ -36,3 +37,4 @@ export const SoundOn = make(SpeakerHigh);
 export const SoundOff = make(SpeakerSlash);
 export const Share = make(ShareNetwork);
 export const Undo = make(ArrowCounterClockwise);
+export const ColourBlind = make(Palette);

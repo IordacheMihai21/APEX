@@ -101,7 +101,7 @@ export function SpeedTrace({ data }: { data: TraceData }) {
           </g>
         ))}
         <path d={geo.gap} fill="rgba(229,51,42,0.22)" />
-        <path d={geo.perfect} fill="none" stroke="#a259ff" strokeWidth={1.1} strokeLinejoin="round" />
+        <path d={geo.perfect} fill="none" stroke="var(--color-purple)" strokeWidth={1.1} strokeLinejoin="round" />
         <path d={geo.mine} fill="none" stroke="#ff6a13" strokeWidth={1.4} strokeLinejoin="round" />
         {labels.map((g) => (
           <g key={g.name}>

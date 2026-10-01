@@ -84,6 +84,14 @@ rough effort (S ≤ a day, M = 2–4 days, L = a week+).
 16. **Predictions for real races** (F1 Play, Superbru): out of scope for a
     racing-line game; skip.
 
+## Status
+
+Done 2026-10-01: sectors (2), beat the real pole (3), perfect-lap reveal (4),
+speed trace (1), colour-blind mode (5). Note on the reveal: circuits repeat
+every 12 days, so a revealed line could be remembered for the next visit;
+rotating conditions per cycle (wet, low-downforce car; GAME_PLAN C13) keeps
+repeat visits fresh.
+
 ## Recommended next batch
 
 In order of value per effort:
