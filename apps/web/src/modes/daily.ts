@@ -1,5 +1,5 @@
 import type { Grade } from "./grading";
-import { MEDAL_EMOJI, MEDAL_NAME, type Medal, better, medalFor } from "./medals";
+import { MEDAL_EMOJI, MEDAL_NAME, type Medal, better, medalFor, realPole } from "./medals";
 
 /**
  * Daily Quali: one circuit per day for everyone, 6 laps. Each lap earns a medal
@@ -164,5 +164,7 @@ export function shareText(rec: DailyRecord, trackName: string, flag: string, emo
   const head = medal ? `${MEDAL_EMOJI[medal]} ${MEDAL_NAME[medal]}` : "No medal";
   const hints = rec.hints ? `, ${rec.hints} ${rec.hints === 1 ? "hint" : "hints"} used` : "";
   const race = link ? `\nRace my best lap: ${link}` : "";
-  return `APEX Quali #${n} ${flag} ${trackName}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}\n${rows}${race}`;
+  const pole = realPole(rec.trackId);
+  const fasterThanPole = pole && best < pole.ms ? `\nFaster than the real 2025 pole by ${((pole.ms - best) / 1000).toFixed(3)}s` : "";
+  return `APEX Quali #${n} ${flag} ${trackName}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}${fasterThanPole}\n${rows}${race}`;
 }

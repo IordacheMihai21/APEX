@@ -46,3 +46,14 @@ export function nextMedal(trackId: string, current: Medal | null): { medal: Meda
   if (!next || !t) return null;
   return { medal: next, ms: next === "pole" ? null : t[next] };
 }
+
+/**
+ * The circuit's real 2025 pole lap (a time only, no names). `beatable` is
+ * false where real cars are quicker than our perfect lap or need Gold-level
+ * precision anyway: there it is shown as a fact, not offered as a goal.
+ */
+export function realPole(trackId: string): { ms: number; beatable: boolean } | null {
+  const o = OUTLINES[trackId];
+  if (!o?.realPoleMs) return null;
+  return { ms: o.realPoleMs, beatable: o.realPoleMs > o.medals.gold };
+}

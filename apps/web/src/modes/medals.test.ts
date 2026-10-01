@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { OUTLINES } from "../game/outlines";
-import { better, medalFor, medalTimes, nextMedal } from "./medals";
+import { better, medalFor, medalTimes, nextMedal, realPole } from "./medals";
 
 const t = medalTimes("interlagos")!;
 const notAllPurple = ["purple", "green"] as const;
@@ -35,5 +35,11 @@ describe("medals", () => {
   it("keeps the better medal", () => {
     expect(better("silver", "bronze")).toBe("silver");
     expect(better(null, "gold")).toBe("gold");
+  });
+
+  it("offers the real 2025 pole as a goal only where it can be beaten before perfection", () => {
+    expect(realPole("interlagos")).toEqual({ ms: 69511, beatable: true });
+    expect(realPole("austin")?.beatable).toBe(false); // real cars are quicker than our perfect lap
+    expect(realPole("kestrel")).toBeNull();
   });
 });

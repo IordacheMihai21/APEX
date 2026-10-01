@@ -14,6 +14,7 @@
  */
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { REFERENCE_POLE_MS } from "./check-tracks";
 import { APEX_FORMULA as car, type GameTrack, expandGates, prepareTrack, simulateLap, trackControls, usableHalfWidth } from "@apex/engine";
 
 const BOX = 1000;
@@ -128,6 +129,7 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith(".v1.json"))) {
     lengthM: Math.round(track.lengthMeters),
     cornerCount: track.corners.length,
     medals,
+    realPoleMs: REFERENCE_POLE_MS[track.id] ?? null,
   };
   console.log(`${track.id.padEnd(14)} optimal ${(lap.lapTimeMs / 1000).toFixed(3)}  bronze ${(medals.bronze / 1000).toFixed(2)}  silver ${(medals.silver / 1000).toFixed(2)}  gold ${(medals.gold / 1000).toFixed(2)}`);
 }
@@ -154,6 +156,8 @@ export interface Outline {
   cornerCount: number;
   /** lap times (ms) for each medal; Pole is every corner purple */
   medals: { bronze: number; silver: number; gold: number };
+  /** the circuit's real 2025 pole lap (ms), a time only, or null for invented circuits */
+  realPoleMs: number | null;
 }
 
 export const OUTLINES: Record<string, Outline> = ${JSON.stringify(out)};

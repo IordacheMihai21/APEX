@@ -26,7 +26,7 @@ import { LapGrid } from "./ui/LapGrid";
 import { ADS_ON, AdSlot } from "./ui/Ads";
 import { RaceHud, SectorCells } from "./ui/RaceHud";
 import { MedalRow } from "./ui/Medals";
-import { MEDAL_NAME, medalFor } from "./modes/medals";
+import { MEDAL_NAME, medalFor, realPole } from "./modes/medals";
 import { challengeUrl, decodeChallenge } from "./modes/challenge";
 import { Roll } from "./ui/Roll";
 import { delta, lapTime } from "./ui/format";
@@ -699,6 +699,7 @@ function ResultSheet({
   }
 
   const lapMedal = medalFor(game.track.id, r.lapTimeMs, r.grades.map((g) => g.grade));
+  const pole = realPole(game.track.id);
   const vsRival = s.mode === "season" && s.rivalMs !== null ? r.lapTimeMs - s.rivalMs : null;
   const pbDelta = r.pbBeforeMs === null ? null : r.lapTimeMs - r.pbBeforeMs;
 
@@ -728,6 +729,9 @@ function ResultSheet({
             <TimingLine label={`Challenge ${lapTime(s.challengeMs)}`} value={delta(r.lapTimeMs - s.challengeMs)} tone={r.lapTimeMs < s.challengeMs ? "text-ink" : "text-paint"} />
           )}
           <TimingLine label="Perfect lap" value={lapTime(r.targetMs)} />
+          {pole && (
+            <TimingLine order={1} label={`Real 2025 pole ${lapTime(pole.ms)}`} value={delta(r.lapTimeMs - pole.ms)} tone={r.lapTimeMs < pole.ms ? "text-ink" : "text-paint"} />
+          )}
           {vsRival !== null && <TimingLine order={1} label={`Rival pole ${lapTime(s.rivalMs!)}`} value={delta(vsRival)} tone={vsRival < 0 ? "text-ink" : "text-paint"} />}
           <TimingLine
             order={2}

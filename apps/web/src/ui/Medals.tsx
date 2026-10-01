@@ -1,5 +1,5 @@
 import { lapTime } from "./format";
-import { MEDALS, MEDAL_COLOR, MEDAL_NAME, type Medal, medalTimes, nextMedal } from "../modes/medals";
+import { MEDALS, MEDAL_COLOR, MEDAL_NAME, type Medal, medalTimes, nextMedal, realPole } from "../modes/medals";
 
 /** A medal disc: a solid face with an inner ring; unearned discs are an empty ring. */
 export function MedalDisc({ medal, earned = true, size = 16, className = "" }: { medal: Medal; earned?: boolean; size?: number; className?: string }) {
@@ -76,5 +76,21 @@ export function MedalRow({ trackId, medal, lapTimeMs, stamp }: { trackId: string
         </span>
       )}
     </div>
+  );
+}
+
+/** The real 2025 pole as an extra target beside the medals, where it can be beaten before perfection. */
+export function PoleTarget({ trackId, bestMs }: { trackId: string; bestMs: number | null }) {
+  const pole = realPole(trackId);
+  if (!pole?.beatable) return null;
+  const beaten = bestMs !== null && bestMs < pole.ms;
+  return (
+    <p className="caption mt-3 flex items-baseline justify-between gap-3 border-t border-line pt-2">
+      <span>{beaten ? "Faster than the real 2025 pole" : "Beat the real 2025 pole"}</span>
+      <span className={`num font-semibold ${beaten ? "text-ink" : "text-paint"}`}>
+        {lapTime(pole.ms)}
+        {beaten && bestMs !== null ? ` by ${((pole.ms - bestMs) / 1000).toFixed(3)}s` : ""}
+      </span>
+    </p>
   );
 }

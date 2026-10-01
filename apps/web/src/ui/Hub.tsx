@@ -8,7 +8,7 @@ import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/se
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
 import { ADS_ON, AdSlot } from "./Ads";
 import { Gantry } from "./Gantry";
-import { MedalDisc, MedalLadder } from "./Medals";
+import { MedalDisc, MedalLadder, PoleTarget } from "./Medals";
 import { lapTime } from "./format";
 import { LapGrid } from "./LapGrid";
 import { Roll } from "./Roll";
@@ -230,6 +230,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
             <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={cols} size="sm" />
             <div className="mt-4">
               <MedalLadder trackId={daily.trackId} best={medal} />
+              <PoleTarget trackId={daily.trackId} bestMs={best?.lapTimeMs ?? null} />
             </div>
             <button
               className={`${finished ? secondaryBtn : primaryBtn} mt-5 w-full sm:w-auto sm:min-w-[260px]`}
