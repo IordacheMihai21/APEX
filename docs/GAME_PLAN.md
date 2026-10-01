@@ -133,11 +133,24 @@ Effort: S = a day or less, M = 2–4 days, L = a week+. "No backend" items ship 
 
 ## 4. First sprint (recommended order)
 
-1. Medals (A2): smallest change, biggest effect on "did I win today?".
-2. Line styles (A1): makes a lap quick enough to be a daily.
-3. Ghosts and live splits (A4) plus instant retry (A5): the "one more run" loop.
-4. Corner coach (A3): converts losses into learning.
-5. Beat-my-lap links (A6): first growth loop, no server.
+All five shipped on 2026-10-01:
+
+1. ✅ Medals (A2): per-circuit times calibrated to equal driving precision
+   (Bronze 2.0 m, Silver 0.75 m, Gold 0.3 m of gate error); Pole = all purple.
+2. ✅ Line styles (A1): Early apex / Classic / Late apex per corner, fitted to
+   the median shape of the optimal lines; the best style per corner reaches
+   Bronze on 9 of 12 circuits. Sliders live behind Fine-tune.
+3. ✅ Pace target and splits (A4) plus faster retries (A5): a ring at the next
+   medal's pace rides your own line (never the perfect one), the PB ghost runs
+   in every mode, broadcast splits per corner group, repeat-lap lights ~1.5 s,
+   keys 1/2/3 for styles.
+4. ✅ Corner coach (A3): the phase where time was lost, phrased like a race
+   engineer ("Braking 20 m early for T10"); opt-in hints, counted in the daily.
+5. ✅ Beat-my-lap links (A6): `?vs=<track>~<line>`, re-simulated on arrival
+   (times can't be faked), raced as a pace marker so no line is revealed; the
+   daily share text carries a "Race my best lap" link.
+
+Next: A7 (first-run lesson), A8 (remaining juice), then Phase B.
 
 ## 5. How we'll know
 

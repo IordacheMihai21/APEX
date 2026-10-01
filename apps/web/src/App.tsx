@@ -26,6 +26,7 @@ import { LapGrid } from "./ui/LapGrid";
 import { RaceHud } from "./ui/RaceHud";
 import { MedalRow } from "./ui/Medals";
 import { MEDAL_NAME, medalFor } from "./modes/medals";
+import { challengeUrl, decodeChallenge } from "./modes/challenge";
 import { Roll } from "./ui/Roll";
 import { delta, lapTime } from "./ui/format";
 import { ChevronLeft, ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, Share, SoundOff, SoundOn, Undo, WholeTrack } from "./ui/icons";
@@ -33,12 +34,14 @@ import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 
-type Screen = { kind: "hub" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number };
+type Screen = { kind: "hub" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[] };
 
 function initialScreen(): Screen {
   const q = new URLSearchParams(location.search);
   const mode = q.get("play") as Mode | null;
   const track = q.get("track");
+  const vs = decodeChallenge(q.get("vs"));
+  if (vs) return { kind: "play", mode: "practice", trackId: vs.trackId, challenge: vs.knots };
   if (mode === "practice" && CATALOG.some((t) => t.id === track)) return { kind: "play", mode, trackId: track! };
   return { kind: "hub" };
 }
@@ -125,6 +128,7 @@ export function App() {
             key={`${screen.mode}:${screen.trackId}:${screen.nonce ?? 0}`}
             mode={screen.mode}
             trackId={screen.trackId}
+            challenge={screen.challenge}
             onNext={(trackId) => setScreen(trackId ? { kind: "play", mode: screen.mode, trackId, nonce: Date.now() } : { kind: "hub" })}
           />
         )}
@@ -170,7 +174,7 @@ function useSnapshot(game: Game): Snapshot {
  * session from storage, persists every lap, and locks the game when the
  * session is over (6 daily laps, a won/lost season round).
  */
-function Play({ mode, trackId, onNext }: { mode: Mode; trackId: string; onNext: (trackId: string | null) => void }) {
+function Play({ mode, trackId, challenge, onNext }: { mode: Mode; trackId: string; challenge?: number[]; onNext: (trackId: string | null) => void }) {
   const [game, setGame] = useState<Game | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [daily, setDaily] = useState<DailyRecord | null>(null);
@@ -204,7 +208,7 @@ function Play({ mode, trackId, onNext }: { mode: Mode; trackId: string; onNext: 
             if (outcome !== "continue") g.lock();
           };
         } else {
-          g = new Game(t, { mode, lapLimit: null });
+          g = new Game(t, { mode, lapLimit: null, challengeKnots: challenge });
           g.onLap = (lap) => setPracticeLaps((p) => [...p, lap.grades].slice(-3));
         }
         setGame(g);
@@ -422,6 +426,12 @@ function ControlBar({ s, game }: { s: Snapshot; game: Game }) {
           </span>
         </div>
 
+        {s.challengeMs !== null && (
+          <p className="mt-1.5 text-[13px] text-paint">
+            Challenge: beat <span className="num font-bold">{lapTime(s.challengeMs)}</span>
+          </p>
+        )}
+
         {/* the one-tap line for this corner */}
         <div className="mt-2.5 grid grid-cols-3 border border-line" role="radiogroup" aria-label="Line through this corner">
           {LINE_STYLES.map((st) => (
@@ -513,7 +523,7 @@ function useCountdown() {
   return `${String(Math.floor(x / 3600)).padStart(2, "0")}:${String(Math.floor((x % 3600) / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`;
 }
 
-function ShareButton({ text }: { text: string }) {
+function ShareButton({ text, label = "Share result", variant = "primary" }: { text: string; label?: string; variant?: "primary" | "secondary" }) {
   const [done, setDone] = useState(false);
   const share = async () => {
     try {
@@ -528,8 +538,8 @@ function ShareButton({ text }: { text: string }) {
     }
   };
   return (
-    <button className={`${primaryBtn} flex-1`} onClick={share}>
-      <Share className="h-4 w-4" /> {done ? "Copied" : "Share result"}
+    <button className={variant === "primary" ? `${primaryBtn} flex-1` : secondaryBtn} onClick={share}>
+      <Share className="h-4 w-4" /> {done ? "Copied" : label}
     </button>
   );
 }
@@ -614,7 +624,7 @@ function ResultSheet({
     body = daily.status === "won" ? `Every corner purple on lap ${daily.laps.length} of ${DAILY_LAPS}.` : `New circuit in ${countdown}.`;
     actions = (
       <>
-        <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI)} />
+        <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI, daily.bestKnots && challengeUrl({ trackId: daily.trackId, knots: daily.bestKnots }))} />
         <button className={secondaryBtn} onClick={() => onNext(null)}>
           Grid
         </button>
@@ -646,12 +656,22 @@ function ResultSheet({
     );
   } else {
     const left = (s.lapLimit ?? 0) - s.lapsUsed;
-    headline = r.allPurple ? "Pole" : s.mode === "practice" ? "Lap complete" : `${left} ${left === 1 ? "lap" : "laps"} left`;
+    const beat = s.challengeMs !== null && r.lapTimeMs < s.challengeMs;
+    headline = r.allPurple ? "Pole" : beat ? "Challenge beaten" : s.mode === "practice" ? "Lap complete" : `${left} ${left === 1 ? "lap" : "laps"} left`;
     body = r.allPurple ? "Every corner purple." : s.mode === "season" ? `Beat ${lapTime(s.rivalMs ?? 0)} to take pole.` : "Tap a corner to fix it.";
     actions = (
-      <button className={`${primaryBtn} flex-1`} onClick={() => game.adjust()} autoFocus>
-        Improve line
-      </button>
+      <>
+        <button className={`${primaryBtn} flex-1`} onClick={() => game.adjust()} autoFocus>
+          Improve line
+        </button>
+        {s.mode === "practice" && (
+          <ShareButton
+            label="Challenge"
+            variant="secondary"
+            text={`Beat my ${lapTime(r.lapTimeMs)} at ${info.name} in APEX: ${challengeUrl({ trackId: game.track.id, knots: game.currentKnots() })}`}
+          />
+        )}
+      </>
     );
   }
 
@@ -677,6 +697,9 @@ function ResultSheet({
         </div>
         <div className="mt-2">
           <MedalRow trackId={game.track.id} medal={lapMedal} lapTimeMs={r.lapTimeMs} stamp={!!lapMedal && r.newPb} />
+          {s.challengeMs !== null && (
+            <TimingLine label={`Challenge ${lapTime(s.challengeMs)}`} value={delta(r.lapTimeMs - s.challengeMs)} tone={r.lapTimeMs < s.challengeMs ? "text-ink" : "text-paint"} />
+          )}
           <TimingLine label="Perfect lap" value={lapTime(r.targetMs)} />
           {vsRival !== null && <TimingLine order={1} label={`Rival pole ${lapTime(s.rivalMs!)}`} value={delta(vsRival)} tone={vsRival < 0 ? "text-ink" : "text-paint"} />}
           <TimingLine
@@ -735,7 +758,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
           <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={game.controls.complexes.length} />
         </div>
         <div className="mt-3 flex gap-2">
-          <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI)} />
+          <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI, daily.bestKnots && challengeUrl({ trackId: daily.trackId, knots: daily.bestKnots }))} />
           <button className={secondaryBtn} onClick={onHub}>
             Grid
           </button>
@@ -767,7 +790,7 @@ function DailySummary({ onClose }: { onClose: () => void }) {
           <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={cols} />
         </div>
         <div className="mt-3 flex gap-2">
-          <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI)} />
+          <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI, daily.bestKnots && challengeUrl({ trackId: daily.trackId, knots: daily.bestKnots }))} />
           <button className={secondaryBtn} onClick={onClose}>
             Close
           </button>

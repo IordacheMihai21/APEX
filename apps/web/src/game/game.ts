@@ -41,6 +41,8 @@ export interface GameOptions {
   startKnots?: number[];
   /** Session already over (daily finished today): results only. */
   locked?: boolean;
+  /** A friend's line to beat (from a "Beat my lap" link), raced as a pace marker only. */
+  challengeKnots?: number[];
 }
 
 export interface LapEvent {
@@ -97,6 +99,8 @@ export interface Snapshot {
   liveDeltaMs: number;
   /** What the live gap and the pace marker measure against: the next medal above your best, or the perfect lap. */
   paceLabel: string;
+  /** The challenger's lap time when racing a "Beat my lap" link, else null. */
+  challengeMs: number | null;
   drive: DriveState;
   lapsUsed: number;
   lapLimit: number | null;
@@ -214,6 +218,12 @@ export class Game {
     this.z = expandGates(this.pt, this.controls, start, this.limit);
     this.lineXY = this.resolve();
     if (this.pb) this.pbSim = simulateLap({ track: this.pt, line: { knotOffsets: this.pb.knotOffsets }, car });
+    if (opts.challengeKnots?.length === this.pt.k) {
+      // re-simulated here, so the time on the link can't be anything but what that line drives
+      const line = expandGates(this.pt, this.controls, opts.challengeKnots, this.limit);
+      this.challengeMs = simulateLap({ track: this.pt, line: { knotOffsets: line }, car }).lapTimeMs;
+      this.pace = this.paceTarget();
+    }
     this.snap = this.buildSnapshot();
     logEvent("track_loaded", { track: track.id, returning: !!this.pb });
     if (import.meta.env.DEV) (window as unknown as { __apex: Game }).__apex = this;
@@ -263,6 +273,7 @@ export class Game {
         : 0,
       liveDeltaMs: liveDelta,
       paceLabel: this.pace.label,
+      challengeMs: this.challengeMs,
       drive: driveState(this.phase === "lights" ? 0 : speed),
       lapsUsed: this.lapsUsed,
       lapLimit: this.opts.lapLimit,
@@ -580,9 +591,13 @@ export class Game {
   }
 
   /** Pace for this lap: the next medal above your personal best (by time), or the perfect lap once Gold is yours. */
-  private pace: { label: string; medal: Medal | "perfect"; scale: number } = { label: "Perfect", medal: "perfect", scale: 1 };
+  private pace: { label: string; medal: Medal | "perfect" | "challenge"; scale: number } = { label: "Perfect", medal: "perfect", scale: 1 };
 
-  private paceTarget(): { label: string; medal: Medal | "perfect"; scale: number } {
+  /** The challenger's re-simulated lap time, when racing a link. */
+  private challengeMs: number | null = null;
+
+  private paceTarget(): { label: string; medal: Medal | "perfect" | "challenge"; scale: number } {
+    if (this.challengeMs !== null) return { label: "Challenge", medal: "challenge", scale: this.challengeMs / this.reference.lapTimeMs };
     const pbMedal = this.pb ? medalFor(this.track.id, this.pb.lapTimeMs, []) : null;
     const next = nextMedal(this.track.id, pbMedal);
     if (!next || next.ms === null) return { label: "Perfect", medal: "perfect", scale: 1 };
@@ -777,6 +792,11 @@ export class Game {
       hint = `${name}: move ${Math.abs(worst.err).toFixed(1)} m ${worst.err > 0 ? "left" : "right"}`;
     }
     return { why, hint };
+  }
+
+  /** The line as it stands (after a race: the line just raced), for "Beat my lap" links. */
+  currentKnots(): number[] {
+    return this.z.slice();
   }
 
   /** Back to setup, at the group containing `cornerName`, or the worst one from the last run. */
@@ -1183,7 +1203,7 @@ export class Game {
         ctx.beginPath();
         ctx.arc(m.x, m.y, 7 * px, 0, Math.PI * 2);
         ctx.lineWidth = 2.5 * px;
-        ctx.strokeStyle = this.pace.medal === "perfect" ? MEDAL_COLOR.pole : MEDAL_COLOR[this.pace.medal];
+        ctx.strokeStyle = this.pace.medal === "perfect" ? MEDAL_COLOR.pole : this.pace.medal === "challenge" ? C.paint : MEDAL_COLOR[this.pace.medal];
         ctx.fillStyle = "rgba(10,11,13,0.55)";
         ctx.fill();
         ctx.stroke();

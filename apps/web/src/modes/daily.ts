@@ -25,6 +25,8 @@ export interface DailyRecord {
   knots?: number[];
   /** Coach hints opened today; shown on the share text. */
   hints?: number;
+  /** Line of the fastest lap today, for the "race my best lap" link. */
+  bestKnots?: number[];
 }
 
 /** Laps that must be driven before the coach's hints open in the daily. */
@@ -95,7 +97,8 @@ export function recordLap(rec: DailyRecord, lap: DailyLap, knots: number[]): Dai
   const laps = [...rec.laps, lap];
   const won = lap.grades.every((g) => g === "purple");
   const status = won ? "won" : laps.length >= DAILY_LAPS ? "lost" : "playing";
-  const next = { ...rec, laps, status, knots } as DailyRecord;
+  const fastest = rec.laps.every((l) => lap.lapTimeMs < l.lapTimeMs);
+  const next = { ...rec, laps, status, knots, bestKnots: fastest ? knots : rec.bestKnots } as DailyRecord;
   saveDaily(next);
   return next;
 }
@@ -151,7 +154,7 @@ export function msToNextDay(now = new Date()): number {
   return next.getTime() - now.getTime();
 }
 
-export function shareText(rec: DailyRecord, trackName: string, flag: string, emoji: Record<Grade, string>): string {
+export function shareText(rec: DailyRecord, trackName: string, flag: string, emoji: Record<Grade, string>, link?: string): string {
   const n = dailyNumber(rec.key);
   const medal = bestMedal(rec);
   const rows = rec.laps.map((l) => l.grades.map((g) => emoji[g]).join("")).join("\n");
@@ -160,5 +163,6 @@ export function shareText(rec: DailyRecord, trackName: string, flag: string, emo
   const s = ((best - m * 60000) / 1000).toFixed(3).padStart(6, "0");
   const head = medal ? `${MEDAL_EMOJI[medal]} ${MEDAL_NAME[medal]}` : "No medal";
   const hints = rec.hints ? `, ${rec.hints} ${rec.hints === 1 ? "hint" : "hints"} used` : "";
-  return `APEX Quali #${n} ${flag} ${trackName}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}\n${rows}`;
+  const race = link ? `\nRace my best lap: ${link}` : "";
+  return `APEX Quali #${n} ${flag} ${trackName}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}\n${rows}${race}`;
 }

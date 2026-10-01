@@ -318,6 +318,9 @@ Twelve 6px segments: won rounds paint, lost rounds steel/35, the current round o
 ### Start-Light Gantry (signature hardware)
 Five square black pods (#060607, line border), two lamps each at 16/24/36px. On the hub it is the day's clock, one pod per fifth of the day, with a seven-segment countdown beneath; it hangs from a hatched truss. On the race screen lamps step on one at a time, hold, and black out instantly, then "Lights out" shows for 900ms. No easing on lights.
 
+### Challenge links
+A `?vs=` link opens Free Practice on the challenger's circuit. The setup bar shows "Challenge: beat 1:08.515" (13px paint, time tabular bold); the HUD's pace target becomes "To Challenge" with a paint-coloured ring; the result sheet adds a "Challenge 1:08.515" timing line (ink when beaten) and the headline "Challenge beaten". A practice result offers a secondary "Challenge" share button beside Improve line.
+
 ### Corner coach (result sheet)
 The three worst corners as rows under the lap grid (top hairline, a hairline under each): corner name in 14px condensed bold with its gap in the grade colour beneath (56px column), the coach's reason in 13px steel, a chevron that nudges right on hover (the row jumps to that corner), and an outline "Hint" button. A revealed hint replaces the reason in paint ("Apex T5: move 6.4 m right"). In the daily, hints open after lap 2 ("Hints open after lap 2." caption until then) and the count goes on the share text; elsewhere they are free. Reasons come from where the time was lost (way in / apex / exit) and are phrased as a driver would hear them: "Braking 75 m early for T4", "Braking 50 m earlier than the perfect lap", "33 km/h slower at the apex", "18 km/h slower on average out of the corner".
 
