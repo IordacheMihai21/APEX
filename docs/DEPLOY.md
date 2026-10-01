@@ -10,11 +10,13 @@ The app is a single page, but two addresses must serve `index.html`:
 |---|---|
 | `/` | the hub (also `?play=practice&track=…`, `?vs=…` challenge links) |
 | `/reaction` | the lights-out reaction test (its own title, for search) |
+| `/mystery` | Mystery circuit, the daily guess-the-circuit puzzle |
+| `/higher-lower` | Higher or lower on circuit facts |
 
-Configure the host's SPA fallback so `/reaction` returns `index.html`:
+Configure the host's SPA fallback so these paths return `index.html`:
 
-- **Netlify:** `apps/web/public/_redirects` with `/reaction /index.html 200`
-- **Vercel:** `"rewrites": [{ "source": "/reaction", "destination": "/index.html" }]`
+- **Netlify:** `apps/web/public/_redirects` with `/reaction /index.html 200` (and the same for `/mystery`, `/higher-lower`)
+- **Vercel:** `"rewrites": [{ "source": "/(reaction|mystery|higher-lower)", "destination": "/index.html" }]`
 - **Cloudflare Pages:** single-page apps fall back to `index.html` automatically
 - **nginx:** `try_files $uri /index.html;`
 

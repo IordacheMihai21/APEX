@@ -94,9 +94,11 @@ repeat visits fresh.
 
 Also done: lights-out reaction test (9) at `/reaction`, stats page (6),
 installable app with offline play (7), race-weekend tie-in (10), mini-sector
-duel maps (8).
+duel maps (8), Mystery circuit (12) at `/mystery` and Higher or lower at
+`/higher-lower` (from futbol11's Statdle and playfootball's TenaBall), both on
+real venue facts in `modes/circuits.ts`.
 
-Still open: weekly one-corner challenge (11), guess the circuit (12), TV-style
+Still open: weekly one-corner challenge (11), TV-style
 replay director (13), and the server-side items (14-16).
 
 ## Recommended next batch

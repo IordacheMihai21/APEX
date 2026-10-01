@@ -1,5 +1,7 @@
 import {
   ArrowCounterClockwise,
+  ArrowDown,
+  ArrowUp,
   ArrowLineLeft,
   ArrowLineRight,
   CaretDown,
@@ -38,3 +40,5 @@ export const SoundOff = make(SpeakerSlash);
 export const Share = make(ShareNetwork);
 export const Undo = make(ArrowCounterClockwise);
 export const ColourBlind = make(Palette);
+export const Up = make(ArrowUp);
+export const Down = make(ArrowDown);

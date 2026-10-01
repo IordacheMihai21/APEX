@@ -6,7 +6,11 @@ import { DAILY_LAPS, bestMedal, dailyNumber, qualifyingDay, raceWeek, dailyStats
 import { type Grade, bestPerGroup } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
+import { loadHigherLower } from "../modes/higherLower";
+import { MYSTERY_TRIES, REVEAL, isOver, isSolved, loadMystery, mysteryAnswer, revealOffset } from "../modes/mystery";
+import { loadReaction } from "../modes/reaction";
 import { ADS_ON, AdSlot } from "./Ads";
+import { Down, Up } from "./icons";
 import { Gantry } from "./Gantry";
 import { MedalDisc, MedalLadder, PoleTarget } from "./Medals";
 import { lapTime } from "./format";
@@ -21,7 +25,7 @@ export type HubAction =
   | { kind: "season"; fresh: boolean }
   | { kind: "practice" }
   | { kind: "practice-track"; trackId: string }
-  | { kind: "reaction" }
+  | { kind: "mini"; game: "reaction" | "mystery" | "higher-lower" }
   | { kind: "stats" };
 
 const PLAYBACK = 4;
@@ -44,6 +48,81 @@ function useReducedMotion() {
     return () => m.removeEventListener("change", on);
   }, []);
   return reduce;
+}
+
+/** Three quick games beside the lap: one daily puzzle, one streak, one reflex test. */
+function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
+  const mystery = loadMystery();
+  const answer = OUTLINES[mysteryAnswer(mystery.key)];
+  const hl = loadHigherLower();
+  const reaction = loadReaction();
+  const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
+  const status = isOver(mystery)
+    ? isSolved(mystery)
+      ? `Solved in ${mystery.guesses.length}. Back tomorrow.`
+      : "Missed today. Back tomorrow."
+    : mystery.guesses.length
+      ? `${MYSTERY_TRIES - mystery.guesses.length} guesses left`
+      : "New today";
+  const games = [
+    {
+      game: "mystery" as const,
+      title: "Mystery circuit",
+      blurb: "Name the circuit from a few corners. Six guesses, a new one every day.",
+      status,
+      cta: isOver(mystery) ? "See today's answer" : "Guess the circuit",
+      art: (
+        <svg viewBox="0 0 1000 1000" className="h-full w-auto" aria-hidden="true">
+          <path d={answer.outline} pathLength={1} fill="none" stroke="var(--color-ink)" strokeWidth={34} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${REVEAL[0]} 1`} strokeDashoffset={-revealOffset(mystery.key)} />
+        </svg>
+      ),
+    },
+    {
+      game: "higher-lower" as const,
+      title: "Higher or lower",
+      blurb: "Longer lap, more corners, earlier Grand Prix? Call it and keep the streak alive.",
+      status: hl.best ? `Best streak ${hl.best}` : "Endless",
+      cta: "Start a run",
+      art: (
+        <span className="wide flex items-center gap-3 text-[34px] leading-none text-paint">
+          7.004 <span className="flex flex-col text-steel"><Up className="h-5 w-5" /><Down className="h-5 w-5" /></span> <span className="text-steel/50">?</span>
+        </span>
+      ),
+    },
+    {
+      game: "reaction" as const,
+      title: "Lights out",
+      blurb: "How fast are you off the line? F1 drivers react in about 0.2 s.",
+      status: reaction.best !== null ? `Best ${(reaction.best / 1000).toFixed(3)} s` : "Five lights, one tap",
+      cta: "Test your reaction",
+      art: <Gantry lit={0} size="sm" label="Start lights" />,
+    },
+  ];
+  return (
+    <section aria-labelledby="games-h" className="border-t border-line">
+      <div className="mx-auto max-w-[1240px] px-4 py-12 md:px-8 lg:py-16">
+        <h2 id="games-h" className="wide text-[34px] leading-none text-paint">
+          Minigames
+        </h2>
+        <p className="mt-3 text-[15px] text-steel">Quick ones for between laps.</p>
+        <ul className="mt-6 grid gap-3 md:grid-cols-3">
+          {games.map((g, i) => (
+            <li key={g.game} className="in-view" style={d(i * 60)}>
+              <button onClick={() => onAction({ kind: "mini", game: g.game })} className="track-tile flex h-full w-full flex-col border border-line bg-board/70 p-5 text-left">
+                <span className="flex h-[88px] items-center">{g.art}</span>
+                <span className="wide mt-5 text-[22px] leading-none text-paint">{g.title}</span>
+                <span className="mt-2 text-[14px] text-steel">{g.blurb}</span>
+                <span className="mt-auto flex items-baseline justify-between gap-3 pt-5">
+                  <span className="caption">{g.status}</span>
+                  <span className="text-[14px] font-semibold whitespace-nowrap text-ink">{g.cta}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
 }
 
 /** Circuit outline as a small SVG from a precomputed outline (north-up, start marked). */
@@ -357,23 +436,8 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
         </ul>
       </section>
 
-      {/* the reaction test: a quick warm-up for the thumbs */}
-      <section aria-labelledby="reaction-h" className="border-t border-line">
-        <div className="mx-auto flex max-w-[1240px] flex-col gap-5 px-4 py-12 md:px-8 lg:flex-row lg:items-center lg:justify-between lg:py-14">
-          <div className="flex items-center gap-5">
-            <Gantry lit={0} size="sm" label="Start lights" />
-            <div>
-              <h2 id="reaction-h" className="wide text-[26px] leading-none text-paint">
-                Lights out
-              </h2>
-              <p className="mt-2 text-[15px] text-steel">How fast are you off the line? F1 drivers react in about 0.2 s.</p>
-            </div>
-          </div>
-          <button className={`${secondaryBtn} self-start lg:self-auto`} onClick={() => onAction({ kind: "reaction" })}>
-            Test your reaction
-          </button>
-        </div>
-      </section>
+      {/* the minigames: quick ones between laps */}
+      <Minigames onAction={onAction} />
 
       {/* record */}
       <footer className="border-t border-line">

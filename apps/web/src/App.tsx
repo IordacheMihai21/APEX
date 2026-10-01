@@ -26,6 +26,8 @@ import { type HubAction, Hub } from "./ui/Hub";
 import { LapGrid } from "./ui/LapGrid";
 import { ADS_ON, AdSlot } from "./ui/Ads";
 import { RaceHud, SectorCells } from "./ui/RaceHud";
+import { HigherLower } from "./ui/HigherLower";
+import { Mystery } from "./ui/Mystery";
 import { Reaction } from "./ui/Reaction";
 import { Stats } from "./ui/Stats";
 import { SpeedTrace } from "./ui/SpeedTrace";
@@ -39,7 +41,8 @@ import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 
-type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean };
+type Mini = "reaction" | "mystery" | "higher-lower";
+type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean };
 
 function initialScreen(): Screen {
   const q = new URLSearchParams(location.search);
@@ -48,9 +51,17 @@ function initialScreen(): Screen {
   const vs = decodeChallenge(q.get("vs"));
   if (vs) return { kind: "play", mode: "practice", trackId: vs.trackId, challenge: vs.knots };
   if (mode === "practice" && CATALOG.some((t) => t.id === track)) return { kind: "play", mode, trackId: track! };
-  if (location.pathname.replace(/\/$/, "") === "/reaction" || q.get("play") === "reaction") return { kind: "reaction" };
+  const path = location.pathname.replace(/\/$/, "").slice(1) || q.get("play");
+  if (path && path in MINI) return { kind: path as Mini };
   return { kind: "hub" };
 }
+
+/** The minigames have their own addresses and titles, so they can be found and shared. */
+const MINI: Record<Mini, string> = {
+  reaction: "F1 lights out reaction test | APEX",
+  mystery: "Mystery circuit: guess the F1 track | APEX",
+  "higher-lower": "Higher or lower: F1 circuit facts | APEX",
+};
 
 const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice" };
 
@@ -70,9 +81,9 @@ export function App() {
   useEffect(() => {
     const url = new URL(location.href);
     url.search = "";
-    // the reaction test has its own address and title, so it can be found and shared
-    url.pathname = screen.kind === "reaction" ? "/reaction" : "/";
-    document.title = screen.kind === "reaction" ? "F1 lights out reaction test | APEX" : "APEX: find the perfect lap";
+    const mini = screen.kind in MINI ? (screen.kind as Mini) : null;
+    url.pathname = mini ? `/${mini}` : "/";
+    document.title = mini ? MINI[mini] : "APEX: find the perfect lap";
     if (screen.kind === "play" && screen.mode === "practice") {
       url.searchParams.set("play", "practice");
       url.searchParams.set("track", screen.trackId);
@@ -84,7 +95,7 @@ export function App() {
     if (a.kind === "daily") setScreen({ kind: "play", mode: "daily", trackId: loadDaily().trackId });
     else if (a.kind === "daily-summary") setSummary(true);
     else if (a.kind === "practice") setPicking(true);
-    else if (a.kind === "reaction") setScreen({ kind: "reaction" });
+    else if (a.kind === "mini") setScreen({ kind: a.game });
     else if (a.kind === "stats") setStats(true);
     else if (a.kind === "practice-track") setScreen({ kind: "play", mode: "practice", trackId: a.trackId });
     else {
@@ -160,6 +171,10 @@ export function App() {
           <Hub onAction={act} />
         ) : screen.kind === "reaction" ? (
           <Reaction onPlayDaily={() => act({ kind: "daily" })} />
+        ) : screen.kind === "mystery" ? (
+          <Mystery onPlayDaily={() => act({ kind: "daily" })} />
+        ) : screen.kind === "higher-lower" ? (
+          <HigherLower onPlayDaily={() => act({ kind: "daily" })} />
         ) : (
           <Play
             key={`${screen.mode}:${screen.trackId}:${screen.nonce ?? 0}`}

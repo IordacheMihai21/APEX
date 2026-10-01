@@ -3,6 +3,8 @@ import { CATALOG } from "../game/catalog";
 import { loadPB } from "../game/storage";
 import { dailyStats, medalDistribution } from "../modes/daily";
 import { MEDAL_COLOR, MEDAL_NAME, medalFor } from "../modes/medals";
+import { loadHigherLower } from "../modes/higherLower";
+import { mysteryStats } from "../modes/mystery";
 import { loadReaction } from "../modes/reaction";
 import { lapTime } from "./format";
 import { MedalDisc } from "./Medals";
@@ -24,6 +26,8 @@ export function Stats({ onClose }: { onClose: () => void }) {
   const dist = medalDistribution();
   const most = Math.max(1, ...dist.map((d) => d.days));
   const reaction = loadReaction();
+  const mystery = mysteryStats();
+  const hl = loadHigherLower();
   const circuits = CATALOG.filter((t) => t.id !== "kestrel").map((t) => {
     const pb = loadPB(t.id, 1);
     return { ...t, pb: pb?.lapTimeMs ?? null, medal: pb ? medalFor(t.id, pb.lapTimeMs, []) : null };
@@ -77,10 +81,19 @@ export function Stats({ onClose }: { onClose: () => void }) {
           ))}
         </ul>
 
-        <p className="caption mt-6 flex items-baseline justify-between">
-          <span>Best start (lights out)</span>
-          <span className="num text-[14px] text-paint">{reaction.best !== null ? `${(reaction.best / 1000).toFixed(3)} s` : "Not tried yet"}</span>
-        </p>
+        <h3 className="mt-7 text-[15px] font-semibold text-paint">Minigames</h3>
+        <dl className="mt-2">
+          {[
+            ["Mystery circuit", mystery.played ? `${mystery.solved} of ${mystery.played} solved, streak ${mystery.streak}` : "Not tried yet"],
+            ["Higher or lower", hl.runs ? `Best streak ${hl.best}` : "Not tried yet"],
+            ["Lights out", reaction.best !== null ? `Best ${(reaction.best / 1000).toFixed(3)} s` : "Not tried yet"],
+          ].map(([k, v]) => (
+            <div key={k} className="flex items-baseline justify-between gap-3 border-b border-line/60 py-1.5 last:border-b-0">
+              <dt className="text-[14px] text-paint">{k}</dt>
+              <dd className={`num text-[14px] ${v === "Not tried yet" ? "text-steel/60" : "text-paint"}`}>{v}</dd>
+            </div>
+          ))}
+        </dl>
 
         <button className={`${secondaryBtn} mt-6 w-full`} onClick={onClose}>
           Close

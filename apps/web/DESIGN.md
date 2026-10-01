@@ -359,12 +359,19 @@ Four tiers, one disc shape: a 20-unit circle with a night/28 inner ring when ear
 ### Loading
 While a circuit loads, its outline (paint-free steel stroke) draws and undraws in a loop above "Loading <venue>"; on failure the line says what failed and to go back to the grid.
 
+### Mystery circuit (/mystery)
+Asymmetric split from lg (5fr clue / 6fr board). The clue: one ink stroke on board/70, revealing 18, 32, 46, 60, 75, 90% of the lap from a per-day offset (stroke-dasharray transition, 900ms ease-out); when the day ends the full outline turns green (solved) or paint (missed) over asphalt with the orange start dot, and the venue is named. The board: a 6-row table (circuit, country, km, corners, first GP), cells 44px tall, green for exact, yellow for close (same continent, 0.5 km, 2 corners, 10 years), graphite otherwise, with Phosphor arrows pointing at the answer; each new row's cells flip down left to right (90ms apart). Guesses come from twelve name chips (two or three columns), struck through once used; no free text, so there is nothing to misspell.
+
+### Higher or lower (/higher-lower)
+Two equal circuit cards (outline, venue, country, the stat label, the value in wide type). The right card's value is a steel "?" until called, then rolls in and the card's border turns green or kerb red. A right call deals the next pair after 1.3s (cards slide in from the right, 80ms apart), the revealed circuit taking the left seat. Two full-width secondary buttons carry the stat's own words (Longer/Shorter, More/Fewer, Later/Earlier, Slower/Quicker). Streak rolls top right beside the best.
+
 ### Hub (the landing surface)
 Three sections over plain night, separated by hairlines; no cards, no ground texture.
 - **Today's circuit (hero):** asymmetric split from lg (5fr copy / 6fr map), stacked on phones with the map between the facts and the lap grid so the CTA stays in the first viewport. Copy column: small gantry as the clock with a red seven-segment countdown, the one orange line ("Daily Quali No. N"), the venue in wide 800 at clamp(44px, 6vw, 84px) mixed case, a steel facts line (country, length, corners), the lap grid, one sentence, one primary button.
 - **The hero map (signature):** generated from track data (tools/track-builder/src/build-outlines.ts → src/game/outlines.ts) and drawn like a timing map (the f1-dash / monaco idiom: quiet base, coloured sectors, car dot). One asphalt stroke (#23262d, 2.2× true width, round joins); each corner group painted at 42% of that width in its personal best of the day (the best colour reached there on any of today's laps, F1 style; modes/grading.ts bestPerGroup) (the same purple/green/yellow/red the result screen uses), lighting up in lap order (110ms apart from 1.5s); the perfect line as a 2-unit paint/22 hairline; the car as a 10-unit ink dot ringed in night with a tapering streak (three stacked dashes of 16%, 7% and 2.5% of the lap at 10%, 30% and 85% opacity). Car and streak share one timing: SVG animateMotion and stroke-dashoffset driven by keyPoints/keyTimes from the optimal lap (×4 playback). No corner numbers, no glow. Caption under a hairline, two columns: "Your best today" (or "No lap yet today") and "Perfect lap, driven live", each with its time. Phones cap the map at min(34vh, 360px) so the CTA stays in the first viewport.
 - **Perfect Season band:** board/60 band. Heading, one sentence, the score rolling at 44px, the button; beside it the calendar, 12 circuit outlines (6×2, 4×3 on phones): won in paint, lost in steel/40, current in ink, upcoming in #3a3f49, each with its orange start dot and an "R1" caption.
 - **Free Practice rail:** heading and sentence, then a horizontal scroll-snap rail of 176px tiles (outline, venue in wide 15px, caption). Hover lifts the tile to graphite and runs a white lap around the outline; a tile opens that circuit directly.
+- **Minigames:** heading and sentence, then three equal tiles in one row from md (stacked on phones), each opening its own screen and address: Mystery circuit (today's first clue: 18% of the answer's outline in ink), Higher or lower (a wide "7.004 ↕ ?"), Lights out (the small gantry). Under each: title in wide 22px, one sentence, and a caption row with the player's status left ("Solved in 3", "Best streak 7") and the action in ink right. Tiles share the practice tile's hover.
 - **Footer:** the record as one line of rolling figures and captions, and the independence note.
 
 ## Motion
@@ -374,6 +381,7 @@ One curve family, the exponential ease-out of a car leaving a corner (`--ease-ou
 - **The cut (navigation):** grid ↔ circuit runs through a view transition on `main` (`stage`): the new view wipes in behind a slanted leading edge (the button's angle), the old one dims and drifts 4% left. 460ms. The header stays put.
 - **The timing reveal (result):** the lap time rolls in (`Roll`: each digit a 0–9 strip, 900ms, 45ms stagger left to right), the delta plate slides in from the right at 520ms, the timing lines rise from 640ms, and the newest lap row of the lap grid flips in tile by tile (55ms apart). The season score and record figures roll the same way.
 - **Lights out:** the words slam in (scale 1.5 → 1, 8° skew and 8px blur clearing, 380ms).
+- **Minigames:** clue cells flip in, the mystery lap draws on with each miss, higher-or-lower pairs are dealt in.
 - **Feedback:** see Buttons. The back chevron leans 3px left on hover.
 - Everything above drops to static under `prefers-reduced-motion`.
 

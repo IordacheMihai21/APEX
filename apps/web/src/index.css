@@ -523,7 +523,57 @@ canvas {
   animation-duration: 160ms;
 }
 
+/* Mystery circuit: clue cells flip in left to right; the lap draws on with each miss. */
+@keyframes flip {
+  from {
+    transform: rotateX(90deg);
+    opacity: 0;
+  }
+}
+.flip {
+  animation: flip 380ms var(--ease-out) both;
+}
+.mystery-line {
+  transition:
+    stroke-dasharray 900ms var(--ease-out),
+    stroke 400ms ease;
+}
+.guess-chip {
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 120ms ease;
+}
+@media (hover: hover) {
+  .guess-chip:not(:disabled):hover {
+    border-color: var(--color-ink);
+    background: var(--color-graphite);
+  }
+}
+.guess-chip:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+/* Higher or lower: each new pair is dealt in, the revealed card slides into the left seat. */
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+.hl-deal > * {
+  animation: deal 420ms var(--ease-out) both;
+}
+.hl-deal > :nth-child(2) {
+  animation-delay: 80ms;
+}
+.hl-card {
+  transition: border-color 200ms ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .flip,
+  .hl-deal > *,
   .wipe-in,
   .tile-flip,
   .row-flash,
@@ -545,6 +595,7 @@ canvas {
     animation: none;
   }
   .roll-strip,
+  .mystery-line,
   .btn-go,
   .btn-go::before,
   .btn-go::after,
