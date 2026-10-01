@@ -18,6 +18,14 @@ Configure the host's SPA fallback so `/reaction` returns `index.html`:
 - **Cloudflare Pages:** single-page apps fall back to `index.html` automatically
 - **nginx:** `try_files $uri /index.html;`
 
+## Installable app (PWA)
+
+`public/manifest.webmanifest`, the icons and `public/sw.js` ship as-is. The
+service worker registers in production builds only: pages are network-first
+(a new build arrives at once), hashed assets cache-first, other origins (ads)
+untouched. Serve `sw.js` from the site root with `Cache-Control: no-cache` so
+browsers pick up new versions. Bump `CACHE` in `sw.js` to force a clean cache.
+
 ## Before launch
 
 - Ads: see [ADS.md](ADS.md) (AdSense client, slots, `ads.txt`, consent message).
