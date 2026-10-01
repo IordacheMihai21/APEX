@@ -26,6 +26,7 @@ import { type HubAction, Hub } from "./ui/Hub";
 import { LapGrid } from "./ui/LapGrid";
 import { ADS_ON, AdSlot } from "./ui/Ads";
 import { RaceHud, SectorCells } from "./ui/RaceHud";
+import { Reaction } from "./ui/Reaction";
 import { SpeedTrace } from "./ui/SpeedTrace";
 import { MedalRow } from "./ui/Medals";
 import { MEDAL_NAME, medalFor, realPole } from "./modes/medals";
@@ -37,7 +38,7 @@ import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 
-type Screen = { kind: "hub" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean };
+type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean };
 
 function initialScreen(): Screen {
   const q = new URLSearchParams(location.search);
@@ -46,6 +47,7 @@ function initialScreen(): Screen {
   const vs = decodeChallenge(q.get("vs"));
   if (vs) return { kind: "play", mode: "practice", trackId: vs.trackId, challenge: vs.knots };
   if (mode === "practice" && CATALOG.some((t) => t.id === track)) return { kind: "play", mode, trackId: track! };
+  if (location.pathname.replace(/\/$/, "") === "/reaction" || q.get("play") === "reaction") return { kind: "reaction" };
   return { kind: "hub" };
 }
 
@@ -66,6 +68,9 @@ export function App() {
   useEffect(() => {
     const url = new URL(location.href);
     url.search = "";
+    // the reaction test has its own address and title, so it can be found and shared
+    url.pathname = screen.kind === "reaction" ? "/reaction" : "/";
+    document.title = screen.kind === "reaction" ? "F1 lights out reaction test | APEX" : "APEX: find the perfect lap";
     if (screen.kind === "play" && screen.mode === "practice") {
       url.searchParams.set("play", "practice");
       url.searchParams.set("track", screen.trackId);
@@ -77,6 +82,7 @@ export function App() {
     if (a.kind === "daily") setScreen({ kind: "play", mode: "daily", trackId: loadDaily().trackId });
     else if (a.kind === "daily-summary") setSummary(true);
     else if (a.kind === "practice") setPicking(true);
+    else if (a.kind === "reaction") setScreen({ kind: "reaction" });
     else if (a.kind === "practice-track") setScreen({ kind: "play", mode: "practice", trackId: a.trackId });
     else {
       const store = a.fresh ? newSeason() : loadSeason();
@@ -101,7 +107,7 @@ export function App() {
     <div className="grid h-dvh grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] overflow-hidden select-none">
       <header className="flex h-[52px] items-stretch justify-between border-b border-line bg-night pt-[env(safe-area-inset-top)]">
         <div className="flex min-w-0 items-stretch">
-          {screen.kind === "play" && (
+          {screen.kind !== "hub" && (
             <button onClick={() => setScreen({ kind: "hub" })} className="back grid w-12 shrink-0 place-items-center border-r border-line text-paint transition-colors hover:bg-graphite active:bg-graphite" aria-label="Back to the grid">
               <ChevronLeft />
             </button>
@@ -149,6 +155,8 @@ export function App() {
       <main className="relative min-h-0 [view-transition-name:stage]">
         {screen.kind === "hub" ? (
           <Hub onAction={act} />
+        ) : screen.kind === "reaction" ? (
+          <Reaction onPlayDaily={() => act({ kind: "daily" })} />
         ) : (
           <Play
             key={`${screen.mode}:${screen.trackId}:${screen.nonce ?? 0}`}

@@ -325,6 +325,9 @@ Five square black pods (#060607, line border), two lamps each at 16/24/36px. On 
 - **Watch the perfect lap:** only once the daily is locked; a demo run with "Perfect lap" in purple in the HUD and all splits purple, then the perfect line stays drawn under yours.
 - **Colour-blind colours:** a header toggle (palette icon, ink when on) swaps the four timing colours for an Okabe-Ito set (blue, bluish green, yellow, reddish purple) in both the CSS tokens and the canvas; copy never names a colour ("Every corner perfect").
 
+### Lights out (reaction test, `/reaction`)
+A full-height stage that is itself the button (tap anywhere or Space/Enter): title "Lights out" in wide display, one plain sentence with the reference points (F1 drivers about 0.2 s, most people about 0.27 s), the large gantry, the reaction on a 64–80px seven-segment readout ("0.000" ghosted while waiting, white when timed, "-.---" in lamp red for a jump start), a one-line verdict, and Best / Last 5 average / Jump starts. After a timed start: Share (secondary) and "Now find the perfect lap" (primary) into the daily. Optional beeps with sound on. The hub links to it from a compact band above the record line.
+
 ### Challenge links
 A `?vs=` link opens Free Practice on the challenger's circuit. The setup bar shows "Challenge: beat 1:08.515" (13px paint, time tabular bold); the HUD's pace target becomes "To Challenge" with a paint-coloured ring; the result sheet adds a "Challenge 1:08.515" timing line (ink when beaten) and the headline "Challenge beaten". A practice result offers a secondary "Challenge" share button beside Improve line.
 

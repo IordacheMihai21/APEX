@@ -20,7 +20,8 @@ export type HubAction =
   | { kind: "daily-summary" }
   | { kind: "season"; fresh: boolean }
   | { kind: "practice" }
-  | { kind: "practice-track"; trackId: string };
+  | { kind: "practice-track"; trackId: string }
+  | { kind: "reaction" };
 
 const PLAYBACK = 4;
 /** Before a season is drawn, the calendar shows the twelve circuits in catalog order. */
@@ -336,6 +337,24 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
             );
           })}
         </ul>
+      </section>
+
+      {/* the reaction test: a quick warm-up for the thumbs */}
+      <section aria-labelledby="reaction-h" className="border-t border-line">
+        <div className="mx-auto flex max-w-[1240px] flex-col gap-5 px-4 py-12 md:px-8 lg:flex-row lg:items-center lg:justify-between lg:py-14">
+          <div className="flex items-center gap-5">
+            <Gantry lit={0} size="sm" label="Start lights" />
+            <div>
+              <h2 id="reaction-h" className="wide text-[26px] leading-none text-paint">
+                Lights out
+              </h2>
+              <p className="mt-2 text-[15px] text-steel">How fast are you off the line? F1 drivers react in about 0.2 s.</p>
+            </div>
+          </div>
+          <button className={`${secondaryBtn} self-start lg:self-auto`} onClick={() => onAction({ kind: "reaction" })}>
+            Test your reaction
+          </button>
+        </div>
       </section>
 
       {/* record */}
