@@ -35,7 +35,7 @@ import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 
-type Screen = { kind: "hub" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[] };
+type Screen = { kind: "hub" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean };
 
 function initialScreen(): Screen {
   const q = new URLSearchParams(location.search);
@@ -136,6 +136,7 @@ export function App() {
             mode={screen.mode}
             trackId={screen.trackId}
             challenge={screen.challenge}
+            watch={screen.watch}
             onNext={(trackId) => setScreen(trackId ? { kind: "play", mode: screen.mode, trackId, nonce: Date.now() } : { kind: "hub" })}
           />
         )}
@@ -156,7 +157,15 @@ export function App() {
           onClose={() => setPicking(false)}
         />
       )}
-      {summary && <DailySummary onClose={() => setSummary(false)} />}
+      {summary && (
+        <DailySummary
+          onClose={() => setSummary(false)}
+          onWatch={() => {
+            setSummary(false);
+            setScreen({ kind: "play", mode: "daily", trackId: loadDaily().trackId, watch: true });
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -187,7 +196,20 @@ function useSnapshot(game: Game): Snapshot {
  * session from storage, persists every lap, and locks the game when the
  * session is over (6 daily laps, a won/lost season round).
  */
-function Play({ mode, trackId, challenge, onNext }: { mode: Mode; trackId: string; challenge?: number[]; onNext: (trackId: string | null) => void }) {
+function Play({
+  mode,
+  trackId,
+  challenge,
+  watch,
+  onNext,
+}: {
+  mode: Mode;
+  trackId: string;
+  challenge?: number[];
+  /** open straight into the perfect-lap demo (a finished daily) */
+  watch?: boolean;
+  onNext: (trackId: string | null) => void;
+}) {
   const [game, setGame] = useState<Game | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [daily, setDaily] = useState<DailyRecord | null>(null);
@@ -225,6 +247,7 @@ function Play({ mode, trackId, challenge, onNext }: { mode: Mode; trackId: strin
           g.onLap = (lap) => setPracticeLaps((p) => [...p, lap.grades].slice(-3));
         }
         setGame(g);
+        if (watch) setTimeout(() => g.watchPerfect(), 600);
       })
       .catch((e: Error) => alive && setError(e.message));
     return () => {
@@ -809,7 +832,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
 }
 
 /** Hub overlay for a finished daily: grid, share, countdown. */
-function DailySummary({ onClose }: { onClose: () => void }) {
+function DailySummary({ onClose, onWatch }: { onClose: () => void; onWatch: () => void }) {
   const daily = loadDaily();
   const info = CATALOG.find((t) => t.id === daily.trackId)!;
   const countdown = useCountdown();
@@ -829,8 +852,11 @@ function DailySummary({ onClose }: { onClose: () => void }) {
         <div className="mt-3">
           <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={cols} />
         </div>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI, daily.bestKnots && challengeUrl({ trackId: daily.trackId, knots: daily.bestKnots }))} />
+          <button className={secondaryBtn} onClick={onWatch}>
+            Watch the perfect lap
+          </button>
           <button className={secondaryBtn} onClick={onClose}>
             Close
           </button>
