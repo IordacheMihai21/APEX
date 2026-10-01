@@ -46,11 +46,11 @@ function useSplit(s: Snapshot) {
       const g = s.grades[s.revealed - 1];
       seen.current = s.revealed;
       setSplit(g);
-      if (g.grade === "purple") buzz(35);
+      if (g.grade === "purple" && !s.demo) buzz(35);
       const t = setTimeout(() => setSplit((cur) => (cur === g ? null : cur)), 1600);
       return () => clearTimeout(t);
     }
-  }, [s.phase, s.revealed, s.grades]);
+  }, [s.phase, s.revealed, s.grades, s.demo]);
   return s.phase === "race" ? split : null;
 }
 
@@ -108,9 +108,8 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
       <div className="pointer-events-none absolute top-2 right-2 flex w-[148px] flex-col gap-1.5 min-[720px]:w-[188px]">
         <div className="border border-line bg-night/88">
           <div className="label flex justify-between border-b border-line px-2 py-1.5">
-            <span className="text-paint">
-              Lap {s.lapsUsed + 1}
-              {s.lapLimit !== null ? `/${s.lapLimit}` : ""}
+            <span className={s.demo ? "text-purple" : "text-paint"}>
+              {s.demo ? "Perfect lap" : `Lap ${s.lapsUsed + 1}${s.lapLimit !== null ? `/${s.lapLimit}` : ""}`}
             </span>
             <span>×4</span>
           </div>

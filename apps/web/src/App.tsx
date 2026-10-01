@@ -648,6 +648,9 @@ function ResultSheet({
     actions = (
       <>
         <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI, daily.bestKnots && challengeUrl({ trackId: daily.trackId, knots: daily.bestKnots }))} />
+        <button className={secondaryBtn} onClick={() => game.watchPerfect()}>
+          Watch perfect lap
+        </button>
         <button className={secondaryBtn} onClick={() => onNext(null)}>
           Grid
         </button>
@@ -763,7 +766,7 @@ function ResultSheet({
           </ul>
         )}
         <Legend />
-        <div className="mt-3 flex gap-2">{actions}</div>
+        <div className="mt-3 flex flex-wrap gap-2">{actions}</div>
       </div>
     </div>
   );
@@ -784,11 +787,17 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
     <div className="absolute inset-x-0 bottom-0 flex justify-center">
       <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/95 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
         <h2 className="wide text-[20px] leading-none text-paint">{dayHeadline(daily)}</h2>
-        <p className="mt-1.5 text-[14px] text-paint/75">New circuit in {countdown}.</p>
+        <p className="mt-1.5 text-[14px] text-paint/75">
+          New circuit in {countdown}.
+          {game.getSnapshot().perfectShown ? " The perfect line is drawn in purple under yours." : ""}
+        </p>
         <div className="mt-3">
           <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={game.controls.complexes.length} />
         </div>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button className={secondaryBtn} onClick={() => game.watchPerfect()}>
+            Watch the perfect lap
+          </button>
           <ShareButton text={shareText(daily, info.name, info.flag, GRADE_EMOJI, daily.bestKnots && challengeUrl({ trackId: daily.trackId, knots: daily.bestKnots }))} />
           <button className={secondaryBtn} onClick={onHub}>
             Grid

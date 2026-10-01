@@ -118,6 +118,10 @@ export interface Snapshot {
   challengeMs: number | null;
   /** Sector times completed so far this lap (all three on the result). */
   sectors: SectorTime[];
+  /** Running the perfect lap as a demo (after the daily is over): nothing counts. */
+  demo: boolean;
+  /** The perfect line has been revealed and is drawn under yours. */
+  perfectShown: boolean;
   drive: DriveState;
   lapsUsed: number;
   lapLimit: number | null;
@@ -291,6 +295,8 @@ export class Game {
       liveDeltaMs: liveDelta,
       paceLabel: this.pace.label,
       challengeMs: this.challengeMs,
+      demo: this.demo,
+      perfectShown: this.perfectXY !== null,
       sectors:
         this.sectorPlan && (this.phase === "race" || this.phase === "result")
           ? this.phase === "result"
@@ -682,7 +688,63 @@ export class Game {
   }
 
   skip() {
-    if ((this.phase === "race" || this.phase === "lights") && this.sim) this.finishRace();
+    if ((this.phase === "race" || this.phase === "lights") && this.sim) this.demo ? this.finishDemo() : this.finishRace();
+  }
+
+  private demo = false;
+  /** The perfect line, resolved for drawing, once revealed. */
+  private perfectXY: { x: Float64Array; y: Float64Array } | null = null;
+  private ownXY: { x: Float64Array; y: Float64Array } | null = null;
+
+  /**
+   * Run the perfect lap as a demo, with full race presentation (every split
+   * purple). Only once the session is over (the daily is locked), so it can
+   * never spoil a lap still to be driven. Nothing it does is recorded.
+   */
+  watchPerfect() {
+    if (!this.locked || (this.phase !== "setup" && this.phase !== "result")) return;
+    const sim = this.reference;
+    this.demo = true;
+    this.sim = sim;
+    this.result = null;
+    this.grades = this.computeGrades(sim);
+    this.sectorPlan = sim.sectors.map((sec, k) => ({
+      ms: sec.timeMs,
+      tone: "purple" as const,
+      doneAtMs: k === sim.sectors.length - 1 || sec.endIndex <= sec.startIndex ? sim.rawLapTimeMs : sim.samples.elapsedMs[sec.endIndex],
+      deltaMs: 0,
+    }));
+    this.pace = { label: "Perfect", medal: "perfect", scale: 1 };
+    const line = resolveLine(this.pt, this.track.optimalLine!, car);
+    this.perfectXY = { x: line.x, y: line.y };
+    this.ownXY ??= this.lineXY;
+    this.lineXY = this.perfectXY;
+    this.raceT = 0;
+    this.phase = "lights";
+    this.lightsT0 = performance.now();
+    this.lightsLit = 0;
+    this.lightsHold = 300;
+    this.lightMs = LIGHT_MS_REPEAT;
+    this.skids = [];
+    this.prevWheels = null;
+    this.sparks = [];
+    this.prevSpeed = 0;
+    this.camera.animateTo(sim.samples.x[0], sim.samples.y[0], RACE_TRACK_PX_SLOW / this.track.widthMeters, this.headingAt(0) - Math.PI / 2, 450);
+    if (soundEnabled()) engine.resume();
+    logEvent("perfect_watched", { track: this.track.id });
+    this.emit();
+  }
+
+  /** After the demo: back to the circuit with the perfect line drawn under your own. */
+  private finishDemo() {
+    this.demo = false;
+    this.lineXY = this.ownXY ?? this.lineXY;
+    this.phase = "setup";
+    this.sim = null;
+    this.grades = null;
+    engine.silence();
+    this.showOverview();
+    this.emit();
   }
 
   private finishRace() {
@@ -1125,7 +1187,7 @@ export class Game {
         this.lastEmit = now;
         this.emit();
       }
-      if (this.raceT >= this.sim.rawLapTimeMs) this.finishRace();
+      if (this.raceT >= this.sim.rawLapTimeMs) this.demo ? this.finishDemo() : this.finishRace();
       animating = true;
     } else this.shake = [0, 0];
     if (this.sparks.length) animating = true;
@@ -1225,12 +1287,24 @@ export class Game {
         if (i) path.lineTo(x[j], y[j]);
         else path.moveTo(x[j], y[j]);
       }
+      if (this.perfectXY && this.phase === "setup") {
+        // the revealed perfect line, in purple, under your own
+        const p = new Path2D();
+        for (let i = 0; i <= this.pt.n; i++) {
+          const j = i % this.pt.n;
+          if (i) p.lineTo(this.perfectXY.x[j], this.perfectXY.y[j]);
+          else p.moveTo(this.perfectXY.x[j], this.perfectXY.y[j]);
+        }
+        ctx.strokeStyle = C.purple;
+        ctx.lineWidth = 3 * px;
+        ctx.stroke(p);
+      }
       if (this.phase === "setup") {
         ctx.strokeStyle = "rgba(0,0,0,0.45)";
         ctx.lineWidth = 5.5 * px;
         ctx.stroke(path);
       }
-      ctx.strokeStyle = this.phase === "race" ? C.inkDim : C.ink;
+      ctx.strokeStyle = this.demo ? C.purple : this.phase === "race" ? C.inkDim : C.ink;
       ctx.lineWidth = (this.phase === "race" ? 2 : 3) * px;
       ctx.stroke(path);
     }
@@ -1241,7 +1315,7 @@ export class Game {
         const g = this.sampleAt(this.pbSim, this.raceT);
         this.cars.draw(ctx, g.x, g.y, g.heading, px, true);
       }
-      if (this.phase === "race") {
+      if (this.phase === "race" && !this.demo) {
         // pace marker: a ring in the target medal's colour, riding your own line
         const m = this.pacePoint(this.sim);
         ctx.beginPath();
