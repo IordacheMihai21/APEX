@@ -64,7 +64,7 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
       {(s.phase === "lights" || lightsOut) && (
         <div className="pointer-events-none absolute inset-x-0 top-[28%] flex flex-col items-center gap-4">
           <Gantry lit={s.phase === "lights" ? s.lights : 0} size="lg" />
-          {lightsOut && <p className="wide text-[26px] uppercase tracking-[0.04em] text-paint [text-shadow:0_2px_14px_rgba(0,0,0,0.85)]">Lights out</p>}
+          {lightsOut && <p className="slam wide text-[26px] uppercase tracking-[0.04em] text-paint [text-shadow:0_2px_14px_rgba(0,0,0,0.85)]">Lights out</p>}
         </div>
       )}
 
@@ -84,7 +84,7 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
           </div>
         </div>
       </div>
-      <button className={`${secondaryBtn} absolute right-2 bottom-[max(12px,env(safe-area-inset-bottom))] max-[520px]:bottom-[112px]`} onClick={onSkip}>
+      <button className={`${secondaryBtn} absolute right-2 bg-night/85 bottom-[max(12px,env(safe-area-inset-bottom))] max-[520px]:bottom-[112px]`} onClick={onSkip}>
         Skip
       </button>
     </>

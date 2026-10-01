@@ -14,6 +14,7 @@
   --color-paint: #f2f2ee; /* type and painted lines */
   --color-steel: #9aa1ab; /* secondary type */
   --color-ink: #ff6a13; /* the player: car, line, primary action */
+  --color-ink-hot: #ff8a45; /* the primary button revved up (hover fill) */
   --color-purple: #a259ff; /* on the perfect line */
   --color-green: #29cc6a; /* close */
   --color-yellow: #f5c518; /* slow */
@@ -132,10 +133,294 @@ canvas {
   background-color: #23262c;
 }
 
+/*
+ * Motion. One curve family: the exponential ease-out of a car leaving a
+ * corner. Things arrive fast and settle; nothing bounces.
+ */
+:root {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+}
+
+/* Buttons sit in the components layer so utilities (position, size) still win. */
+@layer components {
+/*
+ * Primary: the launch button. Hover revs it up — the fill climbs in eight
+ * discrete steps like a rev-light bar — and the arrow kicks forward. Press
+ * squats it like a car on launch.
+ */
+.btn-go {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform 140ms var(--ease-out),
+    filter 140ms var(--ease-out);
+}
+.btn-go::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-ink-hot);
+  -webkit-mask: repeating-linear-gradient(90deg, var(--color-night) 0 calc(12.5% - 1px), transparent calc(12.5% - 1px) 12.5%);
+  mask: repeating-linear-gradient(90deg, var(--color-night) 0 calc(12.5% - 1px), transparent calc(12.5% - 1px) 12.5%);
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 160ms var(--ease-out);
+}
+.btn-go::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 22px;
+  width: 8px;
+  height: 12px;
+  margin-top: -6px;
+  background: currentColor;
+  clip-path: polygon(0 0, 45% 0, 100% 50%, 45% 100%, 0 100%, 55% 50%);
+  transition: transform 220ms var(--ease-out);
+}
+@media (hover: hover) {
+  .btn-go:hover:not(:disabled)::before {
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 360ms steps(8, jump-start);
+  }
+  .btn-go:hover:not(:disabled)::after {
+    transform: translateX(5px);
+  }
+}
+.btn-go:active:not(:disabled) {
+  transform: translateY(1px) scale(0.975, 0.96);
+  filter: brightness(1.12);
+}
+.btn-go:active:not(:disabled)::after {
+  transform: translateX(9px);
+  transition-duration: 90ms;
+}
+.btn-go:disabled::after {
+  opacity: 0.4;
+}
+
+/* Secondary: a painted white line draws along the bottom edge, like a track limit. */
+.btn-line {
+  position: relative;
+  transition:
+    color 160ms,
+    border-color 160ms,
+    transform 140ms var(--ease-out);
+}
+.btn-line::after {
+  content: "";
+  position: absolute;
+  inset: auto -1px -1px -1px;
+  height: 2px;
+  background: var(--color-paint);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 280ms var(--ease-out);
+}
+@media (hover: hover) {
+  .btn-line:hover:not(:disabled) {
+    color: var(--color-paint);
+    border-color: rgba(242, 242, 238, 0.4);
+  }
+  .btn-line:hover:not(:disabled)::after {
+    transform: scaleX(1);
+  }
+}
+.btn-line:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn-line:active:not(:disabled)::after {
+  transform: scaleX(1);
+  transition-duration: 80ms;
+}
+
+.btn-icon {
+  transition:
+    border-color 160ms,
+    background-color 160ms,
+    transform 120ms var(--ease-out);
+}
+@media (hover: hover) {
+  .btn-icon:hover:not(:disabled) {
+    border-color: rgba(242, 242, 238, 0.4);
+  }
+}
+.btn-icon:active:not(:disabled) {
+  transform: scale(0.92);
+  background-color: var(--color-graphite);
+}
+.btn-icon:disabled {
+  opacity: 0.35;
+}
+
+/* Header back: the chevron leans the way it goes. */
+.back svg {
+  transition: transform 220ms var(--ease-out);
+}
+@media (hover: hover) {
+  .back:hover svg {
+    transform: translateX(-3px);
+  }
+}
+}
+
+/*
+ * Hub arrival. The gantry's lamps snap on one pod at a time, then each grid
+ * box is painted onto the tarmac: front line left-to-right, legs down, then
+ * what stands in the box. --d staggers the slots.
+ */
+@keyframes lamp-on {
+  from {
+    filter: brightness(0.08) saturate(0.3);
+    box-shadow: none;
+  }
+}
+.lamp-seq {
+  animation: lamp-on 70ms linear both;
+}
+@keyframes paint-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes paint-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes slide-num {
+  from {
+    opacity: 0;
+    transform: translateX(var(--from, -14px));
+  }
+}
+.slot .paint-x {
+  transform-origin: left;
+  animation: paint-x 420ms var(--ease-out) var(--d, 0ms) both;
+}
+.slot .paint-y {
+  transform-origin: top;
+  animation: paint-y 520ms var(--ease-out) calc(var(--d, 0ms) + 120ms) both;
+}
+.slot .slot-body {
+  animation: rise 520ms var(--ease-out) calc(var(--d, 0ms) + 200ms) both;
+}
+.slot .slot-num {
+  animation: slide-num 600ms var(--ease-out) calc(var(--d, 0ms) + 80ms) both;
+}
+.rise {
+  animation: rise 520ms var(--ease-out) var(--d, 0ms) both;
+}
+
+/* Rolling digits: each figure is a strip of 0–9 that spins to its value. */
+.roll {
+  display: inline-flex;
+}
+.roll-col {
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+  line-height: 1;
+}
+.roll-strip {
+  display: flex;
+  flex-direction: column;
+  transition: transform 900ms var(--ease-out);
+}
+.roll-strip > span {
+  height: 1em;
+  line-height: 1;
+}
+
+/* "Lights out" lands like a broadcast slam: big, blurred, then sharp. */
+@keyframes slam {
+  0% {
+    opacity: 0;
+    transform: scale(1.5) skewX(-8deg);
+    filter: blur(8px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1) skewX(0);
+  }
+}
+.slam {
+  animation: slam 380ms var(--ease-out) both;
+}
+
+/* The result plate slides in from the right edge after the time lands. */
+@keyframes plate-in {
+  from {
+    clip-path: inset(0 0 0 100%);
+    transform: translateX(12px);
+  }
+}
+.plate-in {
+  animation: plate-in 420ms var(--ease-out) 520ms both;
+}
+
+/*
+ * The cut: switching between the grid and a circuit wipes the new view in
+ * behind a slanted edge, the same angle as the buttons.
+ */
+@keyframes cut-in {
+  from {
+    clip-path: polygon(0 0, 0 0, -18% 100%, 0 100%);
+  }
+  to {
+    clip-path: polygon(0 0, 118% 0, 100% 100%, 0 100%);
+  }
+}
+@keyframes cut-out {
+  to {
+    transform: translateX(-4%);
+    filter: brightness(0.35);
+  }
+}
+::view-transition-new(stage) {
+  animation: cut-in 460ms var(--ease-out) both;
+}
+::view-transition-old(stage) {
+  animation: cut-out 460ms var(--ease-out) both;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 160ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wipe-in,
   .tile-flip,
-  .row-flash {
+  .row-flash,
+  .lamp-seq,
+  .slot .paint-x,
+  .slot .paint-y,
+  .slot .slot-body,
+  .slot .slot-num,
+  .rise,
+  .slam,
+  .plate-in {
+    animation: none;
+  }
+  .roll-strip,
+  .btn-go,
+  .btn-go::before,
+  .btn-go::after,
+  .btn-line::after {
+    transition: none;
+  }
+  ::view-transition-new(stage),
+  ::view-transition-old(stage) {
     animation: none;
   }
 }

@@ -3,6 +3,7 @@ name: APEX
 description: A daily racing-line game drawn as a circuit seen from the air, timed like a broadcast timing tower.
 colors:
   ink: "#ff6a13"
+  ink-hot: "#ff8a45"
   purple: "#a259ff"
   green: "#29cc6a"
   yellow: "#f5c518"
@@ -79,10 +80,10 @@ typography:
     fontVariation: "\"wdth\" 72"
   button-secondary:
     fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
-    fontSize: "13px"
+    fontSize: "14px"
     fontWeight: 600
     lineHeight: 1.2
-    letterSpacing: "0.06em"
+    letterSpacing: "0"
     fontVariation: "\"wdth\" 100"
 rounded:
   none: "0px"
@@ -100,12 +101,12 @@ components:
     textColor: "{colors.night}"
     typography: "{typography.title}"
     rounded: "{rounded.none}"
-    padding: "12px 24px"
+    padding: "12px 40px 12px 24px"
   button-primary-disabled:
     backgroundColor: "{colors.graphite}"
     textColor: "{colors.steel}"
   button-secondary:
-    backgroundColor: "{colors.board}"
+    backgroundColor: "transparent"
     textColor: "{colors.paint}"
     typography: "{typography.button-secondary}"
     rounded: "{rounded.none}"
@@ -182,6 +183,8 @@ A broadcast-dark palette: four near-black neutrals in steps, painted off-white a
 ### Primary
 - **Safety Orange** (ink): the player. Their racing line and car on the canvas, the primary action ("Lights out", "Improve line", "Share result"), the gate slider knob, the selected gate's name beside the corner headline, the current round on the season bar, a new personal best or a beaten rival in the timing lines, fine-mode on the slider, the sound toggle when on, the focus ring and text selection.
 
+- **Ink Hot** (ink-hot): only the revved-up hover fill of the primary button.
+
 ### Feedback (sector timing)
 - **Purple Sector** (purple): a corner group within 50 ms of the perfect line; the "Perfect" delta plate on an all-purple lap; the live "to perfect" delta at or under 50 ms.
 - **Green Sector** (green): within 150 ms.
@@ -193,7 +196,7 @@ A broadcast-dark palette: four near-black neutrals in steps, painted off-white a
 
 ### Neutral
 - **Night** (night): the page, header, tower, sheets and HUD boxes (at 82–95% over the canvas); text on orange and on inverted rows.
-- **Board** (board): dialogs and the resting fill of secondary and icon buttons.
+- **Board** (board): dialogs and the resting fill of icon buttons.
 - **Graphite** (graphite): the raised step: hover fill on rows and tabs, tower position plates, the delta plate, disabled primary, unlit rev LEDs.
 - **Line** (line): every hairline: panel borders, row dividers, tab separators, empty lap tiles, unplayed season rounds.
 - **Asphalt** (asphalt): the gate slider's track bed.
@@ -223,7 +226,7 @@ A broadcast-dark palette: four near-black neutrals in steps, painted off-white a
 - **Data** (normal 700, 13–15px, tabular): timing-line values, the delta plate, deltas in the adjust cells and the live delta.
 - **Segment** (condensed 80–85%, 700, 12–13px): tower row names, gate tabs (uppercase, 0.04em), adjust-cell corner names.
 - **Label** (condensed 72%, 650, 11px, 0.1em, uppercase, steel): tower header, timing-line keys, record-strip keys, units, slider ends, legend, the mode line in the header.
-- **Secondary button** (normal 600, 12–13px, 0.06em, uppercase).
+- **Secondary button** (normal 600, 14px, sentence case).
 
 ### Named Rules
 **The Three Widths Rule.** Width is the hierarchy: wide for display, names and times; normal for copy; condensed for labels and corner segments. Never introduce a second family.
@@ -268,9 +271,10 @@ Square. Every panel, button, tab, tile, row, plate, dialog and gantry pod has 0 
 ### Buttons
 Square, flat, one orange slab for the one action that matters.
 - **Shape:** square (0), with the cut on primary.
-- **Primary:** safety orange with night text, wide 800 uppercase at 15px, 12px by 24px padding; hover brightens to 110%, press drops 1px. Disabled goes graphite with steel text. One per screen.
-- **Secondary:** board at 80% with a 1px line border and paint text, 600 uppercase 13px at 0.06em; the border brightens to paint/40 on hover; disabled at 35% opacity.
-- **Icon buttons:** 40px squares, board at 85%, line border, 18px stroked icons (24 grid, 2px stroke, round caps). Stacked groups join by dropping the shared border.
+- **Primary (the launch button):** safety orange with night text, wide 800 uppercase at 15px, 12px 40px 12px 24px padding, a drawn forward chevron 22px from the right edge. Hover revs it: an ink-hot fill climbs across in eight discrete steps (360ms, `steps(8)`), masked into segments like a rev-light bar, and the chevron kicks 5px forward. Press squats it (1px down, scale 0.975 × 0.96, brightness 112%) and kicks the chevron 9px. Disabled goes graphite with steel text. One per screen.
+- **Secondary (painted line):** transparent with a 1px paint/20 border and paint/90 text, 600 sentence case at 14px. Hover brightens the text and border and draws a 2px paint line along the bottom edge from the left (280ms ease-out), a track limit being painted; press drops 1px. Disabled at 35% opacity.
+- **Icon buttons:** 40px squares, board at 85%, line border, 18px stroked icons (24 grid, 2px stroke, round caps); press scales to 0.92 on graphite. Stacked groups join by dropping the shared border.
+- **Layering:** button rules live in `@layer components` so position and size utilities still override them.
 - **Focus:** a 2px safety-orange outline at 2px offset, global.
 
 ### Tabs (gate selector)
@@ -308,6 +312,16 @@ A row of square rev LEDs (green building, the last three blue, all blue on the s
 
 ### Grid Slot
 A painted box on the asphalt: 3px paint front line, side legs fading out toward the back, the grid numeral (wide, paint/40, 40–52px) beside it. Content sits on the ground, no card. The hub ground is procedural asphalt with rubbered-in lines down each grid column.
+
+## Motion
+
+One curve family, the exponential ease-out of a car leaving a corner (`--ease-out: cubic-bezier(0.16, 1, 0.3, 1)`); nothing bounces. Three authored moments, plus feedback:
+- **Arrival (hub):** the gantry's lit pods snap on one at a time (70ms each, 220ms apart, from 180ms), then each grid slot is painted onto the tarmac in grid order (P1 at 900ms, +160ms per slot): front line left to right, legs downward, position number slides in, contents rise 10px. The record line rises last.
+- **The cut (navigation):** grid ↔ circuit runs through a view transition on `main` (`stage`): the new view wipes in behind a slanted leading edge (the button's angle), the old one dims and drifts 4% left. 460ms. The header stays put.
+- **The timing reveal (result):** the lap time rolls in (`Roll`: each digit a 0–9 strip, 900ms, 45ms stagger left to right), the delta plate slides in from the right at 520ms, the timing lines rise from 640ms, and the newest lap row of the lap grid flips in tile by tile (55ms apart). The season score and record figures roll the same way.
+- **Lights out:** the words slam in (scale 1.5 → 1, 8° skew and 8px blur clearing, 380ms).
+- **Feedback:** see Buttons. The back chevron leans 3px left on hover.
+- Everything above drops to static under `prefers-reduced-motion`.
 
 ## Do's and Don'ts
 

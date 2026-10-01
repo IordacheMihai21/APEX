@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { flushSync } from "react-dom";
 import { setSoundEnabled, soundEnabled } from "./game/audio";
 import { CATALOG, loadTrack } from "./game/catalog";
 import { Game, type Mode, type Snapshot } from "./game/game";
@@ -21,6 +22,7 @@ import { GateSlider } from "./ui/GateSlider";
 import { type HubAction, Hub } from "./ui/Hub";
 import { LapGrid } from "./ui/LapGrid";
 import { RaceHud } from "./ui/RaceHud";
+import { Roll } from "./ui/Roll";
 import { delta, lapTime } from "./ui/format";
 import { ChevronLeft, Frame, Minus, NudgeLeft, NudgeRight, Plus, Share, SoundOff, SoundOn, Undo, WholeTrack } from "./ui/icons";
 import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
@@ -40,7 +42,13 @@ function initialScreen(): Screen {
 const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice" };
 
 export function App() {
-  const [screen, setScreen] = useState<Screen>(initialScreen);
+  const [screen, setScreenNow] = useState<Screen>(initialScreen);
+  // Grid <-> circuit goes through the cut (a slanted wipe) where view transitions exist.
+  const setScreen = (next: Screen) => {
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    if (!doc.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) return setScreenNow(next);
+    doc.startViewTransition(() => flushSync(() => setScreenNow(next)));
+  };
   const [picking, setPicking] = useState(false);
   const [summary, setSummary] = useState(false);
   const [sound, setSound] = useState(soundEnabled);
@@ -77,7 +85,7 @@ export function App() {
       <header className="flex h-[52px] items-stretch justify-between border-b border-line bg-night pt-[env(safe-area-inset-top)]">
         <div className="flex min-w-0 items-stretch">
           {screen.kind === "play" && (
-            <button onClick={() => setScreen({ kind: "hub" })} className="grid w-12 shrink-0 place-items-center border-r border-line text-paint hover:bg-graphite" aria-label="Back to the grid">
+            <button onClick={() => setScreen({ kind: "hub" })} className="back grid w-12 shrink-0 place-items-center border-r border-line text-paint transition-colors hover:bg-graphite active:bg-graphite" aria-label="Back to the grid">
               <ChevronLeft />
             </button>
           )}
@@ -104,7 +112,7 @@ export function App() {
         </button>
       </header>
 
-      <main className="relative min-h-0">
+      <main className="relative min-h-0 [view-transition-name:stage]">
         {screen.kind === "hub" ? (
           <Hub onAction={act} />
         ) : (
@@ -443,9 +451,9 @@ function ShareButton({ text }: { text: string }) {
 }
 
 /** One timing line: label left, value right. */
-function TimingLine({ label, value, tone = "text-paint" }: { label: string; value: string; tone?: string }) {
+function TimingLine({ label, value, tone = "text-paint", order = 0 }: { label: string; value: string; tone?: string; order?: number }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 border-t border-line py-1.5">
+    <div style={{ "--d": `${640 + order * 90}ms` } as React.CSSProperties} className="rise flex items-baseline justify-between gap-3 border-t border-line py-1.5">
       <span className="label">{label}</span>
       <span className={`num text-[15px] font-bold ${tone}`}>{value}</span>
     </div>
@@ -539,16 +547,17 @@ function ResultSheet({
         <div className="flex items-end justify-between gap-3">
           <div>
             <div className="label">Lap time</div>
-            <div className="wide num text-[34px] leading-none text-paint">{lapTime(r.lapTimeMs)}</div>
+            <Roll text={lapTime(r.lapTimeMs)} className="wide text-[34px] text-paint" />
           </div>
-          <div className={`cut-l num px-3 py-1.5 text-[15px] font-bold ${r.allPurple ? "bg-purple text-night" : "bg-graphite text-paint"}`}>
+          <div className={`plate-in cut-l num px-3 py-1.5 text-[15px] font-bold ${r.allPurple ? "bg-purple text-night" : "bg-graphite text-paint"}`}>
             {r.allPurple ? "Perfect" : delta(r.deltaTargetMs)}
           </div>
         </div>
         <div className="mt-2">
           <TimingLine label="Perfect lap" value={lapTime(r.targetMs)} />
-          {vsRival !== null && <TimingLine label={`Rival pole ${lapTime(s.rivalMs!)}`} value={delta(vsRival)} tone={vsRival < 0 ? "text-ink" : "text-paint"} />}
+          {vsRival !== null && <TimingLine order={1} label={`Rival pole ${lapTime(s.rivalMs!)}`} value={delta(vsRival)} tone={vsRival < 0 ? "text-ink" : "text-paint"} />}
           <TimingLine
+            order={2}
             label={pbDelta === null ? "Personal best" : r.newPb ? "New personal best" : "Personal best"}
             value={pbDelta === null ? "First lap" : delta(pbDelta)}
             tone={pbDelta === null || r.newPb ? "text-ink" : "text-paint"}
@@ -566,7 +575,7 @@ function ResultSheet({
         </div>
         <p className="mt-1.5 text-[14px] leading-snug text-paint/75">{body}</p>
         <div className="mt-2.5">
-          <LapGrid rows={lapRows} total={total} cols={names.length} labels={names} />
+          <LapGrid rows={lapRows} total={total} cols={names.length} labels={names} revealLast />
         </div>
         {!s.locked && worst.length > 0 && (
           <div className="mt-3 grid grid-cols-3 border border-line">

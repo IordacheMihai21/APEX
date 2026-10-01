@@ -7,6 +7,7 @@ import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/se
 import { Gantry } from "./Gantry";
 import { LapGrid } from "./LapGrid";
 import { Segments } from "./Segments";
+import { Roll } from "./Roll";
 import { primaryBtn, secondaryBtn } from "./styles";
 
 export type HubAction = { kind: "daily" } | { kind: "daily-summary" } | { kind: "season"; fresh: boolean } | { kind: "practice" };
@@ -50,19 +51,21 @@ export function CircuitOutline({ track, className = "" }: { track: GameTrack; cl
  * directly on the asphalt; there is no card. Pole gets the deeper box.
  */
 function GridSlot({ pos, side, pole = false, children }: { pos: number; side: "left" | "right"; pole?: boolean; children: React.ReactNode }) {
+  // painted in grid order once the gantry has lit: P1, then P2, then P3
+  const d = { "--d": `${900 + (pos - 1) * 160}ms`, "--from": side === "left" ? "14px" : "-14px" } as React.CSSProperties;
   return (
-    <div className={`relative w-[62%] min-w-[236px] max-w-[400px] lg:w-full lg:max-w-none ${side === "right" ? "ml-auto" : ""}`}>
+    <div style={d} className={`slot relative w-[62%] min-w-[236px] max-w-[400px] lg:w-full lg:max-w-none ${side === "right" ? "ml-auto" : ""}`}>
       <span
         aria-hidden="true"
-        className={`absolute top-1 ${side === "left" ? "-right-3 translate-x-full" : "-left-3 -translate-x-full"} wide text-[44px] leading-none text-paint/40`}
+        className={`slot-num absolute top-1 ${side === "left" ? "-right-3 translate-x-full" : "-left-3 -translate-x-full"} wide text-[44px] leading-none text-paint/40`}
       >
         {pos}
       </span>
       <div className={`relative px-3.5 pt-3.5 ${pole ? "pb-5" : "pb-3"}`}>
-        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-paint/90" />
-        <span aria-hidden="true" className="absolute top-0 bottom-0 left-0 w-[3px] bg-gradient-to-b from-paint/90 via-paint/70 to-transparent" />
-        <span aria-hidden="true" className="absolute top-0 right-0 bottom-0 w-[3px] bg-gradient-to-b from-paint/90 via-paint/70 to-transparent" />
-        {children}
+        <span aria-hidden="true" className="paint-x absolute inset-x-0 top-0 h-[3px] bg-paint/90" />
+        <span aria-hidden="true" className="paint-y absolute top-0 bottom-0 left-0 w-[3px] bg-gradient-to-b from-paint/90 via-paint/70 to-transparent" />
+        <span aria-hidden="true" className="paint-y absolute top-0 right-0 bottom-0 w-[3px] bg-gradient-to-b from-paint/90 via-paint/70 to-transparent" />
+        <div className="slot-body">{children}</div>
       </div>
     </div>
   );
@@ -116,7 +119,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
       <section aria-label="Next Daily Quali" className="relative border-b border-black/60 bg-[#0b0b0c] pb-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.5)]">
         <div aria-hidden="true" className="h-2.5 bg-[repeating-linear-gradient(135deg,#1c1d20_0_6px,#0b0b0c_6px_12px)]" />
         <div className="mx-auto max-w-[560px] px-4 pt-2.5">
-          <Gantry lit={lit} label={`Next Daily Quali in ${hms(left)}`} />
+          <Gantry lit={lit} sequence label={`Next Daily Quali in ${hms(left)}`} />
           <div className="mt-2.5 flex items-center justify-center gap-3">
             <span className="label text-paint/75">Next quali in</span>
             <Segments text={hms(left)} className="h-5" color="#ff2b1a" ghost={0.2} />
@@ -166,9 +169,10 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
                   Perfect <br className="hidden lg:block" />
                   Season
                 </h2>
-                <span className="wide num shrink-0 text-[26px] leading-none whitespace-nowrap text-paint">
-                  {run ? `${wins}–${losses}` : season.best ? `${season.best.wins}–${season.best.losses}` : "12–0"}
-                </span>
+                <Roll
+                  className="wide shrink-0 text-[26px] whitespace-nowrap text-paint"
+                  text={run ? `${wins}–${losses}` : season.best ? `${season.best.wins}–${season.best.losses}` : "12–0"}
+                />
               </div>
               <p className="mt-1.5 text-[13px] font-medium leading-snug text-paint/80">
                 {run
@@ -210,20 +214,29 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
         </div>
       </div>
 
-      {/* record strip, pinned to the bottom edge */}
-      <dl className="sticky bottom-0 z-[1] mx-auto grid max-w-[560px] grid-cols-4 gap-2 border-t border-line bg-night/95 px-3 pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] text-center backdrop-blur-sm min-[560px]:border-x">
-        {[
-          ["Played", stats.played],
-          ["Win %", winPct],
-          ["Streak", stats.streak],
-          ["Best", stats.bestStreak],
-        ].map(([k, v]) => (
-          <div key={k as string}>
-            <dd className="wide num text-[20px] leading-none text-paint">{v}</dd>
-            <dt className="label mt-1">{k}</dt>
-          </div>
-        ))}
-      </dl>
+      {/* your record, one line along the pit wall */}
+      <div className="sticky bottom-0 z-[1] border-t border-line bg-night/95 pb-[max(10px,env(safe-area-inset-bottom))] backdrop-blur-sm">
+        <p className="rise mx-auto flex max-w-[1040px] flex-wrap items-baseline justify-center gap-x-5 gap-y-1 px-4 pt-2.5 text-[13px] text-steel" style={{ "--d": "1400ms" } as React.CSSProperties}>
+          {stats.played === 0 ? (
+            <span>Finish a Daily Quali to start your record.</span>
+          ) : (
+            <>
+              <span>
+                <Roll text={String(stats.played)} className="wide mr-1.5 text-[15px] text-paint" />
+                {stats.played === 1 ? "daily played" : "dailies played"}
+              </span>
+              <span>
+                <Roll text={`${winPct}%`} className="wide mr-1.5 text-[15px] text-paint" />
+                perfect
+              </span>
+              <span>
+                <Roll text={String(stats.streak)} className="wide mr-1.5 text-[15px] text-ink" />
+                streak, best {stats.bestStreak}
+              </span>
+            </>
+          )}
+        </p>
+      </div>
     </div>
   );
 }
