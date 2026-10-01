@@ -1,16 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import type { GameTrack } from "@apex/engine";
-import { CATALOG, loadTrack } from "../game/catalog";
-import { asphaltDataUrl } from "../game/scenery";
+import { CATALOG } from "../game/catalog";
+import { OUTLINES, type Outline } from "../game/outlines";
 import { DAILY_LAPS, dailyNumber, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
 import { Gantry } from "./Gantry";
 import { LapGrid } from "./LapGrid";
-import { Segments } from "./Segments";
 import { Roll } from "./Roll";
+import { Segments } from "./Segments";
 import { primaryBtn, secondaryBtn } from "./styles";
 
-export type HubAction = { kind: "daily" } | { kind: "daily-summary" } | { kind: "season"; fresh: boolean } | { kind: "practice" };
+export type HubAction =
+  | { kind: "daily" }
+  | { kind: "daily-summary" }
+  | { kind: "season"; fresh: boolean }
+  | { kind: "practice" }
+  | { kind: "practice-track"; trackId: string };
+
+const PLAYBACK = 4;
+/** Before a season is drawn, the calendar shows the twelve circuits in catalog order. */
+const POOL = CATALOG.filter((t) => t.id !== "kestrel").map((t) => t.id);
 
 function hms(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -19,55 +28,80 @@ function hms(ms: number) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
-/** Circuit outline as a small SVG from the centerline (north-up, start marked). */
-export function CircuitOutline({ track, className = "" }: { track: GameTrack; className?: string }) {
-  const d = useMemo(() => {
-    const pts = track.centerline.filter((_, i) => i % 6 === 0);
-    const xs = pts.map((p) => p[0]);
-    const ys = pts.map((p) => p[1]);
-    const x0 = Math.min(...xs);
-    const y1 = Math.max(...ys);
-    const w = Math.max(...xs) - x0;
-    const h = y1 - Math.min(...ys);
-    const s = 100 / Math.max(w, h);
-    const ox = (100 - w * s) / 2;
-    const oy = (100 - h * s) / 2;
-    return {
-      path: pts.map((p, i) => `${i ? "L" : "M"}${(ox + (p[0] - x0) * s).toFixed(1)} ${(oy + (y1 - p[1]) * s).toFixed(1)}`).join(" ") + "Z",
-      start: [ox + (pts[0][0] - x0) * s, oy + (y1 - pts[0][1]) * s],
-    };
-  }, [track]);
+function useReducedMotion() {
+  const [reduce, setReduce] = useState(() => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  useEffect(() => {
+    const m = matchMedia("(prefers-reduced-motion: reduce)");
+    const on = () => setReduce(m.matches);
+    m.addEventListener("change", on);
+    return () => m.removeEventListener("change", on);
+  }, []);
+  return reduce;
+}
+
+/** Circuit outline as a small SVG from a precomputed outline (north-up, start marked). */
+export function CircuitOutline({ track, className = "" }: { track: GameTrack | string; className?: string }) {
+  const o = OUTLINES[typeof track === "string" ? track : track.id];
+  if (!o) return null;
   return (
-    <svg viewBox="-6 -6 112 112" className={className} aria-hidden="true">
-      <path d={d.path} fill="none" stroke="#f2f2ee" strokeWidth={4.5} strokeLinejoin="round" />
-      <circle cx={d.start[0]} cy={d.start[1]} r={5} fill="#ff6a13" stroke="#0a0b0d" strokeWidth={2} />
+    <svg viewBox="0 0 1000 1000" className={className} aria-hidden="true">
+      <path d={o.outline} fill="none" stroke="currentColor" strokeWidth={42} strokeLinejoin="round" />
+      <circle cx={o.start[0]} cy={o.start[1]} r={46} fill="#ff6a13" stroke="#0a0b0d" strokeWidth={18} />
     </svg>
   );
 }
 
 /**
- * A painted grid box on the tarmac: a white front line and full-depth side legs,
- * open at the back, with the grid position painted beside it. The content sits
- * directly on the asphalt; there is no card. Pole gets the deeper box.
+ * Today's circuit as a track map: the ribbon with painted edges, corner
+ * numbers, the start line, and the optimal line with a car lapping it at the
+ * speeds the physics engine computes (×4, the game's playback speed). The map
+ * draws itself in once, then the car runs.
  */
-function GridSlot({ pos, side, pole = false, children }: { pos: number; side: "left" | "right"; pole?: boolean; children: React.ReactNode }) {
-  // painted in grid order once the gantry has lit: P1, then P2, then P3
-  const d = { "--d": `${900 + (pos - 1) * 160}ms`, "--from": side === "left" ? "14px" : "-14px" } as React.CSSProperties;
+function HeroCircuit({ id, o }: { id: string; o: Outline }) {
+  const reduce = useReducedMotion();
+  const w = Math.max(o.width * 1.7, 15);
+  const [sx, sy, heading] = o.start;
+  const lineId = `line-${id}`;
   return (
-    <div style={d} className={`slot relative w-[62%] min-w-[236px] max-w-[400px] lg:w-full lg:max-w-none ${side === "right" ? "ml-auto" : ""}`}>
-      <span
-        aria-hidden="true"
-        className={`slot-num absolute top-1 ${side === "left" ? "-right-3 translate-x-full" : "-left-3 -translate-x-full"} wide text-[44px] leading-none text-paint/40`}
-      >
-        {pos}
-      </span>
-      <div className={`relative px-3.5 pt-3.5 ${pole ? "pb-5" : "pb-3"}`}>
-        <span aria-hidden="true" className="paint-x absolute inset-x-0 top-0 h-[3px] bg-paint/90" />
-        <span aria-hidden="true" className="paint-y absolute top-0 bottom-0 left-0 w-[3px] bg-gradient-to-b from-paint/90 via-paint/70 to-transparent" />
-        <span aria-hidden="true" className="paint-y absolute top-0 right-0 bottom-0 w-[3px] bg-gradient-to-b from-paint/90 via-paint/70 to-transparent" />
-        <div className="slot-body">{children}</div>
-      </div>
-    </div>
+    <svg viewBox="0 0 1000 1000" className="hero-map h-full w-full" role="img" aria-label={`Map of ${CATALOG.find((t) => t.id === id)?.name}`}>
+      <path className="draw draw-1" pathLength={1} d={o.ribbon} fill="none" stroke="#f2f2ee" strokeOpacity={0.9} strokeWidth={w + 7} strokeLinejoin="round" />
+      <path className="draw draw-1" pathLength={1} d={o.ribbon} fill="none" stroke="#262a31" strokeWidth={w} strokeLinejoin="round" />
+      <g transform={`translate(${sx} ${sy}) rotate(${heading + 90})`} className="fade-late">
+        {[-1, 0, 1].map((k) => (
+          <rect key={k} x={k * 7 - 3.5} y={-7} width={7} height={7} fill={k % 2 ? "#f2f2ee" : "#0a0b0d"} />
+        ))}
+        {[-1, 0, 1].map((k) => (
+          <rect key={`b${k}`} x={k * 7 - 3.5} y={0} width={7} height={7} fill={k % 2 ? "#0a0b0d" : "#f2f2ee"} />
+        ))}
+      </g>
+      <path id={lineId} className="draw draw-2" pathLength={1} d={o.line} fill="none" stroke="#ff6a13" strokeWidth={3.2} strokeLinejoin="round" />
+      <g className="fade-late" fontFamily="Archivo Variable, Archivo, sans-serif" fontWeight={700} fontSize={24} fill="#9aa1ab" textAnchor="middle" dominantBaseline="central">
+        {o.corners.map(([n, x, y]) => (
+          <text key={n} x={x} y={y} style={{ fontStretch: "80%" }}>
+            {n}
+          </text>
+        ))}
+      </g>
+      <g className="fade-late">
+        <g>
+          <rect x={-19} y={-8} width={38} height={16} fill="#ff6a13" stroke="#0a0b0d" strokeWidth={3.5} />
+          <rect x={5} y={-5} width={7} height={10} fill="#0a0b0d" />
+          {!reduce && (
+            <animateMotion
+              dur={`${o.lapMs / PLAYBACK}ms`}
+              begin="2.4s"
+              repeatCount="indefinite"
+              rotate="auto"
+              calcMode="linear"
+              keyPoints={o.keyPoints}
+              keyTimes={o.keyTimes}
+            >
+              <mpath href={`#${lineId}`} />
+            </animateMotion>
+          )}
+        </g>
+      </g>
+    </svg>
   );
 }
 
@@ -81,142 +115,163 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   const daily = useMemo(() => loadDaily(today), [today]);
   const stats = useMemo(() => dailyStats(), []);
   const season = useMemo(() => loadSeason(), []);
-  const [track, setTrack] = useState<GameTrack | null>(null);
-  useEffect(() => {
-    loadTrack(daily.trackId).then(setTrack, () => setTrack(null));
-  }, [daily.trackId]);
 
   const info = CATALOG.find((t) => t.id === daily.trackId)!;
+  const o = OUTLINES[daily.trackId];
   const left = msToNextDay(new Date(now));
-  // The gantry is the clock: a lamp lights for every fifth of the day gone; at midnight, lights out.
+  // the gantry is the clock: a pod lights for every fifth of the day gone; at midnight, lights out
   const lit = Math.min(5, Math.floor(((86_400_000 - left) / 86_400_000) * 5) + 1);
-  const cols = track?.controls?.complexes.length ?? 8;
+  const cols = daily.laps[0]?.grades.length ?? 8;
   const finished = daily.status !== "playing";
   const run = season.run && !seasonDone(season.run) ? season.run : null;
   const wins = run?.results.filter((r) => r === "W").length ?? 0;
   const losses = (run?.results.length ?? 0) - wins;
   const winPct = stats.played ? Math.round((stats.wins / stats.played) * 100) : 0;
-
-  const ground = useMemo(() => {
-    try {
-      return asphaltDataUrl();
-    } catch {
-      return null;
-    }
-  }, []);
-  // rubbered-in lines where the cars pull away from each column of the grid
-  const rubber =
-    "linear-gradient(90deg, transparent 14%, rgba(8,8,10,0.22) 22%, transparent 30%, transparent 64%, rgba(8,8,10,0.2) 72%, transparent 80%)";
-  const primary = primaryBtn;
-  const secondary = secondaryBtn;
+  const lapsLeft = DAILY_LAPS - daily.laps.length;
+  const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 
   return (
-    <div
-      className="asphalt relative h-full overflow-y-auto"
-      style={ground ? { backgroundImage: `${rubber}, url(${ground})`, backgroundSize: "100% 100%, 180px 180px" } : undefined}
-    >
-      {/* start gantry: an overhead truss spanning the track, lamps hanging below */}
-      <section aria-label="Next Daily Quali" className="relative border-b border-black/60 bg-[#0b0b0c] pb-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.5)]">
-        <div aria-hidden="true" className="h-2.5 bg-[repeating-linear-gradient(135deg,#1c1d20_0_6px,#0b0b0c_6px_12px)]" />
-        <div className="mx-auto max-w-[560px] px-4 pt-2.5">
-          <Gantry lit={lit} sequence label={`Next Daily Quali in ${hms(left)}`} />
-          <div className="mt-2.5 flex items-center justify-center gap-3">
-            <span className="label text-paint/75">Next quali in</span>
-            <Segments text={hms(left)} className="h-5" color="#ff2b1a" ghost={0.2} />
+    <div className="hub relative h-full overflow-x-hidden overflow-y-auto">
+      {/* today's circuit */}
+      <section
+        aria-labelledby="daily-h"
+        className="relative mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1fr)] gap-x-10 px-4 pt-5 pb-10 md:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-center lg:pt-10 lg:pb-14"
+      >
+        <div className="relative z-[1] flex flex-col">
+          <div className="rise flex items-center gap-4" style={d(0)}>
+            <Gantry lit={lit} size="sm" sequence label={`Next Daily Quali in ${hms(left)}`} />
+            <div className="leading-tight">
+              <div className="text-[13px] text-steel">Next circuit in</div>
+              <Segments text={hms(left)} className="mt-1 h-4" color="#ff2b1a" ghost={0.18} />
+            </div>
           </div>
-        </div>
-      </section>
 
-      <div className="mx-auto max-w-[1040px] px-4 pt-4 pb-24 lg:pt-10">
-        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-x-24 lg:gap-y-10 lg:px-16">
-          {/* P1: Daily Quali on pole */}
-          <GridSlot pos={1} side="left" pole>
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h2 className="wide text-[26px] uppercase leading-[0.95] text-paint lg:text-[34px]">
-                  Daily
-                  <br />
-                  Quali
-                </h2>
-                <p className="mt-1.5 text-[13px] font-semibold tracking-[0.06em] text-paint/80 uppercase">
-                  #{dailyNumber()} · {info.name}
-                </p>
-              </div>
-              {track && <CircuitOutline track={track} className="h-14 w-14 shrink-0" />}
-            </div>
-            <div className="mt-3">
-              <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={cols} size="sm" />
-            </div>
-            <p className="mt-2.5 text-[14px] leading-snug text-paint/85">
+          <p className="rise mt-8 text-[15px] font-semibold text-ink lg:mt-12" style={d(250)}>
+            Daily Quali No. {dailyNumber()}
+          </p>
+          <h1 id="daily-h" className="reveal-up wide mt-2 pb-1 text-[clamp(44px,6vw,84px)] leading-[0.95] text-paint" style={d(320)}>
+            <span>{info.name}</span>
+          </h1>
+          <p className="rise mt-2 text-[15px] text-steel" style={d(480)}>
+            {info.country}, {(o.lengthM / 1000).toFixed(2)} km, {o.cornerCount} corners
+          </p>
+
+          {/* the map sits inline on phones, beside the copy from lg */}
+          <div className="relative mt-2 aspect-square w-full max-w-[460px] self-center lg:hidden">
+            <HeroCircuit id={daily.trackId} o={o} />
+          </div>
+
+          <div className="rise mt-4 max-w-[440px] lg:mt-10" style={d(620)}>
+            <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={cols} size="sm" />
+            <p className="mt-3 text-[15px] leading-snug text-paint/85">
               {daily.status === "won"
                 ? `Perfect lap on lap ${daily.laps.length}. Come back tomorrow.`
                 : daily.status === "lost"
-                  ? "Out of laps today. New circuit at midnight."
+                  ? "Out of laps today. A new circuit at midnight."
                   : daily.laps.length
-                    ? `${DAILY_LAPS - daily.laps.length} laps left. Purple every corner to win.`
-                    : "6 laps to find the perfect line. Purple every corner to win."}
+                    ? `${lapsLeft} ${lapsLeft === 1 ? "lap" : "laps"} left. Purple every corner to win.`
+                    : "Six laps to find the perfect line. Purple every corner to win."}
             </p>
-            <button className={`${finished ? secondary : primary} mt-3 w-full`} onClick={() => onAction(finished ? { kind: "daily-summary" } : { kind: "daily" })}>
+            <button
+              className={`${finished ? secondaryBtn : primaryBtn} mt-5 w-full sm:w-auto sm:min-w-[260px]`}
+              onClick={() => onAction(finished ? { kind: "daily-summary" } : { kind: "daily" })}
+            >
               {finished ? "See today's result" : daily.laps.length ? "Continue" : "Lights out"}
             </button>
-          </GridSlot>
+          </div>
+        </div>
 
-          {/* P2: Perfect Season, staggered right (and lower, on the wide grid) */}
-          <div className="lg:pt-28">
-            <GridSlot pos={2} side="right">
-              <div className="flex items-baseline justify-between gap-2">
-                <h2 className="wide text-[20px] uppercase leading-[0.95] text-paint lg:text-[26px]">
-                  Perfect <br className="hidden lg:block" />
-                  Season
-                </h2>
-                <Roll
-                  className="wide shrink-0 text-[26px] whitespace-nowrap text-paint"
-                  text={run ? `${wins}–${losses}` : season.best ? `${season.best.wins}–${season.best.losses}` : "12–0"}
-                />
-              </div>
-              <p className="mt-1.5 text-[13px] font-medium leading-snug text-paint/80">
-                {run
-                  ? `Round ${run.results.length + 1} of ${SEASON_ROUNDS}: ${CATALOG.find((t) => t.id === currentTrack(run))?.name}`
-                  : season.best
-                    ? `Best ${season.best.wins}–${season.best.losses}. ${season.perfect} perfect seasons.`
-                    : "12 circuits. Beat the rival's pole, 3 laps each."}
-              </p>
-              <div className="mt-2.5 flex gap-1" aria-hidden="true">
-                {Array.from({ length: SEASON_ROUNDS }, (_, i) => {
-                  const r = run?.results[i];
-                  return <span key={i} className={`h-1.5 flex-1 ${r === "W" ? "bg-paint" : r === "L" ? "bg-steel/35" : i === (run?.results.length ?? -1) ? "bg-ink" : "bg-line"}`} />;
-                })}
-              </div>
-              <div className="mt-3 flex gap-2">
-                <button className={`${run ? primary : secondary} flex-1`} onClick={() => onAction({ kind: "season", fresh: !run })}>
-                  {run ? "Next race" : "Start season"}
+        <div className="relative hidden aspect-square max-h-[calc(100dvh-140px)] w-full justify-self-center lg:block">
+          <div aria-hidden="true" className="absolute inset-[6%] rounded-full bg-[radial-gradient(closest-side,rgba(38,42,49,0.5),transparent)]" />
+          <HeroCircuit id={daily.trackId} o={o} />
+        </div>
+      </section>
+
+      {/* perfect season */}
+      <section aria-labelledby="season-h" className="border-t border-line bg-board/60">
+        <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1fr)] gap-8 px-4 py-12 md:px-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:items-center lg:py-16">
+          <div>
+            <h2 id="season-h" className="wide text-[34px] leading-none text-paint">
+              Perfect Season
+            </h2>
+            <p className="mt-3 max-w-[38ch] text-[15px] leading-snug text-steel">
+              {run
+                ? `Round ${run.results.length + 1} of ${SEASON_ROUNDS}: ${CATALOG.find((t) => t.id === currentTrack(run))?.name}. Beat the rival's pole in three laps.`
+                : season.best
+                  ? `Your best is ${season.best.wins}-${season.best.losses}. Twelve circuits, three laps each, one rival on pole.`
+                  : "Twelve circuits, three laps each, one rival on pole. Win all twelve."}
+            </p>
+            <div className="mt-6 flex items-center gap-4">
+              <Roll text={run ? `${wins}-${losses}` : season.best ? `${season.best.wins}-${season.best.losses}` : "12-0"} className="wide text-[44px] text-paint" />
+              <span className="text-[13px] leading-tight text-steel">{run ? "this season" : season.best ? "best season" : "the target"}</span>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <button className={run ? primaryBtn : secondaryBtn} onClick={() => onAction({ kind: "season", fresh: !run })}>
+                {run ? "Next race" : "Start a season"}
+              </button>
+              {run && (
+                <button className={secondaryBtn} onClick={() => onAction({ kind: "season", fresh: true })}>
+                  Restart
                 </button>
-                {run && (
-                  <button className={secondary} onClick={() => onAction({ kind: "season", fresh: true })}>
-                    Restart
-                  </button>
-                )}
-              </div>
-            </GridSlot>
+              )}
+            </div>
           </div>
 
-          {/* P3: Free Practice */}
-          <GridSlot pos={3} side="left">
-            <h2 className="wide text-[20px] uppercase leading-[0.95] text-paint lg:text-[26px]">
-              Free <br className="hidden lg:block" />
-              Practice
-            </h2>
-            <p className="mt-1.5 text-[13px] font-medium leading-snug text-paint/80">Any circuit, unlimited laps.</p>
-            <button className={`${secondary} mt-3 w-full`} onClick={() => onAction({ kind: "practice" })}>
-              Pick a circuit
-            </button>
-          </GridSlot>
+          {/* the calendar: twelve rounds, each its own circuit once a season is drawn */}
+          <ol className="grid grid-cols-4 gap-x-3 gap-y-5 sm:grid-cols-6" aria-label="Season calendar">
+            {Array.from({ length: SEASON_ROUNDS }, (_, i) => {
+              const id = run?.order[i] ?? POOL[i];
+              const r = run?.results[i];
+              const current = !!run && i === run.results.length;
+              const tone = r === "W" ? "text-paint" : r === "L" ? "text-steel/40" : current ? "text-ink" : "text-[#3a3f49]";
+              return (
+                <li key={i} className="in-view flex flex-col items-center" style={d(i * 40)}>
+                  <div className={`aspect-square w-full max-w-[84px] ${tone}`}>
+                    <CircuitOutline track={id} className="h-full w-full" />
+                  </div>
+                  <span className={`num mt-1.5 text-[12px] font-semibold ${current ? "text-ink" : "text-steel"}`}>
+                    R{i + 1}
+                    {r ? ` ${r === "W" ? "Pole" : "P2"}` : ""}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
         </div>
-      </div>
+      </section>
 
-      {/* your record, one line along the pit wall */}
-      <div className="sticky bottom-0 z-[1] border-t border-line bg-night/95 pb-[max(10px,env(safe-area-inset-bottom))] backdrop-blur-sm">
-        <p className="rise mx-auto flex max-w-[1040px] flex-wrap items-baseline justify-center gap-x-5 gap-y-1 px-4 pt-2.5 text-[13px] text-steel" style={{ "--d": "1400ms" } as React.CSSProperties}>
+      {/* free practice */}
+      <section aria-labelledby="practice-h" className="border-t border-line">
+        <div className="mx-auto max-w-[1240px] px-4 pt-12 md:px-8 lg:pt-16">
+          <h2 id="practice-h" className="wide text-[34px] leading-none text-paint">
+            Free Practice
+          </h2>
+          <p className="mt-3 text-[15px] text-steel">Any circuit, unlimited laps, the perfect line on demand.</p>
+        </div>
+        <ul className="mx-auto flex max-w-[1240px] snap-x snap-mandatory gap-3 overflow-x-auto px-4 pt-6 pb-12 [scrollbar-color:#2b2f37_transparent] [scrollbar-width:thin] md:px-8 lg:pb-16">
+          {CATALOG.filter((t) => OUTLINES[t.id] && t.id !== "kestrel").map((t, i) => {
+            const to = OUTLINES[t.id];
+            return (
+              <li key={t.id} className="in-view shrink-0 snap-start" style={d(i * 35)}>
+                <button onClick={() => onAction({ kind: "practice-track", trackId: t.id })} className="track-tile flex w-[176px] flex-col border border-line bg-board/70 p-3 text-left">
+                  <svg viewBox="0 0 1000 1000" className="aspect-square w-full" aria-hidden="true">
+                    <path d={to.outline} fill="none" stroke="#2b2f37" strokeWidth={46} strokeLinejoin="round" />
+                    <path className="tile-lap" pathLength={1} d={to.outline} fill="none" stroke="#f2f2ee" strokeWidth={22} strokeLinejoin="round" />
+                  </svg>
+                  <span className="wide mt-3 truncate text-[15px] leading-tight text-paint">{t.name}</span>
+                  <span className="mt-0.5 text-[13px] text-steel">
+                    {t.country}, {(to.lengthM / 1000).toFixed(1)} km
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      {/* record */}
+      <footer className="border-t border-line">
+        <p className="mx-auto flex max-w-[1240px] flex-wrap items-baseline gap-x-6 gap-y-2 px-4 pt-6 pb-[max(24px,env(safe-area-inset-bottom))] text-[13px] text-steel md:px-8">
           {stats.played === 0 ? (
             <span>Finish a Daily Quali to start your record.</span>
           ) : (
@@ -235,8 +290,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
               </span>
             </>
           )}
+          <span className="sm:ml-auto">An independent game. Circuit names refer to venues only.</span>
         </p>
-      </div>
+      </footer>
     </div>
   );
 }

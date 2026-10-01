@@ -67,6 +67,7 @@ export function App() {
     if (a.kind === "daily") setScreen({ kind: "play", mode: "daily", trackId: loadDaily().trackId });
     else if (a.kind === "daily-summary") setSummary(true);
     else if (a.kind === "practice") setPicking(true);
+    else if (a.kind === "practice-track") setScreen({ kind: "play", mode: "practice", trackId: a.trackId });
     else {
       const store = a.fresh ? newSeason() : loadSeason();
       setScreen({ kind: "play", mode: "season", trackId: currentTrack(store.run!) });
@@ -81,7 +82,7 @@ export function App() {
   const track = screen.kind === "play" ? CATALOG.find((t) => t.id === screen.trackId) : null;
 
   return (
-    <div className="grid h-dvh grid-rows-[auto_1fr] overflow-hidden select-none">
+    <div className="grid h-dvh grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] overflow-hidden select-none">
       <header className="flex h-[52px] items-stretch justify-between border-b border-line bg-night pt-[env(safe-area-inset-top)]">
         <div className="flex min-w-0 items-stretch">
           {screen.kind === "play" && (
@@ -506,9 +507,9 @@ function ResultSheet({
     headline = round.outcome === "won" ? "Pole position" : "Rival keeps pole";
     body = done
       ? wins === SEASON_ROUNDS
-        ? "12–0. The perfect season."
-        : `Season over at ${wins}–${run.results.length - wins}. The perfect season is still out there.`
-      : `Season ${wins}–${run.results.length - wins} after round ${run.results.length} of ${SEASON_ROUNDS}.`;
+        ? "12-0. The perfect season."
+        : `Season over at ${wins}-${run.results.length - wins}. The perfect season is still out there.`
+      : `Season ${wins}-${run.results.length - wins} after round ${run.results.length} of ${SEASON_ROUNDS}.`;
     actions = done ? (
       <>
         <button className={`${primaryBtn} flex-1`} onClick={() => onNext(currentTrack(newSeason().run!))}>

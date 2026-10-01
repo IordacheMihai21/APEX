@@ -78,6 +78,13 @@ typography:
     lineHeight: 1.2
     letterSpacing: "0.1em"
     fontVariation: "\"wdth\" 72"
+  caption:
+    fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: 1.3
+    letterSpacing: "0"
+    fontVariation: "\"wdth\" 100"
   button-secondary:
     fontFamily: "Archivo Variable, Archivo, system-ui, sans-serif"
     fontSize: "14px"
@@ -227,6 +234,7 @@ A broadcast-dark palette: four near-black neutrals in steps, painted off-white a
 - **Segment** (condensed 80–85%, 700, 12–13px): tower row names, gate tabs (uppercase, 0.04em), adjust-cell corner names.
 - **Label** (condensed 72%, 650, 11px, 0.1em, uppercase, steel): tower header, timing-line keys, record-strip keys, units, slider ends, legend, the mode line in the header.
 - **Secondary button** (normal 600, 14px, sentence case).
+- **Caption** (normal 400, 13px, steel, sentence case): hub captions (the countdown's "Next circuit in", circuit facts on practice tiles, the record line), gate readouts, adjust-cell meta. Captions replace uppercase micro-labels everywhere outside the in-race broadcast graphics.
 
 ### Named Rules
 **The Three Widths Rule.** Width is the hierarchy: wide for display, names and times; normal for copy; condensed for labels and corner segments. Never introduce a second family.
@@ -273,7 +281,7 @@ Square, flat, one orange slab for the one action that matters.
 - **Shape:** square (0), with the cut on primary.
 - **Primary (the launch button):** safety orange with night text, wide 800 uppercase at 15px, 12px 40px 12px 24px padding, a drawn forward chevron 22px from the right edge. Hover revs it: an ink-hot fill climbs across in eight discrete steps (360ms, `steps(8)`), masked into segments like a rev-light bar, and the chevron kicks 5px forward. Press squats it (1px down, scale 0.975 × 0.96, brightness 112%) and kicks the chevron 9px. Disabled goes graphite with steel text. One per screen.
 - **Secondary (painted line):** transparent with a 1px paint/20 border and paint/90 text, 600 sentence case at 14px. Hover brightens the text and border and draws a 2px paint line along the bottom edge from the left (280ms ease-out), a track limit being painted; press drops 1px. Disabled at 35% opacity.
-- **Icon buttons:** 40px squares, board at 85%, line border, 18px stroked icons (24 grid, 2px stroke, round caps); press scales to 0.92 on graphite. Stacked groups join by dropping the shared border.
+- **Icon buttons:** 40px squares, board at 85%, line border, 18px Phosphor icons at bold weight (one family, one weight, via ui/icons.tsx); press scales to 0.92 on graphite. Stacked groups join by dropping the shared border.
 - **Layering:** button rules live in `@layer components` so position and size utilities still override them.
 - **Focus:** a 2px safety-orange outline at 2px offset, global.
 
@@ -310,13 +318,18 @@ Five square black pods (#060607, line border), two lamps each at 16/24/36px. On 
 ### Onboard Cluster
 A row of square rev LEDs (green building, the last three blue, all blue on the shift flash; unlit graphite), a wide 40px gear numeral, and the speed in seven-segment digits with ghost segments, units as labels.
 
-### Grid Slot
-A painted box on the asphalt: 3px paint front line, side legs fading out toward the back, the grid numeral (wide, paint/40, 40–52px) beside it. Content sits on the ground, no card. The hub ground is procedural asphalt with rubbered-in lines down each grid column.
+### Hub (the landing surface)
+Three sections over plain night, separated by hairlines; no cards, no ground texture.
+- **Today's circuit (hero):** asymmetric split from lg (5fr copy / 6fr map), stacked on phones with the map between the facts and the lap grid so the CTA stays in the first viewport. Copy column: small gantry as the clock with a red seven-segment countdown, the one orange line ("Daily Quali No. N"), the venue in wide 800 at clamp(44px, 6vw, 84px) mixed case, a steel facts line (country, length, corners), the lap grid, one sentence, one primary button.
+- **The hero map (signature):** generated from track data (tools/track-builder/src/build-outlines.ts → src/game/outlines.ts). Asphalt ribbon with paint edges at 1.7× true width, a chequered start line, steel corner numbers off the outside of each apex, the optimal line in ink, and a 38×16 ink car that laps it via SVG animateMotion with keyPoints/keyTimes from the optimal lap, so it brakes and accelerates as the physics does (×4 playback). A faint asphalt-tinted radial sits behind it on desktop.
+- **Perfect Season band:** board/60 band. Heading, one sentence, the score rolling at 44px, the button; beside it the calendar, 12 circuit outlines (6×2, 4×3 on phones): won in paint, lost in steel/40, current in ink, upcoming in #3a3f49, each with its orange start dot and an "R1" caption.
+- **Free Practice rail:** heading and sentence, then a horizontal scroll-snap rail of 176px tiles (outline, venue in wide 15px, caption). Hover lifts the tile to graphite and runs a white lap around the outline; a tile opens that circuit directly.
+- **Footer:** the record as one line of rolling figures and captions, and the independence note.
 
 ## Motion
 
 One curve family, the exponential ease-out of a car leaving a corner (`--ease-out: cubic-bezier(0.16, 1, 0.3, 1)`); nothing bounces. Three authored moments, plus feedback:
-- **Arrival (hub):** the gantry's lit pods snap on one at a time (70ms each, 220ms apart, from 180ms), then each grid slot is painted onto the tarmac in grid order (P1 at 900ms, +160ms per slot): front line left to right, legs downward, position number slides in, contents rise 10px. The record line rises last.
+- **Arrival (hub):** the gantry's lit pods snap on one at a time (70ms each, 220ms apart, from 180ms); the venue name rises out of its own baseline behind a mask (760ms from 320ms) while the facts and lap grid rise after it; the map's ribbon traces itself from the start line (1500ms), the orange line follows (from 1000ms), corner numbers and the car fade in at 1.9s and the car starts lapping at 2.4s. Below the fold, calendar outlines and practice tiles rise as they scroll into view (CSS view timeline, where supported; otherwise they are simply there).
 - **The cut (navigation):** grid ↔ circuit runs through a view transition on `main` (`stage`): the new view wipes in behind a slanted leading edge (the button's angle), the old one dims and drifts 4% left. 460ms. The header stays put.
 - **The timing reveal (result):** the lap time rolls in (`Roll`: each digit a 0–9 strip, 900ms, 45ms stagger left to right), the delta plate slides in from the right at 520ms, the timing lines rise from 640ms, and the newest lap row of the lap grid flips in tile by tile (55ms apart). The season score and record figures roll the same way.
 - **Lights out:** the words slam in (scale 1.5 → 1, 8° skew and 8px blur clearing, 380ms).

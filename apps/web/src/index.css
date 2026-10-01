@@ -266,9 +266,8 @@ canvas {
 }
 
 /*
- * Hub arrival. The gantry's lamps snap on one pod at a time, then each grid
- * box is painted onto the tarmac: front line left-to-right, legs down, then
- * what stands in the box. --d staggers the slots.
+ * Hub arrival. The gantry's lamps snap on one pod at a time; copy rises in
+ * order (--d staggers it).
  */
 @keyframes lamp-on {
   from {
@@ -279,44 +278,100 @@ canvas {
 .lamp-seq {
   animation: lamp-on 70ms linear both;
 }
-@keyframes paint-x {
-  from {
-    transform: scaleX(0);
-  }
-}
-@keyframes paint-y {
-  from {
-    transform: scaleY(0);
-  }
-}
 @keyframes rise {
   from {
     opacity: 0;
     transform: translateY(10px);
   }
 }
-@keyframes slide-num {
-  from {
-    opacity: 0;
-    transform: translateX(var(--from, -14px));
-  }
-}
-.slot .paint-x {
-  transform-origin: left;
-  animation: paint-x 420ms var(--ease-out) var(--d, 0ms) both;
-}
-.slot .paint-y {
-  transform-origin: top;
-  animation: paint-y 520ms var(--ease-out) calc(var(--d, 0ms) + 120ms) both;
-}
-.slot .slot-body {
-  animation: rise 520ms var(--ease-out) calc(var(--d, 0ms) + 200ms) both;
-}
-.slot .slot-num {
-  animation: slide-num 600ms var(--ease-out) calc(var(--d, 0ms) + 80ms) both;
-}
 .rise {
   animation: rise 520ms var(--ease-out) var(--d, 0ms) both;
+}
+
+/*
+ * The hero map draws itself: the ribbon traces the lap from the start line,
+ * then the orange optimal line follows it, then numbers and the car appear.
+ */
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+.hero-map .draw {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 0;
+}
+.hero-map .draw-1 {
+  animation: draw 1500ms var(--ease-out) 200ms both;
+}
+.hero-map .draw-2 {
+  animation: draw 1300ms var(--ease-out) 1000ms both;
+}
+.hero-map .fade-late {
+  animation: fade 500ms ease-out 1900ms both;
+}
+
+/* Headline rises out of its own baseline, masked. */
+@keyframes up {
+  from {
+    transform: translateY(105%);
+  }
+}
+.reveal-up {
+  overflow: hidden;
+}
+.reveal-up > span {
+  display: inline-block;
+  animation: up 760ms var(--ease-out) var(--d, 0ms) both;
+}
+
+/* Below the fold: things arrive as they scroll in, where the browser can tie it to the view. */
+@supports (animation-timeline: view()) {
+  .in-view {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 70%;
+  }
+}
+
+/* Practice tiles: on hover the outline lights and a white lap runs round it. */
+.track-tile {
+  transition:
+    border-color 200ms,
+    background-color 200ms,
+    transform 140ms var(--ease-out);
+}
+.track-tile .tile-lap {
+  stroke-dasharray: 0.12 0.88;
+  stroke-dashoffset: 0.12;
+  opacity: 0;
+  transition: opacity 200ms;
+}
+@keyframes lap {
+  to {
+    stroke-dashoffset: -0.88;
+  }
+}
+@media (hover: hover) {
+  .track-tile:hover {
+    border-color: rgba(242, 242, 238, 0.35);
+    background-color: var(--color-graphite);
+  }
+  .track-tile:hover .tile-lap {
+    opacity: 1;
+    animation: lap 1600ms linear infinite;
+  }
+}
+.track-tile:active {
+  transform: scale(0.98);
 }
 
 /* Rolling digits: each figure is a strip of 0–9 that spins to its value. */
@@ -403,12 +458,14 @@ canvas {
   .tile-flip,
   .row-flash,
   .lamp-seq,
-  .slot .paint-x,
-  .slot .paint-y,
-  .slot .slot-body,
-  .slot .slot-num,
   .rise,
   .slam,
+  .hero-map .draw-1,
+  .hero-map .draw-2,
+  .hero-map .fade-late,
+  .reveal-up > span,
+  .in-view,
+  .track-tile:hover .tile-lap,
   .plate-in {
     animation: none;
   }
