@@ -5,7 +5,7 @@ import { CATALOG, loadTrack } from "./game/catalog";
 import { OUTLINES } from "./game/outlines";
 import { LINE_STYLES, type LineStyle } from "@apex/engine";
 import { Game, type Mode, type Snapshot } from "./game/game";
-import { DAILY_LAPS, type DailyRecord, bestMedal, dailyNumber, loadDaily, msToNextDay, recordLap, shareText } from "./modes/daily";
+import { DAILY_HINT_AFTER_LAPS, DAILY_LAPS, type DailyRecord, bestMedal, recordHint, dailyNumber, loadDaily, msToNextDay, recordLap, shareText } from "./modes/daily";
 import { GRADE_EMOJI, type Grade, gradeFor } from "./modes/grading";
 import {
   type RoundOutcome,
@@ -216,7 +216,7 @@ function Play({ mode, trackId, onNext }: { mode: Mode; trackId: string; onNext: 
   }, [mode, trackId]);
 
   if (!game) return <Loading trackId={trackId} error={error} />;
-  return <GameView game={game} daily={daily} round={round} practiceLaps={practiceLaps} onNext={onNext} />;
+  return <GameView game={game} daily={daily} round={round} practiceLaps={practiceLaps} onNext={onNext} onHint={() => setDaily((d) => (d ? recordHint(d) : d))} />;
 }
 
 type Round = { outcome: RoundOutcome; laps: Grade[][]; store: SeasonStore } | null;
@@ -227,12 +227,14 @@ function GameView({
   round,
   practiceLaps,
   onNext,
+  onHint,
 }: {
   game: Game;
   daily: DailyRecord | null;
   round: Round;
   practiceLaps: Grade[][];
   onNext: (trackId: string | null) => void;
+  onHint: () => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const tower = useRef<HTMLDivElement>(null);
@@ -307,7 +309,7 @@ function GameView({
       {s.phase === "setup" && !s.locked && <ControlBar s={s} game={game} />}
       {s.phase === "setup" && s.locked && daily && <LockedNote daily={daily} game={game} onHub={() => onNext(null)} />}
       {racing && <RaceHud s={s} onSkip={() => game.skip()} />}
-      {s.phase === "result" && s.result && <ResultSheet s={s} game={game} lapRows={lapRows} daily={daily} round={round} onNext={onNext} names={names} />}
+      {s.phase === "result" && s.result && <ResultSheet s={s} game={game} lapRows={lapRows} daily={daily} round={round} onNext={onNext} names={names} onHint={onHint} />}
     </>
   );
 }
@@ -532,6 +534,38 @@ function ShareButton({ text }: { text: string }) {
   );
 }
 
+/**
+ * One corner the lap lost time in: the gap, the coach's reason, and an opt-in
+ * hint for which way to move. Tapping the row goes back to fix that corner.
+ */
+function CoachRow({ name, deltaMs, game, hintsOpen, onHint }: { name: string; deltaMs: number; game: Game; hintsOpen: boolean; onHint?: () => void }) {
+  const [shown, setShown] = useState(false);
+  const c = game.coach(name);
+  return (
+    <li className="flex items-center gap-2 border-b border-line py-2">
+      <button onClick={() => game.adjust(name)} className="group flex min-w-0 flex-1 items-center gap-3 text-left">
+        <span className="w-14 shrink-0">
+          <span className="block text-[14px] font-bold text-paint [font-stretch:85%]">{name}</span>
+          <span className={`num block text-[13px] font-semibold ${GRADE_TEXT[gradeFor(deltaMs)]}`}>{delta(deltaMs)}</span>
+        </span>
+        <span className={`min-w-0 flex-1 text-[13px] leading-snug ${shown ? "text-paint" : "text-steel"}`}>{c ? (shown ? c.hint : c.why) : ""}</span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-steel transition-transform group-hover:translate-x-0.5" />
+      </button>
+      {c && hintsOpen && !shown && (
+        <button
+          className="btn-line shrink-0 border border-paint/20 px-2.5 py-1 text-[13px] font-semibold text-paint/90"
+          onClick={() => {
+            setShown(true);
+            onHint?.();
+          }}
+        >
+          Hint
+        </button>
+      )}
+    </li>
+  );
+}
+
 /** One timing line: label left, value right. */
 function TimingLine({ label, value, tone = "text-paint", order = 0 }: { label: string; value: string; tone?: string; order?: number }) {
   return (
@@ -550,6 +584,7 @@ function ResultSheet({
   round,
   onNext,
   names,
+  onHint,
 }: {
   s: Snapshot;
   game: Game;
@@ -558,8 +593,11 @@ function ResultSheet({
   round: Round;
   onNext: (trackId: string | null) => void;
   names: string[];
+  onHint: () => void;
 }) {
   const r = s.result!;
+  // hints open after two laps in the daily, any time elsewhere; daily hints are counted for the share text
+  const hintsOpen = s.mode !== "daily" || s.lapsUsed >= DAILY_HINT_AFTER_LAPS;
   const worst = r.losses.filter((l) => l.deltaMs > 50 && l.complex >= 0).slice(0, 3);
   const wide = typeof window !== "undefined" && window.innerWidth >= 720;
   const ref = useInset(game, wide ? "right" : "bottom");
@@ -663,14 +701,12 @@ function ResultSheet({
           <LapGrid rows={lapRows} total={total} cols={names.length} labels={names} revealLast />
         </div>
         {!s.locked && worst.length > 0 && (
-          <div className="mt-3 grid grid-cols-3 border border-line">
+          <ul className="mt-3 border-t border-line" aria-label="Where the time went">
             {worst.map((l) => (
-              <button key={l.name} onClick={() => game.adjust(l.name)} className="border-r border-line px-2 py-2 text-left last:border-r-0 hover:bg-graphite">
-                <span className="block text-[13px] font-bold text-paint [font-stretch:85%]">{l.name}</span>
-                <span className={`num block text-[13px] font-semibold ${GRADE_TEXT[gradeFor(l.deltaMs)]}`}>{delta(l.deltaMs)}</span>
-              </button>
+              <CoachRow key={l.name} name={l.name} deltaMs={l.deltaMs} game={game} hintsOpen={hintsOpen} onHint={s.mode === "daily" ? onHint : undefined} />
             ))}
-          </div>
+            {!hintsOpen && <li className="caption py-2">Hints open after lap {DAILY_HINT_AFTER_LAPS}.</li>}
+          </ul>
         )}
         <Legend />
         <div className="mt-3 flex gap-2">{actions}</div>

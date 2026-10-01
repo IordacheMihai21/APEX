@@ -318,6 +318,9 @@ Twelve 6px segments: won rounds paint, lost rounds steel/35, the current round o
 ### Start-Light Gantry (signature hardware)
 Five square black pods (#060607, line border), two lamps each at 16/24/36px. On the hub it is the day's clock, one pod per fifth of the day, with a seven-segment countdown beneath; it hangs from a hatched truss. On the race screen lamps step on one at a time, hold, and black out instantly, then "Lights out" shows for 900ms. No easing on lights.
 
+### Corner coach (result sheet)
+The three worst corners as rows under the lap grid (top hairline, a hairline under each): corner name in 14px condensed bold with its gap in the grade colour beneath (56px column), the coach's reason in 13px steel, a chevron that nudges right on hover (the row jumps to that corner), and an outline "Hint" button. A revealed hint replaces the reason in paint ("Apex T5: move 6.4 m right"). In the daily, hints open after lap 2 ("Hints open after lap 2." caption until then) and the count goes on the share text; elsewhere they are free. Reasons come from where the time was lost (way in / apex / exit) and are phrased as a driver would hear them: "Braking 75 m early for T4", "Braking 50 m earlier than the perfect lap", "33 km/h slower at the apex", "18 km/h slower on average out of the corner".
+
 ### Race: pace marker, ghost and splits
 - **Pace target:** the lap clock's second line reads "To Bronze/Silver/Gold/Perfect": the next medal above your personal best (Perfect once Gold is yours). Delta in tabular 14px bold, green when ahead, paint when behind.
 - **Pace marker:** a ring (7 px radius, 2.5 px stroke) in the target medal's colour with a night/55 fill, riding *your own* line where a car at the target pace would be, so it never reveals the perfect line. Your personal-best ghost (pale livery at low alpha) runs in every mode.

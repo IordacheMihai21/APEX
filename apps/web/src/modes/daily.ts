@@ -23,6 +23,17 @@ export interface DailyRecord {
   status: "playing" | "won" | "lost";
   /** Last line raced, so a returning player continues where they left off. */
   knots?: number[];
+  /** Coach hints opened today; shown on the share text. */
+  hints?: number;
+}
+
+/** Laps that must be driven before the coach's hints open in the daily. */
+export const DAILY_HINT_AFTER_LAPS = 2;
+
+export function recordHint(rec: DailyRecord): DailyRecord {
+  const next = { ...rec, hints: (rec.hints ?? 0) + 1 };
+  saveDaily(next);
+  return next;
 }
 
 export function dateKey(d = new Date()): string {
@@ -148,5 +159,6 @@ export function shareText(rec: DailyRecord, trackName: string, flag: string, emo
   const m = Math.floor(best / 60000);
   const s = ((best - m * 60000) / 1000).toFixed(3).padStart(6, "0");
   const head = medal ? `${MEDAL_EMOJI[medal]} ${MEDAL_NAME[medal]}` : "No medal";
-  return `APEX Quali #${n} ${flag} ${trackName}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps\n${rows}`;
+  const hints = rec.hints ? `, ${rec.hints} ${rec.hints === 1 ? "hint" : "hints"} used` : "";
+  return `APEX Quali #${n} ${flag} ${trackName}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}\n${rows}`;
 }

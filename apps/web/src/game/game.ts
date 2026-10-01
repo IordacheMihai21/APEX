@@ -687,6 +687,98 @@ export class Game {
     return best;
   }
 
+  /**
+   * The corner coach for the last lap. `why` compares your speed with the
+   * perfect lap's at the corner (entry, slowest point, exit) and names the
+   * biggest loss. `hint` (opt-in) names the point in the corner's group that is
+   * furthest from the perfect line and which way to move it.
+   */
+  coach(cornerName: string): { why: string; hint: string } | null {
+    const sim = this.sim;
+    const corners = this.track.corners;
+    const j = corners.findIndex((c) => c.name === cornerName);
+    if (!sim || j < 0) return null;
+    const n = this.pt.n;
+    const c = corners[j];
+    const P = sim.samples.speed;
+    const R = this.reference.samples.speed;
+    const kmh = (v: number) => Math.round(v * 3.6);
+    // The corner's timing segment (as the result's per-corner loss uses it),
+    // split into the way in, the apex and the exit; the phase where the most
+    // time is lost is the one the coach talks about.
+    const a = c.timingStartIndex;
+    const len = (corners[(j + 1) % corners.length].timingStartIndex - a + n) % n || n;
+    const at = (o: number) => (((a + o) % n) + n) % n;
+    const elapsed = (e: Float64Array, lap: number, o: number) => e[at(o)] + (a + o >= n ? lap : 0);
+    const lost = (o: number) => elapsed(sim.samples.elapsedMs, sim.rawLapTimeMs, o) - elapsed(this.reference.samples.elapsedMs, this.reference.rawLapTimeMs, o);
+    const near = Math.round(25 / this.pt.step);
+    const oApex = Math.min(len - 1, (c.apexIndex - a + n) % n);
+    const cuts = [0, Math.max(0, oApex - near), Math.min(len - 1, oApex + near), len - 1];
+    const phaseLoss = [0, 1, 2].map((p) => lost(cuts[p + 1]) - lost(cuts[p]));
+    const phase = phaseLoss.indexOf(Math.max(...phaseLoss));
+    const range = (from: number, to: number) => Array.from({ length: Math.max(1, to - from + 1) }, (_, k) => from + k);
+    // a real braking step loses about 2 m/s per sample; below this it's float noise or lift
+    const BRAKE_STEP = 0.4;
+    const minOf = (S: Float64Array, os: number[]) => Math.min(...os.map((o) => S[at(o)]));
+    let why: string;
+    if (Math.max(...phaseLoss) < 15) {
+      why = "Small losses all the way through";
+    } else if (phase === 0) {
+      // brake point: walk back from the slowest point near the apex while the speed keeps rising
+      const os = range(cuts[0], cuts[2]);
+      const brakePoint = (S: Float64Array) => {
+        let o = os.reduce((m, q) => (S[at(q)] < S[at(m)] ? q : m), os[0]);
+        for (let k = 0; k < len && S[at(o - 1)] > S[at(o)] + BRAKE_STEP; k++) o--;
+        return o;
+      };
+      const earlier = Math.round(((brakePoint(R) - brakePoint(P)) * this.pt.step) / 5) * 5;
+      const dv = kmh(minOf(R, os)) - kmh(minOf(P, os));
+      why = earlier >= 10 ? `Braking ${earlier} m earlier than the perfect lap` : dv >= 3 ? `${dv} km/h slower at the turn-in` : "Losing time on the way in";
+    } else if (phase === 1) {
+      const os = range(cuts[1], cuts[2]);
+      const dv = kmh(minOf(R, os)) - kmh(minOf(P, os));
+      why = dv >= 2 ? `${dv} km/h slower at the apex` : "Losing time through the apex";
+    } else {
+      // braking for the next corner inside this one's exit: you slow while the perfect lap still accelerates
+      const slowing = (S: Float64Array, o: number) => [0, 1, 2].every((k) => S[at(o + k + 1)] < S[at(o + k)] - BRAKE_STEP);
+      let mine = -1;
+      // any braking after the apex is for the next corner
+      for (let o = oApex; o < cuts[3] - 3; o++) if (slowing(P, o)) {
+        mine = o;
+        break;
+      }
+      let ref = -1;
+      if (mine >= 0) for (let o = mine; o < mine + len; o++) if (slowing(R, o)) {
+        ref = o;
+        break;
+      }
+      const early = mine >= 0 ? Math.round((((ref < 0 ? len : ref) - mine) * this.pt.step) / 5) * 5 : 0;
+      const os = range(cuts[2], cuts[3]);
+      const dv = Math.round((os.reduce((sum, o) => sum + R[at(o)] - P[at(o)], 0) / os.length) * 3.6);
+      const nextName = corners[(j + 1) % corners.length].name;
+      why =
+        early >= 10
+          ? `Braking ${early} m early for ${nextName}`
+          : dv >= 2
+            ? `${dv} km/h slower on average out of the corner`
+            : "Losing time on the exit";
+    }
+
+    const k = this.complexOfCorner.get(cornerName) ?? this.nearestComplex(cornerName);
+    const opt = this.track.optimalLine!.knotOffsets;
+    let worst: { gate: Complex["gates"][number]; err: number } | null = null;
+    for (const g of this.controls.complexes[k]?.gates ?? []) {
+      const err = opt[g.knot] - this.z[g.knot];
+      if (!worst || Math.abs(err) > Math.abs(worst.err)) worst = { gate: g, err };
+    }
+    let hint = "Every point here is within 15 cm of the perfect line.";
+    if (worst && Math.abs(worst.err) >= 0.15) {
+      const name = worst.gate.label === "Apex" && worst.gate.corner ? `Apex ${worst.gate.corner}` : worst.gate.label;
+      hint = `${name}: move ${Math.abs(worst.err).toFixed(1)} m ${worst.err > 0 ? "left" : "right"}`;
+    }
+    return { why, hint };
+  }
+
   /** Back to setup, at the group containing `cornerName`, or the worst one from the last run. */
   adjust(cornerName?: string) {
     if (this.phase === "race" || this.phase === "lights" || this.locked) return;
