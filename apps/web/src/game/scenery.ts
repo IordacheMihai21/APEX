@@ -148,6 +148,8 @@ export function asphaltDataUrl(): string {
   return noiseTexture(256, hex(PALETTE.asphalt), 10, { rate: 0.02, light: 26, dark: 14 }, 11).toDataURL("image/png");
 }
 
+const rngLocal = (seed: number) => rng(seed);
+
 /** Smooth a per-index profile with a circular moving average. */
 function smooth(a: Float64Array, half: number): Float64Array {
   const n = a.length;
@@ -175,6 +177,17 @@ export class Scenery {
   private readonly tecBlue = new Path2D();
   private readonly tecTop = new Path2D();
   private readonly railPosts = new Path2D();
+  // surface detail: resurfaced patches, paving seams, sealant, lock-up marks, run-wide marks
+  private readonly patches = new Path2D();
+  private readonly seams = new Path2D();
+  private readonly sealant = new Path2D();
+  private readonly lockups = new Path2D();
+  private readonly runwide = new Path2D();
+  // trackside: astroturf behind exit kerbs, brake marker boards, painted grid numbers
+  private readonly astro = new Path2D();
+  private readonly boards = new Path2D();
+  private readonly boardStripes = new Path2D();
+  private readonly gridNumbers: { x: number; y: number; a: number; n: number }[] = [];
   private readonly joints = new Path2D();
   private readonly posts = new Path2D();
   private readonly marshals = new Path2D();
@@ -341,6 +354,7 @@ export class Scenery {
     };
     traps(gl, pl, 1);
     traps(gr, pr, -1);
+    this.buildDetail(pl, pr, clamp);
     // barriers
     const verge = street ? 0.4 : 9;
     for (const side of [1, -1] as const) {
@@ -414,6 +428,132 @@ export class Scenery {
     }
   }
 
+  /**
+   * Surface and trackside detail, all built once. Nothing here follows the
+   * racing line (a rubbered-in line would give the puzzle away): lock-up marks
+   * spread across the width of braking zones, patches and seams follow the
+   * paving, and boards and turf follow each corner's geometry.
+   */
+  private buildDetail(pl: Float64Array, pr: Float64Array, clamp: (i: number, side: 1 | -1, d: number) => number) {
+    const { n, step } = this.pt;
+    const W2 = this.W / 2;
+    const m = (metres: number) => Math.max(1, Math.round(metres / step));
+    const r = rngLocal(this.track.id.length * 977 + n);
+    const line = (path: Path2D, pts: [number, number][]) => pts.forEach(([x, y], k) => (k ? path.lineTo(x, y) : path.moveTo(x, y)));
+    const street = this.style === "street";
+
+    // paving seams: the joints between laying passes run the length of the lap
+    for (const off of [-0.17, 0.17]) {
+      const pts: [number, number][] = [];
+      for (let i = 0; i <= n; i += m(4)) pts.push(this.at(i, off * this.W));
+      line(this.seams, pts);
+    }
+
+    const corners = this.track.corners;
+    corners.forEach((c, ci) => {
+      if (!this.significant.has(c.name)) return;
+      const outside: 1 | -1 = c.direction === "left" ? -1 : 1;
+      const prevEnd = corners[(ci - 1 + corners.length) % corners.length].endIndex;
+      const straight = (((c.startIndex - prevEnd + n) % n) * step) | 0;
+
+      // lock-up marks in the braking zone: tyre pairs 1.6 m apart, spread across the width
+      const pairs = 2 + Math.floor(r() * 3);
+      for (let k = 0; k < pairs; k++) {
+        const len = m(14 + r() * 26);
+        const start = c.startIndex - m(10 + r() * Math.min(110, straight * 0.6));
+        const d0 = (r() * 2 - 1) * (W2 - 1.8);
+        const drift = (r() - 0.5) * 1.2;
+        for (const tyre of [-0.8, 0.8]) {
+          const pts: [number, number][] = [];
+          for (let o = 0; o <= len; o += 1) pts.push(this.at(start + o, d0 + tyre + (drift * o) / len));
+          line(this.lockups, pts);
+        }
+      }
+
+      // a resurfaced patch over part of the braking zone (every other slow corner)
+      if (ci % 2 === 0 && straight > 80) {
+        const a = c.startIndex - m(20 + r() * 30);
+        const len = m(18 + r() * 22);
+        const edge = (r() * 0.6 - 0.1) * W2;
+        const q: [number, number][] = [this.at(a, -W2 + 0.3), this.at(a + len, -W2 + 0.3), this.at(a + len, edge), this.at(a, edge)];
+        line(this.patches, q);
+        this.patches.closePath();
+      }
+
+      // sealant: black bitumen lines where cracks were filled
+      for (let k = 0; k < 2; k++) {
+        const i0 = c.startIndex - m(r() * 60);
+        let d = (r() * 2 - 1) * (W2 - 1);
+        const pts: [number, number][] = [];
+        for (let o = 0; o < 6; o++) {
+          pts.push(this.at(i0 + o * m(0.9), d));
+          d += (r() - 0.5) * 0.9;
+        }
+        line(this.sealant, pts);
+      }
+
+      // marks where cars ran wide on the exit run-off
+      if (!street) {
+        const p = outside > 0 ? pl : pr;
+        for (let k = 0; k < 2; k++) {
+          const a = c.apexIndex + m(5 + r() * 15);
+          const len = m(25 + r() * 25);
+          const depth = 1 + r() * 0.9;
+          for (const tyre of [0, 1.6]) {
+            const pts: [number, number][] = [];
+            for (let o = 0; o <= len; o++) {
+              const i = (a + o) % n;
+              const t = o / len;
+              const out = W2 + 0.4 + Math.sin(Math.PI * t) * Math.max(0, p[i] - 1.5) * 0.6 * depth + tyre * Math.sin(Math.PI * t);
+              pts.push(this.at(a + o, outside * clamp(i, outside, out)));
+            }
+            line(this.runwide, pts);
+          }
+        }
+
+        // astroturf behind the outside exit kerb
+        const from = c.apexIndex;
+        const len = ((c.endIndex - c.apexIndex + n) % n) + m(26);
+        this.band(this.astro, from, len, (i) => outside * clamp(i, outside, W2 + 0.9), (i) => outside * clamp(i, outside, W2 + Math.min(2.8, 0.9 + p[((i % n) + n) % n] * 0.4)));
+      }
+
+      // brake marker boards at 300, 200 and 100 m on the outside, where the straight is long enough
+      if (straight > 330) {
+        const p = outside > 0 ? pl : pr;
+        for (const [dist, stripes] of [
+          [300, 3],
+          [200, 2],
+          [100, 1],
+        ] as const) {
+          const i = (c.startIndex - m(dist) + n) % n;
+          const d = W2 + Math.min(p[i], 4) + 1.6;
+          const [x, y] = this.at(i, outside * clamp(i, outside, d));
+          const h = this.heading(i);
+          const ux = Math.cos(h);
+          const uy = Math.sin(h);
+          const vx = -uy;
+          const vy = ux;
+          // a 2.4 m board face, seen from above at an angle: 0.9 m deep along the track
+          const P = (a: number, b: number): [number, number] => [x + ux * a + vx * b, y + uy * a + vy * b];
+          line(this.boards, [P(-0.45, -1.2), P(0.45, -1.2), P(0.45, 1.2), P(-0.45, 1.2)]);
+          this.boards.closePath();
+          for (let k = 0; k < stripes; k++) {
+            const b0 = -0.95 + k * 0.7;
+            line(this.boardStripes, [P(-0.33, b0), P(0.33, b0), P(0.33, b0 + 0.4), P(-0.33, b0 + 0.4)]);
+            this.boardStripes.closePath();
+          }
+        }
+      }
+    });
+  }
+
+  private heading(i: number): number {
+    const { cx, cy, n } = this.pt;
+    const a = ((i % n) + n) % n;
+    const b = (a + 2) % n;
+    return Math.atan2(cy[b] - cy[a], cx[b] - cx[a]);
+  }
+
   /** Street circuits: TecPro on the outside of slow corners, from the braking zone to just past the apex. */
   private streetTecpro(i: number, side: 1 | -1): boolean {
     const { n, step } = this.pt;
@@ -480,6 +620,9 @@ export class Scenery {
       this.grid.lineTo(ax, ay);
       this.grid.lineTo(bx, by);
       this.grid.lineTo(dx, dy);
+      // the position, painted just behind its box
+      const [nx2, ny2] = this.at(i - Math.round(3.4 / step), c);
+      this.gridNumbers.push({ x: nx2, y: ny2, a: this.heading(i), n: slot + 1 });
     }
   }
 
@@ -510,6 +653,22 @@ export class Scenery {
     ctx.fill(this.paved);
     ctx.fillStyle = detailed ? t.gravel : PALETTE.gravel;
     ctx.fill(this.gravel);
+    if (detailed) {
+      // gravel traps: a darker, raked rim where the stones meet the run-off
+      ctx.strokeStyle = "rgba(70,54,36,0.55)";
+      ctx.lineWidth = 0.5;
+      ctx.stroke(this.gravel);
+      // astroturf behind the exit kerbs: bright synthetic green with a lighter edge
+      ctx.fillStyle = "#3f7d3a";
+      ctx.fill(this.astro);
+      ctx.strokeStyle = "rgba(170,220,150,0.35)";
+      ctx.lineWidth = 0.12;
+      ctx.stroke(this.astro);
+      // where cars have run wide: faint rubber arcs on the run-off
+      ctx.strokeStyle = "rgba(14,14,16,0.16)";
+      ctx.lineWidth = 0.32;
+      ctx.stroke(this.runwide);
+    }
 
     // barrier: soft shadow then the rail (hidden when zoomed far out, where it reads as an outline)
     ctx.lineJoin = "round";
@@ -579,6 +738,28 @@ export class Scenery {
     ctx.stroke(this.centre);
 
     if (detailed) {
+      // the surface: paving seams, newer asphalt patches, sealant, lock-up marks
+      ctx.strokeStyle = "rgba(0,0,0,0.09)";
+      ctx.lineWidth = 0.08;
+      ctx.stroke(this.seams);
+      ctx.fillStyle = "rgba(8,9,11,0.2)";
+      ctx.fill(this.patches);
+      ctx.strokeStyle = "rgba(0,0,0,0.28)";
+      ctx.lineWidth = 0.08;
+      ctx.stroke(this.patches);
+      ctx.strokeStyle = "rgba(6,6,8,0.55)";
+      ctx.lineWidth = 0.1;
+      ctx.stroke(this.sealant);
+      ctx.strokeStyle = "rgba(10,10,12,0.2)";
+      ctx.lineWidth = 0.3;
+      ctx.stroke(this.lockups);
+      // kerbs stand proud of the track: a thin shadow on their south-east edge
+      ctx.save();
+      ctx.translate(0.14, -0.14);
+      ctx.fillStyle = "rgba(0,0,0,0.4)";
+      ctx.fill(this.kerbRed);
+      ctx.fill(this.kerbWhite);
+      ctx.restore();
       ctx.fillStyle = PALETTE.kerbRed;
       ctx.fill(this.kerbRed);
       ctx.fillStyle = PALETTE.kerbWhite;
@@ -586,8 +767,74 @@ export class Scenery {
       ctx.strokeStyle = PALETTE.paint;
       ctx.lineWidth = 0.22;
       ctx.stroke(this.grid);
+      ctx.fillStyle = "rgba(242,242,238,0.85)";
+      ctx.font = "800 1.5px 'Archivo Variable', system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (const g of this.gridNumbers) {
+        ctx.save();
+        ctx.translate(g.x, g.y);
+        // read in the direction of travel: the top of each numeral points down the track
+        ctx.rotate(g.a - Math.PI / 2);
+        ctx.scale(1, -1);
+        ctx.fillText(String(g.n), 0, 0);
+        ctx.restore();
+      }
+      // brake marker boards with their shadows
+      ctx.save();
+      ctx.translate(0.5, -0.5);
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fill(this.boards);
+      ctx.restore();
+      ctx.fillStyle = "#eeeeea";
+      ctx.fill(this.boards);
+      ctx.fillStyle = "#16171a";
+      ctx.fill(this.boardStripes);
     }
     this.drawStartLine(ctx);
+    if (px < 2.5) this.drawGantry(ctx, detailed);
+  }
+
+  /**
+   * The start-light gantry bridging the track at the line: a truss beam on two
+   * pylons with the light pods on top, casting a long shadow down the grid.
+   */
+  private drawGantry(ctx: CanvasRenderingContext2D, detailed: boolean) {
+    const W2 = this.W / 2;
+    const i = Math.round(6 / this.pt.step);
+    const [x, y] = this.at(i, 0);
+    const a = this.heading(i);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(a);
+    const span = W2 + 3.5;
+    const H = 8;
+    // shadow, offset south-east by height (rotated into the gantry's frame)
+    const sx = 0.45 * H * Math.cos(-a) - -0.45 * H * Math.sin(-a);
+    const sy = 0.45 * H * Math.sin(-a) + -0.45 * H * Math.cos(-a);
+    ctx.fillStyle = "rgba(0,0,0,0.28)";
+    ctx.fillRect(-0.7 + sx, -span + sy, 1.4, span * 2);
+    // pylons
+    ctx.fillStyle = "#5c6168";
+    ctx.fillRect(-0.8, -span - 0.8, 1.6, 1.6);
+    ctx.fillRect(-0.8, span - 0.8, 1.6, 1.6);
+    // beam
+    ctx.fillStyle = "#b8bcc1";
+    ctx.fillRect(-0.7, -span, 1.4, span * 2);
+    if (detailed) {
+      ctx.strokeStyle = "rgba(60,64,70,0.7)";
+      ctx.lineWidth = 0.08;
+      ctx.beginPath();
+      for (let k = -span; k < span; k += 1.2) {
+        ctx.moveTo(-0.7, k);
+        ctx.lineTo(0.7, k + 1.2);
+      }
+      ctx.stroke();
+      // five light pods over the track
+      ctx.fillStyle = "#16171a";
+      for (let k = -2; k <= 2; k++) ctx.fillRect(-0.45, k * 1.3 - 0.45, 0.9, 0.9);
+    }
+    ctx.restore();
   }
 
   private drawStartLine(ctx: CanvasRenderingContext2D) {
