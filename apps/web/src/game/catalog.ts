@@ -1,4 +1,5 @@
 import type { GameTrack } from "@apex/engine";
+import type { SceneryData } from "./surroundings";
 
 export interface TrackInfo {
   id: string;
@@ -32,4 +33,12 @@ export async function loadTrack(id: string): Promise<GameTrack> {
   const key = Object.keys(files).find((k) => k.endsWith(`/${id}.v1.json`));
   if (!key) throw new Error(`Unknown track "${id}"`);
   return files[key]();
+}
+
+const scenery = import.meta.glob<SceneryData>("../../../../data/scenery/*.json", { import: "default" });
+
+/** The circuit's real surroundings (OpenStreetMap), or null where none were imported. */
+export async function loadScenery(id: string): Promise<SceneryData | null> {
+  const key = Object.keys(scenery).find((k) => k.endsWith(`/${id}.json`));
+  return key ? scenery[key]() : null;
 }

@@ -15,6 +15,7 @@ geometry or names.
 | [OpenF1](https://github.com/br-g/openf1) | **CC BY-NC-SA 4.0** | Experiments only | **No** (non-commercial, share-alike) |
 | [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits) | MIT | GeoJSON circuit geometry for R&D / reference | Code/data licence permits; see "Circuit layouts" |
 | [nilamadhab47/raceosf1](https://github.com/nilamadhab47/raceosf1) | **None** (all rights reserved) | Read for ideas only | **No, copy nothing** |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) via Overpass | **ODbL 1.0** | Real surroundings of each circuit: buildings, grandstands, woods, trees, water and coastline, roads, rail, pit lanes, landmarks (`data/scenery/*.json`, built by `tools/track-builder/src/import-osm.ts`) | **Yes, with attribution** ("Map data © OpenStreetMap contributors", shown on the circuit view and linked to osm.org/copyright). The extracted files are a derivative database: if distributed separately they stay under the ODbL (share-alike). |
 | [TUMFTM/global_racetrajectory_optimization](https://github.com/TUMFTM/global_racetrajectory_optimization) | LGPL-3.0 | Offline reference optimizer | Output lines yes; don't bundle the library in the client |
 
 ## Notes per source

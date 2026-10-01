@@ -20,6 +20,7 @@ import { Camera } from "./camera";
 import { CarSprites } from "./car";
 import { CATALOG } from "./catalog";
 import { Scenery } from "./scenery";
+import type { SceneryData } from "./surroundings";
 import { C, lossColor } from "./palette";
 import { type PersonalBest, loadPB, logEvent, savePB } from "./storage";
 import { type Grade, type GroupGrade, gradeFor } from "../modes/grading";
@@ -43,6 +44,8 @@ export interface GameOptions {
   locked?: boolean;
   /** A friend's line to beat (from a "Beat my lap" link), raced as a pace marker only. */
   challengeKnots?: number[];
+  /** The circuit's real surroundings (OpenStreetMap), drawn under the run-off. */
+  scenery?: SceneryData | null;
 }
 
 export interface LapEvent {
@@ -134,7 +137,7 @@ export class Game {
   readonly camera = new Camera();
   private readonly reference: SimulationResult;
   private readonly bbox: [number, number, number, number];
-  private readonly scenery: Scenery;
+  readonly scenery: Scenery;
   private readonly cars = new CarSprites();
   /** complex index for each gated corner name */
   private readonly complexOfCorner = new Map<string, number>();
@@ -209,7 +212,7 @@ export class Game {
     ];
     const style = CATALOG.find((t) => t.id === track.id)?.style ?? "permanent";
     const significant = new Set(this.controls.complexes.flatMap((c) => c.corners));
-    this.scenery = new Scenery(this.pt, track, style, significant);
+    this.scenery = new Scenery(this.pt, track, style, significant, opts.scenery ?? null);
 
     this.pb = loadPB(track.id, track.version);
     // Continue from the session's last line, else (practice) your best line, else the centerline.

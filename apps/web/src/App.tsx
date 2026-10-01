@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { setSoundEnabled, soundEnabled } from "./game/audio";
-import { CATALOG, loadTrack } from "./game/catalog";
+import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
 import { OUTLINES } from "./game/outlines";
 import { LINE_STYLES, type LineStyle } from "@apex/engine";
 import { Game, type Mode, type Snapshot } from "./game/game";
@@ -183,14 +183,14 @@ function Play({ mode, trackId, challenge, onNext }: { mode: Mode; trackId: strin
 
   useEffect(() => {
     let alive = true;
-    loadTrack(trackId)
-      .then((t) => {
+    Promise.all([loadTrack(trackId), loadScenery(trackId).catch(() => null)])
+      .then(([t, scenery]) => {
         if (!alive) return;
         let g: Game;
         if (mode === "daily") {
           const rec = loadDaily();
           setDaily(rec);
-          g = new Game(t, { mode, lapLimit: DAILY_LAPS, lapsUsed: rec.laps.length, startKnots: rec.knots, locked: rec.status !== "playing" });
+          g = new Game(t, { scenery, mode, lapLimit: DAILY_LAPS, lapsUsed: rec.laps.length, startKnots: rec.knots, locked: rec.status !== "playing" });
           g.onLap = (lap) => {
             const next = recordLap(loadDaily(), { lapTimeMs: lap.lapTimeMs, grades: lap.grades }, lap.knots);
             setDaily(next);
@@ -201,14 +201,14 @@ function Play({ mode, trackId, challenge, onNext }: { mode: Mode; trackId: strin
           const run = store.run!;
           const rival = rivalMs(t.optimalTimeMs!, run.results.length);
           setRound({ outcome: "continue", laps: [], store });
-          g = new Game(t, { mode, lapLimit: SEASON_LAPS, lapsUsed: run.lapsUsed, rivalMs: rival, startKnots: run.knots });
+          g = new Game(t, { scenery, mode, lapLimit: SEASON_LAPS, lapsUsed: run.lapsUsed, rivalMs: rival, startKnots: run.knots });
           g.onLap = (lap) => {
             const { store: next, outcome } = recordSeasonLap(lap.lapTimeMs, rival, lap.knots);
             setRound((r) => ({ outcome, laps: [...(r?.laps ?? []), lap.grades], store: next }));
             if (outcome !== "continue") g.lock();
           };
         } else {
-          g = new Game(t, { mode, lapLimit: null, challengeKnots: challenge });
+          g = new Game(t, { scenery, mode, lapLimit: null, challengeKnots: challenge });
           g.onLap = (lap) => setPracticeLaps((p) => [...p, lap.grades].slice(-3));
         }
         setGame(g);
@@ -300,6 +300,16 @@ function GameView({
   return (
     <>
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-label={`${game.track.name} circuit`} />
+      {game.scenery.hasOsm && s.phase === "setup" && (
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noreferrer"
+          className="absolute top-2 left-1/2 -translate-x-1/2 bg-night/60 px-1.5 py-0.5 text-[11px] text-steel/80 hover:text-paint"
+        >
+          Map data © OpenStreetMap contributors
+        </a>
+      )}
       <div ref={tower} className="absolute top-2 left-2">
         <CornerTower
           rows={rows}

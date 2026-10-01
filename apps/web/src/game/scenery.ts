@@ -1,4 +1,5 @@
 import { type GameTrack, type PreparedTrack, curvature } from "@apex/engine";
+import { type SceneryData, Surroundings } from "./surroundings";
 
 /**
  * Aerial-view circuit scenery for Canvas 2D.
@@ -7,9 +8,12 @@ import { type GameTrack, type PreparedTrack, curvature } from "@apex/engine";
  * surfaces as small procedural textures used as world-anchored patterns.
  * A frame only fills/strokes cached paths, which keeps it cheap on phones.
  *
- * Layer order (bottom → top): grass + mowing stripes → tarmac run-off →
- * gravel traps → barriers → track asphalt → edge lines → kerbs → start
- * line + grid boxes. The car sprite lives in car.ts.
+ * Layer order (bottom → top): grass + mowing stripes → the real
+ * surroundings from OpenStreetMap (land cover, water, roads, pit lane,
+ * buildings, trees; surroundings.ts) → tarmac run-off → gravel traps →
+ * barriers with TecPro, catch fencing and marshal posts → landmarks → track
+ * asphalt → edge lines → kerbs → start line + grid boxes. The car sprite
+ * lives in car.ts.
  */
 
 export type CircuitStyle = "permanent" | "street";
@@ -24,13 +28,16 @@ const PALETTE = {
   kerbRed: "#e5332a",
   kerbWhite: "#f2f2ee",
   barrier: "#c3c7cc",
-  tyreWall: "#141517",
+  tecproRed: "#c8312b",
+  tecproBlue: "#2f5fae",
+  fence: "rgba(205,210,215,0.55)",
+  marshal: "#e9e7e2",
   wall: "#9aa0a6",
   concrete: "#43484e",
 };
 
 /** Deterministic PRNG so textures look the same on every load. */
-function rng(seed: number) {
+export function rng(seed: number) {
   return () => {
     seed = (seed + 0x6d2b79f5) | 0;
     let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
@@ -39,14 +46,14 @@ function rng(seed: number) {
   };
 }
 
-function canvas(size: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
+export function canvas(size: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
   const c = document.createElement("canvas");
   c.width = c.height = size;
   return [c, c.getContext("2d")!];
 }
 
 /** Per-pixel noise around a base colour, plus sparse speckles (aggregate, pebbles, blades). */
-function noiseTexture(size: number, base: [number, number, number], amp: number, speckle: { rate: number; light: number; dark: number }, seed: number) {
+export function noiseTexture(size: number, base: [number, number, number], amp: number, speckle: { rate: number; light: number; dark: number }, seed: number) {
   const [c, ctx] = canvas(size);
   const img = ctx.createImageData(size, size);
   const r = rng(seed);
@@ -82,7 +89,7 @@ function noiseTexture(size: number, base: [number, number, number], amp: number,
   return c;
 }
 
-function hex(h: string): [number, number, number] {
+export function hex(h: string): [number, number, number] {
   const n = parseInt(h.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
@@ -161,10 +168,15 @@ export class Scenery {
   private readonly paved = new Path2D();
   private readonly gravel = new Path2D();
   private readonly barriers = new Path2D();
-  private readonly tyres = new Path2D();
   private readonly kerbRed = new Path2D();
   private readonly kerbWhite = new Path2D();
   private readonly grid = new Path2D();
+  private readonly tecRed = new Path2D();
+  private readonly tecBlue = new Path2D();
+  private readonly posts = new Path2D();
+  private readonly marshals = new Path2D();
+  private readonly flags = new Path2D();
+  private readonly world: Surroundings | null;
   private readonly bounds: [number, number, number, number];
 
   constructor(
@@ -173,7 +185,10 @@ export class Scenery {
     private style: CircuitStyle,
     /** Corners that slow the car (get gravel traps and wide run-off). */
     private significant: Set<string>,
+    /** The real surroundings (OpenStreetMap), when available for this circuit. */
+    osm: SceneryData | null = null,
   ) {
+    this.world = osm ? new Surroundings(osm, track.id, track.centerline.filter((_, i) => i % 10 === 0) as [number, number][]) : null;
     this.W = track.widthMeters;
     track.centerline.forEach(([x, y], i) => (i ? this.centre.lineTo(x, y) : this.centre.moveTo(x, y)));
     this.centre.closePath();
@@ -188,6 +203,11 @@ export class Scenery {
     this.buildRunoff();
     this.buildKerbs();
     this.buildGrid();
+  }
+
+  /** True when the real surroundings (OpenStreetMap) are drawn, so the view must credit them. */
+  get hasOsm(): boolean {
+    return this.world !== null;
   }
 
   // ---------------------------------------------------------------- geometry
@@ -336,16 +356,53 @@ export class Scenery {
         else this.barriers.moveTo(x, y);
         pen = true;
       }
-      // tyre walls where there's a gravel trap
-      for (let i = 0; i < n; i += Math.max(1, m(1.2))) {
-        if (g[i] < 4) continue;
-        const dd = clamp(i, side, W2 + p[i] + g[i] + 1.1);
-        const [x, y] = this.at(i, side * dd);
-        if (this.foreign(x, y, i, dd)) continue;
-        this.tyres.moveTo(x + 0.5, y);
-        this.tyres.arc(x, y, 0.5, 0, Math.PI * 2);
+      // energy-absorbing barrier in front of the rail where cars arrive fast: TecPro blocks,
+      // alternating red and blue, behind every gravel trap (and at slow street corners)
+      const block = Math.max(1, m(1.5));
+      for (let i = 0, k = 0; i < n; i += block, k++) {
+        const tec = g[i] >= 4 || (street && this.streetTecpro(i, side));
+        if (!tec) continue;
+        const back = W2 + p[i] + Math.max(g[i] + 2, verge);
+        const d0 = clamp(i, side, back - 1.0);
+        const d1 = clamp(i, side, back - 0.15);
+        const q = [this.at(i, side * d0), this.at(i + block - 0.2, side * d0), this.at(i + block - 0.2, side * d1), this.at(i, side * d1)];
+        if (this.foreign(q[0][0], q[0][1], i, d1)) continue;
+        const path = k % 2 ? this.tecBlue : this.tecRed;
+        q.forEach(([x, y], z) => (z ? path.lineTo(x, y) : path.moveTo(x, y)));
+        path.closePath();
+      }
+      // catch-fence posts every 6 m along the rail
+      for (let i = 0; i < n; i += Math.max(1, m(6))) {
+        const d = side * clamp(i, side, W2 + p[i] + Math.max(g[i] + 2, verge) + 0.5);
+        const [x, y] = this.at(i, d);
+        if (this.foreign(x, y, i, Math.abs(d))) continue;
+        this.posts.moveTo(x + 0.25, y);
+        this.posts.arc(x, y, 0.25, 0, Math.PI * 2);
+      }
+      // marshal posts: a cabin behind the barrier on the outside of every slow corner
+      for (const c of this.track.corners) {
+        if (!this.significant.has(c.name) || (c.direction === "left" ? -1 : 1) !== side) continue;
+        const i = (c.apexIndex + m(35)) % n;
+        const d = side * clamp(i, side, W2 + p[i] + Math.max(g[i] + 2, verge) + (street ? 1.6 : 4));
+        const [x, y] = this.at(i, d);
+        if (this.foreign(x, y, i, Math.abs(d) + 2)) continue;
+        this.marshals.rect(x - 1.3, y - 1.1, 2.6, 2.2);
+        this.flags.moveTo(x + 1.5 + 0.45, y + 1.3);
+        this.flags.arc(x + 1.5, y + 1.3, 0.45, 0, Math.PI * 2);
       }
     }
+  }
+
+  /** Street circuits: TecPro on the outside of slow corners, from the braking zone to just past the apex. */
+  private streetTecpro(i: number, side: 1 | -1): boolean {
+    const { n, step } = this.pt;
+    for (const c of this.track.corners) {
+      if (!this.significant.has(c.name) || (c.direction === "left" ? -1 : 1) !== side) continue;
+      const from = (c.startIndex - Math.round(25 / step) + n) % n;
+      const len = ((c.apexIndex - from + n) % n) + Math.round(20 / step);
+      if ((i - from + n) % n <= len) return true;
+    }
+    return false;
   }
 
   /** Red/white kerb blocks: inside of each corner, outside on entry and exit. */
@@ -426,6 +483,8 @@ export class Scenery {
       ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
     }
 
+    this.world?.draw(ctx, px);
+
     ctx.fillStyle = detailed ? t.runoff : PALETTE.runoff;
     ctx.fill(this.paved);
     ctx.fillStyle = detailed ? t.gravel : PALETTE.gravel;
@@ -442,10 +501,31 @@ export class Scenery {
       ctx.lineWidth = Math.max(street ? 1.1 : 0.45, 1.2 * px);
       ctx.stroke(this.barriers);
       if (detailed) {
-        ctx.fillStyle = PALETTE.tyreWall;
-        ctx.fill(this.tyres);
+        // catch fence: the mesh reads as a faint line just behind the rail, its posts as dots
+        ctx.save();
+        ctx.translate(0.5, -0.5);
+        ctx.strokeStyle = PALETTE.fence;
+        ctx.lineWidth = Math.max(0.15, 0.6 * px);
+        ctx.stroke(this.barriers);
+        ctx.restore();
+        ctx.fillStyle = PALETTE.wall;
+        ctx.fill(this.posts);
+        ctx.fillStyle = PALETTE.tecproRed;
+        ctx.fill(this.tecRed);
+        ctx.fillStyle = PALETTE.tecproBlue;
+        ctx.fill(this.tecBlue);
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
+        ctx.save();
+        ctx.translate(0.8, -0.8);
+        ctx.fill(this.marshals);
+        ctx.restore();
+        ctx.fillStyle = PALETTE.marshal;
+        ctx.fill(this.marshals);
+        ctx.fillStyle = "#f5c518";
+        ctx.fill(this.flags);
       }
     }
+    if (px < 3) this.world?.drawLandmarks(ctx);
 
     // track: paint band slightly wider than the asphalt = white edge lines
     const edge = Math.max(0.3, 1.3 * px);

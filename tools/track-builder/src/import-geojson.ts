@@ -74,6 +74,36 @@ export function loadFeatures(file: string): Map<string, Feature> {
   return new Map(fc.features.map((f) => [f.properties.id, f]));
 }
 
+/**
+ * The track's coordinate frame for a source circuit: metres east/north of the
+ * traced centroid, times the length-fit scale. Anything with lon/lat (e.g.
+ * OpenStreetMap scenery) maps into track space with `toTrack`.
+ */
+export function circuitFrame(feature: Feature, c: RealCircuit) {
+  let coords = feature.geometry.coordinates.slice();
+  const first = coords[0];
+  const last = coords[coords.length - 1];
+  if (first[0] === last[0] && first[1] === last[1]) coords = coords.slice(0, -1);
+  const lon0 = coords.reduce((a, p) => a + p[0], 0) / coords.length;
+  const lat0 = coords.reduce((a, p) => a + p[1], 0) / coords.length;
+  const kx = (Math.PI / 180) * EARTH_R * Math.cos((lat0 * Math.PI) / 180);
+  const ky = (Math.PI / 180) * EARTH_R;
+  const scale = feature.properties.length / polyLength(circuitPoints(coords, lon0, lat0, kx, ky, c));
+  const lons = coords.map((p) => p[0]);
+  const lats = coords.map((p) => p[1]);
+  return {
+    toTrack: (lon: number, lat: number): Vec2 => [(lon - lon0) * kx * scale, (lat - lat0) * ky * scale],
+    /** south, west, north, east of the traced circuit */
+    bbox: [Math.min(...lats), Math.min(...lons), Math.max(...lats), Math.max(...lons)] as [number, number, number, number],
+  };
+}
+
+function circuitPoints(coords: [number, number][], lon0: number, lat0: number, kx: number, ky: number, c: RealCircuit): Vec2[] {
+  const pts: Vec2[] = coords.map(([lon, lat]) => [(lon - lon0) * kx, (lat - lat0) * ky]);
+  const half = Math.round((c.smoothM ?? 12) / 2);
+  return smooth(smooth(resample(pts, 2), half), half);
+}
+
 export function circuitToSpec(feature: Feature, c: RealCircuit): TrackSpec {
   let coords = feature.geometry.coordinates.slice();
   if (feature.geometry.type !== "LineString") throw new Error(`${c.sourceId}: expected LineString`);
