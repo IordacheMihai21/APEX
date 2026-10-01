@@ -310,13 +310,16 @@ canvas {
   stroke-dashoffset: 0;
 }
 .hero-map .draw-1 {
-  animation: draw 1500ms var(--ease-out) 200ms both;
+  animation: draw 1600ms var(--ease-out) 200ms both;
 }
 .hero-map .draw-2 {
-  animation: draw 1300ms var(--ease-out) 1000ms both;
+  animation: draw 1400ms var(--ease-out) 900ms both;
 }
 .hero-map .fade-late {
-  animation: fade 500ms ease-out 1900ms both;
+  animation: fade 400ms ease-out 2100ms both;
+}
+.fade-in-late {
+  animation: fade 600ms ease-out 1800ms both;
 }
 
 /* Headline rises out of its own baseline, masked. */
@@ -463,6 +466,7 @@ canvas {
   .hero-map .draw-1,
   .hero-map .draw-2,
   .hero-map .fade-late,
+  .fade-in-late,
   .reveal-up > span,
   .in-view,
   .track-tile:hover .tile-lap,

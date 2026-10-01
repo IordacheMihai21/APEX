@@ -5,6 +5,7 @@ import { OUTLINES, type Outline } from "../game/outlines";
 import { DAILY_LAPS, dailyNumber, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
 import { Gantry } from "./Gantry";
+import { lapTime } from "./format";
 import { LapGrid } from "./LapGrid";
 import { Roll } from "./Roll";
 import { Segments } from "./Segments";
@@ -52,56 +53,70 @@ export function CircuitOutline({ track, className = "" }: { track: GameTrack | s
 }
 
 /**
- * Today's circuit as a track map: the ribbon with painted edges, corner
- * numbers, the start line, and the optimal line with a car lapping it at the
- * speeds the physics engine computes (×4, the game's playback speed). The map
- * draws itself in once, then the car runs.
+ * Today's circuit, drawn the way a broadcast map is: one quiet asphalt stroke,
+ * the perfect line as a hairline inside it, and the car as an orange dot with
+ * a tapering streak. The car runs the optimal lap at the speeds the physics
+ * engine computes (×4, the game's playback), so the streak stretches on the
+ * straights and shrinks under braking. The track draws itself in once.
  */
 function HeroCircuit({ id, o }: { id: string; o: Outline }) {
   const reduce = useReducedMotion();
-  const w = Math.max(o.width * 1.7, 15);
-  const [sx, sy, heading] = o.start;
+  const w = Math.max(o.width * 2.2, 20);
   const lineId = `line-${id}`;
+  const dur = `${o.lapMs / PLAYBACK}ms`;
+  const points = o.keyPoints.split(";").map(Number);
+  // a dash of length len whose head sits at the car: offset = len - progress
+  const trail = (len: number) => points.map((p) => (len - p).toFixed(4)).join(";");
+  const timing = { dur, begin: "2.2s", repeatCount: "indefinite", calcMode: "linear", keyTimes: o.keyTimes } as const;
   return (
-    <svg viewBox="0 0 1000 1000" className="hero-map h-full w-full" role="img" aria-label={`Map of ${CATALOG.find((t) => t.id === id)?.name}`}>
-      <path className="draw draw-1" pathLength={1} d={o.ribbon} fill="none" stroke="#f2f2ee" strokeOpacity={0.9} strokeWidth={w + 7} strokeLinejoin="round" />
-      <path className="draw draw-1" pathLength={1} d={o.ribbon} fill="none" stroke="#262a31" strokeWidth={w} strokeLinejoin="round" />
-      <g transform={`translate(${sx} ${sy}) rotate(${heading + 90})`} className="fade-late">
-        {[-1, 0, 1].map((k) => (
-          <rect key={k} x={k * 7 - 3.5} y={-7} width={7} height={7} fill={k % 2 ? "#f2f2ee" : "#0a0b0d"} />
+    <svg viewBox="0 0 1000 1000" className="hero-map h-full w-full overflow-visible" role="img" aria-label={`Map of ${CATALOG.find((t) => t.id === id)?.name}`}>
+      <path className="draw draw-1" pathLength={1} d={o.ribbon} fill="none" stroke="#23262d" strokeWidth={w} strokeLinejoin="round" strokeLinecap="round" />
+      <path id={lineId} className="draw draw-2" pathLength={1} d={o.line} fill="none" stroke="#f2f2ee" strokeOpacity={0.22} strokeWidth={2} strokeLinejoin="round" />
+      {!reduce &&
+        (
+          [
+            [0.16, 0.1, 3],
+            [0.07, 0.3, 4.5],
+            [0.025, 0.85, 6],
+          ] as const
+        ).map(([len, op, sw]) => (
+          <path
+            key={len}
+            className="fade-late"
+            pathLength={1}
+            d={o.line}
+            fill="none"
+            stroke="#ff6a13"
+            strokeOpacity={op}
+            strokeWidth={sw}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={`${len} ${1 - len}`}
+            strokeDashoffset={len}
+          >
+            <animate attributeName="stroke-dashoffset" values={trail(len)} {...timing} />
+          </path>
         ))}
-        {[-1, 0, 1].map((k) => (
-          <rect key={`b${k}`} x={k * 7 - 3.5} y={0} width={7} height={7} fill={k % 2 ? "#0a0b0d" : "#f2f2ee"} />
-        ))}
-      </g>
-      <path id={lineId} className="draw draw-2" pathLength={1} d={o.line} fill="none" stroke="#ff6a13" strokeWidth={3.2} strokeLinejoin="round" />
-      <g className="fade-late" fontFamily="Archivo Variable, Archivo, sans-serif" fontWeight={700} fontSize={24} fill="#9aa1ab" textAnchor="middle" dominantBaseline="central">
-        {o.corners.map(([n, x, y]) => (
-          <text key={n} x={x} y={y} style={{ fontStretch: "80%" }}>
-            {n}
-          </text>
-        ))}
-      </g>
       <g className="fade-late">
-        <g>
-          <rect x={-19} y={-8} width={38} height={16} fill="#ff6a13" stroke="#0a0b0d" strokeWidth={3.5} />
-          <rect x={5} y={-5} width={7} height={10} fill="#0a0b0d" />
+        <circle r={10} fill="#ff6a13" stroke="#0a0b0d" strokeWidth={4}>
           {!reduce && (
-            <animateMotion
-              dur={`${o.lapMs / PLAYBACK}ms`}
-              begin="2.4s"
-              repeatCount="indefinite"
-              rotate="auto"
-              calcMode="linear"
-              keyPoints={o.keyPoints}
-              keyTimes={o.keyTimes}
-            >
+            <animateMotion {...timing} keyPoints={o.keyPoints}>
               <mpath href={`#${lineId}`} />
             </animateMotion>
           )}
-        </g>
+        </circle>
       </g>
     </svg>
+  );
+}
+
+/** What the map is showing: the lap the player is hunting. */
+function PerfectLap({ o }: { o: Outline }) {
+  return (
+    <figcaption className="fade-in-late flex items-baseline justify-between gap-4 border-t border-line pt-3">
+      <span className="text-[13px] text-steel">The perfect lap, driven live</span>
+      <span className="wide num text-[15px] text-paint">{lapTime(o.lapMs)}</span>
+    </figcaption>
   );
 }
 
@@ -157,9 +172,12 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           </p>
 
           {/* the map sits inline on phones, beside the copy from lg */}
-          <div className="relative mt-2 aspect-square w-full max-w-[460px] self-center lg:hidden">
-            <HeroCircuit id={daily.trackId} o={o} />
-          </div>
+          <figure className="mt-4 w-full max-w-[460px] self-center lg:hidden">
+            <div className="h-[min(34vh,360px)] w-full">
+              <HeroCircuit id={daily.trackId} o={o} />
+            </div>
+            <PerfectLap o={o} />
+          </figure>
 
           <div className="rise mt-4 max-w-[440px] lg:mt-10" style={d(620)}>
             <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={cols} size="sm" />
@@ -181,10 +199,12 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           </div>
         </div>
 
-        <div className="relative hidden aspect-square max-h-[calc(100dvh-140px)] w-full justify-self-center lg:block">
-          <div aria-hidden="true" className="absolute inset-[6%] rounded-full bg-[radial-gradient(closest-side,rgba(38,42,49,0.5),transparent)]" />
-          <HeroCircuit id={daily.trackId} o={o} />
-        </div>
+        <figure className="hidden w-full max-w-[600px] justify-self-end lg:block">
+          <div className="aspect-square w-full p-[4%]">
+            <HeroCircuit id={daily.trackId} o={o} />
+          </div>
+          <PerfectLap o={o} />
+        </figure>
       </section>
 
       {/* perfect season */}
