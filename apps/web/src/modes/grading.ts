@@ -27,3 +27,14 @@ export interface GroupGrade {
   /** Race time (ms) at which the car leaves this group: when its tile reveals. */
   revealAtMs: number;
 }
+
+const GRADE_RANK: Record<Grade, number> = { purple: 0, green: 1, yellow: 2, red: 3 };
+
+/**
+ * Personal best per corner group across laps, F1 style: the best colour
+ * reached in each group on any lap (null before the first lap).
+ */
+export function bestPerGroup(laps: Grade[][]): Grade[] | null {
+  if (!laps.length) return null;
+  return laps[0].map((_, i) => laps.reduce<Grade>((b, l) => (l[i] && GRADE_RANK[l[i]] < GRADE_RANK[b] ? l[i] : b), laps[0][i]));
+}

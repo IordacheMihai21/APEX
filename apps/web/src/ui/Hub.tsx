@@ -3,7 +3,7 @@ import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES, type Outline } from "../game/outlines";
 import { DAILY_LAPS, bestMedal, dailyNumber, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
-import type { Grade } from "../modes/grading";
+import { type Grade, bestPerGroup } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
 import { ADS_ON, AdSlot } from "./Ads";
@@ -176,8 +176,11 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   const lapsLeft = DAILY_LAPS - daily.laps.length;
   const medal = bestMedal(daily);
   const next = nextMedal(daily.trackId, medal);
-  // the lap the map paints: today's fastest
+  // today's fastest lap (its time goes in the caption)
   const best = daily.laps.reduce<(typeof daily.laps)[number] | null>((b, l) => (!b || l.lapTimeMs < b.lapTimeMs ? l : b), null);
+  // the map paints each corner group in its personal best of the day, F1 style:
+  // the best colour reached there on any lap, not just the fastest lap's
+  const sectorBest = bestPerGroup(daily.laps.map((l) => l.grades));
   const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 
   return (
@@ -209,7 +212,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           {/* the map sits inline on phones, beside the copy from lg */}
           <figure className="mt-4 w-full max-w-[460px] self-center lg:hidden">
             <div className="h-[min(26vh,320px)] w-full">
-              <HeroCircuit id={daily.trackId} o={o} grades={best?.grades ?? null} />
+              <HeroCircuit id={daily.trackId} o={o} grades={sectorBest} />
             </div>
             <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} medal={medal} />
           </figure>
@@ -239,7 +242,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
 
         <figure className="hidden w-full max-w-[600px] justify-self-end lg:block">
           <div className="aspect-square w-full p-[4%]">
-            <HeroCircuit id={daily.trackId} o={o} grades={best?.grades ?? null} />
+            <HeroCircuit id={daily.trackId} o={o} grades={sectorBest} />
           </div>
           <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} medal={medal} />
         </figure>
