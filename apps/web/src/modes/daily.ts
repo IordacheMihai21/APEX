@@ -51,8 +51,41 @@ export function dailyNumber(key = dateKey()): number {
   return dayIndex(key) + 1;
 }
 
-/** Every circuit once per 12-day cycle, in a shuffled order that changes each cycle. */
+/**
+ * Real Grand Prix weekends at our circuits (2026 calendar; add each new season).
+ * On the Saturday (qualifying day) the daily moves to that circuit, and the hub
+ * says so through race week. Dates are the Friday-to-Sunday weekend.
+ */
+export const RACE_WEEKENDS: { trackId: string; from: string; to: string }[] = [
+  { trackId: "suzuka", from: "2026-03-27", to: "2026-03-29" },
+  { trackId: "monaco", from: "2026-06-05", to: "2026-06-07" },
+  { trackId: "barcelona", from: "2026-06-12", to: "2026-06-14" },
+  { trackId: "red-bull-ring", from: "2026-06-26", to: "2026-06-28" },
+  { trackId: "silverstone", from: "2026-07-03", to: "2026-07-05" },
+  { trackId: "spa", from: "2026-07-17", to: "2026-07-19" },
+  { trackId: "hungaroring", from: "2026-07-24", to: "2026-07-26" },
+  { trackId: "zandvoort", from: "2026-08-21", to: "2026-08-23" },
+  { trackId: "monza", from: "2026-09-04", to: "2026-09-06" },
+  { trackId: "austin", from: "2026-10-23", to: "2026-10-25" },
+  { trackId: "interlagos", from: "2026-11-06", to: "2026-11-08" },
+];
+
+const addDays = (key: string, n: number) => dateKey(new Date(Date.parse(`${key}T12:00:00`) + n * 86_400_000));
+
+/** The race weekend whose Saturday is `key`, if any. */
+export function qualifyingDay(key = dateKey()) {
+  return RACE_WEEKENDS.find((w) => addDays(w.from, 1) === key) ?? null;
+}
+
+/** A race weekend in the coming week (Monday before through Sunday), for the hub banner. */
+export function raceWeek(key = dateKey()) {
+  return RACE_WEEKENDS.find((w) => key >= addDays(w.from, -4) && key <= w.to) ?? null;
+}
+
+/** Every circuit once per 12-day cycle, in a shuffled order that changes each cycle; race-weekend Saturdays go to that circuit. */
 export function dailyTrack(key = dateKey()): string {
+  const special = qualifyingDay(key);
+  if (special) return special.trackId;
   const n = Math.max(0, dayIndex(key));
   const cycle = Math.floor(n / POOL.length);
   let seed = 0x9e3779b9 ^ (cycle * 2654435761);

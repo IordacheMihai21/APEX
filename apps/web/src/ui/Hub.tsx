@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES, type Outline } from "../game/outlines";
-import { DAILY_LAPS, bestMedal, dailyNumber, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
+import { DAILY_LAPS, bestMedal, dailyNumber, qualifyingDay, raceWeek, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
 import { type Grade, bestPerGroup } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
@@ -176,6 +176,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   const wins = run?.results.filter((r) => r === "W").length ?? 0;
   const losses = (run?.results.length ?? 0) - wins;
   const lapsLeft = DAILY_LAPS - daily.laps.length;
+  const week = raceWeek(today);
+  const quali = qualifyingDay(today);
+  const weekName = week ? CATALOG.find((t) => t.id === week.trackId)?.name : null;
   const medal = bestMedal(daily);
   const next = nextMedal(daily.trackId, medal);
   // today's fastest lap (its time goes in the caption)
@@ -187,6 +190,19 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
 
   return (
     <div className="hub relative h-full overflow-x-hidden overflow-y-auto">
+      {week && (
+        <p className="border-b border-line bg-board px-4 py-2 text-center text-[13px] text-paint/90">
+          {quali ? (
+            <>
+              <span className="font-semibold text-ink">Qualifying day at {weekName}.</span> Today's Daily Quali is on the race-weekend circuit.
+            </>
+          ) : (
+            <>
+              <span className="font-semibold text-ink">Race week:</span> {weekName} hosts its Grand Prix this weekend. Saturday's Daily Quali is there.
+            </>
+          )}
+        </p>
+      )}
       {/* today's circuit */}
       <section
         aria-labelledby="daily-h"
@@ -203,6 +219,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
 
           <p className="rise mt-8 text-[15px] font-semibold text-ink lg:mt-12" style={d(250)}>
             Daily Quali No. {dailyNumber()}
+            {quali ? ", race-weekend special" : ""}
           </p>
           <h1 id="daily-h" className="reveal-up wide mt-2 pb-1 text-[clamp(36px,12.5cqw,84px)] [overflow-wrap:anywhere] leading-[0.95] text-paint" style={d(320)}>
             <span>{info.name}</span>
