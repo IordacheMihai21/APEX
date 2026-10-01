@@ -900,6 +900,31 @@ export class Game {
     return { why, hint };
   }
 
+  /**
+   * Speed against distance for the last lap and the perfect lap, downsampled
+   * for a chart, with each corner group's position for labels.
+   */
+  speedTrace(points = 260): { lengthM: number; at: number[]; mine: number[]; perfect: number[]; groups: { name: string; at: number }[] } | null {
+    const sim = this.sim;
+    if (!sim) return null;
+    const { n, s } = this.pt;
+    const lengthM = s[n - 1] + this.pt.step;
+    const at: number[] = [];
+    const mine: number[] = [];
+    const perfect: number[] = [];
+    for (let k = 0; k < points; k++) {
+      const i = Math.min(n - 1, Math.round((k / (points - 1)) * (n - 1)));
+      at.push(s[i]);
+      mine.push(sim.samples.speed[i] * 3.6);
+      perfect.push(this.reference.samples.speed[i] * 3.6);
+    }
+    const groups = this.controls.complexes.map((cx) => {
+      const apex = cx.gates.find((g) => g.label === "Apex") ?? cx.gates[0];
+      return { name: cx.name, at: s[apex.index] };
+    });
+    return { lengthM, at, mine, perfect, groups };
+  }
+
   /** The line as it stands (after a race: the line just raced), for "Beat my lap" links. */
   currentKnots(): number[] {
     return this.z.slice();

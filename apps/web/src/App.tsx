@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { setSoundEnabled, soundEnabled } from "./game/audio";
 import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
@@ -25,6 +25,7 @@ import { type HubAction, Hub } from "./ui/Hub";
 import { LapGrid } from "./ui/LapGrid";
 import { ADS_ON, AdSlot } from "./ui/Ads";
 import { RaceHud, SectorCells } from "./ui/RaceHud";
+import { SpeedTrace } from "./ui/SpeedTrace";
 import { MedalRow } from "./ui/Medals";
 import { MEDAL_NAME, medalFor, realPole } from "./modes/medals";
 import { challengeUrl, decodeChallenge } from "./modes/challenge";
@@ -726,6 +727,7 @@ function ResultSheet({
 
   const lapMedal = medalFor(game.track.id, r.lapTimeMs, r.grades.map((g) => g.grade));
   const pole = realPole(game.track.id);
+  const trace = useMemo(() => game.speedTrace(), [game, r]);
   const vsRival = s.mode === "season" && s.rivalMs !== null ? r.lapTimeMs - s.rivalMs : null;
   const pbDelta = r.pbBeforeMs === null ? null : r.lapTimeMs - r.pbBeforeMs;
 
@@ -780,6 +782,7 @@ function ResultSheet({
         <div className="mt-2.5">
           <LapGrid rows={lapRows} total={total} cols={names.length} labels={names} revealLast />
         </div>
+        {trace && <SpeedTrace data={trace} />}
         {!s.locked && worst.length > 0 && (
           <ul className="mt-3 border-t border-line" aria-label="Where the time went">
             {worst.map((l) => (
