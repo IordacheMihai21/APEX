@@ -6,6 +6,7 @@ import { DAILY_LAPS, bestMedal, dailyNumber, dailyStats, dateKey, loadDaily, msT
 import type { Grade } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
+import { ADS_ON, AdSlot } from "./Ads";
 import { Gantry } from "./Gantry";
 import { MedalDisc, MedalLadder } from "./Medals";
 import { lapTime } from "./format";
@@ -186,7 +187,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
         aria-labelledby="daily-h"
         className="relative mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1fr)] gap-x-10 px-4 pt-5 pb-10 md:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-center lg:pt-10 lg:pb-14"
       >
-        <div className="relative z-[1] flex flex-col">
+        <div className="@container relative z-[1] flex flex-col">
           <div className="rise flex items-center gap-4" style={d(0)}>
             <Gantry lit={lit} size="sm" sequence label={`Next Daily Quali in ${hms(left)}`} />
             <div className="leading-tight">
@@ -198,7 +199,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           <p className="rise mt-8 text-[15px] font-semibold text-ink lg:mt-12" style={d(250)}>
             Daily Quali No. {dailyNumber()}
           </p>
-          <h1 id="daily-h" className="reveal-up wide mt-2 pb-1 text-[clamp(44px,6vw,84px)] leading-[0.95] text-paint" style={d(320)}>
+          <h1 id="daily-h" className="reveal-up wide mt-2 pb-1 text-[clamp(36px,12.5cqw,84px)] [overflow-wrap:anywhere] leading-[0.95] text-paint" style={d(320)}>
             <span>{info.name}</span>
           </h1>
           <p className="rise mt-2 text-[15px] text-steel" style={d(480)}>
@@ -296,6 +297,13 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           </ol>
         </div>
       </section>
+
+      {/* one in-content ad on phones and tablets; wide screens have the side rails */}
+      {ADS_ON && (
+        <div className="flex justify-center border-t border-line py-8 xl:hidden">
+          <AdSlot kind="inline" />
+        </div>
+      )}
 
       {/* free practice */}
       <section aria-labelledby="practice-h" className="border-t border-line">

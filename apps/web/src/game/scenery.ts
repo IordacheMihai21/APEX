@@ -173,6 +173,9 @@ export class Scenery {
   private readonly grid = new Path2D();
   private readonly tecRed = new Path2D();
   private readonly tecBlue = new Path2D();
+  private readonly tecTop = new Path2D();
+  private readonly railPosts = new Path2D();
+  private readonly joints = new Path2D();
   private readonly posts = new Path2D();
   private readonly marshals = new Path2D();
   private readonly flags = new Path2D();
@@ -355,6 +358,19 @@ export class Scenery {
         if (pen) this.barriers.lineTo(x, y);
         else this.barriers.moveTo(x, y);
         pen = true;
+        // guardrail posts every 2.5 m; on street circuits, joints between the 5 m concrete segments
+        const every = street ? m(5) : m(2.5);
+        if (i % Math.max(1, every) === 0) {
+          if (street) {
+            const [ax, ay] = this.at(i, d - side * 0.45);
+            const [bx, by] = this.at(i, d + side * 0.45);
+            this.joints.moveTo(ax, ay);
+            this.joints.lineTo(bx, by);
+          } else {
+            const [px2, py2] = this.at(i, d + side * 0.15);
+            this.railPosts.rect(px2 - 0.09, py2 - 0.09, 0.18, 0.18);
+          }
+        }
       }
       // energy-absorbing barrier in front of the rail where cars arrive fast: TecPro blocks,
       // alternating red and blue, behind every gravel trap (and at slow street corners)
@@ -370,6 +386,11 @@ export class Scenery {
         const path = k % 2 ? this.tecBlue : this.tecRed;
         q.forEach(([x, y], z) => (z ? path.lineTo(x, y) : path.moveTo(x, y)));
         path.closePath();
+        // the block's top face catches the light along its track-side edge
+        const h0 = this.at(i, side * (d0 + 0.12));
+        const h1 = this.at(i + block - 0.2, side * (d0 + 0.12));
+        this.tecTop.moveTo(h0[0], h0[1]);
+        this.tecTop.lineTo(h1[0], h1[1]);
       }
       // catch-fence posts every 6 m along the rail
       for (let i = 0; i < n; i += Math.max(1, m(6))) {
@@ -498,8 +519,26 @@ export class Scenery {
       ctx.lineWidth = Math.max(1.4, 3 * px);
       ctx.stroke(this.barriers);
       ctx.strokeStyle = street ? PALETTE.wall : PALETTE.barrier;
-      ctx.lineWidth = Math.max(street ? 1.1 : 0.45, 1.2 * px);
+      ctx.lineWidth = Math.max(street ? 0.9 : 0.4, 1.2 * px);
       ctx.stroke(this.barriers);
+      if (detailed) {
+        if (street) {
+          // concrete: a lit top, and the joints between segments
+          ctx.strokeStyle = "rgba(235,237,240,0.55)";
+          ctx.lineWidth = 0.25;
+          ctx.stroke(this.barriers);
+          ctx.strokeStyle = "rgba(40,44,48,0.7)";
+          ctx.lineWidth = 0.12;
+          ctx.stroke(this.joints);
+        } else {
+          // guardrail: the W-profile reads as a bright edge over a darker band, on posts
+          ctx.strokeStyle = "#7d838a";
+          ctx.lineWidth = 0.16;
+          ctx.stroke(this.barriers);
+          ctx.fillStyle = "#3b4046";
+          ctx.fill(this.railPosts);
+        }
+      }
       if (detailed) {
         // catch fence: the mesh reads as a faint line just behind the rail, its posts as dots
         ctx.save();
@@ -514,6 +553,9 @@ export class Scenery {
         ctx.fill(this.tecRed);
         ctx.fillStyle = PALETTE.tecproBlue;
         ctx.fill(this.tecBlue);
+        ctx.strokeStyle = "rgba(255,255,255,0.35)";
+        ctx.lineWidth = 0.14;
+        ctx.stroke(this.tecTop);
         ctx.fillStyle = "rgba(0,0,0,0.35)";
         ctx.save();
         ctx.translate(0.8, -0.8);

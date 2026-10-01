@@ -1,3 +1,4 @@
+import { Buildings } from "./buildings";
 import { canvas, hex, noiseTexture, rng } from "./scenery";
 
 /**
@@ -83,26 +84,58 @@ function inside(flat: number[], x: number, y: number): boolean {
   return c;
 }
 
-/** Tree-top texture: overlapping soft crowns, for woods seen from above. */
+/**
+ * Woodland seen from above: irregular crowns built from leaf clusters, each lit
+ * from the north-west with its own shadow on the south-east, dark gaps between
+ * trees, and a spread of greens so it never repeats as identical bubbles.
+ */
 function canopyTexture(): HTMLCanvasElement {
-  const [c, ctx] = canvas(256);
-  ctx.fillStyle = LAND.wood;
-  ctx.fillRect(0, 0, 256, 256);
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  ctx.fillStyle = "#132514";
+  ctx.fillRect(0, 0, S, S);
   const r = rng(21);
-  const greens = ["#18301a", "#244423", "#2b4d27", "#1d3a1e", "#335a2c"];
-  for (let k = 0; k < 340; k++) {
-    const x = r() * 256;
-    const y = r() * 256;
-    const rad = 7 + r() * 11;
-    for (const [ox, oy] of [[0, 0], [256, 0], [-256, 0], [0, 256], [0, -256]]) {
-      const g = ctx.createRadialGradient(x + ox - rad * 0.3, y + oy - rad * 0.3, rad * 0.1, x + ox, y + oy, rad);
-      g.addColorStop(0, greens[4]);
-      g.addColorStop(0.6, greens[Math.floor(r() * 4)]);
-      g.addColorStop(1, "rgba(10,20,10,0)");
-      ctx.fillStyle = g;
+  const greens: [number, number, number][] = [
+    [34, 62, 30],
+    [42, 72, 34],
+    [30, 56, 32],
+    [50, 78, 38],
+    [38, 60, 28],
+    [46, 70, 44],
+  ];
+  const wrap = (x: number, y: number, rad: number, draw: (x: number, y: number) => void) => {
+    for (const ox of [0, S, -S]) for (const oy of [0, S, -S]) if (x + ox > -rad && x + ox < S + rad && y + oy > -rad && y + oy < S + rad) draw(x + ox, y + oy);
+  };
+  for (let k = 0; k < 520; k++) {
+    const x = r() * S;
+    const y = r() * S;
+    const R = 9 + r() * 13;
+    const [gr, gg, gb] = greens[Math.floor(r() * greens.length)];
+    // crown shadow, south-east
+    wrap(x, y, R * 1.6, (cx, cy) => {
+      ctx.fillStyle = "rgba(4,10,5,0.45)";
       ctx.beginPath();
-      ctx.arc(x + ox, y + oy, rad, 0, Math.PI * 2);
+      ctx.arc(cx + R * 0.35, cy + R * 0.35, R * 0.95, 0, Math.PI * 2);
       ctx.fill();
+    });
+    // the crown: 5-8 leaf clusters around the centre
+    const n = 5 + Math.floor(r() * 4);
+    for (let j = 0; j < n; j++) {
+      const a = r() * Math.PI * 2;
+      const d = R * (0.15 + r() * 0.45);
+      const lx = x + Math.cos(a) * d;
+      const ly = y + Math.sin(a) * d;
+      const lr = R * (0.38 + r() * 0.25);
+      wrap(lx, ly, lr, (cx, cy) => {
+        const g = ctx.createRadialGradient(cx - lr * 0.4, cy - lr * 0.4, lr * 0.05, cx, cy, lr);
+        g.addColorStop(0, `rgb(${gr * 1.45},${gg * 1.4},${gb * 1.3})`);
+        g.addColorStop(0.55, `rgb(${gr},${gg},${gb})`);
+        g.addColorStop(1, `rgba(${gr * 0.6},${gg * 0.6},${gb * 0.6},0.9)`);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(cx, cy, lr, 0, Math.PI * 2);
+        ctx.fill();
+      });
     }
   }
   return c;
@@ -115,18 +148,12 @@ export class Surroundings {
   private readonly rail = new Path2D();
   private readonly raceway = new Path2D();
   private readonly pitlane = new Path2D();
-  private readonly shadows = new Path2D();
-  private readonly roofs: { color: string; path: Path2D }[] = [];
-  private readonly stands = new Path2D();
-  private readonly pits = new Path2D();
-  private readonly treeShadow = new Path2D();
-  private readonly trees: Path2D[] = [new Path2D(), new Path2D(), new Path2D()];
-  private readonly treeLight = new Path2D();
+  private readonly buildings: Buildings;
   private readonly yachts = new Path2D();
   private readonly yachtDecks = new Path2D();
   private hasYachts = false;
   private readonly landmarks: SceneryData["landmarks"];
-  private tex: { canopy: CanvasPattern; water: CanvasPattern; sand: CanvasPattern; seats: CanvasPattern } | null = null;
+  private tex: { canopy: CanvasPattern; water: CanvasPattern; sand: CanvasPattern } | null = null;
 
   constructor(
     data: SceneryData,
@@ -150,31 +177,8 @@ export class Surroundings {
     for (const r of data.rail) linePath(this.rail, r);
     for (const r of data.raceway) linePath(r.pit ? this.pitlane : this.raceway, r.p);
 
-    // buildings: shadow (offset by height), then roof colour buckets
     const palette = ROOFS[TILE_ROOFS.has(trackId) ? "tile" : "slate"];
-    const buckets = palette.map(() => new Path2D());
-    const rand = rng(7);
-    for (const b of data.buildings) {
-      ringPath(this.shadows, b.p, SHADOW.dx * b.h, SHADOW.dy * b.h);
-      if (b.k === "stand") ringPath(this.stands, b.p);
-      else if (b.k === "pits") ringPath(this.pits, b.p);
-      else ringPath(buckets[Math.floor(rand() * palette.length)], b.p);
-    }
-    palette.forEach((color, i) => this.roofs.push({ color, path: buckets[i] }));
-
-    // single trees: three shades, a crown highlight, and a shadow
-    for (let i = 0; i < data.trees.length; i += 2) {
-      const x = data.trees[i];
-      const y = data.trees[i + 1];
-      const r = 2.8 + rand() * 2.4;
-      this.treeShadow.moveTo(x + r * 0.9 + r, y - r * 0.9);
-      this.treeShadow.arc(x + r * 0.9, y - r * 0.9, r, 0, Math.PI * 2);
-      const t = this.trees[Math.floor(rand() * 3)];
-      t.moveTo(x + r, y);
-      t.arc(x, y, r, 0, Math.PI * 2);
-      this.treeLight.moveTo(x - r * 0.25 + r * 0.45, y + r * 0.25);
-      this.treeLight.arc(x - r * 0.25, y + r * 0.25, r * 0.45, 0, Math.PI * 2);
-    }
+    this.buildings = new Buildings(data.buildings, data.trees, palette, centerline);
 
     // Monaco: yachts moored in the harbour water near the circuit
     if (trackId === "monaco") this.placeYachts(data, centerline);
@@ -260,15 +264,7 @@ export class Surroundings {
     };
     const water = noiseTexture(256, hex(LAND.water), 6, { rate: 0.01, light: 14, dark: 6 }, 31);
     const sand = noiseTexture(256, hex(LAND.sand), 14, { rate: 0.05, light: 18, dark: 16 }, 32);
-    // grandstand seat rows: light rows on a dark tier, seen from above
-    const [seats, sctx] = canvas(16);
-    sctx.fillStyle = "#2f3a48";
-    sctx.fillRect(0, 0, 16, 16);
-    sctx.fillStyle = "#6f86a3";
-    sctx.fillRect(0, 0, 16, 5);
-    sctx.fillStyle = "#4c5f78";
-    sctx.fillRect(0, 8, 16, 5);
-    this.tex = { canopy: pattern(canopyTexture(), 70), water: pattern(water, 40), sand: pattern(sand, 12), seats: pattern(seats, 1.8) };
+    this.tex = { canopy: pattern(canopyTexture(), 110), water: pattern(water, 40), sand: pattern(sand, 12) };
     return this.tex;
   }
 
@@ -345,37 +341,8 @@ export class Surroundings {
       ctx.fill(this.yachtDecks);
     }
 
-    // buildings: soft shadow, then roofs; grandstands show their seat rows
-    ctx.fillStyle = "rgba(6,8,10,0.38)";
-    ctx.fill(this.shadows);
-    for (const r of this.roofs) {
-      ctx.fillStyle = r.color;
-      ctx.fill(r.path);
-    }
-    ctx.fillStyle = "#c4c7cb";
-    ctx.fill(this.pits);
-    ctx.fillStyle = detailed ? t.seats : "#4c5f78";
-    ctx.fill(this.stands);
-    if (detailed) {
-      ctx.strokeStyle = "rgba(0,0,0,0.35)";
-      ctx.lineWidth = Math.max(0.25, 0.8 * px);
-      for (const r of this.roofs) ctx.stroke(r.path);
-      ctx.stroke(this.stands);
-    }
-
-    // single trees
-    if (px < 2.5) {
-      ctx.fillStyle = "rgba(6,10,6,0.4)";
-      ctx.fill(this.treeShadow);
-      ["#25451f", "#2f5327", "#38602d"].forEach((c, i) => {
-        ctx.fillStyle = c;
-        ctx.fill(this.trees[i]);
-      });
-      if (detailed) {
-        ctx.fillStyle = "rgba(120,170,90,0.22)";
-        ctx.fill(this.treeLight);
-      }
-    }
+    this.buildings.draw(ctx, px);
+    this.buildings.drawTrees(ctx, px);
   }
 
   /** Landmarks stand tall, so they're drawn after the run-off and barriers. */

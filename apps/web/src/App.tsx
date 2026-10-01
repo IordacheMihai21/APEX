@@ -23,6 +23,7 @@ import { CornerTower } from "./ui/CornerTower";
 import { GateSlider } from "./ui/GateSlider";
 import { type HubAction, Hub } from "./ui/Hub";
 import { LapGrid } from "./ui/LapGrid";
+import { ADS_ON, AdSlot } from "./ui/Ads";
 import { RaceHud } from "./ui/RaceHud";
 import { MedalRow } from "./ui/Medals";
 import { MEDAL_NAME, medalFor } from "./modes/medals";
@@ -120,6 +121,12 @@ export function App() {
         </button>
       </header>
 
+      <div className={`grid min-h-0 grid-cols-[minmax(0,1fr)] ${ADS_ON ? "xl:grid-cols-[176px_minmax(0,1fr)_176px] 2xl:grid-cols-[316px_minmax(0,1fr)_316px]" : ""}`}>
+      {ADS_ON && (
+        <aside aria-label="Advertisement" className="hidden min-h-0 border-r border-line bg-night px-2 xl:flex xl:items-center">
+          <AdSlot kind="rail" className="w-full" />
+        </aside>
+      )}
       <main className="relative min-h-0 [view-transition-name:stage]">
         {screen.kind === "hub" ? (
           <Hub onAction={act} />
@@ -133,6 +140,12 @@ export function App() {
           />
         )}
       </main>
+      {ADS_ON && (
+        <aside aria-label="Advertisement" className="hidden min-h-0 border-l border-line bg-night px-2 xl:flex xl:items-center">
+          <AdSlot kind="rail" className="w-full" />
+        </aside>
+      )}
+      </div>
 
       {picking && (
         <TrackPicker

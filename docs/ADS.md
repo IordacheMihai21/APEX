@@ -1,0 +1,41 @@
+# Ads (Google AdSense)
+
+APEX is built to carry display ads the way daily-game sites such as
+playfootball.games and futbol11 do: around the game, never in it.
+
+## Placements
+
+| Slot | Where | Size | When |
+|---|---|---|---|
+| `rail` (left and right) | Sticky side columns beside the hub and the circuit | 160×600 from 1280 px wide, 300×600 from 1536 px | Desktop only |
+| `inline` | Hub, between Perfect Season and Free Practice | 300×250 | Phones and tablets (below 1280 px) |
+
+Rules the layout keeps:
+
+- **No ads near controls.** Nothing sits beside the setup bar, the race HUD or
+  the result sheet. Ads next to game buttons invite accidental clicks, which is
+  against AdSense policy and a bad experience. The side rails are separate grid
+  columns, so the circuit and its controls never overlap them.
+- **Space is reserved** at a fixed size, so loading an ad never shifts the
+  layout (CLS).
+- **Every slot is labelled "Advertisement".**
+- **No ads during a lap** and no interstitials.
+
+## Setup
+
+1. Apply for AdSense with the production domain and get approved.
+2. Create two display ad units (a vertical one for the rails, a 300×250 for the
+   inline slot) and note their slot ids.
+3. Set the env vars for the production build (see `apps/web/.env.example`):
+   `VITE_ADSENSE_CLIENT=ca-pub-…`, `VITE_ADSENSE_SLOT_RAIL`, `VITE_ADSENSE_SLOT_INLINE`.
+4. Add `apps/web/public/ads.txt` with the line AdSense gives you
+   (`google.com, pub-…, DIRECT, f08c47fec0942fa0`).
+5. **Consent.** Serving ads to users in the EEA, UK and Switzerland requires a
+   Google-certified consent management platform (CMP). The simplest is
+   AdSense's own "Privacy & messaging" GDPR message; turn it on in the AdSense
+   dashboard before launch. US state privacy messages can be enabled there too.
+6. Update the privacy policy to mention advertising cookies.
+
+Without `VITE_ADSENSE_CLIENT`, production builds lay out no ad space at all.
+In development (or with `?ads=preview`) the slots render as labelled
+placeholders so the layout can be designed around them.
