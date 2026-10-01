@@ -22,7 +22,7 @@ import { CATALOG } from "./catalog";
 import { Scenery } from "./scenery";
 import type { SceneryData } from "./surroundings";
 import { C, lossColor } from "./palette";
-import { type PersonalBest, loadPB, logEvent, savePB } from "./storage";
+import { type PersonalBest, loadPB, loadSectorBests, logEvent, savePB, saveSectorBests } from "./storage";
 import { type Grade, type GroupGrade, gradeFor } from "../modes/grading";
 import { type DriveState, driveState } from "./drive";
 import { engine, soundEnabled } from "./audio";
@@ -74,6 +74,18 @@ export interface RunResult {
   allPurple: boolean;
 }
 
+/** F1 sector colours: purple = the perfect lap's sector (within 0.05 s), green = personal best, yellow = slower. */
+export type SectorTone = "purple" | "green" | "yellow";
+
+export interface SectorTime {
+  ms: number;
+  tone: SectorTone;
+  /** race time at which the car crosses the sector line */
+  doneAtMs: number;
+  /** gap to the perfect lap's sector */
+  deltaMs: number;
+}
+
 export interface Snapshot {
   phase: Phase;
   complex: number;
@@ -104,6 +116,8 @@ export interface Snapshot {
   paceLabel: string;
   /** The challenger's lap time when racing a "Beat my lap" link, else null. */
   challengeMs: number | null;
+  /** Sector times completed so far this lap (all three on the result). */
+  sectors: SectorTime[];
   drive: DriveState;
   lapsUsed: number;
   lapLimit: number | null;
@@ -277,6 +291,12 @@ export class Game {
       liveDeltaMs: liveDelta,
       paceLabel: this.pace.label,
       challengeMs: this.challengeMs,
+      sectors:
+        this.sectorPlan && (this.phase === "race" || this.phase === "result")
+          ? this.phase === "result"
+            ? this.sectorPlan
+            : this.sectorPlan.filter((x) => x.doneAtMs <= this.raceT)
+          : [],
       drive: driveState(this.phase === "lights" ? 0 : speed),
       lapsUsed: this.lapsUsed,
       lapLimit: this.opts.lapLimit,
@@ -574,6 +594,7 @@ export class Game {
     if (this.locked || (this.opts.lapLimit !== null && this.lapsUsed >= this.opts.lapLimit)) return;
     this.sim = sim;
     this.grades = this.computeGrades(sim);
+    this.sectorPlan = this.planSectors(sim);
     this.pace = this.paceTarget();
     this.raceT = 0;
     this.phase = "lights";
@@ -622,6 +643,20 @@ export class Game {
     return { x: sim.samples.x[lo], y: sim.samples.y[lo] };
   }
 
+  private sectorPlan: SectorTime[] | null = null;
+
+  /** Sector times for this lap, coloured against the perfect lap and your bests before it. */
+  private planSectors(sim: SimulationResult): SectorTime[] {
+    const bests = loadSectorBests(this.track.id, this.track.version);
+    const last = sim.sectors.length - 1;
+    return sim.sectors.map((sec, k) => {
+      const deltaMs = sec.timeMs - (this.reference.sectors[k]?.timeMs ?? sec.timeMs);
+      const tone: SectorTone = deltaMs <= 50 ? "purple" : !bests || sec.timeMs < bests[k] ? "green" : "yellow";
+      const doneAtMs = k === last || sec.endIndex <= sec.startIndex ? sim.rawLapTimeMs : sim.samples.elapsedMs[sec.endIndex];
+      return { ms: sec.timeMs, tone, doneAtMs, deltaMs };
+    });
+  }
+
   /** Per corner group: time lost vs the perfect lap, its colour, and when its tile reveals. */
   private computeGrades(sim: SimulationResult): GroupGrade[] {
     const cmp = compareRuns(sim, this.reference).corners;
@@ -652,6 +687,12 @@ export class Game {
 
   private finishRace() {
     const sim = this.sim!;
+    const before = loadSectorBests(this.track.id, this.track.version);
+    saveSectorBests(
+      this.track.id,
+      this.track.version,
+      sim.sectors.map((sec, k) => Math.min(sec.timeMs, before?.[k] ?? Infinity)),
+    );
     this.raceT = sim.rawLapTimeMs;
     const cmp = compareRuns(sim, this.reference);
     const pbBefore = this.pb?.lapTimeMs ?? null;

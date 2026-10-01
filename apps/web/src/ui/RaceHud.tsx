@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { REV_LEDS } from "../game/drive";
-import type { Snapshot } from "../game/game";
+import type { SectorTime, SectorTone, Snapshot } from "../game/game";
 import type { Grade, GroupGrade } from "../modes/grading";
 import { Gantry } from "./Gantry";
 import { Segments } from "./Segments";
@@ -54,6 +54,35 @@ function useSplit(s: Snapshot) {
   return s.phase === "race" ? split : null;
 }
 
+const SECTOR_BG: Record<SectorTone, string> = { purple: "bg-purple", green: "bg-green", yellow: "bg-yellow" };
+const SECTOR_TEXT: Record<SectorTone, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow" };
+
+/**
+ * S1 / S2 / S3 as the broadcast shows them: an empty cell until the car
+ * crosses the sector line, then the sector time over a bar in its colour
+ * (purple = the perfect lap's, green = personal best, yellow = slower).
+ */
+export function SectorCells({ sectors, large = false }: { sectors: SectorTime[]; large?: boolean }) {
+  return (
+    <div className={`grid grid-cols-3 ${large ? "gap-2" : "border-t border-line"}`}>
+      {[0, 1, 2].map((k) => {
+        const x = sectors[k];
+        return (
+          <div key={k} className={`${large ? "" : "border-r border-line last:border-r-0"} px-1.5 pt-1 pb-1.5`}>
+            <span className={`block h-[3px] ${x ? `sector-in ${SECTOR_BG[x.tone]}` : "bg-graphite"}`} />
+            <span className="mt-1 flex items-baseline justify-between gap-1">
+              <span className="text-[11px] font-bold text-steel [font-stretch:80%]">S{k + 1}</span>
+              <span className={`num font-bold ${large ? "text-[14px]" : "hidden text-[11px] min-[720px]:inline"} ${x ? SECTOR_TEXT[x.tone] : "text-steel/40"}`}>
+                {x ? (x.ms / 1000).toFixed(large ? 3 : 2) : "-"}
+              </span>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
   const [lightsOut, setLightsOut] = useState(false);
   const split = useSplit(s);
@@ -75,40 +104,42 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
 
   return (
     <>
-      {/* lap clock, top right: the broadcast's timing box */}
-      <div className="pointer-events-none absolute top-2 right-2 w-[148px] border border-line bg-night/88 min-[720px]:w-[188px]">
-        <div className="label flex justify-between border-b border-line px-2 py-1.5">
-          <span className="text-paint">
-            Lap {s.lapsUsed + 1}
-            {s.lapLimit !== null ? `/${s.lapLimit}` : ""}
-          </span>
-          <span>×4</span>
+      {/* top right, stacked: the lap clock with its sector cells, then the split for the group just cleared */}
+      <div className="pointer-events-none absolute top-2 right-2 flex w-[148px] flex-col gap-1.5 min-[720px]:w-[188px]">
+        <div className="border border-line bg-night/88">
+          <div className="label flex justify-between border-b border-line px-2 py-1.5">
+            <span className="text-paint">
+              Lap {s.lapsUsed + 1}
+              {s.lapLimit !== null ? `/${s.lapLimit}` : ""}
+            </span>
+            <span>×4</span>
+          </div>
+          <div className="px-2 pt-1.5 pb-2">
+            <div className="wide num text-[20px] leading-none text-paint min-[720px]:text-[26px]">{lapTime(s.raceTimeMs)}</div>
+            <div className="mt-1.5 flex items-baseline justify-between">
+              <span className="label">To {s.paceLabel}</span>
+              <span className={`num text-[14px] font-bold ${d <= 0 ? "text-green" : "text-paint"}`}>
+                {d >= 0 ? "+" : "−"}
+                {(Math.abs(d) / 1000).toFixed(2)}
+              </span>
+            </div>
+          </div>
+          <SectorCells sectors={s.sectors} />
         </div>
-        <div className="px-2 pt-1.5 pb-2">
-          <div className="wide num text-[20px] leading-none text-paint min-[720px]:text-[26px]">{lapTime(s.raceTimeMs)}</div>
-          <div className="mt-1.5 flex items-baseline justify-between">
-            <span className="label">To {s.paceLabel}</span>
-            <span className={`num text-[14px] font-bold ${d <= 0 ? "text-green" : "text-paint"}`}>
-              {d >= 0 ? "+" : "−"}
-              {(Math.abs(d) / 1000).toFixed(2)}
+
+        {split && (
+          <div key={split.name} className="split-in flex items-stretch border border-line bg-night/90">
+            <span className={`w-[4px] shrink-0 ${SPLIT_BAR[split.grade]}`} />
+            <span className="flex flex-1 items-baseline justify-between gap-2 px-2 py-1.5">
+              <span className="text-[13px] font-bold text-paint [font-stretch:85%]">{split.name}</span>
+              <span className={`num text-[14px] font-bold ${SPLIT_TEXT[split.grade]}`}>
+                {split.deltaMs >= 0 ? "+" : "−"}
+                {(Math.abs(split.deltaMs) / 1000).toFixed(3)}
+              </span>
             </span>
           </div>
-        </div>
+        )}
       </div>
-
-      {/* split for the corner group just cleared */}
-      {split && (
-        <div key={split.name} className="split-in pointer-events-none absolute top-[106px] right-2 flex w-[148px] items-stretch border border-line bg-night/90 min-[720px]:top-[118px] min-[720px]:w-[188px]">
-          <span className={`w-[4px] shrink-0 ${SPLIT_BAR[split.grade]}`} />
-          <span className="flex flex-1 items-baseline justify-between gap-2 px-2 py-1.5">
-            <span className="text-[13px] font-bold text-paint [font-stretch:85%]">{split.name}</span>
-            <span className={`num text-[14px] font-bold ${SPLIT_TEXT[split.grade]}`}>
-              {split.deltaMs >= 0 ? "+" : "−"}
-              {(Math.abs(split.deltaMs) / 1000).toFixed(3)}
-            </span>
-          </span>
-        </div>
-      )}
 
       {/* start lights */}
       {(s.phase === "lights" || lightsOut) && (

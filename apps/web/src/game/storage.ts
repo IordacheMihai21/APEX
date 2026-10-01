@@ -38,3 +38,23 @@ export function logEvent(name: string, data: Record<string, unknown> = {}) {
     /* ignore */
   }
 }
+
+/** Best time (ms) in each of the three sectors on a circuit, from any lap. */
+const sectorKey = (trackId: string, version: number) => `apex.sectors.${trackId}.v${version}.p${PHYSICS_VERSION}`;
+
+export function loadSectorBests(trackId: string, version: number): number[] | null {
+  try {
+    const raw = localStorage.getItem(sectorKey(trackId, version));
+    return raw ? (JSON.parse(raw) as number[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveSectorBests(trackId: string, version: number, bests: number[]) {
+  try {
+    localStorage.setItem(sectorKey(trackId, version), JSON.stringify(bests));
+  } catch {
+    /* storage unavailable: sector bests just don't persist */
+  }
+}

@@ -445,6 +445,17 @@ canvas {
   animation: split-in 240ms var(--ease-out) both;
 }
 
+/* A sector bar fills from the left as the car crosses the line. */
+@keyframes sector-in {
+  from {
+    transform: scaleX(0);
+  }
+}
+.sector-in {
+  transform-origin: left;
+  animation: sector-in 320ms var(--ease-out) both;
+}
+
 /* "Lights out" lands like a broadcast slam: big, blurred, then sharp. */
 @keyframes slam {
   0% {
@@ -513,6 +524,7 @@ canvas {
   .slam,
   .medal-stamp,
   .split-in,
+  .sector-in,
   .hero-map .draw-1,
   .hero-map .draw-2,
   .hero-map .fade-late,

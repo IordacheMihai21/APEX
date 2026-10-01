@@ -24,7 +24,7 @@ import { GateSlider } from "./ui/GateSlider";
 import { type HubAction, Hub } from "./ui/Hub";
 import { LapGrid } from "./ui/LapGrid";
 import { ADS_ON, AdSlot } from "./ui/Ads";
-import { RaceHud } from "./ui/RaceHud";
+import { RaceHud, SectorCells } from "./ui/RaceHud";
 import { MedalRow } from "./ui/Medals";
 import { MEDAL_NAME, medalFor } from "./modes/medals";
 import { challengeUrl, decodeChallenge } from "./modes/challenge";
@@ -720,6 +720,10 @@ function ResultSheet({
         </div>
         <div className="mt-2">
           <MedalRow trackId={game.track.id} medal={lapMedal} lapTimeMs={r.lapTimeMs} stamp={!!lapMedal && r.newPb} />
+          <div className="border-t border-line pt-2 pb-1">
+            <SectorCells sectors={s.sectors} large />
+            <p className="caption mt-1">Purple: the perfect lap's sector. Green: your best.</p>
+          </div>
           {s.challengeMs !== null && (
             <TimingLine label={`Challenge ${lapTime(s.challengeMs)}`} value={delta(r.lapTimeMs - s.challengeMs)} tone={r.lapTimeMs < s.challengeMs ? "text-ink" : "text-paint"} />
           )}
