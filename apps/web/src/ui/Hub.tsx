@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES, type Outline } from "../game/outlines";
-import { DAILY_LAPS, dailyNumber, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
+import { DAILY_LAPS, bestMedal, dailyNumber, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
 import type { Grade } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
+import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
 import { Gantry } from "./Gantry";
+import { MedalDisc, MedalLadder } from "./Medals";
 import { lapTime } from "./format";
 import { LapGrid } from "./LapGrid";
 import { Roll } from "./Roll";
@@ -131,12 +133,15 @@ function HeroCircuit({ id, o, grades }: { id: string; o: Outline; grades: Grade[
 }
 
 /** What the map is showing: your best lap today against the lap you are hunting. */
-function MapCaption({ o, bestMs }: { o: Outline; bestMs: number | null }) {
+function MapCaption({ o, bestMs, medal }: { o: Outline; bestMs: number | null; medal: Medal | null }) {
   return (
     <figcaption className="fade-in-late grid grid-cols-2 gap-4 border-t border-line pt-3">
       <div>
         <div className="text-[13px] text-steel">{bestMs === null ? "No lap yet today" : "Your best today"}</div>
-        <div className="wide num mt-1 text-[15px] text-paint">{bestMs === null ? "-:--.---" : lapTime(bestMs)}</div>
+        <div className="mt-1 flex items-center gap-2">
+          {medal && <MedalDisc medal={medal} size={14} />}
+          <span className="wide num text-[15px] text-paint">{bestMs === null ? "-:--.---" : lapTime(bestMs)}</span>
+        </div>
       </div>
       <div className="text-right">
         <div className="text-[13px] text-steel">Perfect lap, driven live</div>
@@ -167,8 +172,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   const run = season.run && !seasonDone(season.run) ? season.run : null;
   const wins = run?.results.filter((r) => r === "W").length ?? 0;
   const losses = (run?.results.length ?? 0) - wins;
-  const winPct = stats.played ? Math.round((stats.wins / stats.played) * 100) : 0;
   const lapsLeft = DAILY_LAPS - daily.laps.length;
+  const medal = bestMedal(daily);
+  const next = nextMedal(daily.trackId, medal);
   // the lap the map paints: today's fastest
   const best = daily.laps.reduce<(typeof daily.laps)[number] | null>((b, l) => (!b || l.lapTimeMs < b.lapTimeMs ? l : b), null);
   const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
@@ -201,23 +207,26 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
 
           {/* the map sits inline on phones, beside the copy from lg */}
           <figure className="mt-4 w-full max-w-[460px] self-center lg:hidden">
-            <div className="h-[min(34vh,360px)] w-full">
+            <div className="h-[min(26vh,320px)] w-full">
               <HeroCircuit id={daily.trackId} o={o} grades={best?.grades ?? null} />
             </div>
-            <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} />
+            <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} medal={medal} />
           </figure>
 
           <div className="rise mt-4 max-w-[440px] lg:mt-10" style={d(620)}>
-            <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={cols} size="sm" />
-            <p className="mt-3 text-[15px] leading-snug text-paint/85">
+            <p className="mb-2.5 text-[15px] leading-snug text-paint/85">
               {daily.status === "won"
-                ? `Perfect lap on lap ${daily.laps.length}. Come back tomorrow.`
+                ? `Pole on lap ${daily.laps.length}. Come back tomorrow.`
                 : daily.status === "lost"
-                  ? "Out of laps today. A new circuit at midnight."
+                  ? `Out of laps${medal ? ` with ${MEDAL_NAME[medal]}` : ""}. A new circuit at midnight.`
                   : daily.laps.length
-                    ? `${lapsLeft} ${lapsLeft === 1 ? "lap" : "laps"} left. Purple every corner to win.`
-                    : "Six laps to find the perfect line. Purple every corner to win."}
+                    ? `${lapsLeft} ${lapsLeft === 1 ? "lap" : "laps"} left${next ? `. ${MEDAL_NAME[next.medal]} is next.` : "."}`
+                    : "Six laps to earn a medal."}
             </p>
+            <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={cols} size="sm" />
+            <div className="mt-4">
+              <MedalLadder trackId={daily.trackId} best={medal} />
+            </div>
             <button
               className={`${finished ? secondaryBtn : primaryBtn} mt-5 w-full sm:w-auto sm:min-w-[260px]`}
               onClick={() => onAction(finished ? { kind: "daily-summary" } : { kind: "daily" })}
@@ -231,7 +240,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           <div className="aspect-square w-full p-[4%]">
             <HeroCircuit id={daily.trackId} o={o} grades={best?.grades ?? null} />
           </div>
-          <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} />
+          <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} medal={medal} />
         </figure>
       </section>
 
@@ -321,7 +330,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
       <footer className="border-t border-line">
         <p className="mx-auto flex max-w-[1240px] flex-wrap items-baseline gap-x-6 gap-y-2 px-4 pt-6 pb-[max(24px,env(safe-area-inset-bottom))] text-[13px] text-steel md:px-8">
           {stats.played === 0 ? (
-            <span>Finish a Daily Quali to start your record.</span>
+            <span>Win a medal in the Daily Quali to start your record.</span>
           ) : (
             <>
               <span>
@@ -329,12 +338,16 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
                 {stats.played === 1 ? "daily played" : "dailies played"}
               </span>
               <span>
-                <Roll text={`${winPct}%`} className="wide mr-1.5 text-[15px] text-paint" />
-                perfect
+                <Roll text={String(stats.medalDays)} className="wide mr-1.5 text-[15px] text-paint" />
+                {stats.medalDays === 1 ? "medal" : "medals"}
+              </span>
+              <span>
+                <Roll text={String(stats.poles)} className="wide mr-1.5 text-[15px] text-purple" />
+                {stats.poles === 1 ? "pole" : "poles"}
               </span>
               <span>
                 <Roll text={String(stats.streak)} className="wide mr-1.5 text-[15px] text-ink" />
-                streak, best {stats.bestStreak}
+                day medal streak, best {stats.bestStreak}
               </span>
             </>
           )}

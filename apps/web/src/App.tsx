@@ -4,7 +4,7 @@ import { setSoundEnabled, soundEnabled } from "./game/audio";
 import { CATALOG, loadTrack } from "./game/catalog";
 import { OUTLINES } from "./game/outlines";
 import { Game, type Mode, type Snapshot } from "./game/game";
-import { DAILY_LAPS, type DailyRecord, dailyNumber, loadDaily, msToNextDay, recordLap, shareText } from "./modes/daily";
+import { DAILY_LAPS, type DailyRecord, bestMedal, dailyNumber, loadDaily, msToNextDay, recordLap, shareText } from "./modes/daily";
 import { GRADE_EMOJI, type Grade, gradeFor } from "./modes/grading";
 import {
   type RoundOutcome,
@@ -23,6 +23,8 @@ import { GateSlider } from "./ui/GateSlider";
 import { type HubAction, Hub } from "./ui/Hub";
 import { LapGrid } from "./ui/LapGrid";
 import { RaceHud } from "./ui/RaceHud";
+import { MedalRow } from "./ui/Medals";
+import { MEDAL_NAME, medalFor } from "./modes/medals";
 import { Roll } from "./ui/Roll";
 import { delta, lapTime } from "./ui/format";
 import { ChevronLeft, Frame, Minus, NudgeLeft, NudgeRight, Plus, Share, SoundOff, SoundOn, Undo, WholeTrack } from "./ui/icons";
@@ -508,7 +510,8 @@ function ResultSheet({
   let body: string;
   let actions: React.ReactNode;
   if (s.mode === "daily" && daily && daily.status !== "playing") {
-    headline = daily.status === "won" ? "Perfect lap" : "Out of laps";
+    const dayMedal = bestMedal(daily);
+    headline = daily.status === "won" ? "Pole" : dayMedal ? `${MEDAL_NAME[dayMedal]} today` : "Out of laps";
     body = daily.status === "won" ? `Every corner purple on lap ${daily.laps.length} of ${DAILY_LAPS}.` : `New circuit in ${countdown}.`;
     actions = (
       <>
@@ -544,7 +547,7 @@ function ResultSheet({
     );
   } else {
     const left = (s.lapLimit ?? 0) - s.lapsUsed;
-    headline = r.allPurple ? "Perfect lap" : s.mode === "practice" ? "Lap complete" : `${left} ${left === 1 ? "lap" : "laps"} left`;
+    headline = r.allPurple ? "Pole" : s.mode === "practice" ? "Lap complete" : `${left} ${left === 1 ? "lap" : "laps"} left`;
     body = r.allPurple ? "Every corner purple." : s.mode === "season" ? `Beat ${lapTime(s.rivalMs ?? 0)} to take pole.` : "Tap a corner to fix it.";
     actions = (
       <button className={`${primaryBtn} flex-1`} onClick={() => game.adjust()} autoFocus>
@@ -553,6 +556,7 @@ function ResultSheet({
     );
   }
 
+  const lapMedal = medalFor(game.track.id, r.lapTimeMs, r.grades.map((g) => g.grade));
   const vsRival = s.mode === "season" && s.rivalMs !== null ? r.lapTimeMs - s.rivalMs : null;
   const pbDelta = r.pbBeforeMs === null ? null : r.lapTimeMs - r.pbBeforeMs;
 
@@ -573,6 +577,7 @@ function ResultSheet({
           </div>
         </div>
         <div className="mt-2">
+          <MedalRow trackId={game.track.id} medal={lapMedal} lapTimeMs={r.lapTimeMs} stamp={!!lapMedal && r.newPb} />
           <TimingLine label="Perfect lap" value={lapTime(r.targetMs)} />
           {vsRival !== null && <TimingLine order={1} label={`Rival pole ${lapTime(s.rivalMs!)}`} value={delta(vsRival)} tone={vsRival < 0 ? "text-ink" : "text-paint"} />}
           <TimingLine
@@ -613,6 +618,13 @@ function ResultSheet({
   );
 }
 
+/** How a finished day reads: its best medal, or Pole and the lap it came on. */
+function dayHeadline(daily: DailyRecord): string {
+  if (daily.status === "won") return `Pole on lap ${daily.laps.length}`;
+  const m = bestMedal(daily);
+  return m ? `${MEDAL_NAME[m]} today` : "No medal today";
+}
+
 /** Daily already finished today: the circuit stays visible, with the result and a way out. */
 function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; onHub: () => void }) {
   const countdown = useCountdown();
@@ -620,7 +632,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
   return (
     <div className="absolute inset-x-0 bottom-0 flex justify-center">
       <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/95 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-        <h2 className="wide text-[20px] leading-none text-paint">{daily.status === "won" ? "Perfect lap" : "Out of laps"}</h2>
+        <h2 className="wide text-[20px] leading-none text-paint">{dayHeadline(daily)}</h2>
         <p className="mt-1.5 text-[14px] text-paint/75">New circuit in {countdown}.</p>
         <div className="mt-3">
           <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={game.controls.complexes.length} />
@@ -650,7 +662,7 @@ function DailySummary({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-night/75 p-4" onClick={onClose}>
       <div role="dialog" aria-label="Today's result" className="wipe-in w-full max-w-sm border border-line bg-board p-4" onClick={(e) => e.stopPropagation()}>
-        <h2 className="wide text-[20px] leading-none text-paint">{daily.status === "won" ? `Perfect on lap ${daily.laps.length}` : "Out of laps"}</h2>
+        <h2 className="wide text-[20px] leading-none text-paint">{dayHeadline(daily)}</h2>
         <p className="mt-1.5 text-[14px] text-paint/75">
           Daily quali #{dailyNumber()}, {info.name}. Next circuit in {countdown}.
         </p>

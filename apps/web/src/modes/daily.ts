@@ -1,6 +1,11 @@
 import type { Grade } from "./grading";
+import { MEDAL_EMOJI, MEDAL_NAME, type Medal, better, medalFor } from "./medals";
 
-/** Daily Quali: one circuit per day for everyone, 6 laps, all-purple lap wins. */
+/**
+ * Daily Quali: one circuit per day for everyone, 6 laps. Each lap earns a medal
+ * by lap time (Bronze, Silver, Gold); an all-purple lap is Pole and ends the
+ * day. The streak counts days with at least Bronze.
+ */
 export const DAILY_LAPS = 6;
 const LAUNCH = "2026-10-01";
 const POOL = ["monza", "spa", "silverstone", "suzuka", "monaco", "interlagos", "hungaroring", "red-bull-ring", "zandvoort", "austin", "barcelona", "imola"];
@@ -84,34 +89,49 @@ export function recordLap(rec: DailyRecord, lap: DailyLap, knots: number[]): Dai
   return next;
 }
 
+/** The best medal of the day so far (null until a lap reaches Bronze). */
+export function bestMedal(rec: DailyRecord): Medal | null {
+  return rec.laps.reduce<Medal | null>((m, l) => better(m, medalFor(rec.trackId, l.lapTimeMs, l.grades)), null);
+}
+
 export interface DailyStats {
+  /** days with at least one lap */
   played: number;
-  wins: number;
+  /** days that ended with at least Bronze */
+  medalDays: number;
+  poles: number;
+  /** consecutive days with at least Bronze, reaching yesterday or today */
   streak: number;
   bestStreak: number;
-  /** wins by number of laps used, index 0 = won on lap 1 */
-  distribution: number[];
 }
 
 export function dailyStats(): DailyStats {
-  const all = Object.values(loadAll()).filter((r) => r.status !== "playing").sort((a, b) => a.key.localeCompare(b.key));
-  const distribution = new Array(DAILY_LAPS).fill(0);
+  const all = Object.values(loadAll())
+    .filter((r) => r.laps.length > 0)
+    .sort((a, b) => a.key.localeCompare(b.key));
+  const today = dayIndex(dateKey());
   let streak = 0;
   let best = 0;
+  let medalDays = 0;
+  let poles = 0;
   let prev: number | null = null;
   for (const r of all) {
     const d = dayIndex(r.key);
-    if (r.status === "won") {
-      distribution[r.laps.length - 1]++;
+    const m = bestMedal(r);
+    if (m) {
+      medalDays++;
+      if (m === "pole") poles++;
       streak = prev !== null && d === prev + 1 ? streak + 1 : 1;
-    } else streak = 0;
+      prev = d;
+    } else if (d !== today) {
+      // today without a medal yet doesn't break the streak; a finished day does
+      streak = 0;
+      prev = d;
+    }
     best = Math.max(best, streak);
-    prev = d;
   }
-  // a streak only counts if it reaches yesterday or today
-  const today = dayIndex(dateKey());
   if (prev === null || prev < today - 1) streak = 0;
-  return { played: all.length, wins: distribution.reduce((a, b) => a + b, 0), streak, bestStreak: best, distribution };
+  return { played: all.length, medalDays, poles, streak, bestStreak: best };
 }
 
 export function msToNextDay(now = new Date()): number {
@@ -122,10 +142,11 @@ export function msToNextDay(now = new Date()): number {
 
 export function shareText(rec: DailyRecord, trackName: string, flag: string, emoji: Record<Grade, string>): string {
   const n = dailyNumber(rec.key);
-  const score = rec.status === "won" ? `${rec.laps.length}/${DAILY_LAPS}` : `X/${DAILY_LAPS}`;
+  const medal = bestMedal(rec);
   const rows = rec.laps.map((l) => l.grades.map((g) => emoji[g]).join("")).join("\n");
   const best = Math.min(...rec.laps.map((l) => l.lapTimeMs));
   const m = Math.floor(best / 60000);
   const s = ((best - m * 60000) / 1000).toFixed(3).padStart(6, "0");
-  return `APEX Quali #${n} ${flag} ${trackName} ${score}\n${rows}\nBest ${m}:${s}`;
+  const head = medal ? `${MEDAL_EMOJI[medal]} ${MEDAL_NAME[medal]}` : "No medal";
+  return `APEX Quali #${n} ${flag} ${trackName}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps\n${rows}`;
 }

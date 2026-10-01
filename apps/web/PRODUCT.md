@@ -33,8 +33,11 @@ Modes (confirmed 2026-10-01):
 - **Daily Quali:** same circuit for everyone each day; **6 laps**, then
   locked until tomorrow. After each lap, every corner group gets a colour:
   purple = within 0.05 s of the target, green = close, yellow = slow,
-  red = far off. **Win = a lap with every corner purple.** Win/loss record,
-  streak, shareable emoji grid.
+  red = far off. Each lap earns a **medal** by lap time against per-circuit
+  targets calibrated to the same driving precision (Bronze 1.5 m, Silver
+  0.75 m, Gold 0.3 m of gate error); **Pole = a lap with every corner purple**,
+  the impossible tier, and it ends the day. The streak counts days with at
+  least Bronze. Shareable medal + emoji grid.
 - **Perfect Season:** the 38-0 equivalent. 12 real circuits in random order,
   3 laps per round to beat a rival pole time that tightens every round.
   Goal: the impossible 12–0. Replayable endlessly.

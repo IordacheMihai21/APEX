@@ -318,6 +318,9 @@ Five square black pods (#060607, line border), two lamps each at 16/24/36px. On 
 ### Onboard Cluster
 A row of square rev LEDs (green building, the last three blue, all blue on the shift flash; unlit graphite), a wide 40px gear numeral, and the speed in seven-segment digits with ghost segments, units as labels.
 
+### Medals
+Four tiers, one disc shape: a 20-unit circle with a night/28 inner ring when earned, an empty 1.5-unit ring at 45% when not. Colours are the only place metal tones appear: bronze #c8834f, silver #c3c8d0, gold #e2b13c; Pole uses sector purple. The hub's **medal ladder** is four columns under the lap grid (2px top rule in the medal colour once earned, line colour before; name in 13px 600; target time in tabular 13px, "All purple" for Pole). The result sheet's **medal row** sits first under the lap time: the earned disc at 22px and name in wide 15px, right-aligned caption "Gold at 1:08.460, 0.055s to find". A medal earned on a new personal best is stamped in (scale 2.2 → 0.9 → 1 with a slight rotation, 520ms from 900ms).
+
 ### Loading
 While a circuit loads, its outline (paint-free steel stroke) draws and undraws in a loop above "Loading <venue>"; on failure the line says what failed and to go back to the grid.
 

@@ -416,6 +416,25 @@ canvas {
   line-height: 1;
 }
 
+/* A medal is stamped onto the result: drops in large, lands, settles. */
+@keyframes medal-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(2.2) rotate(-25deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.9) rotate(4deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+.medal-stamp {
+  display: inline-flex;
+  animation: medal-stamp 520ms var(--ease-out) 900ms both;
+}
+
 /* "Lights out" lands like a broadcast slam: big, blurred, then sharp. */
 @keyframes slam {
   0% {
@@ -482,6 +501,7 @@ canvas {
   .lamp-seq,
   .rise,
   .slam,
+  .medal-stamp,
   .hero-map .draw-1,
   .hero-map .draw-2,
   .hero-map .fade-late,
