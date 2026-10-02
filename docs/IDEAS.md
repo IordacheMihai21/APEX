@@ -88,10 +88,10 @@ rough effort (S ≤ a day, M = 2–4 days, L = a week+).
 
 In order of value per effort:
 
-1. S1 / S2 / S3 sectors.
-2. Beat the real pole.
-3. Post-game reveal of the perfect lap.
-4. Speed trace.
+1. S1 / S2 / S3 sectors. ✅
+2. Beat the real pole. ✅
+3. Post-game reveal of the perfect lap. ✅
+4. Speed trace. ✅ (result sheet; drag to read both speeds and the running gap, the car parks on the map there)
 5. Colour-blind mode.
 
 Then the reaction mini-game, as a traffic source for launch.

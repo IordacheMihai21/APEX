@@ -131,6 +131,27 @@ export interface Snapshot {
   activeGroup: number;
 }
 
+/**
+ * Speed against distance for the last lap and the perfect lap (the result
+ * sheet's telemetry chart). The x-axis is distance along the centerline as a
+ * fraction of the lap, so both runs line up point for point.
+ */
+export interface SpeedTrace {
+  /** Bucket centres, 0..1 of the lap. */
+  at: Float32Array;
+  /** Slowest speed in each bucket (km/h), so braking dips survive downsampling. */
+  you: Float32Array;
+  perfect: Float32Array;
+  /** Running gap to the perfect lap at the end of each bucket (ms, + = behind). */
+  gapMs: Float32Array;
+  /** Corners the player controls, at their apex (0..1), with this lap's loss there. */
+  corners: { name: string; at: number; deltaMs: number }[];
+  /** Where each corner's timing segment starts (0..1), lap order, for naming a point on the trace. */
+  segments: { name: string; from: number }[];
+  /** Sector lines after the start (0..1). */
+  sectorLines: number[];
+}
+
 /** Race playback runs this many times faster than the simulated lap. */
 export const PLAYBACK_SPEED = 4;
 /** Race camera: track width on screen at low / top speed (zooms out as speed builds). */
@@ -599,6 +620,7 @@ export class Game {
     if (!sim.valid) return; // expandGates keeps lines valid; defensive only
     if (this.locked || (this.opts.lapLimit !== null && this.lapsUsed >= this.opts.lapLimit)) return;
     this.sim = sim;
+    this.probe = null;
     this.grades = this.computeGrades(sim);
     this.sectorPlan = this.planSectors(sim);
     this.pace = this.paceTarget();
@@ -900,6 +922,52 @@ export class Game {
     return { why, hint };
   }
 
+  /** Centerline index the speed trace is pointing at on the result screen, or null. */
+  private probe: number | null = null;
+
+  /** The last lap's speed trace over the perfect lap's, or null before a result. */
+  speedTrace(points = 240): SpeedTrace | null {
+    const sim = this.sim;
+    if (!sim || this.phase !== "result") return null;
+    const ref = this.reference;
+    const n = this.pt.n;
+    const m = Math.min(points, n);
+    const at = new Float32Array(m);
+    const you = new Float32Array(m);
+    const perfect = new Float32Array(m);
+    const gapMs = new Float32Array(m);
+    for (let b = 0; b < m; b++) {
+      const i0 = Math.floor((b * n) / m);
+      const i1 = Math.floor(((b + 1) * n) / m);
+      let a = Infinity;
+      let r = Infinity;
+      for (let i = i0; i < i1; i++) {
+        a = Math.min(a, sim.samples.speed[i]);
+        r = Math.min(r, ref.samples.speed[i]);
+      }
+      at[b] = (i0 + i1) / 2 / n;
+      you[b] = a * 3.6;
+      perfect[b] = r * 3.6;
+      gapMs[b] = i1 >= n ? sim.rawLapTimeMs - ref.rawLapTimeMs : sim.samples.elapsedMs[i1] - ref.samples.elapsedMs[i1];
+    }
+    const cmp = compareRuns(sim, ref).corners;
+    const corners = this.track.corners
+      .map((c, j) => ({ name: c.name, at: c.apexIndex / n, deltaMs: cmp[j].deltaMs }))
+      .filter((c) => this.complexOfCorner.has(c.name));
+    const segments = this.track.corners.map((c) => ({ name: c.name, from: c.timingStartIndex / n }));
+    const sectorLines = this.track.sectors.slice(1).map((sec) => sec.startIndex / n);
+    return { at, you, perfect, gapMs, corners, segments, sectorLines };
+  }
+
+  /** Point the result map at a place on the speed trace (0..1 of the lap): the car parks there. */
+  setProbe(at: number | null) {
+    if (this.phase !== "result") return;
+    const i = at === null ? null : Math.min(this.pt.n - 1, Math.max(0, Math.round(at * this.pt.n)));
+    if (i === this.probe) return;
+    this.probe = i;
+    this.dirty = true;
+  }
+
   /** The line as it stands (after a race: the line just raced), for "Beat my lap" links. */
   currentKnots(): number[] {
     return this.z.slice();
@@ -916,6 +984,7 @@ export class Game {
     }
     this.phase = "setup";
     this.result = null;
+    this.probe = null;
     logEvent("retry_clicked", { track: this.track.id, corner: cornerName ?? null });
     this.selectGate(target, 0);
   }
@@ -1326,8 +1395,23 @@ export class Game {
         ctx.fill();
         ctx.stroke();
       }
-      const p = this.sampleAt(this.sim, this.raceT);
-      this.cars.draw(ctx, p.x, p.y, p.heading, px, false);
+      if (this.phase === "result" && this.probe !== null) {
+        // parked where the speed trace points, ringed so it reads on the whole-track view
+        const { x, y } = this.sim.samples;
+        const i = this.probe;
+        const j = (i + 1) % this.pt.n;
+        ctx.beginPath();
+        ctx.arc(x[i], y[i], 11 * px, 0, Math.PI * 2);
+        ctx.lineWidth = 2 * px;
+        ctx.strokeStyle = C.paint;
+        ctx.fillStyle = "rgba(10,11,13,0.55)";
+        ctx.fill();
+        ctx.stroke();
+        this.cars.draw(ctx, x[i], y[i], Math.atan2(y[j] - y[i], x[j] - x[i]), px, false);
+      } else {
+        const p = this.sampleAt(this.sim, this.raceT);
+        this.cars.draw(ctx, p.x, p.y, p.heading, px, false);
+      }
       if (this.sparks.length) {
         ctx.save();
         ctx.globalCompositeOperation = "lighter";

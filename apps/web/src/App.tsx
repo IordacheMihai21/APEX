@@ -29,6 +29,7 @@ import { MedalRow } from "./ui/Medals";
 import { MEDAL_NAME, medalFor, realPole } from "./modes/medals";
 import { challengeUrl, decodeChallenge } from "./modes/challenge";
 import { Roll } from "./ui/Roll";
+import { SpeedTrace } from "./ui/SpeedTrace";
 import { delta, lapTime } from "./ui/format";
 import { ChevronLeft, ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, Share, SoundOff, SoundOn, Undo, WholeTrack } from "./ui/icons";
 import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
@@ -765,6 +766,7 @@ function ResultSheet({
             {!hintsOpen && <li className="caption py-2">Hints open after lap {DAILY_HINT_AFTER_LAPS}.</li>}
           </ul>
         )}
+        <SpeedTrace game={game} result={r} worst={worst.map((l) => l.name)} />
         <Legend />
         <div className="mt-3 flex flex-wrap gap-2">{actions}</div>
       </div>
