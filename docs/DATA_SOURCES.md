@@ -16,6 +16,9 @@ geometry or names.
 | [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits) | MIT | GeoJSON circuit geometry for R&D / reference | Code/data licence permits; see "Circuit layouts" |
 | [nilamadhab47/raceosf1](https://github.com/nilamadhab47/raceosf1) | **None** (all rights reserved) | Read for ideas only | **No, copy nothing** |
 | [OpenStreetMap](https://www.openstreetmap.org/copyright) via Overpass | **ODbL 1.0** | Real surroundings of each circuit: buildings, grandstands, woods, trees, water and coastline, roads, rail, pit lanes, landmarks (`data/scenery/*.json`, built by `tools/track-builder/src/import-osm.ts`) | **Yes, with attribution** ("Map data © OpenStreetMap contributors", shown on the circuit view and linked to osm.org/copyright). The extracted files are a derivative database: if distributed separately they stay under the ODbL (share-alike). |
+| [formula1.com race pages](https://www.formula1.com/en/racing/2025) | Facts only (not copyrightable) | Lap length, first Grand Prix and race laps for the trivia games (`apps/web/src/modes/circuits.ts`) | Yes: plain numbers, no text, logos or images copied |
+| [Wikipedia circuit infoboxes](https://en.wikipedia.org/wiki/Monza_Circuit) via the MediaWiki API | Facts only (text is CC BY-SA, numbers are not) | Corner count of each current Grand Prix layout (formula1.com doesn't publish it) | Yes: numbers only |
+| [Jolpica F1 API](https://github.com/jolpica/jolpica-f1) (api.jolpi.ca, Ergast successor) | Apache-2.0 code; facts | 2025 pole laps (`REFERENCE_POLE_MS`), cross-checked 2026-10-03 | Yes: times only, no driver names |
 | [TUMFTM/global_racetrajectory_optimization](https://github.com/TUMFTM/global_racetrajectory_optimization) | LGPL-3.0 | Offline reference optimizer | Output lines yes; don't bundle the library in the client |
 
 ## Notes per source

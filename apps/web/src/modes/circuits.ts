@@ -8,6 +8,12 @@ export type Continent = "Europe" | "Asia" | "North America" | "South America";
  * length, official corner count, the year of the first world championship
  * Grand Prix held there, race distance in laps, and the 2025 pole lap.
  * Venue facts only: no teams, drivers or results.
+ *
+ * Sources (checked 2026-10-03): length, first Grand Prix and laps from the
+ * circuit panel on formula1.com's 2025 race pages; corners from the current
+ * Grand Prix layout in each circuit's Wikipedia infobox (formula1.com doesn't
+ * list them); pole laps from Jolpica (api.jolpi.ca, the Ergast successor),
+ * via outlines.ts. Spielberg is the 2025 layout's official 4.326 km.
  */
 export interface CircuitFacts {
   id: string;
@@ -30,7 +36,7 @@ const FACTS: Record<string, Omit<CircuitFacts, "id" | "name" | "country" | "flag
   monaco: { continent: "Europe", lengthKm: 3.337, turns: 19, firstGp: 1950, laps: 78 },
   interlagos: { continent: "South America", lengthKm: 4.309, turns: 15, firstGp: 1973, laps: 71 },
   hungaroring: { continent: "Europe", lengthKm: 4.381, turns: 14, firstGp: 1986, laps: 70 },
-  "red-bull-ring": { continent: "Europe", lengthKm: 4.318, turns: 10, firstGp: 1970, laps: 71 },
+  "red-bull-ring": { continent: "Europe", lengthKm: 4.326, turns: 10, firstGp: 1970, laps: 71 },
   zandvoort: { continent: "Europe", lengthKm: 4.259, turns: 14, firstGp: 1952, laps: 72 },
   austin: { continent: "North America", lengthKm: 5.513, turns: 20, firstGp: 2012, laps: 56 },
   barcelona: { continent: "Europe", lengthKm: 4.657, turns: 14, firstGp: 1991, laps: 66 },
