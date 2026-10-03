@@ -7,6 +7,7 @@ import { type Grade, bestPerGroup } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
 import { CIRCUITS } from "../modes/circuits";
+import { cornerMedal, daysLeft, loadCornerWeek, weekNumber, weeklyCorner } from "../modes/corner";
 import { loadHigherLower } from "../modes/higherLower";
 import { MYSTERY_TRIES, REVEAL, isOver, isSolved, loadMystery, mysteryAnswer, revealOffset } from "../modes/mystery";
 import { loadPitStop, secs, todaysStop } from "../modes/pitstop";
@@ -28,6 +29,7 @@ export type HubAction =
   | { kind: "practice" }
   | { kind: "practice-track"; trackId: string }
   | { kind: "mini"; game: "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive" | "privacy" }
+  | { kind: "corner" }
   | { kind: "stats" };
 
 const PLAYBACK = 4;
@@ -153,6 +155,76 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
         </p>
       </div>
     </nav>
+  );
+}
+
+/** The weekly corner's circuit with that corner lit in ink (paths load on their own, like the hero's). */
+function CornerMap({ trackId, complex }: { trackId: string; complex: number }) {
+  const [detail, setDetail] = useState<OutlineDetail | null>(null);
+  useEffect(() => {
+    let live = true;
+    loadOutlineDetail(trackId).then((d) => live && setDetail(d));
+    return () => {
+      live = false;
+    };
+  }, [trackId]);
+  const o = OUTLINES[trackId];
+  if (!detail || !o) return <div className="aspect-square w-full" />;
+  const w = Math.max(o.width * 2.2, 20);
+  return (
+    <svg viewBox="0 0 1000 1000" className="aspect-square w-full overflow-visible" role="img" aria-label={`Map of ${CATALOG.find((t) => t.id === trackId)?.name} with the corner marked`}>
+      <path d={detail.ribbon} fill="none" stroke="#23262d" strokeWidth={w} strokeLinejoin="round" strokeLinecap="round" />
+      <path d={detail.groups[complex]} fill="none" stroke="var(--color-ink)" strokeWidth={w * 0.55} strokeLinejoin="round" strokeLinecap="round" className="corner-glow" />
+    </svg>
+  );
+}
+
+/**
+ * Corner of the week: one famous corner, unlimited tries, a medal for the
+ * week. Map on the left (the corner lit on its circuit), the brief on the right.
+ */
+function CornerBand({ onAction }: { onAction: (a: HubAction) => void }) {
+  const wc = weeklyCorner();
+  const week = loadCornerWeek();
+  const left = daysLeft();
+  const medal = week ? cornerMedal(week.bestDeltaMs) : null;
+  const info = CATALOG.find((t) => t.id === wc.trackId)!;
+  return (
+    <section aria-labelledby="corner-h" className="border-t border-line">
+      <div className="mx-auto grid max-w-[1240px] grid-cols-[96px_minmax(0,1fr)] items-center gap-x-5 gap-y-4 px-4 py-10 sm:grid-cols-[160px_minmax(0,1fr)] md:px-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-x-12 lg:py-14">
+        <div className="in-view w-full max-w-[340px] justify-self-center lg:row-span-2">
+          <CornerMap trackId={wc.trackId} complex={wc.complex} />
+        </div>
+        <div className="min-w-0 lg:self-end">
+          <p className="text-[14px] font-semibold text-ink">
+            Corner of the week #{weekNumber()}, {left === 1 ? "last day" : `${left} days left`}
+          </p>
+          <h2 id="corner-h" className="wide mt-2 text-[clamp(26px,4vw,40px)] leading-[1.02] text-paint">
+            {wc.name}
+          </h2>
+          <p className="mt-1 text-[14px] text-steel">{info.name}</p>
+          <p className="mt-3 hidden max-w-[52ch] text-[15px] leading-snug text-paint/85 sm:block">{wc.note}</p>
+        </div>
+        <div className="col-span-2 flex flex-wrap items-center gap-x-6 gap-y-3 lg:col-span-1 lg:col-start-2 lg:self-start">
+          <button className={`${secondaryBtn} min-w-[200px]`} onClick={() => onAction({ kind: "corner" })}>
+            {week ? "Try again" : "Take the corner"}
+          </button>
+          <span className="flex items-center gap-2 text-[14px]">
+            {week ? (
+              <>
+                {medal ? <MedalDisc medal={medal} size={14} /> : null}
+                <span className="text-paint">{medal ? MEDAL_NAME[medal] : "No medal yet"}</span>
+                <span className="num text-steel">
+                  {week.bestDeltaMs <= 0 ? "on the perfect line" : `+${(week.bestDeltaMs / 1000).toFixed(3)} s`}, {week.tries} {week.tries === 1 ? "try" : "tries"}
+                </span>
+              </>
+            ) : (
+              <span className="text-steel">Unlimited tries. Your best counts for the week.</span>
+            )}
+          </span>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -508,6 +580,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} medal={medal} perfectMs={perfectMs} />
         </figure>
       </section>
+
+      {/* the corner of the week */}
+      <CornerBand onAction={onAction} />
 
       {/* perfect season */}
       <section aria-labelledby="season-h" className="border-t border-line bg-board/60">

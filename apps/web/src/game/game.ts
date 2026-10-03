@@ -31,7 +31,7 @@ import { type DriveState, driveState } from "./drive";
 import { engine, soundEnabled } from "./audio";
 
 export type Phase = "setup" | "lights" | "race" | "result";
-export type Mode = "daily" | "season" | "practice";
+export type Mode = "daily" | "season" | "practice" | "corner";
 
 export interface GameOptions {
   mode: Mode;
@@ -51,10 +51,18 @@ export interface GameOptions {
   scenery?: SceneryData | null;
   /** Track conditions: the car, the perfect line and the medals all follow them (default dry). */
   condition?: Condition;
+  /**
+   * One corner group only (the weekly corner): the rest of the lap runs on the
+   * perfect line, only this group can be set, and the race plays just the run
+   * through it, straight away with no start lights.
+   */
+  focus?: number;
 }
 
 export interface LapEvent {
   lapTimeMs: number;
+  /** time lost to the perfect line in each corner group, ms */
+  deltas: number[];
   grades: Grade[];
   allPurple: boolean;
   knots: number[];
@@ -232,6 +240,8 @@ export class Game {
   private readonly optimal: { knotOffsets: number[] };
   /** Personal bests and sector bests are kept per circuit and per condition. */
   private readonly store: string;
+  /** The one corner group in play (weekly corner), or null for the whole lap. */
+  readonly focus: number | null;
 
   constructor(track: GameTrack, opts: GameOptions = { mode: "practice", lapLimit: null }) {
     this.opts = opts;
@@ -242,6 +252,8 @@ export class Game {
     this.car = CONDITION_CARS[this.condition];
     this.optimal = cond?.optimalLine ?? track.optimalLine!;
     this.store = this.condition === "dry" ? track.id : `${track.id}~${this.condition}`;
+    this.focus = opts.focus ?? null;
+    if (this.focus !== null) this.store += `~corner${this.focus}`;
     this.lapsUsed = opts.lapsUsed ?? 0;
     this.locked = !!opts.locked;
     this.track = track;
@@ -264,7 +276,11 @@ export class Game {
     this.pb = loadPB(this.store, track.version);
     // Continue from the session's last line, else (practice) your best line, else the centerline.
     const pbLine = opts.mode === "practice" && this.pb?.knotOffsets.length === this.pt.k ? this.pb.knotOffsets : null;
-    const start = opts.startKnots?.length === this.pt.k ? opts.startKnots : (pbLine ?? new Array(this.pt.k).fill(0));
+    // one corner: everything else sits on the perfect line, so the run-in speed is the same for everyone
+    // (the corner itself starts from the centre of the track: it's yours to find)
+    const base = this.focus !== null ? this.optimal.knotOffsets.slice() : new Array(this.pt.k).fill(0);
+    if (this.focus !== null) for (const g of this.controls.complexes[this.focus].gates) base[g.knot] = 0;
+    const start = opts.startKnots?.length === this.pt.k ? opts.startKnots : (pbLine ?? base);
     this.z = expandGates(this.pt, this.controls, start, this.limit);
     this.lineXY = this.resolve();
     if (this.pb) this.pbSim = simulateLap({ track: this.pt, line: { knotOffsets: this.pb.knotOffsets }, car: this.car });
@@ -521,7 +537,7 @@ export class Game {
 
   selectGate(complex: number, gate: number, ms = 420) {
     const nc = this.controls.complexes.length;
-    const c = ((complex % nc) + nc) % nc;
+    const c = this.focus ?? ((complex % nc) + nc) % nc;
     const g = Math.max(0, Math.min(gate, this.controls.complexes[c].gates.length - 1));
     this.sel = { complex: c, gate: g };
     if (this.phase === "setup") this.focusGate(ms);
@@ -638,6 +654,12 @@ export class Game {
     if (this.mapView === "best" && !this.prevBestSim) this.mapView = "corners";
     this.raceT = 0;
     this.phase = "lights";
+    if (this.focus !== null) {
+      // one corner: start a couple of seconds before it, flying, no lights
+      this.window = this.focusWindow(sim);
+      this.raceT = Math.max(0, this.window.startMs - 2500);
+      this.phase = "race";
+    }
     this.lightsT0 = performance.now();
     this.lightsLit = 0;
     // lights hold 0.2–1.0 s after the fifth, like the real start; shorter from the second lap on
@@ -650,7 +672,8 @@ export class Game {
     this.sparks = [];
     this.prevSpeed = 0;
     this.lastRaced = this.z.join(",");
-    this.camera.animateTo(sim.samples.x[0], sim.samples.y[0], RACE_TRACK_PX_SLOW / this.track.widthMeters, this.headingAt(0) - Math.PI / 2, 450);
+    const i0 = this.focus !== null ? this.indexAt(sim, this.raceT) : 0;
+    this.camera.animateTo(sim.samples.x[i0], sim.samples.y[i0], RACE_TRACK_PX_SLOW / this.track.widthMeters, this.headingAt(i0) - Math.PI / 2, 450);
     if (soundEnabled()) engine.resume();
     logEvent("run_started", { track: this.track.id, mode: this.opts.mode });
     trackEvent("Lap started", { mode: this.opts.mode, circuit: this.track.id, condition: this.condition });
@@ -663,7 +686,35 @@ export class Game {
   /** The challenger's re-simulated lap time, when racing a link. */
   private challengeMs: number | null = null;
 
+  /** The race-time window of the focus corner group: from its first corner's timing line to the next corner's. */
+  private window: { startMs: number; endMs: number } | null = null;
+
+  private focusWindow(sim: SimulationResult): { startMs: number; endMs: number } {
+    const corners = this.track.corners;
+    const cx = this.controls.complexes[this.focus ?? 0];
+    const first = corners.findIndex((c) => c.name === cx.corners[0]);
+    const last = corners.findIndex((c) => c.name === cx.corners[cx.corners.length - 1]);
+    const startIdx = corners[first].timingStartIndex;
+    const endIdx = corners[(last + 1) % corners.length].timingStartIndex;
+    const e = sim.samples.elapsedMs;
+    return { startMs: e[startIdx], endMs: endIdx <= startIdx ? sim.rawLapTimeMs : e[endIdx] };
+  }
+
+  /** The focus corner on the last run: time through it and time lost to the perfect line. */
+  focusResult(): { name: string; timeMs: number; perfectMs: number; deltaMs: number } | null {
+    if (this.focus === null || !this.sim || !this.grades) return null;
+    const mine = this.focusWindow(this.sim);
+    const perfect = this.focusWindow(this.reference);
+    return {
+      name: this.controls.complexes[this.focus].name,
+      timeMs: mine.endMs - mine.startMs,
+      perfectMs: perfect.endMs - perfect.startMs,
+      deltaMs: this.grades[this.focus].deltaMs,
+    };
+  }
+
   private paceTarget(): { label: string; medal: Medal | "perfect" | "challenge"; scale: number } {
+    if (this.focus !== null) return { label: "Perfect", medal: "perfect", scale: 1 };
     if (this.challengeMs !== null) return { label: "Challenge", medal: "challenge", scale: this.challengeMs / this.reference.lapTimeMs };
     const pbMedal = this.pb ? medalFor(this.track.id, this.pb.lapTimeMs, [], this.condition) : null;
     const next = nextMedal(this.track.id, pbMedal, this.condition);
@@ -842,7 +893,7 @@ export class Game {
     if (this.opts.lapLimit !== null && this.lapsUsed >= this.opts.lapLimit) this.locked = true;
     engine.silence();
     this.frameResult();
-    this.onLap?.({ lapTimeMs: sim.lapTimeMs, grades: grades.map((g) => g.grade), allPurple, knots: this.z.slice() });
+    this.onLap?.({ lapTimeMs: sim.lapTimeMs, deltas: grades.map((g) => g.deltaMs), grades: grades.map((g) => g.grade), allPurple, knots: this.z.slice() });
     logEvent("run_completed", { track: this.track.id, lapTimeMs: sim.lapTimeMs, deltaMs: this.result.deltaTargetMs, newPb, attempt: this.attempts });
     trackEvent("Lap finished", { mode: this.opts.mode, circuit: this.track.id, attempt: this.attempts });
     this.emit();
@@ -1332,7 +1383,7 @@ export class Game {
         this.lastEmit = now;
         this.emit();
       }
-      if (this.raceT >= this.sim.rawLapTimeMs) this.demo ? this.finishDemo() : this.finishRace();
+      if (this.raceT >= this.sim.rawLapTimeMs || (this.window && this.raceT >= this.window.endMs + 700)) this.demo ? this.finishDemo() : this.finishRace();
       animating = true;
     } else this.shake = [0, 0];
     if (this.sparks.length || this.spray.length) animating = true;

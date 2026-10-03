@@ -14,6 +14,7 @@ import { decodeChallenge } from "./modes/challenge";
 import { ChevronLeft, ColourBlind, SoundOff, SoundOn } from "./ui/icons";
 import { DailySummary, Loading, TrackPicker } from "./Dialogs";
 import { pageview } from "./analytics";
+import { weeklyCorner } from "./modes/corner";
 
 // The hub is all a first visit needs; the race (engine, renderer, scenery) and
 // the minigames load when they're opened, and the race is fetched early while idle.
@@ -55,6 +56,7 @@ function initialScreen(): Screen {
   const condition = cond === "wet" || cond === "lowdf" ? cond : undefined;
   if (mode === "practice" && CATALOG.some((t) => t.id === track)) return { kind: "play", mode, trackId: track!, condition };
   const path = location.pathname.replace(/\/$/, "").slice(1) || q.get("play");
+  if (path === "corner") return { kind: "play", mode: "corner", trackId: weeklyCorner().trackId };
   if (path && path in MINI) return { kind: path as Mini };
   return { kind: "hub" };
 }
@@ -69,7 +71,7 @@ const MINI: Record<Mini, string> = {
   privacy: "Privacy | APEX",
 };
 
-const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice" };
+const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice", corner: "Corner of the week" };
 
 export function App() {
   useEffect(() => {
@@ -104,8 +106,9 @@ export function App() {
     const url = new URL(location.href);
     url.search = "";
     const mini = screen.kind in MINI ? (screen.kind as Mini) : null;
-    url.pathname = mini ? `/${mini}` : "/";
-    document.title = mini ? MINI[mini] : "APEX: find the perfect lap";
+    const corner = screen.kind === "play" && screen.mode === "corner";
+    url.pathname = mini ? `/${mini}` : corner ? "/corner" : "/";
+    document.title = mini ? MINI[mini] : corner ? `Corner of the week: ${weeklyCorner().name} | APEX` : "APEX: find the perfect lap";
     if (screen.kind === "play" && screen.mode === "practice") {
       url.searchParams.set("play", "practice");
       url.searchParams.set("track", screen.trackId);
@@ -120,6 +123,7 @@ export function App() {
     else if (a.kind === "daily-summary") setSummary(true);
     else if (a.kind === "practice") setPicking(true);
     else if (a.kind === "mini") setScreen({ kind: a.game });
+    else if (a.kind === "corner") setScreen({ kind: "play", mode: "corner", trackId: weeklyCorner().trackId });
     else if (a.kind === "stats") setStats(true);
     else if (a.kind === "practice-track") setScreen({ kind: "play", mode: "practice", trackId: a.trackId });
     else {

@@ -13,6 +13,7 @@ The app is a single page; these addresses must all serve `index.html`:
 | `/mystery` | Mystery circuit, the daily guess-the-circuit puzzle |
 | `/higher-lower` | Higher or lower on circuit facts |
 | `/pit-stop` | Pit stop: change four tyres, go on green |
+| `/corner` | Corner of the week |
 | `/reaction` | the lights-out reaction test |
 | `/privacy` | the privacy page |
 

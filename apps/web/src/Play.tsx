@@ -10,14 +10,15 @@ import { GateSlider } from "./ui/GateSlider";
 import { LapGrid } from "./ui/LapGrid";
 import { RaceHud, SectorCells } from "./ui/RaceHud";
 import { SpeedTrace } from "./ui/SpeedTrace";
-import { MedalRow } from "./ui/Medals";
-import { MEDAL_NAME, medalFor, realPole } from "./modes/medals";
+import { MedalDisc, MedalRow } from "./ui/Medals";
+import { MEDAL_COLOR, MEDAL_NAME, medalFor, realPole } from "./modes/medals";
 import { challengeUrl } from "./modes/challenge";
 import { Roll } from "./ui/Roll";
 import { delta, lapTime } from "./ui/format";
 import { ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, Undo, WholeTrack } from "./ui/icons";
 import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 import { Loading, ShareButton, dailyShare, dayHeadline, useCountdown } from "./Dialogs";
+import { CORNER_MEDAL_MS, type CornerWeek, cornerMedal, cornerShare, daysLeft, loadCornerWeek, recordCornerRun, weekNumber, weeklyCorner } from "./modes/corner";
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 
@@ -55,6 +56,7 @@ export function Play({
   const [daily, setDaily] = useState<DailyRecord | null>(null);
   const [round, setRound] = useState<Round>(null);
   const [practiceLaps, setPracticeLaps] = useState<Grade[][]>([]);
+  const [week, setWeek] = useState<CornerWeek | null>(() => (mode === "corner" ? loadCornerWeek() : null));
 
   useEffect(() => {
     let alive = true;
@@ -82,6 +84,13 @@ export function Play({
             setRound((r) => ({ outcome, laps: [...(r?.laps ?? []), lap.grades], store: next }));
             if (outcome !== "continue") g.lock();
           };
+        } else if (mode === "corner") {
+          const wc = weeklyCorner();
+          g = new Game(t, { scenery, mode, lapLimit: null, focus: wc.complex, startKnots: loadCornerWeek()?.knots });
+          g.onLap = (lap) => {
+            const r = g.focusResult();
+            if (r) setWeek(recordCornerRun({ deltaMs: Math.round(r.deltaMs), timeMs: Math.round(r.timeMs), knots: lap.knots }));
+          };
         } else {
           g = new Game(t, { scenery, mode, lapLimit: null, challengeKnots: challenge, condition });
           g.onLap = (lap) => setPracticeLaps((p) => [...p, lap.grades].slice(-3));
@@ -96,7 +105,7 @@ export function Play({
   }, [mode, trackId, day, condition]);
 
   if (!game) return <Loading trackId={trackId} error={error} />;
-  return <GameView game={game} daily={daily} round={round} practiceLaps={practiceLaps} onNext={onNext} onHint={() => setDaily((d) => (d ? recordHint(d) : d))} />;
+  return <GameView game={game} daily={daily} round={round} practiceLaps={practiceLaps} week={week} onNext={onNext} onHint={() => setDaily((d) => (d ? recordHint(d) : d))} />;
 }
 
 type Round = { outcome: RoundOutcome; laps: Grade[][]; store: SeasonStore } | null;
@@ -106,6 +115,7 @@ function GameView({
   daily,
   round,
   practiceLaps,
+  week,
   onNext,
   onHint,
 }: {
@@ -113,6 +123,7 @@ function GameView({
   daily: DailyRecord | null;
   round: Round;
   practiceLaps: Grade[][];
+  week: CornerWeek | null;
   onNext: (trackId: string | null) => void;
   onHint: () => void;
 }) {
@@ -188,7 +199,8 @@ function GameView({
           Map data © OpenStreetMap contributors
         </a>
       )}
-      <div ref={tower} className="absolute top-2 left-2">
+      {/* one corner needs no tower of corners */}
+      <div ref={tower} className={`absolute top-2 left-2 ${game.focus !== null ? "hidden" : ""}`}>
         <CornerTower
           rows={rows}
           active={s.activeGroup}
@@ -201,7 +213,8 @@ function GameView({
       {s.phase === "setup" && !s.locked && <ControlBar s={s} game={game} coach={coach} />}
       {s.phase === "setup" && s.locked && daily && <LockedNote daily={daily} game={game} onHub={() => onNext(null)} />}
       {racing && <RaceHud s={s} onSkip={() => game.skip()} />}
-      {s.phase === "result" && s.result && <ResultSheet s={s} game={game} lapRows={lapRows} daily={daily} round={round} onNext={onNext} names={names} onHint={onHint} />}
+      {s.phase === "result" && s.result && s.mode === "corner" && <CornerResult game={game} week={week} onGrid={() => onNext(null)} />}
+      {s.phase === "result" && s.result && s.mode !== "corner" && <ResultSheet s={s} game={game} lapRows={lapRows} daily={daily} round={round} onNext={onNext} names={names} onHint={onHint} />}
     </>
   );
 }
@@ -325,7 +338,7 @@ function useCoach(s: Snapshot) {
   useEffect(() => {
     if (step < COACH.length && s.phase !== "setup") finish();
   }, [s.phase, step, finish]);
-  return { step, active: step < COACH.length, picked: () => step === 0 && setStep(1), skip: finish };
+  return { step, active: step < COACH.length && s.mode !== "corner", picked: () => step === 0 && setStep(1), skip: finish };
 }
 
 function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: ReturnType<typeof useCoach> }) {
@@ -353,18 +366,20 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
         )}
         <div className="flex items-center justify-between gap-3">
           <h2 className="wide truncate text-[20px] leading-none text-paint">
-            {cx.name}
+            {s.mode === "corner" ? weeklyCorner().name : cx.name}
             {fine && <span className="ml-2 text-[13px] text-ink">{gate.label === "Apex" && gate.corner ? `Apex ${gate.corner}` : gate.label}</span>}
           </h2>
+          {game.focus === null && (
           <span className="flex shrink-0 items-center gap-2">
             <span className="caption num">
               Corner {s.complex + 1} of {game.controls.complexes.length}
             </span>
-            <button className={`btn-line inline-flex items-center gap-1 border border-paint/20 py-1 pr-1.5 pl-2.5 text-[13px] font-semibold text-paint/90 ${coach.step === 1 ? "coach-ring" : ""}`} onClick={() => game.nextComplex()}>
+            <button className={`btn-line inline-flex items-center gap-1 border border-paint/20 py-1 pr-1.5 pl-2.5 text-[13px] font-semibold text-paint/90 ${coach.active && coach.step === 1 ? "coach-ring" : ""}`} onClick={() => game.nextComplex()}>
               {last ? "First corner" : "Next"}
               <ChevronRight className="h-4 w-4" />
             </button>
           </span>
+          )}
         </div>
 
         {s.challengeMs !== null && (
@@ -374,7 +389,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
         )}
 
         {/* the one-tap line for this corner */}
-        <div className={`mt-2.5 grid grid-cols-3 border border-line ${coach.step === 0 ? "coach-ring" : ""}`} role="radiogroup" aria-label="Line through this corner">
+        <div className={`mt-2.5 grid grid-cols-3 border border-line ${coach.active && coach.step === 0 ? "coach-ring" : ""}`} role="radiogroup" aria-label="Line through this corner">
           {LINE_STYLES.map((st) => (
             <button
               key={st}
@@ -391,7 +406,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
           ))}
         </div>
         <p className="caption mt-1.5 min-h-[17px]">{s.style ? STYLE_HINT[s.style] : "Your own line. Pick a style to start from one, or fine-tune each point."}</p>
-        <p className="caption mt-0.5 hidden text-steel/70 [@media(hover:hover)_and_(min-width:720px)]:block">Keys: 1, 2, 3 for a style, ] for the next corner, Enter to race.</p>
+        <p className="caption mt-0.5 hidden text-steel/70 [@media(hover:hover)_and_(min-width:720px)]:block">{game.focus !== null ? "Keys: 1, 2, 3 for a style, Enter to race." : "Keys: 1, 2, 3 for a style, ] for the next corner, Enter to race."}</p>
 
         {fine && (
           <>
@@ -448,7 +463,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
               Best line
             </button>
           )}
-          <button className={`${primaryBtn} flex-1 ${coach.step === 2 ? "coach-ring" : ""}`} onClick={() => game.race()}>
+          <button className={`${primaryBtn} flex-1 ${coach.active && coach.step === 2 ? "coach-ring" : ""}`} onClick={() => game.race()}>
             Lights out
           </button>
         </div>
@@ -765,3 +780,63 @@ function Legend() {
   );
 }
 
+/**
+ * The weekly corner's result: time through the corner, the gap to the perfect
+ * line, this run's medal, the ladder, and the week's best so far.
+ */
+function CornerResult({ game, week, onGrid }: { game: Game; week: CornerWeek | null; onGrid: () => void }) {
+  const r = game.focusResult();
+  const ref = useInset(game, "bottom");
+  if (!r) return null;
+  const wc = weeklyCorner();
+  const medal = cornerMedal(r.deltaMs);
+  const bestMedal = week ? cornerMedal(week.bestDeltaMs) : null;
+  const gap = (ms: number) => (ms <= 0 ? "on the perfect line" : `+${(ms / 1000).toFixed(3)} s`);
+  const tone = r.deltaMs <= CORNER_MEDAL_MS.pole ? "text-purple" : r.deltaMs <= CORNER_MEDAL_MS.silver ? "text-green" : r.deltaMs <= CORNER_MEDAL_MS.bronze ? "text-yellow" : "text-kerb";
+  const left = daysLeft();
+  return (
+    <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center min-[720px]:px-3 min-[720px]:pb-3">
+      <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/95 p-4 pb-[max(14px,env(safe-area-inset-bottom))] min-[720px]:border">
+        <p className="caption">Corner of the week #{weekNumber()}</p>
+        <div className="mt-1 flex items-end justify-between gap-4">
+          <h2 className="wide text-[22px] leading-none text-paint">{wc.name}</h2>
+          <span className="flex items-center gap-2">
+            {medal ? <MedalDisc medal={medal} size={18} /> : null}
+            <span className="wide text-[15px] text-paint">{medal ? MEDAL_NAME[medal] : "No medal"}</span>
+          </span>
+        </div>
+        {/* the score is the time lost to the perfect line in this corner, nothing else */}
+        <div className="mt-3 flex items-baseline gap-3">
+          <span className={`wide num text-[40px] leading-none ${tone}`}>{r.deltaMs <= 0 ? "Perfect" : `+${(r.deltaMs / 1000).toFixed(3)}`}</span>
+          <span className="text-[14px] text-steel">{r.deltaMs <= 0 ? `through ${wc.name}` : `s lost to the perfect line through ${wc.name}`}</span>
+        </div>
+        <ol className="mt-4 grid grid-cols-4 gap-2" aria-label="Medal targets">
+          {(["bronze", "silver", "gold", "pole"] as const).map((m) => {
+            const on = r.deltaMs <= CORNER_MEDAL_MS[m];
+            return (
+              <li key={m} className={`flex flex-col gap-1 border-t-2 pt-1.5 ${on ? "" : "border-line"}`} style={on ? { borderColor: MEDAL_COLOR[m] } : undefined}>
+                <span className={`text-[13px] font-semibold ${on ? "text-paint" : "text-steel"}`}>{MEDAL_NAME[m]}</span>
+                <span className={`num text-[13px] ${on ? "text-paint" : "text-steel"}`}>+{(CORNER_MEDAL_MS[m] / 1000).toFixed(2)} s</span>
+              </li>
+            );
+          })}
+        </ol>
+        {week && (
+          <p className="caption mt-3">
+            Your best this week: <span className="text-paint">{gap(week.bestDeltaMs)}</span>
+            {bestMedal ? `, ${MEDAL_NAME[bestMedal]}` : ""}, {week.tries} {week.tries === 1 ? "try" : "tries"}. {left === 1 ? "Last day" : `${left} days left`}.
+          </p>
+        )}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button className={`${primaryBtn} flex-1`} onClick={() => game.adjust()} autoFocus>
+            Try again
+          </button>
+          {week && <ShareButton text={`${cornerShare(week, wc)}\n${location.origin}/corner`} label="Share" variant="secondary" />}
+          <button className={secondaryBtn} onClick={onGrid}>
+            Grid
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

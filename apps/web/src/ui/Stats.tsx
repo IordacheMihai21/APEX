@@ -6,6 +6,7 @@ import { MEDAL_COLOR, MEDAL_NAME, medalFor } from "../modes/medals";
 import { loadHigherLower } from "../modes/higherLower";
 import { mysteryStats } from "../modes/mystery";
 import { loadPitStop } from "../modes/pitstop";
+import { cornerMedals } from "../modes/corner";
 import { loadReaction } from "../modes/reaction";
 import { lapTime } from "./format";
 import { MedalDisc } from "./Medals";
@@ -30,6 +31,7 @@ export function Stats({ onClose }: { onClose: () => void }) {
   const mystery = mysteryStats();
   const hl = loadHigherLower();
   const pit = loadPitStop();
+  const corner = cornerMedals();
   const circuits = CATALOG.filter((t) => t.id !== "kestrel").map((t) => {
     const pb = loadPB(t.id, 1);
     return { ...t, pb: pb?.lapTimeMs ?? null, medal: pb ? medalFor(t.id, pb.lapTimeMs, []) : null };
@@ -88,6 +90,7 @@ export function Stats({ onClose }: { onClose: () => void }) {
           {[
             ["Mystery circuit", mystery.played ? `${mystery.solved} of ${mystery.played} solved, streak ${mystery.streak}` : "Not tried yet"],
             ["Higher or lower", hl.runs ? `Best streak ${hl.best}` : "Not tried yet"],
+            ["Corner of the week", corner.weeks ? `${corner.medals} of ${corner.weeks} weeks with a medal${corner.poles ? `, ${corner.poles} pole${corner.poles === 1 ? "" : "s"}` : ""}` : "Not tried yet"],
             ["Pit stop", pit.best !== null ? `Best ${(pit.best / 1000).toFixed(3)} s` : "Not tried yet"],
             ["Lights out", reaction.best !== null ? `Best ${(reaction.best / 1000).toFixed(3)} s` : "Not tried yet"],
           ].map(([k, v]) => (

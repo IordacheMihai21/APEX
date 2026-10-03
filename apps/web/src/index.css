@@ -523,6 +523,16 @@ canvas {
   animation-duration: 160ms;
 }
 
+/* Corner of the week: the corner on its circuit breathes softly, so the eye finds it. */
+.corner-glow {
+  animation: corner-glow 1800ms ease-in-out infinite alternate;
+}
+@keyframes corner-glow {
+  to {
+    stroke-opacity: 0.6;
+  }
+}
+
 /* First-run coaching: the control a tip points at wears a slow ink ring. */
 .coach-ring {
   outline: 2px solid var(--color-ink);
@@ -839,6 +849,7 @@ canvas {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .corner-glow,
   .coach-ring,
   .coach-in,
   .pit-car,
