@@ -633,26 +633,27 @@ canvas {
   .pit-band-r {
     box-shadow: inset -3px 0 0 #f5c518;
   }
-  /* fresh tyres wait beside each wheel, held by the crew */
-  .pit-wait-l {
-    transform: translateX(-185%);
+  /* a fresh tyre seats onto the hub from the outside, with a small settle */
+  .pit-mount-l {
+    animation: pit-mount-l 180ms var(--ease-out) both;
   }
-  .pit-wait-r {
-    transform: translateX(185%);
+  .pit-mount-r {
+    animation: pit-mount-r 180ms var(--ease-out) both;
   }
-  .pit-in {
-    transform: none;
-    opacity: 1;
-    transition-delay: 90ms;
+  /* the spare beside each wheel: same rubber as the tyres on the car */
+  .pit-spare {
+    border-radius: 22%/14%;
+    outline: 1px solid rgb(255 255 255 / 0.1);
+    outline-offset: -1px;
+    filter: drop-shadow(2px 4px 3px rgb(0 0 0 / 0.6));
+    transition: rotate 220ms var(--ease-out);
   }
-  /* the worn tyre is pulled off and dropped beside the car */
-  .pit-out-l {
-    transform: translate(-190%, 55%) rotate(-14deg);
-    opacity: 0.8;
+  /* the worn tyre, set down beside the car at an angle */
+  .pit-dropped-l {
+    rotate: -12deg;
   }
-  .pit-out-r {
-    transform: translate(190%, 55%) rotate(14deg);
-    opacity: 0.8;
+  .pit-dropped-r {
+    rotate: 12deg;
   }
   /* a crew member from above: shoulders and a helmet in the team's orange */
   .pit-crew {
@@ -746,6 +747,16 @@ canvas {
     outline-offset: 6px;
   }
 }
+@keyframes pit-mount-l {
+  from {
+    transform: translateX(-70%) scale(1.06);
+  }
+}
+@keyframes pit-mount-r {
+  from {
+    transform: translateX(70%) scale(1.06);
+  }
+}
 @keyframes pit-key-in {
   from {
     opacity: 0;
@@ -816,6 +827,8 @@ canvas {
   .pit-car,
   .pit-car-gone,
   .pit-tyre,
+  .pit-mount-l,
+  .pit-mount-r,
   .pit-wheel-on,
   .pit-shake,
   .pit-key,

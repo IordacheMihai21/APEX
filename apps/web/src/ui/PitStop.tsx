@@ -431,7 +431,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
           {/* the crew: one at each wheel, waiting on its mark; the active one shows its key */}
           {(Object.keys(WHEEL_AT) as Wheel[]).map((w) => {
             const p = WHEEL_AT[w];
-            const x = CAR_X + p.x + p.side * 0.95;
+            const x = CAR_X + p.x + p.side * 1.2;
             const y = CAR_Y + p.y;
             const on = active === w;
             return (
@@ -444,6 +444,22 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
                   </span>
                 )}
               </div>
+            );
+          })}
+
+          {/* the spare beside each wheel: a fresh tyre waiting, then the worn one, left on the ground */}
+          {(Object.keys(WHEEL_AT) as Wheel[]).map((w) => {
+            const p = WHEEL_AT[w];
+            const done = doneWheels.has(w);
+            const tw = p.front ? 0.34 : 0.42;
+            const tl = p.front ? 0.66 : 0.74;
+            return (
+              <span
+                key={`spare-${w}`}
+                aria-hidden="true"
+                className={`pit-spare absolute -translate-x-1/2 -translate-y-1/2 ${done ? `pit-tyre-old ${p.side < 0 ? "pit-dropped-l" : "pit-dropped-r"}` : `pit-tyre-new ${p.side < 0 ? "pit-band-l" : "pit-band-r"}`}`}
+                style={{ left: pctX(CAR_X + p.x + p.side * 0.62), top: pctY(CAR_Y + p.y), width: pctX(tw), height: pctY(tl) }}
+              />
             );
           })}
 
@@ -471,8 +487,11 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
                   className={`pit-wheel absolute -translate-x-1/2 -translate-y-1/2 ${on ? "pit-wheel-on" : ""} ${flash === w ? "pit-wheel-flash" : ""}`}
                   style={{ left: `${((1.5 + p.x) / 3) * 100}%`, top: `${((3.3 + p.y) / 6.6) * 100}%`, width: `${(tw / 3) * 100}%`, height: `${(tl / 6.6) * 100}%` }}
                 >
-                  <span className={`pit-tyre pit-tyre-old ${done ? (p.side < 0 ? "pit-out-l" : "pit-out-r") : ""}`} />
-                  <span className={`pit-tyre pit-tyre-new ${p.side < 0 ? "pit-band-l" : "pit-band-r"} ${done ? "pit-in" : p.side < 0 ? "pit-wait-l" : "pit-wait-r"} ${phase === "idle" || phase === "entering" ? "opacity-0" : ""}`} />
+                  {/* always a tyre on the hub: the worn one until the gun's done, then the fresh one seats */}
+                  <span
+                    key={done ? "fresh" : "worn"}
+                    className={`pit-tyre ${done ? `pit-tyre-new ${p.side < 0 ? "pit-band-l pit-mount-l" : "pit-band-r pit-mount-r"}` : "pit-tyre-old"}`}
+                  />
                 </button>
               );
             })}
