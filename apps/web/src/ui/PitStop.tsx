@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { track } from "../analytics";
 import { soundEnabled } from "../game/audio";
 import { FRONT_AXLE, REAR_AXLE, TRACK_HALF, bareCar } from "../game/car";
 import { asphaltDataUrl } from "../game/scenery";
@@ -249,6 +250,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
     setSplits(all);
     setResult(r);
     setRec((x) => recordStop(x, r, mode === "daily" ? dateKey() : null));
+    track("Minigame finished", { game: "pit-stop", mode });
     setPhase("leaving");
     later(() => setPhase("done"), reduce ? 50 : 700);
   }, [phase, early, splits, wrong, mode, reduce]);

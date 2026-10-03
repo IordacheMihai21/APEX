@@ -13,6 +13,7 @@ import { Stats } from "./ui/Stats";
 import { decodeChallenge } from "./modes/challenge";
 import { ChevronLeft, ColourBlind, SoundOff, SoundOn } from "./ui/icons";
 import { DailySummary, Loading, TrackPicker } from "./Dialogs";
+import { pageview } from "./analytics";
 
 // The hub is all a first visit needs; the race (engine, renderer, scenery) and
 // the minigames load when they're opened, and the race is fetched early while idle.
@@ -36,12 +37,13 @@ const loadPlay = () => fresh(() => import("./Play"));
 const Play = lazy(() => loadPlay().then((m) => ({ default: m.Play })));
 const Reaction = lazy(() => fresh(() => import("./ui/Reaction")).then((m) => ({ default: m.Reaction })));
 const Mystery = lazy(() => fresh(() => import("./ui/Mystery")).then((m) => ({ default: m.Mystery })));
+const Privacy = lazy(() => fresh(() => import("./ui/Privacy")).then((m) => ({ default: m.Privacy })));
 const Archive = lazy(() => fresh(() => import("./ui/Archive")).then((m) => ({ default: m.Archive })));
 const PitStop = lazy(() => fresh(() => import("./ui/PitStop")).then((m) => ({ default: m.PitStop })));
 const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) => ({ default: m.HigherLower })));
 
-type Mini = "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive";
-type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+type Mini = "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive" | "privacy";
+type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "privacy" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 function initialScreen(): Screen {
   const q = new URLSearchParams(location.search);
@@ -64,6 +66,7 @@ const MINI: Record<Mini, string> = {
   "higher-lower": "Higher or lower: F1 circuit facts | APEX",
   "pit-stop": "F1 pit stop game: change four tyres | APEX",
   archive: "Daily Quali archive: every past circuit | APEX",
+  privacy: "Privacy | APEX",
 };
 
 const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice" };
@@ -109,6 +112,7 @@ export function App() {
       if (screen.condition && screen.condition !== "dry") url.searchParams.set("cond", screen.condition);
     }
     history.replaceState(null, "", url);
+    pageview();
   }, [screen]);
 
   const act = (a: HubAction) => {
@@ -198,6 +202,8 @@ export function App() {
           <Reaction onPlayDaily={() => act({ kind: "daily" })} />
         ) : screen.kind === "mystery" ? (
           <Mystery onPlayDaily={() => act({ kind: "daily" })} />
+        ) : screen.kind === "privacy" ? (
+          <Privacy />
         ) : screen.kind === "archive" ? (
           <Archive onPlay={(day, trackId) => setScreen({ kind: "play", mode: "daily", trackId, day })} />
         ) : screen.kind === "pit-stop" ? (

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { track } from "../analytics";
 import type { CircuitFacts } from "../modes/circuits";
 import { type Round, firstRound, isRight, loadHigherLower, nextRound, recordRun, value } from "../modes/higherLower";
 import { CircuitOutline } from "./Hub";
@@ -48,6 +49,7 @@ export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
       setPhase("wrong");
       setNewBest(streak > rec.best);
       setRec(recordRun(streak));
+      track("Minigame finished", { game: "higher-lower", streak });
     }
   };
 

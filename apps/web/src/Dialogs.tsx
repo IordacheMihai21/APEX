@@ -9,6 +9,7 @@ import { MEDAL_NAME } from "./modes/medals";
 import { challengeUrl } from "./modes/challenge";
 import { Share } from "./ui/icons";
 import { primaryBtn, secondaryBtn } from "./ui/styles";
+import { track } from "./analytics";
 
 export function useCountdown() {
   const [left, setLeft] = useState(() => msToNextDay());
@@ -34,6 +35,7 @@ export function ShareButton({
 }) {
   const [done, setDone] = useState(false);
   const share = async () => {
+    track("Share", { what: label === "Challenge" ? "challenge" : "daily" });
     try {
       if (image && navigator.canShare) {
         const file = new File([await image()], "apex-daily.png", { type: "image/png" });

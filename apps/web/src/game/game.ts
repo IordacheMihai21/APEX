@@ -20,6 +20,7 @@ import {
 import { MEDAL_COLOR, MEDAL_NAME, type Medal, medalFor, nextMedal } from "../modes/medals";
 import { Camera } from "./camera";
 import { CarSprites } from "./car";
+import { track as trackEvent } from "../analytics";
 import { CATALOG } from "./catalog";
 import { Scenery } from "./scenery";
 import type { SceneryData } from "./surroundings";
@@ -652,6 +653,7 @@ export class Game {
     this.camera.animateTo(sim.samples.x[0], sim.samples.y[0], RACE_TRACK_PX_SLOW / this.track.widthMeters, this.headingAt(0) - Math.PI / 2, 450);
     if (soundEnabled()) engine.resume();
     logEvent("run_started", { track: this.track.id, mode: this.opts.mode });
+    trackEvent("Lap started", { mode: this.opts.mode, circuit: this.track.id, condition: this.condition });
     this.emit();
   }
 
@@ -842,6 +844,7 @@ export class Game {
     this.frameResult();
     this.onLap?.({ lapTimeMs: sim.lapTimeMs, grades: grades.map((g) => g.grade), allPurple, knots: this.z.slice() });
     logEvent("run_completed", { track: this.track.id, lapTimeMs: sim.lapTimeMs, deltaMs: this.result.deltaTargetMs, newPb, attempt: this.attempts });
+    trackEvent("Lap finished", { mode: this.opts.mode, circuit: this.track.id, attempt: this.attempts });
     this.emit();
   }
 

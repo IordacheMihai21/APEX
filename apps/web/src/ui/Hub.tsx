@@ -27,7 +27,7 @@ export type HubAction =
   | { kind: "season"; fresh: boolean }
   | { kind: "practice" }
   | { kind: "practice-track"; trackId: string }
-  | { kind: "mini"; game: "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive" }
+  | { kind: "mini"; game: "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive" | "privacy" }
   | { kind: "stats" };
 
 const PLAYBACK = 4;
@@ -631,6 +631,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           </button>
           <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "mini", game: "archive" })}>
             Past dailies
+          </button>
+          <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "mini", game: "privacy" })}>
+            Privacy
           </button>
           <span className="sm:ml-auto">An independent game. Circuit names refer to venues only.</span>
         </p>

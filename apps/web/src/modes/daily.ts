@@ -8,7 +8,13 @@ import { MEDAL_EMOJI, MEDAL_NAME, type Medal, better, medalFor, realPole } from 
  * day. The streak counts days with at least Bronze.
  */
 export const DAILY_LAPS = 6;
-const LAUNCH = "2026-10-01";
+/**
+ * Day No. 1. Set VITE_LAUNCH_DATE to the real launch day for the live build:
+ * numbering, the circuit rotation, the conditions and the archive all count
+ * from it. A missing or malformed value falls back to the development date.
+ */
+const LAUNCH_ENV = (import.meta.env?.VITE_LAUNCH_DATE as string | undefined) ?? "";
+export const LAUNCH = /^\d{4}-\d{2}-\d{2}$/.test(LAUNCH_ENV) ? LAUNCH_ENV : "2026-10-01";
 const POOL = ["monza", "spa", "silverstone", "suzuka", "monaco", "interlagos", "hungaroring", "red-bull-ring", "zandvoort", "austin", "barcelona", "imola"];
 const KEY = "apex.daily.v1";
 const ARCHIVE_KEY = "apex.archive.v1";

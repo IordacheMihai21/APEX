@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { track } from "../analytics";
 import { soundEnabled } from "../game/audio";
 import { LIGHT_MS, type ReactionRecord, average, loadReaction, randomHold, recordJump, recordReaction, verdict } from "../modes/reaction";
 import { Gantry } from "./Gantry";
@@ -86,6 +87,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
       setMs(t);
       setPhase("done");
       setRec((r) => recordReaction(r, t));
+      track("Minigame finished", { game: "reaction" });
     }
   }, [phase, start]);
 

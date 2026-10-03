@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { track } from "../analytics";
 import { OUTLINES } from "../game/outlines";
 import { CIRCUITS, circuit } from "../modes/circuits";
 import { dailyNumber, msToNextDay } from "../modes/daily";
@@ -217,7 +218,13 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
                     <li key={c.id}>
                       <button
                         disabled={used}
-                        onClick={() => setDay((d) => recordGuess(d, c.id))}
+                        onClick={() =>
+                          setDay((d) => {
+                            const next = recordGuess(d, c.id);
+                            if (isOver(next) && !isOver(d)) track("Minigame finished", { game: "mystery", solved: isSolved(next), guesses: next.guesses.length });
+                            return next;
+                          })
+                        }
                         className="guess-chip w-full border border-line bg-board/70 px-3 py-2.5 text-left text-[14px] font-semibold text-paint disabled:text-steel/50 disabled:line-through"
                       >
                         {c.name}
