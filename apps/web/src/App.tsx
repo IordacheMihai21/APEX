@@ -4,7 +4,7 @@ import { setSoundEnabled, soundEnabled } from "./game/audio";
 import { colourBlind, setColourBlind } from "./game/palette";
 import { CATALOG } from "./game/catalog";
 import type { Mode } from "./game/game";
-import { loadDaily } from "./modes/daily";
+import { dailyNumber, loadDaily } from "./modes/daily";
 import { currentTrack, loadSeason, newSeason } from "./modes/season";
 import { type HubAction, Hub } from "./ui/Hub";
 import { ADS_ON, AdSlot } from "./ui/Ads";
@@ -35,11 +35,12 @@ const loadPlay = () => fresh(() => import("./Play"));
 const Play = lazy(() => loadPlay().then((m) => ({ default: m.Play })));
 const Reaction = lazy(() => fresh(() => import("./ui/Reaction")).then((m) => ({ default: m.Reaction })));
 const Mystery = lazy(() => fresh(() => import("./ui/Mystery")).then((m) => ({ default: m.Mystery })));
+const Archive = lazy(() => fresh(() => import("./ui/Archive")).then((m) => ({ default: m.Archive })));
 const PitStop = lazy(() => fresh(() => import("./ui/PitStop")).then((m) => ({ default: m.PitStop })));
 const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) => ({ default: m.HigherLower })));
 
-type Mini = "reaction" | "mystery" | "higher-lower" | "pit-stop";
-type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean };
+type Mini = "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive";
+type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string };
 
 function initialScreen(): Screen {
   const q = new URLSearchParams(location.search);
@@ -59,6 +60,7 @@ const MINI: Record<Mini, string> = {
   mystery: "Mystery circuit: guess the F1 track | APEX",
   "higher-lower": "Higher or lower: F1 circuit facts | APEX",
   "pit-stop": "F1 pit stop game: change four tyres | APEX",
+  archive: "Daily Quali archive: every past circuit | APEX",
 };
 
 const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice" };
@@ -146,7 +148,7 @@ export function App() {
             </span>
             {track && screen.kind === "play" && (
               <div className="min-w-0 leading-tight">
-                <div className="caption truncate">{MODE_LABEL[screen.mode]}</div>
+                <div className="caption truncate">{screen.day ? `Archive, quali No. ${dailyNumber(screen.day)}` : MODE_LABEL[screen.mode]}</div>
                 <div className="truncate text-[14px] font-bold text-paint">{track.name}</div>
               </div>
             )}
@@ -188,18 +190,21 @@ export function App() {
           <Reaction onPlayDaily={() => act({ kind: "daily" })} />
         ) : screen.kind === "mystery" ? (
           <Mystery onPlayDaily={() => act({ kind: "daily" })} />
+        ) : screen.kind === "archive" ? (
+          <Archive onPlay={(day, trackId) => setScreen({ kind: "play", mode: "daily", trackId, day })} />
         ) : screen.kind === "pit-stop" ? (
           <PitStop onPlayDaily={() => act({ kind: "daily" })} />
         ) : screen.kind === "higher-lower" ? (
           <HigherLower onPlayDaily={() => act({ kind: "daily" })} />
         ) : (
           <Play
-            key={`${screen.mode}:${screen.trackId}:${screen.nonce ?? 0}`}
+            key={`${screen.mode}:${screen.trackId}:${screen.day ?? ""}:${screen.nonce ?? 0}`}
             mode={screen.mode}
             trackId={screen.trackId}
             challenge={screen.challenge}
             watch={screen.watch}
-            onNext={(trackId) => setScreen(trackId ? { kind: "play", mode: screen.mode, trackId, nonce: Date.now() } : { kind: "hub" })}
+            day={screen.day}
+            onNext={(trackId) => setScreen(trackId ? { kind: "play", mode: screen.mode, trackId, nonce: Date.now() } : screen.day ? { kind: "archive" } : { kind: "hub" })}
           />
         )}
         </Suspense>

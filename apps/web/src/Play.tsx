@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
 import { LINE_STYLES, type LineStyle } from "@apex/engine";
 import { Game, type MapView, type Mode, type Snapshot } from "./game/game";
@@ -35,6 +35,7 @@ export function Play({
   trackId,
   challenge,
   watch,
+  day,
   onNext,
 }: {
   mode: Mode;
@@ -42,6 +43,8 @@ export function Play({
   challenge?: number[];
   /** open straight into the perfect-lap demo (a finished daily) */
   watch?: boolean;
+  /** a past daily from the archive (YYYY-MM-DD): played the same way, kept apart, unranked */
+  day?: string;
   onNext: (trackId: string | null) => void;
 }) {
   const [game, setGame] = useState<Game | null>(null);
@@ -57,11 +60,11 @@ export function Play({
         if (!alive) return;
         let g: Game;
         if (mode === "daily") {
-          const rec = loadDaily();
+          const rec = loadDaily(day, !!day);
           setDaily(rec);
           g = new Game(t, { scenery, mode, lapLimit: DAILY_LAPS, lapsUsed: rec.laps.length, startKnots: rec.knots, locked: rec.status !== "playing" });
           g.onLap = (lap) => {
-            const next = recordLap(loadDaily(), { lapTimeMs: lap.lapTimeMs, grades: lap.grades }, lap.knots);
+            const next = recordLap(loadDaily(day, !!day), { lapTimeMs: lap.lapTimeMs, grades: lap.grades }, lap.knots);
             setDaily(next);
             if (next.status !== "playing") g.lock();
           };
@@ -87,7 +90,7 @@ export function Play({
     return () => {
       alive = false;
     };
-  }, [mode, trackId]);
+  }, [mode, trackId, day]);
 
   if (!game) return <Loading trackId={trackId} error={error} />;
   return <GameView game={game} daily={daily} round={round} practiceLaps={practiceLaps} onNext={onNext} onHint={() => setDaily((d) => (d ? recordHint(d) : d))} />;
@@ -113,6 +116,8 @@ function GameView({
   const canvas = useRef<HTMLCanvasElement>(null);
   const tower = useRef<HTMLDivElement>(null);
   const s = useSnapshot(game);
+  // lives here, not in the setup bar, so it sees the race start and can close itself
+  const coach = useCoach(s);
 
   useEffect(() => {
     game.attach(canvas.current!);
@@ -190,7 +195,7 @@ function GameView({
         />
       </div>
       {s.phase === "setup" && !s.locked && <ViewControls game={game} />}
-      {s.phase === "setup" && !s.locked && <ControlBar s={s} game={game} />}
+      {s.phase === "setup" && !s.locked && <ControlBar s={s} game={game} coach={coach} />}
       {s.phase === "setup" && s.locked && daily && <LockedNote daily={daily} game={game} onHub={() => onNext(null)} />}
       {racing && <RaceHud s={s} onSkip={() => game.skip()} />}
       {s.phase === "result" && s.result && <ResultSheet s={s} game={game} lapRows={lapRows} daily={daily} round={round} onNext={onNext} names={names} onHint={onHint} />}
@@ -280,7 +285,47 @@ function useFineTune(): [boolean, (v: boolean) => void] {
   return [open, set];
 }
 
-function ControlBar({ s, game }: { s: Snapshot; game: Game }) {
+/**
+ * First-run coaching: three short prompts over the first line, shown once.
+ * Each step advances on what actually happens in the game (so keys work as
+ * well as taps): a style picked, a move to the next corner, then the race.
+ */
+const COACH_KEY = "apex.coach.v1";
+const COACH: string[] = [
+  "Set your line one corner at a time. Pick how you take this one: early, classic or late apex.",
+  "Each corner keeps its own line. Press Next to set the following one.",
+  "Ready? Lights out races your line, and the physics turns it into a lap time.",
+];
+
+function useCoach(s: Snapshot) {
+  const [step, setStep] = useState(() => {
+    try {
+      return localStorage.getItem(COACH_KEY) ? COACH.length : 0;
+    } catch {
+      return COACH.length;
+    }
+  });
+  const from = useRef({ style: s.style, complex: s.complex });
+  const finish = useCallback(() => {
+    setStep(COACH.length);
+    try {
+      localStorage.setItem(COACH_KEY, "1");
+    } catch {
+      /* it shows again next time, no harm */
+    }
+  }, []);
+  useEffect(() => {
+    if (step === 0 && s.style !== from.current.style) setStep(1);
+    else if (step === 1 && s.complex !== from.current.complex) setStep(2);
+  }, [s.style, s.complex, step]);
+  // racing the first line is the end of the lesson
+  useEffect(() => {
+    if (step < COACH.length && s.phase !== "setup") finish();
+  }, [s.phase, step, finish]);
+  return { step, active: step < COACH.length, picked: () => step === 0 && setStep(1), skip: finish };
+}
+
+function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: ReturnType<typeof useCoach> }) {
   const ref = useInset(game, "bottom");
   const [fine, setFine] = useFineTune();
   const cx = game.controls.complexes[s.complex];
@@ -290,6 +335,19 @@ function ControlBar({ s, game }: { s: Snapshot; game: Game }) {
   return (
     <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center min-[720px]:px-3 min-[720px]:pb-3">
       <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/94 px-3 pt-2.5 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:border">
+        {coach.active && (
+          <div key={coach.step} className="coach-in mb-2.5 flex items-start gap-3 border-l-2 border-ink bg-ink/10 py-2 pr-2 pl-3" role="status">
+            <span className="mt-[7px] flex shrink-0 gap-1" aria-label={`Tip ${coach.step + 1} of ${COACH.length}`}>
+              {COACH.map((_, i) => (
+                <span key={i} className={`h-1 w-3 ${i <= coach.step ? "bg-ink" : "bg-asphalt"}`} />
+              ))}
+            </span>
+            <p className="flex-1 text-[14px] leading-snug text-paint">{COACH[coach.step]}</p>
+            <button className="shrink-0 px-1 text-[13px] text-steel underline decoration-line underline-offset-4 hover:text-paint" onClick={coach.skip}>
+              Skip
+            </button>
+          </div>
+        )}
         <div className="flex items-center justify-between gap-3">
           <h2 className="wide truncate text-[20px] leading-none text-paint">
             {cx.name}
@@ -299,7 +357,7 @@ function ControlBar({ s, game }: { s: Snapshot; game: Game }) {
             <span className="caption num">
               Corner {s.complex + 1} of {game.controls.complexes.length}
             </span>
-            <button className="btn-line inline-flex items-center gap-1 border border-paint/20 py-1 pr-1.5 pl-2.5 text-[13px] font-semibold text-paint/90" onClick={() => game.nextComplex()}>
+            <button className={`btn-line inline-flex items-center gap-1 border border-paint/20 py-1 pr-1.5 pl-2.5 text-[13px] font-semibold text-paint/90 ${coach.step === 1 ? "coach-ring" : ""}`} onClick={() => game.nextComplex()}>
               {last ? "First corner" : "Next"}
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -313,13 +371,16 @@ function ControlBar({ s, game }: { s: Snapshot; game: Game }) {
         )}
 
         {/* the one-tap line for this corner */}
-        <div className="mt-2.5 grid grid-cols-3 border border-line" role="radiogroup" aria-label="Line through this corner">
+        <div className={`mt-2.5 grid grid-cols-3 border border-line ${coach.step === 0 ? "coach-ring" : ""}`} role="radiogroup" aria-label="Line through this corner">
           {LINE_STYLES.map((st) => (
             <button
               key={st}
               role="radio"
               aria-checked={s.style === st}
-              onClick={() => game.applyStyle(st)}
+              onClick={() => {
+                game.applyStyle(st);
+                coach.picked();
+              }}
               className={`style-pick h-10 border-r border-line text-[14px] font-semibold last:border-r-0 ${s.style === st ? "bg-paint text-night" : "text-paint/85 hover:bg-graphite"}`}
             >
               {STYLE_NAME[st]}
@@ -384,7 +445,7 @@ function ControlBar({ s, game }: { s: Snapshot; game: Game }) {
               Best line
             </button>
           )}
-          <button className={`${primaryBtn} flex-1`} onClick={() => game.race()}>
+          <button className={`${primaryBtn} flex-1 ${coach.step === 2 ? "coach-ring" : ""}`} onClick={() => game.race()}>
             Lights out
           </button>
         </div>
@@ -508,8 +569,8 @@ function ResultSheet({
   let actions: React.ReactNode;
   if (s.mode === "daily" && daily && daily.status !== "playing") {
     const dayMedal = bestMedal(daily);
-    headline = daily.status === "won" ? "Pole" : dayMedal ? `${MEDAL_NAME[dayMedal]} today` : "Out of laps";
-    body = daily.status === "won" ? `Every corner perfect on lap ${daily.laps.length} of ${DAILY_LAPS}.` : `New circuit in ${countdown}.`;
+    headline = daily.status === "won" ? "Pole" : dayMedal ? `${MEDAL_NAME[dayMedal]}${daily.archive ? "" : " today"}` : "Out of laps";
+    body = daily.status === "won" ? `Every corner perfect on lap ${daily.laps.length} of ${DAILY_LAPS}.` : daily.archive ? "An archive replay: it doesn't count for your streak." : `New circuit in ${countdown}.`;
     actions = (
       <>
         <ShareButton {...dailyShare(daily)} />
@@ -517,7 +578,7 @@ function ResultSheet({
           Watch perfect lap
         </button>
         <button className={secondaryBtn} onClick={() => onNext(null)}>
-          Grid
+          {daily.archive ? "Archive" : "Grid"}
         </button>
       </>
     );
@@ -662,7 +723,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
       <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/95 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
         <h2 className="wide text-[20px] leading-none text-paint">{dayHeadline(daily)}</h2>
         <p className="mt-1.5 text-[14px] text-paint/75">
-          New circuit in {countdown}.
+          {daily.archive ? "An archive replay, unranked." : `New circuit in ${countdown}.`}
           {game.getSnapshot().perfectShown ? " The perfect line is now drawn under yours." : ""}
         </p>
         <div className="mt-3">
@@ -674,7 +735,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
           </button>
           <ShareButton {...dailyShare(daily)} />
           <button className={secondaryBtn} onClick={onHub}>
-            Grid
+            {daily.archive ? "Archive" : "Grid"}
           </button>
         </div>
       </div>

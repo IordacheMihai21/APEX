@@ -134,7 +134,7 @@ Done in this pass:
 - Official length and corners in the hub hero; the phone hero's action sticks
   in reach.
 
-Also done 2026-10-03: **Pit stop** minigame at `/pit-stop` (daily plus practice), the third daily in the Today bar.
+Also done 2026-10-03: **Pit stop** minigame at `/pit-stop` (daily plus practice), the third daily in the Today bar; **first-run coaching** (3 below); the **archive** of past dailies at `/archive` (1 below).
 
 Next, by value per effort:
 1. **Archive of past dailies** (Wordle, Framed). The game is deterministic, so

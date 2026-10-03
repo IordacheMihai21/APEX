@@ -10,6 +10,7 @@ export const DAILY_LAPS = 6;
 const LAUNCH = "2026-10-01";
 const POOL = ["monza", "spa", "silverstone", "suzuka", "monaco", "interlagos", "hungaroring", "red-bull-ring", "zandvoort", "austin", "barcelona", "imola"];
 const KEY = "apex.daily.v1";
+const ARCHIVE_KEY = "apex.archive.v1";
 
 export interface DailyLap {
   lapTimeMs: number;
@@ -27,6 +28,8 @@ export interface DailyRecord {
   hints?: number;
   /** Line of the fastest lap today, for the "race my best lap" link. */
   bestKnots?: number[];
+  /** A past day replayed from the archive: kept apart, so it never counts for the streak or stats. */
+  archive?: boolean;
 }
 
 /** Laps that must be driven before the coach's hints open in the daily. */
@@ -103,9 +106,9 @@ export function dailyTrack(key = dateKey()): string {
   return order[n % POOL.length];
 }
 
-function loadAll(): Record<string, DailyRecord> {
+function loadAll(store = KEY): Record<string, DailyRecord> {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "{}");
+    return JSON.parse(localStorage.getItem(store) ?? "{}");
   } catch {
     return {};
   }
@@ -125,15 +128,16 @@ export function medalDistribution(): { medal: Medal | null; days: number }[] {
   return order.map((medal) => ({ medal, days: days.filter((m) => m === medal).length }));
 }
 
-export function loadDaily(key = dateKey()): DailyRecord {
-  return loadAll()[key] ?? { key, trackId: dailyTrack(key), laps: [], status: "playing" };
+export function loadDaily(key = dateKey(), archive = false): DailyRecord {
+  return loadAll(archive ? ARCHIVE_KEY : KEY)[key] ?? { key, trackId: dailyTrack(key), laps: [], status: "playing", ...(archive ? { archive } : {}) };
 }
 
 export function saveDaily(rec: DailyRecord) {
+  const store = rec.archive ? ARCHIVE_KEY : KEY;
   try {
-    const all = loadAll();
+    const all = loadAll(store);
     all[rec.key] = rec;
-    localStorage.setItem(KEY, JSON.stringify(all));
+    localStorage.setItem(store, JSON.stringify(all));
   } catch {
     /* private mode: today's progress just won't persist */
   }
@@ -195,6 +199,31 @@ export function dailyStats(): DailyStats {
   return { played: all.length, medalDays, poles, streak, bestStreak: best };
 }
 
+export interface ArchiveDay {
+  key: string;
+  number: number;
+  trackId: string;
+  /** the day as played on the day, if it was */
+  live: DailyRecord | null;
+  /** a later replay from the archive, if any */
+  replay: DailyRecord | null;
+}
+
+/** Every past daily, newest first: each can be replayed (unranked). */
+export function archiveDays(today = dateKey()): ArchiveDay[] {
+  const live = loadAll(KEY);
+  const replays = loadAll(ARCHIVE_KEY);
+  const days: ArchiveDay[] = [];
+  for (let i = dayIndex(today) - 1; i >= 0; i--) {
+    const d = new Date(`${LAUNCH}T12:00:00`);
+    d.setDate(d.getDate() + i);
+    const key = dateKey(d);
+    const l = live[key];
+    days.push({ key, number: i + 1, trackId: dailyTrack(key), live: l?.laps.length ? l : null, replay: replays[key] ?? null });
+  }
+  return days;
+}
+
 export function msToNextDay(now = new Date()): number {
   const next = new Date(now);
   next.setHours(24, 0, 0, 0);
@@ -213,5 +242,5 @@ export function shareText(rec: DailyRecord, trackName: string, flag: string, emo
   const race = link ? `\nRace my best lap: ${link}` : "";
   const pole = realPole(rec.trackId);
   const fasterThanPole = pole && best < pole.ms ? `\nFaster than the real 2025 pole by ${((pole.ms - best) / 1000).toFixed(3)}s` : "";
-  return `APEX Quali #${n} ${flag} ${trackName}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}${fasterThanPole}\n${rows}${race}`;
+  return `APEX Quali #${n}${rec.archive ? " (archive)" : ""} ${flag} ${trackName}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}${fasterThanPole}\n${rows}${race}`;
 }

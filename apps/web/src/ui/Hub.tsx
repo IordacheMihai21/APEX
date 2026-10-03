@@ -27,7 +27,7 @@ export type HubAction =
   | { kind: "season"; fresh: boolean }
   | { kind: "practice" }
   | { kind: "practice-track"; trackId: string }
-  | { kind: "mini"; game: "reaction" | "mystery" | "higher-lower" | "pit-stop" }
+  | { kind: "mini"; game: "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive" }
   | { kind: "stats" };
 
 const PLAYBACK = 4;
@@ -472,12 +472,21 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
             </div>
             {/* on phones the action stays in reach while the hero is on screen */}
             <div className="sticky bottom-0 z-[2] -mx-4 mt-1 bg-gradient-to-t from-night from-60% to-transparent px-4 pt-4 pb-[max(12px,env(safe-area-inset-bottom))] sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pb-0">
-              <button
-                className={`${finished ? secondaryBtn : primaryBtn} w-full sm:w-auto sm:min-w-[260px]`}
-                onClick={() => onAction(finished ? { kind: "daily-summary" } : { kind: "daily" })}
-              >
-                {finished ? "See today's result" : daily.laps.length ? "Continue" : "Lights out"}
-              </button>
+              {finished ? (
+                // the day is done: the next thing to play is a past day
+                <span className="flex flex-wrap gap-2">
+                  <button className={`${primaryBtn} flex-1 sm:flex-none sm:min-w-[220px]`} onClick={() => onAction({ kind: "mini", game: "archive" })}>
+                    Play past days
+                  </button>
+                  <button className={`${secondaryBtn} flex-1 sm:flex-none`} onClick={() => onAction({ kind: "daily-summary" })}>
+                    Today's result
+                  </button>
+                </span>
+              ) : (
+                <button className={`${primaryBtn} w-full sm:w-auto sm:min-w-[260px]`} onClick={() => onAction({ kind: "daily" })}>
+                  {daily.laps.length ? "Continue" : "Lights out"}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -609,6 +618,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           )}
           <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "stats" })}>
             See your record
+          </button>
+          <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "mini", game: "archive" })}>
+            Past dailies
           </button>
           <span className="sm:ml-auto">An independent game. Circuit names refer to venues only.</span>
         </p>

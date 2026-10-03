@@ -523,6 +523,21 @@ canvas {
   animation-duration: 160ms;
 }
 
+/* First-run coaching: the control a tip points at wears a slow ink ring. */
+.coach-ring {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  animation: coach-ring 900ms ease-in-out infinite alternate;
+}
+@keyframes coach-ring {
+  to {
+    outline-offset: 5px;
+  }
+}
+.coach-in {
+  animation: rise 360ms var(--ease-out) both;
+}
+
 /* Loading placeholder in the shape of what's coming: a slow light sweep. */
 @keyframes sweep {
   from {
@@ -824,6 +839,8 @@ canvas {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .coach-ring,
+  .coach-in,
   .pit-car,
   .pit-car-gone,
   .pit-tyre,

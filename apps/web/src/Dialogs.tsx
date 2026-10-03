@@ -68,7 +68,8 @@ export function dailyShare(daily: DailyRecord) {
 export function dayHeadline(daily: DailyRecord): string {
   if (daily.status === "won") return `Pole on lap ${daily.laps.length}`;
   const m = bestMedal(daily);
-  return m ? `${MEDAL_NAME[m]} today` : "No medal today";
+  const when = daily.archive ? "" : " today";
+  return m ? `${MEDAL_NAME[m]}${when}` : `No medal${when}`;
 }
 
 /** Hub overlay for a finished daily: the share card, share, countdown. */
