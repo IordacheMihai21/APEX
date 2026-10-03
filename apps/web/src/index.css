@@ -324,13 +324,13 @@ canvas {
   stroke-dashoffset: 0;
 }
 .hero-map .draw-1 {
-  animation: draw 1600ms var(--ease-out) 200ms both;
+  animation: draw 1100ms var(--ease-out) 60ms both;
 }
 .hero-map .draw-2 {
-  animation: draw 1400ms var(--ease-out) 900ms both;
+  animation: draw 900ms var(--ease-out) 450ms both;
 }
 .hero-map .fade-late {
-  animation: fade 400ms ease-out 2100ms both;
+  animation: fade 300ms ease-out 1250ms both;
 }
 /* Sectors light up in lap order once the track has drawn, like a timing screen filling in. */
 @keyframes sector {
@@ -346,7 +346,7 @@ canvas {
   animation: draw 1400ms var(--ease-out) 0ms infinite alternate both;
 }
 .fade-in-late {
-  animation: fade 600ms ease-out 1800ms both;
+  animation: fade 400ms ease-out 1000ms both;
 }
 
 /* Headline rises out of its own baseline, masked. */
@@ -523,6 +523,46 @@ canvas {
   animation-duration: 160ms;
 }
 
+/* Loading placeholder in the shape of what's coming: a slow light sweep. */
+@keyframes sweep {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.04) 50%, transparent 70%) var(--color-board);
+  background-size: 200% 100%;
+  animation: sweep 1400ms linear infinite;
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+.card-in {
+  animation: card-in 420ms var(--ease-out) both;
+}
+
+/* Today bar: entries light up like a timing-screen row on hover. */
+.today-item {
+  transition: background-color 160ms ease;
+}
+@media (hover: hover) {
+  .today-item:hover {
+    background: var(--color-graphite);
+  }
+}
+.today-item:active {
+  background: var(--color-graphite);
+}
+.today-pip {
+  transition: background-color 300ms ease;
+}
+
 /* Mystery circuit: clue cells flip in left to right; the lap draws on with each miss. */
 @keyframes flip {
   from {
@@ -572,6 +612,8 @@ canvas {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .card-in,
   .flip,
   .hl-deal > *,
   .wipe-in,

@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
-import { OUTLINES, type Outline } from "../game/outlines";
+import { OUTLINES, type Outline, type OutlineDetail, loadOutlineDetail } from "../game/outlines";
 import { DAILY_LAPS, bestMedal, dailyNumber, qualifyingDay, raceWeek, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
 import { type Grade, bestPerGroup } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
+import { CIRCUITS } from "../modes/circuits";
 import { loadHigherLower } from "../modes/higherLower";
 import { MYSTERY_TRIES, REVEAL, isOver, isSolved, loadMystery, mysteryAnswer, revealOffset } from "../modes/mystery";
 import { loadReaction } from "../modes/reaction";
 import { ADS_ON, AdSlot } from "./Ads";
-import { Down, Up } from "./icons";
+import { Chequered, Down, Up } from "./icons";
 import { Gantry } from "./Gantry";
 import { MedalDisc, MedalLadder, PoleTarget } from "./Medals";
 import { lapTime } from "./format";
@@ -48,6 +49,100 @@ function useReducedMotion() {
     return () => m.removeEventListener("change", on);
   }, []);
   return reduce;
+}
+
+/**
+ * Today at a glance, the way a timing screen shows session status: how many of
+ * the two dailies are done, each one's state (a chequered flag once it's
+ * finished), and the medal streak. Each entry opens its game.
+ */
+function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; onAction: (a: HubAction) => void }) {
+  const mystery = loadMystery();
+  const stats = dailyStats();
+  const qualiDone = daily.status !== "playing";
+  const mysteryDone = isOver(mystery);
+  const medal = bestMedal(daily);
+  const items = [
+    {
+      key: "quali",
+      name: "Daily Quali",
+      short: null as string | null,
+      done: qualiDone,
+      state: qualiDone
+        ? daily.status === "won"
+          ? "Pole"
+          : medal
+            ? MEDAL_NAME[medal]
+            : "No medal"
+        : daily.laps.length
+          ? `${DAILY_LAPS - daily.laps.length} laps left`
+          : "Not started",
+      medal: medal,
+      act: () => onAction(qualiDone ? { kind: "daily-summary" } : { kind: "daily" }),
+    },
+    {
+      key: "mystery",
+      name: "Mystery circuit",
+      short: "Mystery",
+      done: mysteryDone,
+      state: mysteryDone
+        ? isSolved(mystery)
+          ? `Solved in ${mystery.guesses.length}`
+          : "Missed"
+        : mystery.guesses.length
+          ? `${MYSTERY_TRIES - mystery.guesses.length} guesses left`
+          : "Not started",
+      medal: null,
+      act: () => onAction({ kind: "mini", game: "mystery" }),
+    },
+  ];
+  const played = items.filter((i) => i.done).length;
+  return (
+    <nav aria-label="Today's dailies" className="border-b border-line bg-board/60">
+      <div className="mx-auto flex max-w-[1240px] items-stretch gap-x-6 px-4 md:px-8">
+        <p className="hidden shrink-0 items-center gap-3 py-2.5 sm:flex">
+          <span className="text-[13px] text-steel">Today</span>
+          <span className="flex gap-1" aria-label={`${played} of ${items.length} dailies played`}>
+            {items.map((i) => (
+              <span key={i.key} className={`today-pip h-1.5 w-5 ${i.done ? "bg-ink" : "bg-asphalt"}`} />
+            ))}
+          </span>
+        </p>
+        <ul className="flex min-w-0 flex-1 items-stretch">
+          {items.map((i) => (
+            <li key={i.key} className="min-w-0 flex-1 border-line sm:flex-none sm:border-l">
+              <button onClick={i.act} className="today-item flex h-full w-full min-w-0 items-center gap-2.5 py-2.5 pr-4 text-left sm:px-4">
+                <span className={`grid h-6 w-6 shrink-0 place-items-center ${i.done ? "text-paint" : "text-steel/60"}`}>
+                  {i.medal ? <MedalDisc medal={i.medal} size={16} /> : i.done ? <Chequered className="h-4 w-4" /> : <span className="h-2 w-2 border border-current" />}
+                </span>
+                <span className="min-w-0 leading-tight">
+                  <span className="block truncate text-[13px] font-semibold text-paint">
+                    {i.short ? (
+                      <>
+                        <span className="sm:hidden">{i.short}</span>
+                        <span className="hidden sm:inline">{i.name}</span>
+                      </>
+                    ) : (
+                      i.name
+                    )}
+                  </span>
+                  <span className={`block truncate text-[12px] ${i.done ? "text-paint/75" : "text-steel"}`}>{i.state}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p className="flex shrink-0 items-center gap-2 border-l border-line py-2.5 pl-4 text-[12px] text-steel" title="Days in a row with a Daily Quali medal">
+          <span className="wide num text-[18px] leading-none text-paint">{stats.streak}</span>
+          <span className="leading-tight">
+            day
+            <br />
+            streak
+          </span>
+        </p>
+      </div>
+    </nav>
+  );
 }
 
 /** Three quick games beside the lap: one daily puzzle, one streak, one reflex test. */
@@ -148,6 +243,20 @@ export function CircuitOutline({ track, className = "" }: { track: GameTrack | s
 const GRADE_STROKE: Record<Grade, string> = { purple: "var(--color-purple)", green: "var(--color-green)", yellow: "var(--color-yellow)", red: "var(--color-kerb)" };
 
 function HeroCircuit({ id, o, grades }: { id: string; o: Outline; grades: Grade[] | null }) {
+  // the paths load on their own (a few kB, cached offline); the box holds its size meanwhile
+  const [detail, setDetail] = useState<{ id: string; d: OutlineDetail } | null>(null);
+  useEffect(() => {
+    let live = true;
+    loadOutlineDetail(id).then((d) => live && setDetail({ id, d }));
+    return () => {
+      live = false;
+    };
+  }, [id]);
+  if (!detail || detail.id !== id) return null;
+  return <HeroMap id={id} o={{ ...o, ...detail.d }} grades={grades} />;
+}
+
+function HeroMap({ id, o, grades }: { id: string; o: Outline & OutlineDetail; grades: Grade[] | null }) {
   const reduce = useReducedMotion();
   const w = Math.max(o.width * 2.2, 20);
   const lineId = `line-${id}`;
@@ -155,7 +264,7 @@ function HeroCircuit({ id, o, grades }: { id: string; o: Outline; grades: Grade[
   const points = o.keyPoints.split(";").map(Number);
   // a dash of length len whose head sits at the car: offset = len - progress
   const trail = (len: number) => points.map((p) => (len - p).toFixed(4)).join(";");
-  const timing = { dur, begin: "2.2s", repeatCount: "indefinite", calcMode: "linear", keyTimes: o.keyTimes } as const;
+  const timing = { dur, begin: "1.3s", repeatCount: "indefinite", calcMode: "linear", keyTimes: o.keyTimes } as const;
   return (
     <svg viewBox="0 0 1000 1000" className="hero-map h-full w-full overflow-visible" role="img" aria-label={`Map of ${CATALOG.find((t) => t.id === id)?.name}`}>
       <path className="draw draw-1" pathLength={1} d={o.ribbon} fill="none" stroke="#23262d" strokeWidth={w} strokeLinejoin="round" strokeLinecap="round" />
@@ -165,7 +274,7 @@ function HeroCircuit({ id, o, grades }: { id: string; o: Outline; grades: Grade[
             <path
               key={i}
               className="sector-in"
-              style={{ "--d": `${1500 + i * 110}ms` } as React.CSSProperties}
+              style={{ "--d": `${950 + i * 70}ms` } as React.CSSProperties}
               d={g}
               fill="none"
               stroke={GRADE_STROKE[grades[i]]}
@@ -245,6 +354,8 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   const season = useMemo(() => loadSeason(), []);
 
   const info = CATALOG.find((t) => t.id === daily.trackId)!;
+  // the official figures, the same ones the minigames use (our corner groups can differ)
+  const facts = CIRCUITS.find((c) => c.id === daily.trackId);
   const o = OUTLINES[daily.trackId];
   const left = msToNextDay(new Date(now));
   // the gantry is the clock: a pod lights for every fifth of the day gone; at midnight, lights out
@@ -269,6 +380,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
 
   return (
     <div className="hub relative h-full overflow-x-hidden overflow-y-auto">
+      <TodayBar daily={daily} onAction={onAction} />
       {week && (
         <p className="border-b border-line bg-board px-4 py-2 text-center text-[13px] text-paint/90">
           {quali ? (
@@ -296,15 +408,15 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
             </div>
           </div>
 
-          <p className="rise mt-8 text-[15px] font-semibold text-ink lg:mt-12" style={d(250)}>
+          <p className="rise mt-6 text-[15px] font-semibold text-ink lg:mt-12" style={d(60)}>
             Daily Quali No. {dailyNumber()}
             {quali ? ", race-weekend special" : ""}
           </p>
-          <h1 id="daily-h" className="reveal-up wide mt-2 pb-1 text-[clamp(36px,12.5cqw,84px)] [overflow-wrap:anywhere] leading-[0.95] text-paint" style={d(320)}>
+          <h1 id="daily-h" className="reveal-up wide mt-2 pb-1 text-[clamp(36px,12.5cqw,84px)] [overflow-wrap:anywhere] leading-[0.95] text-paint" style={d(100)}>
             <span>{info.name}</span>
           </h1>
-          <p className="rise mt-2 text-[15px] text-steel" style={d(480)}>
-            {info.country}, {(o.lengthM / 1000).toFixed(2)} km, {o.cornerCount} corners
+          <p className="rise mt-2 text-[15px] text-steel" style={d(200)}>
+            {info.country}, {(facts?.lengthKm ?? o.lengthM / 1000).toFixed(3)} km, {facts?.turns ?? o.cornerCount} corners
           </p>
 
           {/* the map sits inline on phones, beside the copy from lg */}
@@ -315,7 +427,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
             <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} medal={medal} />
           </figure>
 
-          <div className="rise mt-4 max-w-[440px] lg:mt-10" style={d(620)}>
+          <div className="rise mt-4 max-w-[440px] lg:mt-10" style={d(260)}>
             <p className="mb-2.5 text-[15px] leading-snug text-paint/85">
               {daily.status === "won"
                 ? `Pole on lap ${daily.laps.length}. Come back tomorrow.`
@@ -330,12 +442,15 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
               <MedalLadder trackId={daily.trackId} best={medal} />
               <PoleTarget trackId={daily.trackId} bestMs={best?.lapTimeMs ?? null} />
             </div>
-            <button
-              className={`${finished ? secondaryBtn : primaryBtn} mt-5 w-full sm:w-auto sm:min-w-[260px]`}
-              onClick={() => onAction(finished ? { kind: "daily-summary" } : { kind: "daily" })}
-            >
-              {finished ? "See today's result" : daily.laps.length ? "Continue" : "Lights out"}
-            </button>
+            {/* on phones the action stays in reach while the hero is on screen */}
+            <div className="sticky bottom-0 z-[2] -mx-4 mt-1 bg-gradient-to-t from-night from-60% to-transparent px-4 pt-4 pb-[max(12px,env(safe-area-inset-bottom))] sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pb-0">
+              <button
+                className={`${finished ? secondaryBtn : primaryBtn} w-full sm:w-auto sm:min-w-[260px]`}
+                onClick={() => onAction(finished ? { kind: "daily-summary" } : { kind: "daily" })}
+              >
+                {finished ? "See today's result" : daily.laps.length ? "Continue" : "Lights out"}
+              </button>
+            </div>
           </div>
         </div>
 

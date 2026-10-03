@@ -101,6 +101,52 @@ real venue facts in `modes/circuits.ts`.
 Still open: weekly one-corner challenge (11), TV-style
 replay director (13), and the server-side items (14-16).
 
+## Premium pass (2026-10-03)
+
+Research: daily-game hubs (playfootball.games, futbol11, Framed, Wordle and
+NYT Games write-ups) and the F1 dailies (Gridle, Paddockdle, Driverle,
+Formudle); browser driving games known for smoothness (Slow Roads, PolyTrack).
+What the lasting dailies share: one puzzle a day for everyone, one visible
+streak, a "today" strip across all the games (playfootball: wins, countdown,
+"0 / 14 played", losses; finished cards marked FT), and a result that looks
+good in a group chat. Gridle bundles four F1 stages a day under one brand.
+The smooth driving games feel premium mostly by loading at once and holding
+their frame rate, not by decoration.
+
+Audit of APEX: 60 fps on desktop with under 1 ms of script per frame (cached
+Path2D scenery), so play is smooth; the cost was loading. One 556 kB script
+(186 kB gzipped) held the engine, renderer and every circuit's hero paths
+before the hub could show. The hub then took about 2.5 s to finish its
+entrance; it showed our corner-group count (Suzuka "25 corners") where the
+minigames show the official one (18); and the phone hero's button sat below
+the first screen.
+
+Done in this pass:
+- **Loading:** the race and the minigames load on demand (the race is fetched
+  while the hub is idle); the outline index ships light and the hero's paths
+  load per circuit. First load is about 340 kB (about 110 kB gzipped). A tab
+  left open across a deploy reloads once instead of failing.
+- **Arrival** readable within about 0.8 s.
+- **Today bar:** both dailies' status, a chequered flag when done, the streak.
+- **Share card:** the day's lap as an image (circuit in sector colours, best
+  lap, medal, lap grid), previewed in the result dialog, sent with the text
+  where the device can share files.
+- Official length and corners in the hub hero; the phone hero's action sticks
+  in reach.
+
+Next, by value per effort:
+1. **Archive of past dailies** (Wordle, Framed). The game is deterministic, so
+   any past day can be replayed client-side; marked as unranked. Fills the gap
+   after the daily and adds pages for ads. **M**
+2. **Weekly one-corner challenge** (11). **M**
+3. **First-run coaching:** three short prompts over the first lap (pick a
+   style, drag a point, Lights out), shown once. **S**
+4. **Per-game stats** from each minigame's tile, like playfootball's "View
+   stats". **S**
+5. **How you compare** ("faster than 73% of players", the day's average), the
+   biggest social hook of the NYT games; needs the Phase B backend. **M**
+6. **Rotating conditions** per 12-day cycle (GAME_PLAN C13). **M**
+
 ## Recommended next batch
 
 In order of value per effort:

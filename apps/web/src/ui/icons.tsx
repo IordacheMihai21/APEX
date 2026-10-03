@@ -8,6 +8,7 @@ import {
   CaretLeft,
   CaretRight,
   CornersOut,
+  FlagCheckered,
   type Icon,
   MapTrifold,
   Palette,
@@ -42,3 +43,4 @@ export const Undo = make(ArrowCounterClockwise);
 export const ColourBlind = make(Palette);
 export const Up = make(ArrowUp);
 export const Down = make(ArrowDown);
+export const Chequered = make(FlagCheckered);

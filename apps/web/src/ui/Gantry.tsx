@@ -13,7 +13,7 @@ export function Gantry({ lit, size = "md", label, sequence = false }: { lit: num
           {[0, 1].map((j) => (
             <span
               key={j}
-              style={sequence && i < lit ? { animationDelay: `${180 + i * 220}ms` } : undefined}
+              style={sequence && i < lit ? { animationDelay: `${80 + i * 140}ms` } : undefined}
               className={`${lamp} rounded-full ${sequence && i < lit ? "lamp-seq" : ""} ${
                 i < lit
                   ? "bg-[radial-gradient(circle_at_40%_35%,#ffb3a8_0%,#ff2b1a_38%,#9e0f06_100%)] shadow-[0_0_6px_1px_rgba(255,40,20,0.45)]"
