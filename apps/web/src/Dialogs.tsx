@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { CATALOG } from "./game/catalog";
 import { OUTLINES } from "./game/outlines";
-import { type DailyRecord, bestMedal, dailyNumber, loadDaily, msToNextDay, shareText } from "./modes/daily";
+import type { Condition } from "@apex/engine";
+import { CONDITION_NAME, type DailyRecord, bestMedal, dailyNumber, loadDaily, msToNextDay, shareText } from "./modes/daily";
 import { GRADE_EMOJI } from "./modes/grading";
 
 import { MEDAL_NAME } from "./modes/medals";
@@ -130,7 +131,9 @@ export function DailySummary({ onClose, onWatch }: { onClose: () => void; onWatc
   );
 }
 
-export function TrackPicker({ onPick, onClose }: { onPick: (id: string) => void; onClose: () => void }) {
+export function TrackPicker({ onPick, onClose }: { onPick: (id: string, condition: Condition) => void; onClose: () => void }) {
+  // practise in any conditions, e.g. ahead of a wet daily
+  const [condition, setCondition] = useState<Condition>("dry");
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
@@ -140,10 +143,23 @@ export function TrackPicker({ onPick, onClose }: { onPick: (id: string) => void;
     <div className="fixed inset-0 z-10 flex items-start justify-center bg-night/75 p-4 pt-16" onClick={onClose}>
       <div role="dialog" aria-label="Choose a circuit" className="wipe-in w-full max-w-sm border border-line bg-board" onClick={(e) => e.stopPropagation()}>
         <div className="wide border-b border-line px-4 py-3 text-[15px] text-paint">Choose a circuit</div>
+        <div role="radiogroup" aria-label="Conditions" className="grid grid-cols-3 border-b border-line">
+          {(["dry", "wet", "lowdf"] as const).map((c) => (
+            <button
+              key={c}
+              role="radio"
+              aria-checked={condition === c}
+              onClick={() => setCondition(c)}
+              className={`border-r border-line py-2 text-[13px] font-semibold last:border-r-0 ${condition === c ? "bg-paint text-night" : "text-steel hover:text-paint"}`}
+            >
+              {CONDITION_NAME[c]}
+            </button>
+          ))}
+        </div>
         <ul className="max-h-[70dvh] overflow-y-auto">
           {CATALOG.map((t, i) => (
             <li key={t.id} className="border-b border-line/70 last:border-b-0">
-              <button onClick={() => onPick(t.id)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-graphite">
+              <button onClick={() => onPick(t.id, condition)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-graphite">
                 <span className="cut-l num grid h-6 w-7 shrink-0 place-items-center bg-graphite text-[11px] font-bold text-steel">{i + 1}</span>
                 <span className="wide flex-1 truncate text-[15px] text-paint">{t.name}</span>
                 <span className="caption">{t.country}</span>

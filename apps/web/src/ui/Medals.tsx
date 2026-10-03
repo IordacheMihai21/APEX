@@ -1,4 +1,5 @@
 import { lapTime } from "./format";
+import type { Condition } from "@apex/engine";
 import { MEDALS, MEDAL_COLOR, MEDAL_NAME, type Medal, medalTimes, nextMedal, realPole } from "../modes/medals";
 
 /** A medal disc: a solid face with an inner ring; unearned discs are an empty ring. */
@@ -22,8 +23,8 @@ export function MedalDisc({ medal, earned = true, size = 16, className = "" }: {
  * The medal ladder: the four targets for today's circuit, left to right, with
  * the ones already earned lit. It is the day's goal at a glance.
  */
-export function MedalLadder({ trackId, best }: { trackId: string; best: Medal | null }) {
-  const t = medalTimes(trackId);
+export function MedalLadder({ trackId, best, condition = "dry" }: { trackId: string; best: Medal | null; condition?: Condition }) {
+  const t = medalTimes(trackId, condition);
   if (!t) return null;
   const reached = best ? MEDALS.indexOf(best) : -1;
   return (
@@ -48,8 +49,8 @@ export function MedalLadder({ trackId, best }: { trackId: string; best: Medal | 
  * The result sheet's medal line: what this lap earned (stamped in when it is a
  * new personal best) and the next target with the time still to find.
  */
-export function MedalRow({ trackId, medal, lapTimeMs, stamp }: { trackId: string; medal: Medal | null; lapTimeMs: number; stamp: boolean }) {
-  const next = nextMedal(trackId, medal);
+export function MedalRow({ trackId, medal, lapTimeMs, stamp, condition = "dry" }: { trackId: string; medal: Medal | null; lapTimeMs: number; stamp: boolean; condition?: Condition }) {
+  const next = nextMedal(trackId, medal, condition);
   return (
     <div className="flex items-center justify-between gap-3 border-t border-line py-2">
       <span className="flex items-center gap-2">
@@ -80,8 +81,8 @@ export function MedalRow({ trackId, medal, lapTimeMs, stamp }: { trackId: string
 }
 
 /** The real 2025 pole as an extra target beside the medals, where it can be beaten before perfection. */
-export function PoleTarget({ trackId, bestMs }: { trackId: string; bestMs: number | null }) {
-  const pole = realPole(trackId);
+export function PoleTarget({ trackId, bestMs, condition = "dry" }: { trackId: string; bestMs: number | null; condition?: Condition }) {
+  const pole = realPole(trackId, condition);
   if (!pole?.beatable) return null;
   const beaten = bestMs !== null && bestMs < pole.ms;
   return (

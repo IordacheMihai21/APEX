@@ -1,3 +1,4 @@
+import type { Condition } from "@apex/engine";
 import type { Grade } from "./grading";
 import { MEDAL_EMOJI, MEDAL_NAME, type Medal, better, medalFor, realPole } from "./medals";
 
@@ -30,6 +31,8 @@ export interface DailyRecord {
   bestKnots?: number[];
   /** A past day replayed from the archive: kept apart, so it never counts for the streak or stats. */
   archive?: boolean;
+  /** Track conditions for the day (records from before conditions existed are dry). */
+  condition?: Condition;
 }
 
 /** Laps that must be driven before the coach's hints open in the daily. */
@@ -129,7 +132,32 @@ export function medalDistribution(): { medal: Medal | null; days: number }[] {
 }
 
 export function loadDaily(key = dateKey(), archive = false): DailyRecord {
-  return loadAll(archive ? ARCHIVE_KEY : KEY)[key] ?? { key, trackId: dailyTrack(key), laps: [], status: "playing", ...(archive ? { archive } : {}) };
+  return loadAll(archive ? ARCHIVE_KEY : KEY)[key] ?? { key, trackId: dailyTrack(key), condition: dailyCondition(key), laps: [], status: "playing", ...(archive ? { archive } : {}) };
+}
+
+export const conditionOf = (rec: DailyRecord): Condition => rec.condition ?? "dry";
+
+export const CONDITION_NAME: Record<Condition, string> = { dry: "Dry", wet: "Wet", lowdf: "Low downforce" };
+
+/** One line on what the conditions change, for the hub. */
+export const CONDITION_NOTE: Record<Condition, string> = {
+  dry: "",
+  wet: "Much less grip everywhere: brake earlier, carry less speed. The perfect line and the medal times change.",
+  lowdf: "The low-drag trim: faster on the straights, less grip in quick corners. The perfect line and the medal times change.",
+};
+
+/**
+ * The day's conditions. Each circuit moves to the next condition every 12-day
+ * cycle (dry, then wet, then low downforce), so a line remembered from its last
+ * visit no longer holds; each cycle has four days of each. Race-weekend
+ * Saturdays stay dry, like the qualifying they stand in for.
+ */
+export function dailyCondition(key = dateKey()): Condition {
+  if (qualifyingDay(key)) return "dry";
+  const n = Math.max(0, dayIndex(key));
+  const cycle = Math.floor(n / POOL.length);
+  const order: Condition[] = ["dry", "wet", "lowdf"];
+  return order[(cycle + POOL.indexOf(dailyTrack(key))) % order.length];
 }
 
 export function saveDaily(rec: DailyRecord) {
@@ -156,7 +184,7 @@ export function recordLap(rec: DailyRecord, lap: DailyLap, knots: number[]): Dai
 
 /** The best medal of the day so far (null until a lap reaches Bronze). */
 export function bestMedal(rec: DailyRecord): Medal | null {
-  return rec.laps.reduce<Medal | null>((m, l) => better(m, medalFor(rec.trackId, l.lapTimeMs, l.grades)), null);
+  return rec.laps.reduce<Medal | null>((m, l) => better(m, medalFor(rec.trackId, l.lapTimeMs, l.grades, conditionOf(rec))), null);
 }
 
 export interface DailyStats {
@@ -203,6 +231,7 @@ export interface ArchiveDay {
   key: string;
   number: number;
   trackId: string;
+  condition: Condition;
   /** the day as played on the day, if it was */
   live: DailyRecord | null;
   /** a later replay from the archive, if any */
@@ -219,7 +248,7 @@ export function archiveDays(today = dateKey()): ArchiveDay[] {
     d.setDate(d.getDate() + i);
     const key = dateKey(d);
     const l = live[key];
-    days.push({ key, number: i + 1, trackId: dailyTrack(key), live: l?.laps.length ? l : null, replay: replays[key] ?? null });
+    days.push({ key, number: i + 1, trackId: dailyTrack(key), condition: dailyCondition(key), live: l?.laps.length ? l : null, replay: replays[key] ?? null });
   }
   return days;
 }
@@ -240,7 +269,8 @@ export function shareText(rec: DailyRecord, trackName: string, flag: string, emo
   const head = medal ? `${MEDAL_EMOJI[medal]} ${MEDAL_NAME[medal]}` : "No medal";
   const hints = rec.hints ? `, ${rec.hints} ${rec.hints === 1 ? "hint" : "hints"} used` : "";
   const race = link ? `\nRace my best lap: ${link}` : "";
-  const pole = realPole(rec.trackId);
+  const pole = realPole(rec.trackId, conditionOf(rec));
   const fasterThanPole = pole && best < pole.ms ? `\nFaster than the real 2025 pole by ${((pole.ms - best) / 1000).toFixed(3)}s` : "";
-  return `APEX Quali #${n}${rec.archive ? " (archive)" : ""} ${flag} ${trackName}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}${fasterThanPole}\n${rows}${race}`;
+  const cond = conditionOf(rec);
+  return `APEX Quali #${n}${rec.archive ? " (archive)" : ""} ${flag} ${trackName}${cond === "dry" ? "" : `, ${CONDITION_NAME[cond].toLowerCase()}`}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}${fasterThanPole}\n${rows}${race}`;
 }

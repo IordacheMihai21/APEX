@@ -4,7 +4,7 @@
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { APEX_FORMULA as car, type GameTrack, type RacingLine, type Vec2, fitDrawing, prepareTrack, simulateLap, usableHalfWidth } from "@apex/engine";
+import { APEX_FORMULA as car, type GameTrack, type RacingLine, type Vec2, fitDrawing, prepareTrack, simulateLap, usableHalfWidth, CONDITION_CARS } from "@apex/engine";
 import { fmt } from "./format";
 
 /**
@@ -82,6 +82,11 @@ for (const f of files) {
   });
   const checks = {
     valid: opt.valid && opt.lapTimeMs === track.optimalTimeMs,
+    // each condition's published target reproduces exactly with its own car
+    conditions: Object.entries(track.conditions ?? {}).every(([cond, c]) => {
+      const r = simulateLap({ track: pt, line: c.optimalLine, car: CONDITION_CARS[cond as "wet" | "lowdf"] });
+      return r.valid && r.lapTimeMs === c.optimalTimeMs;
+    }),
     "centerline slower": center > t + 1000,
     "inside slower": inside > t + 500,
     "apex errors cost time": early > t + 300 && late > t + 300,

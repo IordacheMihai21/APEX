@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { archiveDays, dailyStats, dailyTrack, loadDaily, qualifyingDay, raceWeek, recordLap } from "./daily";
+import { archiveDays, dailyCondition, dailyStats, dailyTrack, loadDaily, qualifyingDay, raceWeek, recordLap } from "./daily";
+import { medalFor, medalTimes, realPole } from "./medals";
 
 const store: Record<string, string> = {};
 beforeEach(() => {
@@ -50,5 +51,44 @@ describe("archive", () => {
     const [, day2] = archiveDays("2026-10-04");
     expect(day2.replay?.laps).toHaveLength(1);
     expect(day2.live).toBeNull();
+  });
+});
+
+const dayAt = (n: number) => {
+  const d = new Date("2026-10-01T12:00:00");
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+describe("conditions", () => {
+  it("move each circuit to a new condition every cycle", () => {
+    const seen = new Map<string, string[]>();
+    for (let n = 0; n < 36; n++) {
+      const key = dayAt(n);
+      if (qualifyingDay(key)) continue;
+      const list = seen.get(dailyTrack(key)) ?? [];
+      list.push(dailyCondition(key));
+      seen.set(dailyTrack(key), list);
+    }
+    for (const list of seen.values()) for (let i = 1; i < list.length; i++) expect(list[i]).not.toBe(list[i - 1]);
+  });
+
+  it("give each cycle a mix of all three", () => {
+    const cycle = Array.from({ length: 12 }, (_, n) => dayAt(n)).filter((k) => !qualifyingDay(k)).map((k) => dailyCondition(k));
+    for (const c of ["dry", "wet", "lowdf"]) expect(cycle.filter((x) => x === c).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("use that condition's medals, and no real pole outside the dry", () => {
+    const dry = medalTimes("spa")!;
+    const wet = medalTimes("spa", "wet")!;
+    expect(wet.gold).toBeGreaterThan(dry.gold + 5000);
+    expect(medalFor("spa", dry.gold, [], "wet")).toBe("gold");
+    expect(medalFor("spa", wet.gold, [], "dry")).toBeNull();
+    expect(realPole("spa", "wet")).toBeNull();
+    expect(realPole("spa")).not.toBeNull();
+  });
+
+  it("store the day's condition on new records", () => {
+    expect(loadDaily(dayAt(5)).condition).toBe(dailyCondition(dayAt(5)));
   });
 });

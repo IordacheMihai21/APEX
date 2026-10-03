@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES, type Outline, type OutlineDetail, loadOutlineDetail } from "../game/outlines";
-import { DAILY_LAPS, bestMedal, dailyNumber, qualifyingDay, raceWeek, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
+import { CONDITION_NOTE, DAILY_LAPS, CONDITION_NAME, bestMedal, conditionOf, dailyNumber, qualifyingDay, raceWeek, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
 import { type Grade, bestPerGroup } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
@@ -12,7 +12,7 @@ import { MYSTERY_TRIES, REVEAL, isOver, isSolved, loadMystery, mysteryAnswer, re
 import { loadPitStop, secs, todaysStop } from "../modes/pitstop";
 import { loadReaction } from "../modes/reaction";
 import { ADS_ON, AdSlot } from "./Ads";
-import { Chequered, Down, Up } from "./icons";
+import { Chequered, Down, LowDownforce, Rain, Up } from "./icons";
 import { Gantry } from "./Gantry";
 import { MedalDisc, MedalLadder, PoleTarget } from "./Medals";
 import { lapTime } from "./format";
@@ -352,7 +352,7 @@ function HeroMap({ id, o, grades }: { id: string; o: Outline & OutlineDetail; gr
 }
 
 /** What the map is showing: your best lap today against the lap you are hunting. */
-function MapCaption({ o, bestMs, medal }: { o: Outline; bestMs: number | null; medal: Medal | null }) {
+function MapCaption({ o, bestMs, medal, perfectMs }: { o: Outline; bestMs: number | null; medal: Medal | null; perfectMs: number }) {
   return (
     <figcaption className="fade-in-late grid grid-cols-2 gap-4 border-t border-line pt-3">
       <div>
@@ -364,7 +364,7 @@ function MapCaption({ o, bestMs, medal }: { o: Outline; bestMs: number | null; m
       </div>
       <div className="text-right">
         <div className="text-[13px] text-steel">Perfect lap, driven live</div>
-        <div className="wide num mt-1 text-[15px] text-paint">{lapTime(o.lapMs)}</div>
+        <div className="wide num mt-1 text-[15px] text-paint">{lapTime(perfectMs)}</div>
       </div>
     </figcaption>
   );
@@ -384,7 +384,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   const info = CATALOG.find((t) => t.id === daily.trackId)!;
   // the official figures, the same ones the minigames use (our corner groups can differ)
   const facts = CIRCUITS.find((c) => c.id === daily.trackId);
+  const condition = conditionOf(daily);
   const o = OUTLINES[daily.trackId];
+  const perfectMs = condition === "dry" ? o.lapMs : (o.conditions[condition]?.lapMs ?? o.lapMs);
   const left = msToNextDay(new Date(now));
   // the gantry is the clock: a pod lights for every fifth of the day gone; at midnight, lights out
   const lit = Math.min(5, Math.floor(((86_400_000 - left) / 86_400_000) * 5) + 1);
@@ -398,7 +400,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   const quali = qualifyingDay(today);
   const weekName = week ? CATALOG.find((t) => t.id === week.trackId)?.name : null;
   const medal = bestMedal(daily);
-  const next = nextMedal(daily.trackId, medal);
+  const next = nextMedal(daily.trackId, medal, conditionOf(daily));
   // today's fastest lap (its time goes in the caption)
   const best = daily.laps.reduce<(typeof daily.laps)[number] | null>((b, l) => (!b || l.lapTimeMs < b.lapTimeMs ? l : b), null);
   // the map paints each corner group in its personal best of the day, F1 style:
@@ -446,13 +448,21 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           <p className="rise mt-2 text-[15px] text-steel" style={d(200)}>
             {info.country}, {(facts?.lengthKm ?? o.lengthM / 1000).toFixed(3)} km, {facts?.turns ?? o.cornerCount} corners
           </p>
+          {condition !== "dry" && (
+            <p className="rise mt-3 flex items-start gap-2.5 text-[14px] leading-snug text-paint/85" style={d(230)}>
+              <span className="grid h-7 w-7 shrink-0 place-items-center border border-line text-paint">{condition === "wet" ? <Rain className="h-4 w-4" /> : <LowDownforce className="h-4 w-4" />}</span>
+              <span>
+                <span className="font-semibold text-paint">{CONDITION_NAME[condition]}.</span> {CONDITION_NOTE[condition]}
+              </span>
+            </p>
+          )}
 
           {/* the map sits inline on phones, beside the copy from lg */}
           <figure className="mt-4 w-full max-w-[460px] self-center lg:hidden">
             <div className="h-[min(26vh,320px)] w-full">
               <HeroCircuit id={daily.trackId} o={o} grades={sectorBest} />
             </div>
-            <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} medal={medal} />
+            <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} medal={medal} perfectMs={perfectMs} />
           </figure>
 
           <div className="rise mt-4 max-w-[440px] lg:mt-10" style={d(260)}>
@@ -467,8 +477,8 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
             </p>
             <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={cols} size="sm" />
             <div className="mt-4">
-              <MedalLadder trackId={daily.trackId} best={medal} />
-              <PoleTarget trackId={daily.trackId} bestMs={best?.lapTimeMs ?? null} />
+              <MedalLadder trackId={daily.trackId} best={medal} condition={conditionOf(daily)} />
+              <PoleTarget trackId={daily.trackId} bestMs={best?.lapTimeMs ?? null} condition={conditionOf(daily)} />
             </div>
             {/* on phones the action stays in reach while the hero is on screen */}
             <div className="sticky bottom-0 z-[2] -mx-4 mt-1 bg-gradient-to-t from-night from-60% to-transparent px-4 pt-4 pb-[max(12px,env(safe-area-inset-bottom))] sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pb-0">
@@ -495,7 +505,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           <div className="aspect-square w-full p-[4%]">
             <HeroCircuit id={daily.trackId} o={o} grades={sectorBest} />
           </div>
-          <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} medal={medal} />
+          <MapCaption o={o} bestMs={best?.lapTimeMs ?? null} medal={medal} perfectMs={perfectMs} />
         </figure>
       </section>
 

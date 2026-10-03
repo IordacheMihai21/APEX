@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
-import { LINE_STYLES, type LineStyle } from "@apex/engine";
+import { type Condition, LINE_STYLES, type LineStyle } from "@apex/engine";
 import { Game, type MapView, type Mode, type Snapshot } from "./game/game";
-import { DAILY_HINT_AFTER_LAPS, DAILY_LAPS, type DailyRecord, bestMedal, recordHint, loadDaily, recordLap } from "./modes/daily";
+import { DAILY_HINT_AFTER_LAPS, DAILY_LAPS, type DailyRecord, bestMedal, conditionOf, recordHint, loadDaily, recordLap } from "./modes/daily";
 import { type Grade, gradeFor } from "./modes/grading";
 import { type RoundOutcome, SEASON_LAPS, SEASON_ROUNDS, type SeasonStore, currentTrack, loadSeason, newSeason, recordSeasonLap, rivalMs, seasonDone } from "./modes/season";
 import { CornerTower } from "./ui/CornerTower";
@@ -36,6 +36,7 @@ export function Play({
   challenge,
   watch,
   day,
+  condition,
   onNext,
 }: {
   mode: Mode;
@@ -45,6 +46,8 @@ export function Play({
   watch?: boolean;
   /** a past daily from the archive (YYYY-MM-DD): played the same way, kept apart, unranked */
   day?: string;
+  /** practice conditions (the daily's come from the day) */
+  condition?: Condition;
   onNext: (trackId: string | null) => void;
 }) {
   const [game, setGame] = useState<Game | null>(null);
@@ -62,7 +65,7 @@ export function Play({
         if (mode === "daily") {
           const rec = loadDaily(day, !!day);
           setDaily(rec);
-          g = new Game(t, { scenery, mode, lapLimit: DAILY_LAPS, lapsUsed: rec.laps.length, startKnots: rec.knots, locked: rec.status !== "playing" });
+          g = new Game(t, { scenery, mode, lapLimit: DAILY_LAPS, lapsUsed: rec.laps.length, startKnots: rec.knots, locked: rec.status !== "playing", condition: conditionOf(rec) });
           g.onLap = (lap) => {
             const next = recordLap(loadDaily(day, !!day), { lapTimeMs: lap.lapTimeMs, grades: lap.grades }, lap.knots);
             setDaily(next);
@@ -80,7 +83,7 @@ export function Play({
             if (outcome !== "continue") g.lock();
           };
         } else {
-          g = new Game(t, { scenery, mode, lapLimit: null, challengeKnots: challenge });
+          g = new Game(t, { scenery, mode, lapLimit: null, challengeKnots: challenge, condition });
           g.onLap = (lap) => setPracticeLaps((p) => [...p, lap.grades].slice(-3));
         }
         setGame(g);
@@ -90,7 +93,7 @@ export function Play({
     return () => {
       alive = false;
     };
-  }, [mode, trackId, day]);
+  }, [mode, trackId, day, condition]);
 
   if (!game) return <Loading trackId={trackId} error={error} />;
   return <GameView game={game} daily={daily} round={round} practiceLaps={practiceLaps} onNext={onNext} onHint={() => setDaily((d) => (d ? recordHint(d) : d))} />;
@@ -627,8 +630,8 @@ function ResultSheet({
     );
   }
 
-  const lapMedal = medalFor(game.track.id, r.lapTimeMs, r.grades.map((g) => g.grade));
-  const pole = realPole(game.track.id);
+  const lapMedal = medalFor(game.track.id, r.lapTimeMs, r.grades.map((g) => g.grade), game.condition);
+  const pole = realPole(game.track.id, game.condition);
   const trace = useMemo(() => game.speedTrace(), [game, r]);
   const vsRival = s.mode === "season" && s.rivalMs !== null ? r.lapTimeMs - s.rivalMs : null;
   const pbDelta = r.pbBeforeMs === null ? null : r.lapTimeMs - r.pbBeforeMs;
@@ -650,7 +653,7 @@ function ResultSheet({
           </div>
         </div>
         <div className="mt-2">
-          <MedalRow trackId={game.track.id} medal={lapMedal} lapTimeMs={r.lapTimeMs} stamp={!!lapMedal && r.newPb} />
+          <MedalRow trackId={game.track.id} medal={lapMedal} lapTimeMs={r.lapTimeMs} stamp={!!lapMedal && r.newPb} condition={game.condition} />
           <div className="border-t border-line pt-2 pb-1">
             <SectorCells sectors={s.sectors} large />
             <p className="caption mt-1 flex flex-wrap gap-x-3">

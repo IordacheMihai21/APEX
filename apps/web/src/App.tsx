@@ -3,8 +3,9 @@ import { flushSync } from "react-dom";
 import { setSoundEnabled, soundEnabled } from "./game/audio";
 import { colourBlind, setColourBlind } from "./game/palette";
 import { CATALOG } from "./game/catalog";
+import type { Condition } from "@apex/engine";
 import type { Mode } from "./game/game";
-import { dailyNumber, loadDaily } from "./modes/daily";
+import { CONDITION_NAME, dailyCondition, dailyNumber, loadDaily } from "./modes/daily";
 import { currentTrack, loadSeason, newSeason } from "./modes/season";
 import { type HubAction, Hub } from "./ui/Hub";
 import { ADS_ON, AdSlot } from "./ui/Ads";
@@ -40,7 +41,7 @@ const PitStop = lazy(() => fresh(() => import("./ui/PitStop")).then((m) => ({ de
 const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) => ({ default: m.HigherLower })));
 
 type Mini = "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive";
-type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string };
+type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 function initialScreen(): Screen {
   const q = new URLSearchParams(location.search);
@@ -48,7 +49,9 @@ function initialScreen(): Screen {
   const track = q.get("track");
   const vs = decodeChallenge(q.get("vs"));
   if (vs) return { kind: "play", mode: "practice", trackId: vs.trackId, challenge: vs.knots };
-  if (mode === "practice" && CATALOG.some((t) => t.id === track)) return { kind: "play", mode, trackId: track! };
+  const cond = q.get("cond");
+  const condition = cond === "wet" || cond === "lowdf" ? cond : undefined;
+  if (mode === "practice" && CATALOG.some((t) => t.id === track)) return { kind: "play", mode, trackId: track!, condition };
   const path = location.pathname.replace(/\/$/, "").slice(1) || q.get("play");
   if (path && path in MINI) return { kind: path as Mini };
   return { kind: "hub" };
@@ -103,6 +106,7 @@ export function App() {
     if (screen.kind === "play" && screen.mode === "practice") {
       url.searchParams.set("play", "practice");
       url.searchParams.set("track", screen.trackId);
+      if (screen.condition && screen.condition !== "dry") url.searchParams.set("cond", screen.condition);
     }
     history.replaceState(null, "", url);
   }, [screen]);
@@ -148,7 +152,11 @@ export function App() {
             </span>
             {track && screen.kind === "play" && (
               <div className="min-w-0 leading-tight">
-                <div className="caption truncate">{screen.day ? `Archive, quali No. ${dailyNumber(screen.day)}` : MODE_LABEL[screen.mode]}</div>
+                <div className="caption truncate">
+                  {screen.day ? `Archive, quali No. ${dailyNumber(screen.day)}` : MODE_LABEL[screen.mode]}
+                  {screen.mode === "daily" && dailyCondition(screen.day) !== "dry" ? `, ${CONDITION_NAME[dailyCondition(screen.day)].toLowerCase()}` : ""}
+                  {screen.mode === "practice" && screen.condition && screen.condition !== "dry" ? `, ${CONDITION_NAME[screen.condition].toLowerCase()}` : ""}
+                </div>
                 <div className="truncate text-[14px] font-bold text-paint">{track.name}</div>
               </div>
             )}
@@ -198,12 +206,13 @@ export function App() {
           <HigherLower onPlayDaily={() => act({ kind: "daily" })} />
         ) : (
           <Play
-            key={`${screen.mode}:${screen.trackId}:${screen.day ?? ""}:${screen.nonce ?? 0}`}
+            key={`${screen.mode}:${screen.trackId}:${screen.day ?? ""}:${screen.condition ?? ""}:${screen.nonce ?? 0}`}
             mode={screen.mode}
             trackId={screen.trackId}
             challenge={screen.challenge}
             watch={screen.watch}
             day={screen.day}
+            condition={screen.condition}
             onNext={(trackId) => setScreen(trackId ? { kind: "play", mode: screen.mode, trackId, nonce: Date.now() } : screen.day ? { kind: "archive" } : { kind: "hub" })}
           />
         )}
@@ -218,9 +227,9 @@ export function App() {
 
       {picking && (
         <TrackPicker
-          onPick={(id) => {
+          onPick={(id, condition) => {
             setPicking(false);
-            setScreen({ kind: "play", mode: "practice", trackId: id });
+            setScreen({ kind: "play", mode: "practice", trackId: id, condition });
           }}
           onClose={() => setPicking(false)}
         />

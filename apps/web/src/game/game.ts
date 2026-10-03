@@ -1,5 +1,7 @@
 import {
-  APEX_FORMULA as car,
+  CONDITION_CARS,
+  type CarModel,
+  type Condition,
   type Complex,
   type GameTrack,
   type LineControls,
@@ -46,6 +48,8 @@ export interface GameOptions {
   challengeKnots?: number[];
   /** The circuit's real surroundings (OpenStreetMap), drawn under the run-off. */
   scenery?: SceneryData | null;
+  /** Track conditions: the car, the perfect line and the medals all follow them (default dry). */
+  condition?: Condition;
 }
 
 export interface LapEvent {
@@ -215,17 +219,35 @@ export class Game {
   private sparks: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
   /** Screen-space wind streaks at the frame edges above ~200 km/h (heading-up cam: they fall downward). */
   private streaks: { x: number; y: number; len: number; v: number }[] = [];
+  /** Wet: water thrown up by the rear tyres (world space) and rain across the lens (screen space). */
+  private spray: { x: number; y: number; vx: number; vy: number; life: number; max: number }[] = [];
+  private rain: { x: number; y: number; len: number; v: number }[] = [];
+  private sprayFrom: [number, number] | null = null;
   private raceKmh = 0;
+
+  /** Conditions for this session, the car they give, and that condition's perfect line. */
+  readonly condition: Condition;
+  readonly car: CarModel;
+  private readonly optimal: { knotOffsets: number[] };
+  /** Personal bests and sector bests are kept per circuit and per condition. */
+  private readonly store: string;
 
   constructor(track: GameTrack, opts: GameOptions = { mode: "practice", lapLimit: null }) {
     this.opts = opts;
+    this.condition = opts.condition ?? "dry";
+    const cond = this.condition === "dry" ? null : track.conditions?.[this.condition];
+    // without that condition's line (an old track file), fall back to dry rather than mislead
+    if (this.condition !== "dry" && !cond) this.condition = "dry";
+    this.car = CONDITION_CARS[this.condition];
+    this.optimal = cond?.optimalLine ?? track.optimalLine!;
+    this.store = this.condition === "dry" ? track.id : `${track.id}~${this.condition}`;
     this.lapsUsed = opts.lapsUsed ?? 0;
     this.locked = !!opts.locked;
     this.track = track;
     this.pt = prepareTrack(track);
     this.controls = trackControls(this.pt);
-    this.limit = usableHalfWidth(this.pt, car);
-    this.reference = simulateLap({ track: this.pt, line: track.optimalLine!, car });
+    this.limit = usableHalfWidth(this.pt, this.car);
+    this.reference = simulateLap({ track: this.pt, line: this.optimal, car: this.car });
     this.controls.complexes.forEach((c, i) => c.corners.forEach((name) => this.complexOfCorner.set(name, i)));
     const xs = track.leftBoundary.concat(track.rightBoundary);
     this.bbox = [
@@ -238,17 +260,17 @@ export class Game {
     const significant = new Set(this.controls.complexes.flatMap((c) => c.corners));
     this.scenery = new Scenery(this.pt, track, style, significant, opts.scenery ?? null);
 
-    this.pb = loadPB(track.id, track.version);
+    this.pb = loadPB(this.store, track.version);
     // Continue from the session's last line, else (practice) your best line, else the centerline.
     const pbLine = opts.mode === "practice" && this.pb?.knotOffsets.length === this.pt.k ? this.pb.knotOffsets : null;
     const start = opts.startKnots?.length === this.pt.k ? opts.startKnots : (pbLine ?? new Array(this.pt.k).fill(0));
     this.z = expandGates(this.pt, this.controls, start, this.limit);
     this.lineXY = this.resolve();
-    if (this.pb) this.pbSim = simulateLap({ track: this.pt, line: { knotOffsets: this.pb.knotOffsets }, car });
+    if (this.pb) this.pbSim = simulateLap({ track: this.pt, line: { knotOffsets: this.pb.knotOffsets }, car: this.car });
     if (opts.challengeKnots?.length === this.pt.k) {
       // re-simulated here, so the time on the link can't be anything but what that line drives
       const line = expandGates(this.pt, this.controls, opts.challengeKnots, this.limit);
-      this.challengeSim = simulateLap({ track: this.pt, line: { knotOffsets: line }, car });
+      this.challengeSim = simulateLap({ track: this.pt, line: { knotOffsets: line }, car: this.car });
       this.challengeMs = this.challengeSim.lapTimeMs;
       this.pace = this.paceTarget();
     }
@@ -387,7 +409,7 @@ export class Game {
 
   // ------------------------------------------------------------ line editing
   private resolve() {
-    const r = resolveLine(this.pt, { knotOffsets: this.z }, car);
+    const r = resolveLine(this.pt, { knotOffsets: this.z }, this.car);
     return { x: r.x, y: r.y };
   }
 
@@ -604,7 +626,7 @@ export class Game {
   // ------------------------------------------------------------ race
   race() {
     if (this.phase !== "setup") return;
-    const sim = simulateLap({ track: this.pt, line: { knotOffsets: this.z }, car });
+    const sim = simulateLap({ track: this.pt, line: { knotOffsets: this.z }, car: this.car });
     if (!sim.valid) return; // expandGates keeps lines valid; defensive only
     if (this.locked || (this.opts.lapLimit !== null && this.lapsUsed >= this.opts.lapLimit)) return;
     this.sim = sim;
@@ -621,6 +643,8 @@ export class Game {
     this.lightsHold = this.attempts === 0 ? 200 + Math.random() * 800 : 150 + Math.random() * 300;
     this.lightMs = this.attempts === 0 ? LIGHT_MS_FIRST : LIGHT_MS_REPEAT;
     this.skids = [];
+    this.spray = [];
+    this.sprayFrom = null;
     this.prevWheels = null;
     this.sparks = [];
     this.prevSpeed = 0;
@@ -639,8 +663,8 @@ export class Game {
 
   private paceTarget(): { label: string; medal: Medal | "perfect" | "challenge"; scale: number } {
     if (this.challengeMs !== null) return { label: "Challenge", medal: "challenge", scale: this.challengeMs / this.reference.lapTimeMs };
-    const pbMedal = this.pb ? medalFor(this.track.id, this.pb.lapTimeMs, []) : null;
-    const next = nextMedal(this.track.id, pbMedal);
+    const pbMedal = this.pb ? medalFor(this.track.id, this.pb.lapTimeMs, [], this.condition) : null;
+    const next = nextMedal(this.track.id, pbMedal, this.condition);
     if (!next || next.ms === null) return { label: "Perfect", medal: "perfect", scale: 1 };
     return { label: MEDAL_NAME[next.medal], medal: next.medal, scale: next.ms / this.reference.lapTimeMs };
   }
@@ -664,7 +688,7 @@ export class Game {
 
   /** Sector times for this lap, coloured against the perfect lap and your bests before it. */
   private planSectors(sim: SimulationResult): SectorTime[] {
-    const bests = loadSectorBests(this.track.id, this.track.version);
+    const bests = loadSectorBests(this.store, this.track.version);
     const last = sim.sectors.length - 1;
     return sim.sectors.map((sec, k) => {
       const deltaMs = sec.timeMs - (this.reference.sectors[k]?.timeMs ?? sec.timeMs);
@@ -745,7 +769,7 @@ export class Game {
       deltaMs: 0,
     }));
     this.pace = { label: "Perfect", medal: "perfect", scale: 1 };
-    const line = resolveLine(this.pt, this.track.optimalLine!, car);
+    const line = resolveLine(this.pt, this.optimal, this.car);
     this.perfectXY = { x: line.x, y: line.y };
     this.ownXY ??= this.lineXY;
     this.lineXY = this.perfectXY;
@@ -756,6 +780,8 @@ export class Game {
     this.lightsHold = 300;
     this.lightMs = LIGHT_MS_REPEAT;
     this.skids = [];
+    this.spray = [];
+    this.sprayFrom = null;
     this.prevWheels = null;
     this.sparks = [];
     this.prevSpeed = 0;
@@ -779,9 +805,9 @@ export class Game {
 
   private finishRace() {
     const sim = this.sim!;
-    const before = loadSectorBests(this.track.id, this.track.version);
+    const before = loadSectorBests(this.store, this.track.version);
     saveSectorBests(
-      this.track.id,
+      this.store,
       this.track.version,
       sim.sectors.map((sec, k) => Math.min(sec.timeMs, before?.[k] ?? Infinity)),
     );
@@ -791,7 +817,7 @@ export class Game {
     const newPb = pbBefore === null || sim.lapTimeMs < pbBefore;
     if (newPb) {
       this.pb = { lapTimeMs: sim.lapTimeMs, knotOffsets: this.z.slice(), at: Date.now() };
-      savePB(this.track.id, this.track.version, this.pb);
+      savePB(this.store, this.track.version, this.pb);
       this.pbSim = sim;
     }
     this.attempts++;
@@ -916,7 +942,7 @@ export class Game {
     }
 
     const k = this.complexOfCorner.get(cornerName) ?? this.nearestComplex(cornerName);
-    const opt = this.track.optimalLine!.knotOffsets;
+    const opt = this.optimal.knotOffsets;
     let worst: { gate: Complex["gates"][number]; err: number } | null = null;
     for (const g of this.controls.complexes[k]?.gates ?? []) {
       const err = opt[g.knot] - this.z[g.knot];
@@ -1306,8 +1332,10 @@ export class Game {
       if (this.raceT >= this.sim.rawLapTimeMs) this.demo ? this.finishDemo() : this.finishRace();
       animating = true;
     } else this.shake = [0, 0];
-    if (this.sparks.length) animating = true;
+    if (this.sparks.length || this.spray.length) animating = true;
     if (this.phase !== "race") this.streaks = [];
+    if (this.condition === "wet" && this.phase === "race") this.updateRain(dt);
+    else this.rain = [];
     if (!animating && !this.dirty) return;
     this.dirty = false;
     this.render();
@@ -1344,8 +1372,35 @@ export class Game {
     }
     this.prevWheels = [lx, ly, rx, ry];
     this.prevSpeed = p.speed;
-    // sparks: titanium skid blocks touching down at very high speed
-    if (p.speed * 3.6 > 285 && Math.random() < dt * 18) {
+    // spray: in the wet, the rear tyres throw a plume of water behind the car.
+    // Playback runs at 4x, so the car covers metres between frames: seed the
+    // spray along the whole stretch it just drove, not only where it is now.
+    if (this.condition === "wet" && p.speed > 15) {
+      const [ax, ay] = this.sprayFrom ?? [p.x, p.y];
+      const dist = Math.hypot(p.x - ax, p.y - ay);
+      const n = Math.min(24, Math.ceil(dist / 0.7) + 1);
+      for (let k = 0; k < n && this.spray.length < 420; k++) {
+        const f = Math.random();
+        const lat = (Math.random() < 0.5 ? 1 : -1) * (0.6 + Math.random() * 0.4);
+        const bx = ax + (p.x - ax) * f - c * 1.8 - s * lat;
+        const by = ay + (p.y - ay) * f - s * 1.8 + c * lat;
+        const spread = (Math.random() - 0.5) * 7;
+        const back = p.speed * (0.06 + Math.random() * 0.08);
+        const life = 0.45 + Math.random() * 0.35;
+        this.spray.push({ x: bx, y: by, vx: -c * back - s * spread, vy: -s * back + c * spread, life, max: life });
+      }
+    }
+    this.sprayFrom = [p.x, p.y];
+    for (const sp of this.spray) {
+      sp.x += sp.vx * dt;
+      sp.y += sp.vy * dt;
+      sp.vx *= 1 - dt * 2.5;
+      sp.vy *= 1 - dt * 2.5;
+      sp.life -= dt;
+    }
+    this.spray = this.spray.filter((sp) => sp.life > 0);
+    // sparks: titanium skid blocks touching down at very high speed (not in the wet)
+    if (this.condition !== "wet" && p.speed * 3.6 > 285 && Math.random() < dt * 18) {
       for (let k = 0; k < 6; k++) {
         const spread = (Math.random() - 0.5) * 10;
         this.sparks.push({
@@ -1386,6 +1441,25 @@ export class Game {
     return c;
   }
 
+  /** Rain across the lens: short slanted streaks falling fast, denser than the wind streaks. */
+  private updateRain(dt: number) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.rain = [];
+      return;
+    }
+    const { w, h } = this.camera;
+    const want = Math.min(140, Math.round((w * h) / 9000));
+    while (this.rain.length < want) this.rain.push({ x: Math.random() * (w + 120) - 60, y: Math.random() * h - h, len: 10 + Math.random() * 14, v: 900 + Math.random() * 500 });
+    for (const r of this.rain) {
+      r.y += r.v * dt;
+      r.x -= r.v * dt * 0.18;
+      if (r.y - r.len > h) {
+        r.y = -r.len - Math.random() * 60;
+        r.x = Math.random() * (w + 120) - 60;
+      }
+    }
+  }
+
   private render() {
     const ctx = this.ctx;
     if (!ctx) return;
@@ -1401,6 +1475,14 @@ export class Game {
     cam.x -= this.shake[0] / cam.scale;
     cam.y -= this.shake[1] / cam.scale;
     this.scenery.draw(ctx, px);
+    if (this.condition === "wet") {
+      // a wet day: everything a shade darker and cooler, as under cloud on a damp track
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = "rgba(16,26,42,0.24)";
+      ctx.fillRect(0, 0, this.canvas!.width, this.canvas!.height);
+      ctx.restore();
+    }
     if (this.skids.length && this.phase !== "setup") {
       ctx.strokeStyle = "rgba(8,8,10,0.34)";
       ctx.lineWidth = 0.32;
@@ -1468,6 +1550,16 @@ export class Game {
         ctx.stroke();
       }
       const p = this.sampleAt(this.sim, this.raceT);
+      if (this.spray.length) {
+        // under the car: soft white puffs that grow and fade as they hang in the air
+        for (const sp of this.spray) {
+          const u = sp.life / sp.max;
+          ctx.fillStyle = `rgba(214,220,228,${(0.09 * u).toFixed(3)})`;
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, 0.8 + (1 - u) * 2.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
       this.cars.draw(ctx, p.x, p.y, p.heading, px, false, p);
       if (this.sparks.length) {
         ctx.save();
@@ -1489,6 +1581,17 @@ export class Game {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     // broadcast lens: the frame's corners fall off a little, drawing the eye to the car
     if (this.phase !== "setup") ctx.drawImage(this.vignette(), 0, 0, cam.w, cam.h);
+    if (this.rain.length) {
+      ctx.strokeStyle = "rgba(205,214,228,0.22)";
+      ctx.lineWidth = 1;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      for (const r of this.rain) {
+        ctx.moveTo(r.x, r.y);
+        ctx.lineTo(r.x + r.len * 0.18, r.y - r.len);
+      }
+      ctx.stroke();
+    }
     if (this.phase === "race" && this.streaks.length) {
       ctx.strokeStyle = `rgba(238,237,230,${0.05 + 0.1 * Math.min(1, Math.max(0, (this.raceKmh - 200) / 140))})`;
       ctx.lineWidth = 1.2;

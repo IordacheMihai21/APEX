@@ -16,7 +16,8 @@
     "compare": "tsx tools/track-builder/src/compare-lines.ts",
     "check": "tsx tools/track-builder/src/check-tracks.ts",
     "dev": "npm run dev -w @apex/web",
-    "build:web": "npm run build -w @apex/web"
+    "build:web": "npm run build -w @apex/web",
+    "build:conditions": "tsx tools/track-builder/src/build-conditions.ts"
   },
   "devDependencies": {
     "tsx": "^4.23.15",

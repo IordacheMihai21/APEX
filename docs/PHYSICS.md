@@ -221,3 +221,8 @@ Reproduce with `npm run compare`.
   principle; that is acceptable, but record it if it happens.
 - The ~0.4 s noise floor at 60 px is still comparable to a small apex
   error. Draggable knot handles for fine-tuning (Phase 2) remove it.
+
+
+## Conditions
+
+`CONDITION_CARS` (physics/car.ts) varies the same point-mass car: **wet** lowers tyre friction μ from 1.8 to 1.3; **lowdf** lowers downforce ClA from 5.0 to 3.8 and drag CdA from 1.1 to 0.70 (quicker than dry at Monza by about 0.6 s on the dry line, 3-4 s slower on twisty circuits). Each track stores the best line and lap for each condition under `conditions` (built by `npm run build:conditions`, checked by `npm run check`); medal times per condition come from the same noisy-gate calibration as the dry ones.

@@ -7,6 +7,7 @@ import {
   CaretDown,
   CaretLeft,
   CaretRight,
+  CloudRain,
   CornersOut,
   FlagCheckered,
   type Icon,
@@ -17,6 +18,7 @@ import {
   ShareNetwork,
   SpeakerHigh,
   SpeakerSlash,
+  Wind,
 } from "@phosphor-icons/react";
 
 /** The control icons: Phosphor, bold weight throughout so every control shares one stroke. */
@@ -44,3 +46,5 @@ export const ColourBlind = make(Palette);
 export const Up = make(ArrowUp);
 export const Down = make(ArrowDown);
 export const Chequered = make(FlagCheckered);
+export const Rain = make(CloudRain);
+export const LowDownforce = make(Wind);

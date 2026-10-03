@@ -1,9 +1,10 @@
 import { CATALOG } from "../game/catalog";
-import { DAILY_LAPS, type DailyRecord, archiveDays, bestMedal } from "../modes/daily";
+import { CONDITION_NAME, DAILY_LAPS, type DailyRecord, archiveDays, bestMedal } from "../modes/daily";
 import { MEDAL_NAME } from "../modes/medals";
 import { CircuitOutline } from "./Hub";
 import { lapTime } from "./format";
 import { MedalDisc } from "./Medals";
+import { LowDownforce, Rain } from "./icons";
 
 const fmt = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
@@ -52,6 +53,12 @@ export function Archive({ onPlay }: { onPlay: (day: string, trackId: string) => 
                         No. {d.number}, {fmt.format(new Date(`${d.key}T12:00:00`))}
                       </span>
                       <span className="wide mt-1 truncate text-[20px] leading-tight text-paint">{info.name}</span>
+                      {d.condition !== "dry" && (
+                        <span className="mt-1 flex items-center gap-1.5 text-[13px] text-paint/85">
+                          {d.condition === "wet" ? <Rain className="h-3.5 w-3.5" /> : <LowDownforce className="h-3.5 w-3.5" />}
+                          {CONDITION_NAME[d.condition]}
+                        </span>
+                      )}
                       <span className="mt-2 flex flex-col gap-1">
                         {d.live && <Result rec={d.live} label="On the day" />}
                         {d.replay && d.replay.laps.length > 0 && <Result rec={d.replay} label="Replay" />}

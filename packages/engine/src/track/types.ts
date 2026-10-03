@@ -57,6 +57,8 @@ export interface GameTrack {
   controls?: { complexes: import("../line/controls").Complex[] };
   optimalLine: { knotOffsets: number[] } | null;
   optimalTimeMs: number | null;
+  /** The best line and its lap in other conditions (see physics/car.ts CONDITION_CARS); dry uses the fields above. */
+  conditions?: Partial<Record<"wet" | "lowdf", { optimalLine: { knotOffsets: number[] }; optimalTimeMs: number }>>;
   physicsVersion: string;
   carModel: string;
   source: { kind: "original" | "geojson" | "svg" | "telemetry" | "procedural"; notes?: string };

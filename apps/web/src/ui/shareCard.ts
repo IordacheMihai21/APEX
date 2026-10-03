@@ -1,7 +1,7 @@
 import { CATALOG } from "../game/catalog";
 import { OUTLINES, loadOutlineDetail } from "../game/outlines";
 import { CIRCUITS } from "../modes/circuits";
-import { DAILY_LAPS, type DailyRecord, bestMedal, dailyNumber } from "../modes/daily";
+import { CONDITION_NAME, DAILY_LAPS, type DailyRecord, bestMedal, conditionOf, dailyNumber } from "../modes/daily";
 import { type Grade, bestPerGroup } from "../modes/grading";
 import { MEDAL_COLOR, MEDAL_NAME } from "../modes/medals";
 import { lapTime } from "./format";
@@ -87,7 +87,8 @@ export async function dailyCard(daily: DailyRecord): Promise<Blob> {
   font(ctx, 500, 32, false);
   ctx.fillStyle = C.steel;
   const km = facts?.lengthKm ?? o.lengthM / 1000;
-  ctx.fillText(`${info.country}, ${km.toFixed(3)} km, ${facts?.turns ?? o.cornerCount} corners`, PAD, 352);
+  const cond = conditionOf(daily);
+  ctx.fillText(`${info.country}, ${km.toFixed(3)} km, ${facts?.turns ?? o.cornerCount} corners${cond === "dry" ? "" : `, ${CONDITION_NAME[cond].toLowerCase()}`}`, PAD, 352);
 
   // the map: asphalt ribbon, each corner group in its best colour of the day
   // fitted to the circuit's own bounds, not the 1000-unit drawing box, so a

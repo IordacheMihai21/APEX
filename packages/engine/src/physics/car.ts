@@ -30,6 +30,25 @@ export const APEX_FORMULA: CarModel = Object.freeze({
   halfWidth: 1.0,
 });
 
+/**
+ * Track conditions, as variations of the same car (so lap times stay
+ * comparable within a condition, and the physics stays one model):
+ * - wet: tyre friction down about 28% (μ 1.8 → 1.3), everything else equal;
+ *   corners and braking zones get slower, the line tightens up.
+ * - lowdf: a low-downforce, low-drag spec (ClA 5.0 → 3.8, CdA 1.1 → 0.70),
+ *   the Monza-style trim: faster on the straights, less grip in fast corners,
+ *   so braking points and the best line move. Calibrated so it is quicker at
+ *   Monza (about 0.6 s on the dry line) and 3-4 s slower on twisty circuits.
+ */
+export type Condition = "dry" | "wet" | "lowdf";
+export const CONDITIONS: Condition[] = ["dry", "wet", "lowdf"];
+
+export const CONDITION_CARS: Readonly<Record<Condition, CarModel>> = Object.freeze({
+  dry: APEX_FORMULA,
+  wet: Object.freeze({ ...APEX_FORMULA, id: "apex_formula_v2_wet", mu: 1.3 }),
+  lowdf: Object.freeze({ ...APEX_FORMULA, id: "apex_formula_v2_lowdf", clA: 3.8, cdA: 0.7 }),
+});
+
 /** Precomputed per-car constants used in the hot loop. */
 export interface CarConstants {
   car: CarModel;

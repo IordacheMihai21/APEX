@@ -15,7 +15,7 @@
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { REFERENCE_POLE_MS } from "./check-tracks";
-import { APEX_FORMULA as car, type GameTrack, expandGates, prepareTrack, simulateLap, trackControls, usableHalfWidth } from "@apex/engine";
+import { APEX_FORMULA as car, CONDITION_CARS, type CarModel, type GameTrack, expandGates, prepareTrack, simulateLap, trackControls, usableHalfWidth } from "@apex/engine";
 
 const BOX = 1000;
 const LINE_POINTS = 320;
@@ -25,16 +25,16 @@ const MEDAL_SIGMA_M = { bronze: 2.0, silver: 0.75, gold: 0.3 } as const;
 const MEDAL_SAMPLES = 41;
 
 /** Median lap (ms) of the optimal line with N(0, sigma) metres added to each player gate. Deterministic per track. */
-function noisyMedian(track: GameTrack, pt: ReturnType<typeof prepareTrack>, sigma: number): number {
+function noisyMedian(track: GameTrack, pt: ReturnType<typeof prepareTrack>, sigma: number, line = track.optimalLine!, model: CarModel = car): number {
   const ctl = trackControls(pt);
-  const lim = usableHalfWidth(pt, car);
+  const lim = usableHalfWidth(pt, model);
   let seed = [...track.id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7) & 0x7fffffff;
   const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
   const times: number[] = [];
   for (let r = 0; r < MEDAL_SAMPLES; r++) {
-    const z = track.optimalLine!.knotOffsets.map((v, j) => (ctl.isGate[j] ? v + gauss() * sigma : v));
-    times.push(simulateLap({ track: pt, line: { knotOffsets: expandGates(pt, ctl, z, lim) } }).lapTimeMs);
+    const z = line.knotOffsets.map((v, j) => (ctl.isGate[j] ? v + gauss() * sigma : v));
+    times.push(simulateLap({ track: pt, line: { knotOffsets: expandGates(pt, ctl, z, lim) }, car: model }).lapTimeMs);
   }
   return times.sort((a, b) => a - b)[(MEDAL_SAMPLES - 1) / 2];
 }
@@ -114,6 +114,20 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith(".v1.json"))) {
     gold: up(noisyMedian(track, pt, MEDAL_SIGMA_M.gold)),
   };
 
+  // the same ladder in the other conditions, from that condition's best line and car
+  const conditions: Record<string, unknown> = {};
+  for (const [cond, c] of Object.entries(track.conditions ?? {})) {
+    const model = CONDITION_CARS[cond as "wet" | "lowdf"];
+    conditions[cond] = {
+      lapMs: c.optimalTimeMs,
+      medals: {
+        bronze: up(noisyMedian(track, pt, MEDAL_SIGMA_M.bronze, c.optimalLine, model)),
+        silver: up(noisyMedian(track, pt, MEDAL_SIGMA_M.silver, c.optimalLine, model)),
+        gold: up(noisyMedian(track, pt, MEDAL_SIGMA_M.gold, c.optimalLine, model)),
+      },
+    };
+  }
+
   const [sx, sy] = centre(0);
   const [tx, ty] = centre(3);
   out[track.id] = {
@@ -130,6 +144,7 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith(".v1.json"))) {
     cornerCount: track.corners.length,
     medals,
     realPoleMs: REFERENCE_POLE_MS[track.id] ?? null,
+    conditions,
   };
   console.log(`${track.id.padEnd(14)} optimal ${(lap.lapTimeMs / 1000).toFixed(3)}  bronze ${(medals.bronze / 1000).toFixed(2)}  silver ${(medals.silver / 1000).toFixed(2)}  gold ${(medals.gold / 1000).toFixed(2)}`);
 }
@@ -163,6 +178,8 @@ export interface Outline {
   medals: { bronze: number; silver: number; gold: number };
   /** the circuit's real 2025 pole lap (ms), a time only, or null for invented circuits */
   realPoleMs: number | null;
+  /** the perfect lap and medal times in the other conditions (dry is above) */
+  conditions: Partial<Record<"wet" | "lowdf", { lapMs: number; medals: { bronze: number; silver: number; gold: number } }>>;
 }
 
 /** The hero map's paths, in outline-detail/<id>.json (see loadOutlineDetail). */
