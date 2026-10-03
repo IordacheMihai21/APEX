@@ -140,8 +140,8 @@ export interface Snapshot {
 /** Race playback runs this many times faster than the simulated lap. */
 export const PLAYBACK_SPEED = 4;
 /** Race camera: track width on screen at low / top speed (zooms out as speed builds). */
-const RACE_TRACK_PX_SLOW = 70;
-const RACE_TRACK_PX_FAST = 44;
+const RACE_TRACK_PX_SLOW = 84;
+const RACE_TRACK_PX_FAST = 58;
 const LIGHT_MS_FIRST = 700;
 const LIGHT_MS_REPEAT = 240;
 const PUCK_HIT_PX = 26;
@@ -989,6 +989,53 @@ export class Game {
     return lo;
   }
 
+  /**
+   * Per-sample motion for drawing, worked out once per lap: a heading smoothed
+   * over neighbouring samples (so the car turns, rather than snapping from one
+   * segment's angle to the next), front-wheel steer from path curvature,
+   * braking effort and lateral load. Presentation only; lap times never read it.
+   */
+  private motion = new WeakMap<SimulationResult, { heading: Float32Array; steer: Float32Array; brake: Float32Array; load: Float32Array }>();
+
+  private motionOf(sim: SimulationResult) {
+    let m = this.motion.get(sim);
+    if (m) return m;
+    const { x, y, speed, elapsedMs } = sim.samples;
+    const n = x.length;
+    const at = (i: number) => (i + n) % n;
+    const heading = new Float32Array(n);
+    for (let i = 0; i < n; i++) heading[i] = Math.atan2(y[at(i + 2)] - y[at(i - 2)], x[at(i + 2)] - x[at(i - 2)]);
+    const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+    const steer = new Float32Array(n);
+    const brake = new Float32Array(n);
+    const load = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const a = at(i - 3);
+      const b = at(i + 3);
+      const ds = Math.hypot(x[b] - x[a], y[b] - y[a]) || 1;
+      const curv = wrap(heading[b] - heading[a]) / ds;
+      // wheel angle for a 3.6 m wheelbase, doubled so it reads from above
+      steer[i] = Math.max(-0.42, Math.min(0.42, Math.atan(curv * 3.6) * 2));
+      // lateral acceleration in g, signed (left positive), mapped to -1..1 at 5 g
+      load[i] = Math.max(-1, Math.min(1, (speed[i] * speed[i] * curv) / 9.81 / 5));
+      // time between the neighbours, across the line where the lap wraps
+      let span = elapsedMs[at(i + 1)] - elapsedMs[at(i - 1)];
+      if (span <= 0) span += sim.rawLapTimeMs;
+      const decel = (speed[at(i - 1)] - speed[at(i + 1)]) / (span / 1000);
+      brake[i] = Math.max(0, Math.min(1, (decel - 12) / 30));
+    }
+    // ease the braking signal in and out over a few samples, like a disc heating and cooling
+    const soft = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      let sum = 0;
+      for (let k = -3; k <= 3; k++) sum += brake[at(i + k)];
+      soft[i] = sum / 7;
+    }
+    m = { heading, steer, brake: soft, load };
+    this.motion.set(sim, m);
+    return m;
+  }
+
   private sampleAt(sim: SimulationResult, tMs: number) {
     const { elapsedMs, x, y, speed } = sim.samples;
     const n = elapsedMs.length;
@@ -1003,11 +1050,18 @@ export class Game {
     const j = (lo + 1) % n;
     const t1 = j === 0 ? sim.rawLapTimeMs : elapsedMs[j];
     const f = t1 > elapsedMs[lo] ? (t - elapsedMs[lo]) / (t1 - elapsedMs[lo]) : 0;
+    const mo = this.motionOf(sim);
+    const h0 = mo.heading[lo];
+    const dh = Math.atan2(Math.sin(mo.heading[j] - h0), Math.cos(mo.heading[j] - h0));
+    const mix = (a: Float32Array) => a[lo] + (a[j] - a[lo]) * f;
     return {
       x: x[lo] + (x[j] - x[lo]) * f,
       y: y[lo] + (y[j] - y[lo]) * f,
-      heading: Math.atan2(y[j] - y[lo], x[j] - x[lo]),
+      heading: h0 + dh * f,
       speed: speed[lo] + (speed[j] - speed[lo]) * f,
+      steer: mix(mo.steer),
+      brake: mix(mo.brake),
+      load: mix(mo.load),
     };
   }
 
@@ -1214,23 +1268,30 @@ export class Game {
       if (!this.camera.animating) {
         // Heading-up chase cam: close and tight in slow corners, pulling back and
         // looking further ahead as speed builds, so the pace reads on screen.
-        const k = Math.min(1, dt * 4);
+        // exponential smoothing, so 60 Hz and 120 Hz screens follow the same way
+        const ease = (rate: number) => 1 - Math.exp(-dt * rate);
+        const k = ease(4);
         const look = 12 + p.speed * 0.55;
         this.camera.x += (p.x + Math.cos(p.heading) * look - this.camera.x) * k;
         this.camera.y += (p.y + Math.sin(p.heading) * look - this.camera.y) * k;
         let da = p.heading - Math.PI / 2 - this.camera.angle;
         while (da > Math.PI) da -= 2 * Math.PI;
         while (da < -Math.PI) da += 2 * Math.PI;
-        this.camera.angle += da * Math.min(1, dt * 2.6);
+        this.camera.angle += da * ease(2.6);
         // tuned for a ~400 px wide phone; bigger screens get a proportionally closer camera
         const viewK = Math.min(2.2, Math.max(1, Math.min(this.camera.w, this.camera.h) / 420));
         const targetPx = (RACE_TRACK_PX_SLOW + (RACE_TRACK_PX_FAST - RACE_TRACK_PX_SLOW) * speed01) * viewK;
         const targetScale = targetPx / this.track.widthMeters;
-        this.camera.scale += (targetScale - this.camera.scale) * Math.min(1, dt * 1.6);
+        this.camera.scale += (targetScale - this.camera.scale) * ease(1.6);
       }
       // camera shake above ~260 km/h (kerbs, bumps), off for reduced motion
       const amp = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : Math.max(0, (kmh - 260) / 90) * 1.3;
-      this.shake = [(Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp];
+      // a low rumble from layered sines, not a new random jolt every frame
+      const ts = now / 1000;
+      this.shake = [
+        amp * 0.5 * (Math.sin(ts * 31) * 0.6 + Math.sin(ts * 53 + 1.3) * 0.4),
+        amp * 0.5 * (Math.sin(ts * 37 + 0.7) * 0.6 + Math.sin(ts * 61 + 2.1) * 0.4),
+      ];
       this.updateEffects(p, dt);
       this.raceKmh = kmh;
       this.updateStreaks(kmh, dt);
@@ -1304,6 +1365,27 @@ export class Game {
     this.sparks = this.sparks.filter((sp) => sp.life > 0);
   }
 
+  private vignetteCache: { w: number; h: number; c: HTMLCanvasElement } | null = null;
+
+  /** A soft dark falloff toward the frame edges, rendered once per canvas size. */
+  private vignette(): HTMLCanvasElement {
+    const { w, h } = this.camera;
+    if (this.vignetteCache?.w === w && this.vignetteCache.h === h) return this.vignetteCache.c;
+    const c = document.createElement("canvas");
+    // half resolution is plenty for a gradient this soft
+    c.width = Math.max(1, Math.round(w / 2));
+    c.height = Math.max(1, Math.round(h / 2));
+    const g2 = c.getContext("2d")!;
+    const r = Math.hypot(c.width, c.height) / 2;
+    const g = g2.createRadialGradient(c.width / 2, c.height * 0.55, r * 0.45, c.width / 2, c.height * 0.55, r * 1.05);
+    g.addColorStop(0, "rgba(6,7,9,0)");
+    g.addColorStop(1, "rgba(6,7,9,0.42)");
+    g2.fillStyle = g;
+    g2.fillRect(0, 0, c.width, c.height);
+    this.vignetteCache = { w, h, c };
+    return c;
+  }
+
   private render() {
     const ctx = this.ctx;
     if (!ctx) return;
@@ -1372,7 +1454,7 @@ export class Game {
     if (this.phase !== "setup" && this.sim) {
       if (this.pbSim && this.phase === "race") {
         const g = this.sampleAt(this.pbSim, this.raceT);
-        this.cars.draw(ctx, g.x, g.y, g.heading, px, true);
+        this.cars.draw(ctx, g.x, g.y, g.heading, px, true, g);
       }
       if (this.phase === "race" && !this.demo) {
         // pace marker: a ring in the target medal's colour, riding your own line
@@ -1386,7 +1468,7 @@ export class Game {
         ctx.stroke();
       }
       const p = this.sampleAt(this.sim, this.raceT);
-      this.cars.draw(ctx, p.x, p.y, p.heading, px, false);
+      this.cars.draw(ctx, p.x, p.y, p.heading, px, false, p);
       if (this.sparks.length) {
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
@@ -1405,6 +1487,8 @@ export class Game {
     }
 
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    // broadcast lens: the frame's corners fall off a little, drawing the eye to the car
+    if (this.phase !== "setup") ctx.drawImage(this.vignette(), 0, 0, cam.w, cam.h);
     if (this.phase === "race" && this.streaks.length) {
       ctx.strokeStyle = `rgba(238,237,230,${0.05 + 0.1 * Math.min(1, Math.max(0, (this.raceKmh - 200) / 140))})`;
       ctx.lineWidth = 1.2;
