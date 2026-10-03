@@ -563,6 +563,207 @@ canvas {
   transition: background-color 300ms ease;
 }
 
+/*
+ * Pit stop. The car rolls in decelerating and leaves accelerating; worn tyres
+ * slide out sideways as fresh ones (with a yellow sidewall band) slide in; the
+ * active wheel and its crew member pulse in ink; a wrong key shakes the box.
+ * In the components layer so the utilities that place things still win.
+ */
+@layer components {
+  .pit-stage {
+    background-color: #2e3136;
+    background-size: 120px 120px;
+  }
+  .pit-car {
+    transition: transform 950ms var(--ease-out);
+  }
+  .pit-car-below {
+    transform: translateY(135%);
+    transition: none;
+  }
+  .pit-car-in {
+    transform: none;
+  }
+  .pit-car-gone {
+    transform: translateY(-150%);
+    transition: transform 650ms cubic-bezier(0.55, 0, 0.85, 0.35);
+  }
+  .pit-body canvas {
+    filter: drop-shadow(6px 9px 8px rgb(0 0 0 / 0.55));
+  }
+  .pit-wheel {
+    z-index: 1;
+    border-radius: 22%/14%;
+    outline: 2px solid transparent;
+    outline-offset: 3px;
+    transition: outline-color 120ms ease;
+  }
+  .pit-wheel-on {
+    outline-color: var(--color-ink);
+    animation: pit-pulse 700ms ease-in-out infinite alternate;
+  }
+  .pit-wheel-flash {
+    outline-color: var(--color-kerb);
+    animation: none;
+  }
+  .pit-tyre {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    /* near-black rubber has to read against grey asphalt: a lit rim and a shadow */
+    outline: 1px solid rgb(255 255 255 / 0.1);
+    outline-offset: -1px;
+    filter: drop-shadow(2px 4px 3px rgb(0 0 0 / 0.6));
+    transition:
+      transform 200ms var(--ease-out),
+      opacity 200ms ease;
+  }
+  .pit-tyre-old {
+    /* worn: duller, with grained rubber across the tread */
+    background:
+      repeating-linear-gradient(0deg, rgb(140 115 90 / 0.22) 0 2px, transparent 2px 6px),
+      linear-gradient(90deg, #050506, #34322f 50%, #050506);
+  }
+  .pit-tyre-new {
+    background: linear-gradient(90deg, #040405, #3f434b 46%, #565b64 50%, #3f434b 54%, #040405);
+  }
+  .pit-band-l {
+    box-shadow: inset 3px 0 0 #f5c518;
+  }
+  .pit-band-r {
+    box-shadow: inset -3px 0 0 #f5c518;
+  }
+  /* fresh tyres wait beside each wheel, held by the crew */
+  .pit-wait-l {
+    transform: translateX(-185%);
+  }
+  .pit-wait-r {
+    transform: translateX(185%);
+  }
+  .pit-in {
+    transform: none;
+    opacity: 1;
+    transition-delay: 90ms;
+  }
+  /* the worn tyre is pulled off and dropped beside the car */
+  .pit-out-l {
+    transform: translate(-190%, 55%) rotate(-14deg);
+    opacity: 0.8;
+  }
+  .pit-out-r {
+    transform: translate(190%, 55%) rotate(14deg);
+    opacity: 0.8;
+  }
+  /* a crew member from above: shoulders and a helmet in the team's orange */
+  .pit-crew {
+    position: relative;
+    width: clamp(18px, 6.5cqw, 30px);
+    height: clamp(11px, 3.8cqw, 18px);
+    border-radius: 999px;
+    background: #23262c;
+    box-shadow: 0 3px 5px rgb(0 0 0 / 0.45);
+    transition: transform 160ms var(--ease-out);
+  }
+  .pit-crew::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 58%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffb27f, var(--color-ink) 55%, #a83c06);
+  }
+  .pit-crew-on {
+    transform: scale(1.18);
+  }
+  .pit-crew-done::after {
+    background: radial-gradient(circle at 35% 35%, #c9ccd2, #6d727a 60%, #3d4148);
+  }
+  .pit-key {
+    display: grid;
+    place-items: center;
+    min-width: 2.1em;
+    padding: 0.2em 0.45em;
+    font-size: clamp(16px, 4.6cqw, 24px);
+    line-height: 1.15;
+    color: var(--color-night);
+    background: var(--color-paint);
+    box-shadow:
+      inset 0 -3px 0 #b9bcc2,
+      0 6px 14px rgb(0 0 0 / 0.5);
+    animation: pit-key-in 160ms var(--ease-out) both;
+  }
+  .pit-lamp {
+    background: #1b1c1f;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+    transition:
+      background-color 60ms linear,
+      box-shadow 60ms linear;
+  }
+  .pit-lamp-red {
+    background: var(--color-lamp);
+    box-shadow: 0 0 10px rgb(255 43 26 / 0.7);
+  }
+  .pit-lamp-green {
+    background: #2bd46f;
+    box-shadow: 0 0 12px rgb(43 212 111 / 0.75);
+  }
+  .pit-prompt {
+    max-width: 34ch;
+    padding: 0.45em 0.8em;
+    text-align: center;
+    font-size: 14px;
+    color: var(--color-paint);
+    background: rgb(10 11 13 / 0.82);
+  }
+  .pit-go {
+    color: var(--color-paint);
+    background: rgb(10 11 13 / 0.85);
+    border: 1px solid var(--color-line);
+    transition:
+      background-color 60ms linear,
+      color 60ms linear;
+  }
+  .pit-go-green {
+    color: var(--color-night);
+    background: #2bd46f;
+    border-color: #2bd46f;
+  }
+  .pit-shake {
+    animation: pit-shake 240ms linear;
+  }
+}
+.pit-stage {
+  container-type: inline-size;
+}
+@keyframes pit-pulse {
+  from {
+    outline-offset: 2px;
+  }
+  to {
+    outline-offset: 6px;
+  }
+}
+@keyframes pit-key-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+@keyframes pit-shake {
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+
 /* Mystery circuit: clue cells flip in left to right; the lap draws on with each miss. */
 @keyframes flip {
   from {
@@ -612,6 +813,12 @@ canvas {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pit-car,
+  .pit-car-gone,
+  .pit-tyre,
+  .pit-wheel-on,
+  .pit-shake,
+  .pit-key,
   .skeleton,
   .card-in,
   .flip,
@@ -637,6 +844,9 @@ canvas {
     animation: none;
   }
   .roll-strip,
+  .pit-car,
+  .pit-car-gone,
+  .pit-tyre,
   .mystery-line,
   .btn-go,
   .btn-go::before,

@@ -9,6 +9,7 @@ import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
 import { CIRCUITS } from "../modes/circuits";
 import { loadHigherLower } from "../modes/higherLower";
 import { MYSTERY_TRIES, REVEAL, isOver, isSolved, loadMystery, mysteryAnswer, revealOffset } from "../modes/mystery";
+import { loadPitStop, secs, todaysStop } from "../modes/pitstop";
 import { loadReaction } from "../modes/reaction";
 import { ADS_ON, AdSlot } from "./Ads";
 import { Chequered, Down, Up } from "./icons";
@@ -26,7 +27,7 @@ export type HubAction =
   | { kind: "season"; fresh: boolean }
   | { kind: "practice" }
   | { kind: "practice-track"; trackId: string }
-  | { kind: "mini"; game: "reaction" | "mystery" | "higher-lower" }
+  | { kind: "mini"; game: "reaction" | "mystery" | "higher-lower" | "pit-stop" }
   | { kind: "stats" };
 
 const PLAYBACK = 4;
@@ -61,12 +62,13 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
   const stats = dailyStats();
   const qualiDone = daily.status !== "playing";
   const mysteryDone = isOver(mystery);
+  const pitToday = todaysStop(loadPitStop());
   const medal = bestMedal(daily);
   const items = [
     {
       key: "quali",
       name: "Daily Quali",
-      short: null as string | null,
+      short: "Quali" as string | null,
       done: qualiDone,
       state: qualiDone
         ? daily.status === "won"
@@ -95,6 +97,15 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
       medal: null,
       act: () => onAction({ kind: "mini", game: "mystery" }),
     },
+    {
+      key: "pit",
+      name: "Pit stop",
+      short: "Pit stop",
+      done: !!pitToday,
+      state: pitToday ? `${secs(pitToday.totalMs)} s` : "Not started",
+      medal: null,
+      act: () => onAction({ kind: "mini", game: "pit-stop" }),
+    },
   ];
   const played = items.filter((i) => i.done).length;
   return (
@@ -111,12 +122,12 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
         <ul className="flex min-w-0 flex-1 items-stretch">
           {items.map((i) => (
             <li key={i.key} className="min-w-0 flex-1 border-line sm:flex-none sm:border-l">
-              <button onClick={i.act} className="today-item flex h-full w-full min-w-0 items-center gap-2.5 py-2.5 pr-4 text-left sm:px-4">
-                <span className={`grid h-6 w-6 shrink-0 place-items-center ${i.done ? "text-paint" : "text-steel/60"}`}>
+              <button onClick={i.act} aria-label={`${i.name}: ${i.state}`} className="today-item flex h-full w-full min-w-0 items-center gap-1.5 py-3 pr-1.5 text-left sm:gap-2.5 sm:py-2.5 sm:px-4">
+                <span className={`grid h-5 w-4 shrink-0 place-items-center sm:h-6 sm:w-6 ${i.done ? "text-paint" : "text-steel/60"}`}>
                   {i.medal ? <MedalDisc medal={i.medal} size={16} /> : i.done ? <Chequered className="h-4 w-4" /> : <span className="h-2 w-2 border border-current" />}
                 </span>
                 <span className="min-w-0 leading-tight">
-                  <span className="block truncate text-[13px] font-semibold text-paint">
+                  <span className="block truncate text-[12px] font-semibold text-paint sm:text-[13px]">
                     {i.short ? (
                       <>
                         <span className="sm:hidden">{i.short}</span>
@@ -126,17 +137,17 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
                       i.name
                     )}
                   </span>
-                  <span className={`block truncate text-[12px] ${i.done ? "text-paint/75" : "text-steel"}`}>{i.state}</span>
+                  <span className={`hidden truncate text-[12px] sm:block ${i.done ? "text-paint/75" : "text-steel"}`}>{i.state}</span>
                 </span>
               </button>
             </li>
           ))}
         </ul>
-        <p className="flex shrink-0 items-center gap-2 border-l border-line py-2.5 pl-4 text-[12px] text-steel" title="Days in a row with a Daily Quali medal">
+        <p className="flex shrink-0 items-center gap-1.5 border-l border-line py-2.5 pl-3 text-[12px] text-steel sm:gap-2 sm:pl-4" title="Days in a row with a Daily Quali medal">
           <span className="wide num text-[18px] leading-none text-paint">{stats.streak}</span>
           <span className="leading-tight">
-            day
-            <br />
+            <span className="hidden sm:inline">day</span>
+            <br className="hidden sm:inline" />
             streak
           </span>
         </p>
@@ -145,12 +156,13 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
   );
 }
 
-/** Three quick games beside the lap: one daily puzzle, one streak, one reflex test. */
+/** Four quick games beside the lap: one daily puzzle, one streak, one reflex test. */
 function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
   const mystery = loadMystery();
   const answer = OUTLINES[mysteryAnswer(mystery.key)];
   const hl = loadHigherLower();
   const reaction = loadReaction();
+  const pit = loadPitStop();
   const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
   const status = isOver(mystery)
     ? isSolved(mystery)
@@ -185,6 +197,22 @@ function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
       ),
     },
     {
+      game: "pit-stop" as const,
+      title: "Pit stop",
+      blurb: "Four wheels light up one at a time. Change them, then go on green. The record is 1.80 s.",
+      status: pit.days[dateKey()] ? `Today ${secs(pit.days[dateKey()].totalMs)} s` : pit.best !== null ? `Best ${secs(pit.best)} s` : "New today",
+      cta: pit.days[dateKey()] ? "Practice stops" : "Box, box",
+      art: (
+        <span className="flex gap-1.5" aria-hidden="true">
+          {["S", "K", "F", "J"].map((k, i) => (
+            <span key={k} className={`pit-key wide !static !animate-none !text-[20px] ${i === 0 ? "" : "opacity-40"}`}>
+              {k}
+            </span>
+          ))}
+        </span>
+      ),
+    },
+    {
       game: "reaction" as const,
       title: "Lights out",
       blurb: "How fast are you off the line? F1 drivers react in about 0.2 s.",
@@ -200,7 +228,7 @@ function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
           Minigames
         </h2>
         <p className="mt-3 text-[15px] text-steel">Quick ones for between laps.</p>
-        <ul className="mt-6 grid gap-3 md:grid-cols-3">
+        <ul className="mt-6 grid gap-3 md:grid-cols-2">
           {games.map((g, i) => (
             <li key={g.game} className="in-view" style={d(i * 60)}>
               <button onClick={() => onAction({ kind: "mini", game: g.game })} className="track-tile flex h-full w-full flex-col border border-line bg-board/70 p-5 text-left">

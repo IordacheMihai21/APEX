@@ -35,10 +35,11 @@ const loadPlay = () => fresh(() => import("./Play"));
 const Play = lazy(() => loadPlay().then((m) => ({ default: m.Play })));
 const Reaction = lazy(() => fresh(() => import("./ui/Reaction")).then((m) => ({ default: m.Reaction })));
 const Mystery = lazy(() => fresh(() => import("./ui/Mystery")).then((m) => ({ default: m.Mystery })));
+const PitStop = lazy(() => fresh(() => import("./ui/PitStop")).then((m) => ({ default: m.PitStop })));
 const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) => ({ default: m.HigherLower })));
 
-type Mini = "reaction" | "mystery" | "higher-lower";
-type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean };
+type Mini = "reaction" | "mystery" | "higher-lower" | "pit-stop";
+type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean };
 
 function initialScreen(): Screen {
   const q = new URLSearchParams(location.search);
@@ -57,6 +58,7 @@ const MINI: Record<Mini, string> = {
   reaction: "F1 lights out reaction test | APEX",
   mystery: "Mystery circuit: guess the F1 track | APEX",
   "higher-lower": "Higher or lower: F1 circuit facts | APEX",
+  "pit-stop": "F1 pit stop game: change four tyres | APEX",
 };
 
 const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice" };
@@ -186,6 +188,8 @@ export function App() {
           <Reaction onPlayDaily={() => act({ kind: "daily" })} />
         ) : screen.kind === "mystery" ? (
           <Mystery onPlayDaily={() => act({ kind: "daily" })} />
+        ) : screen.kind === "pit-stop" ? (
+          <PitStop onPlayDaily={() => act({ kind: "daily" })} />
         ) : screen.kind === "higher-lower" ? (
           <HigherLower onPlayDaily={() => act({ kind: "daily" })} />
         ) : (

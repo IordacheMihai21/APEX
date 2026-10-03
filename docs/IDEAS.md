@@ -134,6 +134,8 @@ Done in this pass:
 - Official length and corners in the hub hero; the phone hero's action sticks
   in reach.
 
+Also done 2026-10-03: **Pit stop** minigame at `/pit-stop` (daily plus practice), the third daily in the Today bar.
+
 Next, by value per effort:
 1. **Archive of past dailies** (Wordle, Framed). The game is deterministic, so
    any past day can be replayed client-side; marked as unranked. Fills the gap

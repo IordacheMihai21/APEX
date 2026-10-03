@@ -16,9 +16,9 @@ const PAD = 0.5; // metres of padding around the car (wheel and shadow bleed)
 const MIPS = [20, 40, 80, 150];
 /** Drawn a touch larger than life so the car reads at chase-cam distance. */
 const PRESENCE = 1.2;
-const FRONT_AXLE = 1.75;
-const REAR_AXLE = -1.6;
-const TRACK_HALF = 0.8; // wheel centre from the car's centreline
+export const FRONT_AXLE = 1.75;
+export const REAR_AXLE = -1.6;
+export const TRACK_HALF = 0.8; // wheel centre from the car's centreline
 
 interface Livery {
   body: string;
@@ -123,7 +123,7 @@ const FLOOR: [number, number][] = [
   [-2.25, 0.52],
 ];
 
-function drawBody(ctx: Ctx, l: Livery) {
+function drawBody(ctx: Ctx, l: Livery, wheels = true) {
   // floor and diffuser: carbon, with a lit leading edge and strakes behind the axle
   ctx.fillStyle = CARBON;
   symmetric(ctx, FLOOR);
@@ -158,7 +158,7 @@ function drawBody(ctx: Ctx, l: Livery) {
   ctx.stroke();
 
   // rear tyres live in the sprite (they don't steer)
-  for (const s of [-1, 1] as const) tyre(ctx, REAR_AXLE, s * TRACK_HALF, 0.74, 0.42, s);
+  if (wheels) for (const s of [-1, 1] as const) tyre(ctx, REAR_AXLE, s * TRACK_HALF, 0.74, 0.42, s);
 
   // body: cylindrical shading, then a dark undercut where the sidepods fall away
   ctx.fillStyle = across(ctx, 0.66, l.bodyDark, l.body, l.bodyLight);
@@ -332,6 +332,25 @@ function shadowFrom(src: HTMLCanvasElement, blurPx: number): HTMLCanvasElement {
       }
   }
   return out;
+}
+
+/**
+ * The player's car without wheels, nose up, for scenes that animate the tyres
+ * themselves (the pit stop). Returns the canvas and its size in metres.
+ */
+export function bareCar(ppm: number): { canvas: HTMLCanvasElement; widthM: number; lengthM: number } {
+  const L = CAR_LENGTH + 2 * PAD;
+  const W = CAR_WIDTH + 2 * PAD;
+  const [flat, fc] = canvas(ppm, L, W);
+  drawBody(fc, LIVERIES.player, false);
+  const out = document.createElement("canvas");
+  out.width = flat.height;
+  out.height = flat.width;
+  const oc = out.getContext("2d")!;
+  oc.translate(out.width / 2, out.height / 2);
+  oc.rotate(-Math.PI / 2);
+  oc.drawImage(flat, -flat.width / 2, -flat.height / 2);
+  return { canvas: out, widthM: W, lengthM: L };
 }
 
 interface Mip {
