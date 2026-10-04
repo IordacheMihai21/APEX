@@ -28,7 +28,7 @@ export type HubAction =
   | { kind: "season"; fresh: boolean }
   | { kind: "practice" }
   | { kind: "practice-track"; trackId: string }
-  | { kind: "mini"; game: "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive" | "privacy" }
+  | { kind: "mini"; game: "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive" | "privacy" | "legal" }
   | { kind: "corner" }
   | { kind: "stats" };
 
@@ -287,7 +287,7 @@ function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
     {
       game: "reaction" as const,
       title: "Lights out",
-      blurb: "How fast are you off the line? F1 drivers react in about 0.2 s.",
+      blurb: "How fast are you off the line? Racing drivers react in about 0.2 s.",
       status: reaction.best !== null ? `Best ${(reaction.best / 1000).toFixed(3)} s` : "Five lights, one tap",
       cta: "Test your reaction",
       art: <Gantry lit={0} size="sm" label="Start lights" />,
@@ -709,6 +709,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           </button>
           <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "mini", game: "privacy" })}>
             Privacy
+          </button>
+          <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "mini", game: "legal" })}>
+            Legal
           </button>
           <span className="sm:ml-auto">An independent game. Circuit names refer to venues only.</span>
         </p>

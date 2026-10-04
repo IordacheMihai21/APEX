@@ -44,13 +44,47 @@ const TRACKS: Record<string, GameTrack> = Object.fromEntries(
 );
 const prepared = new Map<string, { pt: ReturnType<typeof prepareTrack>; ctl: ReturnType<typeof trackControls> }>();
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+/**
+ * Browsers may only call this from the game's own pages: ALLOWED_ORIGINS
+ * (comma-separated, set as a function secret) once the site has a domain;
+ * without it any origin is answered (development). CORS doesn't stop scripts,
+ * so the rate limits below do the real work.
+ */
+const ALLOWED = (Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean);
+function corsFor(req: Request): Record<string, string> {
+  const origin = req.headers.get("origin") ?? "";
+  const allow = ALLOWED.length === 0 ? "*" : ALLOWED.includes(origin) ? origin : ALLOWED[0];
+  return {
+    "Access-Control-Allow-Origin": allow,
+    "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    Vary: "Origin",
+  };
+}
+let CORS: Record<string, string> = {};
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
+
+/** Limits: per device per day, per IP per hour (the IP only ever as a salted hash). */
+const DEVICE_PER_DAY = 60;
+const IP_PER_HOUR = 300;
+const MAX_BODY_BYTES = 16_000;
+
+async function sha256(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function withinLimits(req: Request, deviceId: string): Promise<boolean> {
+  const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+  const salt = Deno.env.get("RATE_SALT") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const ipKey = `ip:${(await sha256(`${salt}|${new Date().toISOString().slice(0, 10)}|${ip}`)).slice(0, 32)}`;
+  const [okIp, okDevice] = await Promise.all([
+    rpc("take_submit_slot", { p_key: ipKey, p_window_seconds: 3600, p_limit: IP_PER_HOUR }),
+    rpc("take_submit_slot", { p_key: `d:${deviceId}`, p_window_seconds: 86400, p_limit: DEVICE_PER_DAY }),
+  ]);
+  return okIp === true && okDevice === true;
+}
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -77,15 +111,31 @@ async function rpc(name: string, args: Record<string, unknown>) {
 }
 
 Deno.serve(async (req) => {
+  CORS = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json(405, { error: "POST only" });
 
-  let body: { day?: unknown; trackId?: unknown; condition?: unknown; deviceId?: unknown; knots?: unknown };
+  let body: { action?: unknown; day?: unknown; trackId?: unknown; condition?: unknown; deviceId?: unknown; knots?: unknown };
   try {
-    body = await req.json();
+    const raw = await req.text();
+    if (raw.length > MAX_BODY_BYTES) return json(413, { error: "too large" });
+    body = JSON.parse(raw);
   } catch {
     return json(400, { error: "invalid JSON" });
   }
+
+  // right to erasure: a device can remove everything it put on the board
+  if (body.action === "forget") {
+    if (typeof body.deviceId !== "string" || !UUID.test(body.deviceId)) return json(400, { error: "deviceId" });
+    try {
+      if (!(await withinLimits(req, body.deviceId))) return json(429, { error: "too many requests" });
+      const removed = await rpc("forget_device", { p_device: body.deviceId });
+      return json(200, { removed: removed ?? 0 });
+    } catch (e) {
+      return json(500, { error: (e as Error).message });
+    }
+  }
+
   const { day, trackId, condition, deviceId, knots } = body;
   if (typeof day !== "string" || !plausibleDay(day)) return json(400, { error: "day" });
   if (typeof trackId !== "string" || !TRACKS[trackId]) return json(400, { error: "trackId" });
@@ -112,6 +162,9 @@ Deno.serve(async (req) => {
   const lapMs = Math.round(sim.lapTimeMs);
 
   try {
+    if (!(await withinLimits(req, deviceId))) return json(429, { error: "too many requests" });
+    // storage limitation: now and then, drop results older than the retention period
+    if (Math.random() < 0.02) await rpc("prune_leaderboard", {}).catch(() => {});
     // the board ranks each device by its best lap of the day, which may be an earlier one
     const best: number = (await rpc("record_daily_lap", {
       p_day: day,

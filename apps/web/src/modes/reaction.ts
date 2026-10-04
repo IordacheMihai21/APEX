@@ -54,8 +54,8 @@ export function average(r: ReactionRecord): number | null {
 /** A plain verdict against real reference points: F1 drivers about 0.2 s, people on average about 0.27 s. */
 export function verdict(ms: number): string {
   if (ms < 100) return "Under 0.1 s: that's anticipation, not reaction.";
-  if (ms < 180) return "Quicker than a typical F1 start.";
-  if (ms < 220) return "F1 driver territory.";
+  if (ms < 180) return "Quicker than a typical racing driver's start.";
+  if (ms < 220) return "Racing driver territory.";
   if (ms < 270) return "Quicker than the average person.";
   if (ms < 350) return "About average. The field is past you.";
   return "Still on the grid while the rest are in turn 1.";

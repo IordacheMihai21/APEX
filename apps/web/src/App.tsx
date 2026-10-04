@@ -38,13 +38,14 @@ const loadPlay = () => fresh(() => import("./Play"));
 const Play = lazy(() => loadPlay().then((m) => ({ default: m.Play })));
 const Reaction = lazy(() => fresh(() => import("./ui/Reaction")).then((m) => ({ default: m.Reaction })));
 const Mystery = lazy(() => fresh(() => import("./ui/Mystery")).then((m) => ({ default: m.Mystery })));
+const Legal = lazy(() => fresh(() => import("./ui/Legal")).then((m) => ({ default: m.Legal })));
 const Privacy = lazy(() => fresh(() => import("./ui/Privacy")).then((m) => ({ default: m.Privacy })));
 const Archive = lazy(() => fresh(() => import("./ui/Archive")).then((m) => ({ default: m.Archive })));
 const PitStop = lazy(() => fresh(() => import("./ui/PitStop")).then((m) => ({ default: m.PitStop })));
 const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) => ({ default: m.HigherLower })));
 
-type Mini = "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive" | "privacy";
-type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "privacy" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+type Mini = "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive" | "privacy" | "legal";
+type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 function initialScreen(): Screen {
   const q = new URLSearchParams(location.search);
@@ -63,12 +64,13 @@ function initialScreen(): Screen {
 
 /** The minigames have their own addresses and titles, so they can be found and shared. */
 const MINI: Record<Mini, string> = {
-  reaction: "F1 lights out reaction test | APEX",
-  mystery: "Mystery circuit: guess the F1 track | APEX",
-  "higher-lower": "Higher or lower: F1 circuit facts | APEX",
-  "pit-stop": "F1 pit stop game: change four tyres | APEX",
+  reaction: "Lights out: start-light reaction test | APEX",
+  mystery: "Mystery circuit: guess the racing circuit | APEX",
+  "higher-lower": "Higher or lower: racing circuit facts | APEX",
+  "pit-stop": "Pit stop: change four tyres, go on green | APEX",
   archive: "Daily Quali archive: every past circuit | APEX",
   privacy: "Privacy | APEX",
+  legal: "Legal notice and terms | APEX",
 };
 
 const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice", corner: "Corner of the week" };
@@ -143,6 +145,10 @@ export function App() {
     setSound(!sound);
   };
 
+  // AdSense asks for ads well away from games that are played with the mouse
+  // (150 px or more): the side rails stay off the race screen, where you drag
+  // points across the whole map, and show everywhere else.
+  const rails = ADS_ON && screen.kind !== "play";
   const track = screen.kind === "play" ? CATALOG.find((t) => t.id === screen.trackId) : null;
 
   return (
@@ -192,8 +198,8 @@ export function App() {
         </span>
       </header>
 
-      <div className={`grid min-h-0 grid-cols-[minmax(0,1fr)] ${ADS_ON ? "xl:grid-cols-[176px_minmax(0,1fr)_176px] 2xl:grid-cols-[316px_minmax(0,1fr)_316px]" : ""}`}>
-      {ADS_ON && (
+      <div className={`grid min-h-0 grid-cols-[minmax(0,1fr)] ${rails ? "xl:grid-cols-[176px_minmax(0,1fr)_176px] 2xl:grid-cols-[316px_minmax(0,1fr)_316px]" : ""}`}>
+      {rails && (
         <aside aria-label="Advertisement" className="hidden min-h-0 border-r border-line bg-night px-2 xl:flex xl:items-center">
           <AdSlot kind="rail" className="w-full" />
         </aside>
@@ -206,6 +212,8 @@ export function App() {
           <Reaction onPlayDaily={() => act({ kind: "daily" })} />
         ) : screen.kind === "mystery" ? (
           <Mystery onPlayDaily={() => act({ kind: "daily" })} />
+        ) : screen.kind === "legal" ? (
+          <Legal />
         ) : screen.kind === "privacy" ? (
           <Privacy />
         ) : screen.kind === "archive" ? (
@@ -228,7 +236,7 @@ export function App() {
         )}
         </Suspense>
       </main>
-      {ADS_ON && (
+      {rails && (
         <aside aria-label="Advertisement" className="hidden min-h-0 border-l border-line bg-night px-2 xl:flex xl:items-center">
           <AdSlot kind="rail" className="w-full" />
         </aside>

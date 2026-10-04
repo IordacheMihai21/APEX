@@ -193,7 +193,8 @@ function GameView({
   return (
     <>
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-label={`${game.track.name} circuit`} />
-      {game.scenery.hasOsm && s.phase === "setup" && (
+      {/* ODbL: the credit stays visible whenever the map is on screen */}
+      {game.scenery.hasOsm && (
         <a
           href="https://www.openstreetmap.org/copyright"
           target="_blank"

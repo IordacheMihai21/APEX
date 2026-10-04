@@ -25,6 +25,35 @@ const DEVICE_KEY = "apex.device";
 const CACHE_KEY = "apex.standing.v1";
 const EVENT = "apex:standing";
 
+/** The anonymous id, if one was ever made on this device (shown on the privacy page). */
+export function existingDeviceId(): string | null {
+  try {
+    return localStorage.getItem(DEVICE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Right to erasure: remove every result this device put on the board, then
+ * start over with a new id and no cached standings. Returns rows removed, or
+ * null if the server couldn't be reached.
+ */
+export async function forgetThisDevice(): Promise<number | null> {
+  const id = existingDeviceId();
+  if (!ONLINE || !id) return 0;
+  try {
+    const res = await fetch(`${URL_}/functions/v1/submit-lap`, { method: "POST", headers: headers(), body: JSON.stringify({ action: "forget", deviceId: id }) });
+    if (!res.ok) return null;
+    const { removed } = (await res.json()) as { removed: number };
+    localStorage.removeItem(DEVICE_KEY);
+    localStorage.removeItem(CACHE_KEY);
+    return removed;
+  } catch {
+    return null;
+  }
+}
+
 function deviceId(): string {
   try {
     let id = localStorage.getItem(DEVICE_KEY);

@@ -33,6 +33,6 @@ describe("reaction test", () => {
 
   it("calls out anticipation and F1 pace", () => {
     expect(verdict(90)).toMatch(/anticipation/);
-    expect(verdict(200)).toMatch(/F1/);
+    expect(verdict(200)).toMatch(/Racing driver/);
   });
 });

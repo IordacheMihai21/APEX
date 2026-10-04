@@ -138,7 +138,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
       }}
     >
       <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">Lights out</h1>
-      <p className="mt-2 max-w-[42ch] text-center text-[15px] text-steel">How fast are you off the line? F1 drivers react in about 0.2 s; most people take about 0.27 s.</p>
+      <p className="mt-2 max-w-[42ch] text-center text-[15px] text-steel">How fast are you off the line? Racing drivers react in about 0.2 s; most people take about 0.27 s.</p>
 
       <div className="mt-10">
         <Gantry lit={lit} size="lg" label={phase === "go" ? "Lights out" : `${lit} of 5 start lights on`} />

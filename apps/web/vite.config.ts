@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 /** Every page a visitor can land on; the SPA serves them all from index.html. */
-const ROUTES = ["/", "/corner", "/archive", "/mystery", "/higher-lower", "/pit-stop", "/reaction", "/privacy"];
+const ROUTES = ["/", "/corner", "/archive", "/mystery", "/higher-lower", "/pit-stop", "/reaction", "/privacy", "/legal"];
 
 /**
  * Launch files, driven by env vars (see .env.example):
