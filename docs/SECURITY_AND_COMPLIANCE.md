@@ -31,7 +31,7 @@ Sources: [OWASP HTTP Headers Cheat Sheet](https://cheatsheetseries.owasp.org/che
 | Strict input validation (day window, circuit list, UUID, knot count and range), 16 kB body limit | **Done** |
 | Rate limits: 60 submissions per device per day, 300 per IP per hour (IP stored only as a salted daily SHA-256 hash) | **Done**, deployed |
 | CORS restricted to the site's origin | **You**: once the domain exists, set the function secret `ALLOWED_ORIGINS=https://yourdomain` (Supabase dashboard → Edge Functions → Secrets) |
-| Right to erasure ("Delete my leaderboard results" on /privacy) and 30-day retention | **Done**: `forget_device` and `prune_leaderboard` are live, the button and the function are deployed. **Later**: schedule `prune_leaderboard()` daily (pg_cron) so the 30 days hold without a manual run. |
+| Right to erasure ("Delete my leaderboard results" on /privacy) and 30-day retention | **Done**: `forget_device` and `prune_leaderboard` are live, the button and the function are deployed. Runs nightly at 03:17 UTC (pg_cron job `prune-leaderboard`). |
 | `rls_auto_enable()` advisor warning | Supabase's own event-trigger helper (turns RLS on for new tables); it can't be called as an API. Harmless, left as is. |
 
 Sources: [Supabase rate limits](https://supabase.com/docs/guides/auth/rate-limits), [anon key and RLS](https://www.stingrai.io/blog/supabase-powerful-but-one-misconfiguration-away-from-disaster).
