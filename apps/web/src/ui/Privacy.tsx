@@ -1,16 +1,9 @@
 import { ANALYTICS_ON } from "../analytics";
 import { useState } from "react";
-import { OPERATOR, OPERATOR_SET } from "../legal";
+import { ADS_CONSENT as ADS, OPERATOR, OPERATOR_SET, openConsent } from "../legal";
 import { ONLINE, existingDeviceId, forgetThisDevice } from "../online";
 import { secondaryBtn } from "./styles";
 
-const ADS = !!import.meta.env.VITE_ADSENSE_CLIENT;
-
-declare global {
-  interface Window {
-    googlefc?: { callbackQueue?: unknown[]; showRevocationMessage?: () => void };
-  }
-}
 
 /** The device's anonymous id and a button that erases its leaderboard results. */
 function ForgetMe() {
@@ -131,10 +124,7 @@ export function Privacy() {
             </p>
             <button
               className={secondaryBtn}
-              onClick={() => {
-                window.googlefc ??= {};
-                (window.googlefc.callbackQueue ??= []).push(() => window.googlefc?.showRevocationMessage?.());
-              }}
+              onClick={openConsent}
             >
               Change cookie choices
             </button>

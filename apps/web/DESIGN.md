@@ -358,6 +358,9 @@ Heading-up and following a heading smoothed over neighbouring samples, so the ca
 ### Onboard Cluster
 A row of square rev LEDs (green building, the last three blue, all blue on the shift flash; unlit graphite), a wide 40px gear numeral, and the speed in seven-segment digits with ghost segments, units as labels.
 
+### Footer (hub)
+After the record strip, on night with a hairline top: on lg a 5fr/7fr split. Left: the wordmark (wide 26px), one sentence on what APEX is, the independence and OpenStreetMap notice in 13px steel, and "Cookie choices" (outlined, square) when ads are on. Right: three short columns under condensed steel captions: Play (Daily Quali, Corner of the week, Perfect Season, Free Practice, Past dailies), Between laps (the four minigames and Your record), APEX (Privacy, Legal and terms, the contact email, then square 40px social buttons for each account set in env). Phones: Play and Between laps side by side, APEX below. A bottom hairline row: © year and operator, and that times and lines are simulated.
+
 ### Ad slots
 Side rails (176px from 1280px, 316px from 1536px) are their own grid columns beside `main`, night background with a hairline toward the content, the slot centred vertically under a small "Advertisement" caption (11px steel/70). Below 1280px, one 300×250 slot sits in the hub between Perfect Season and Free Practice. No ad is ever placed next to game controls (setup bar, race HUD, result sheet). Without an AdSense client, production lays out no ad space; development and `?ads=preview` show dashed placeholders. See docs/ADS.md.
 

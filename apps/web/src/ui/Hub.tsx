@@ -14,6 +14,7 @@ import { loadPitStop, secs, todaysStop } from "../modes/pitstop";
 import { loadReaction } from "../modes/reaction";
 import { ADS_ON, AdSlot } from "./Ads";
 import { Chequered, Down, LowDownforce, Rain, Up } from "./icons";
+import { Footer } from "./Footer";
 import { Gantry } from "./Gantry";
 import { MedalDisc, MedalLadder, PoleTarget } from "./Medals";
 import { lapTime } from "./format";
@@ -682,8 +683,8 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
       <Minigames onAction={onAction} />
 
       {/* record */}
-      <footer className="border-t border-line">
-        <p className="mx-auto flex max-w-[1240px] flex-wrap items-baseline gap-x-6 gap-y-2 px-4 pt-6 pb-[max(24px,env(safe-area-inset-bottom))] text-[13px] text-steel md:px-8">
+      <section aria-label="Your record" className="border-t border-line">
+        <p className="mx-auto flex max-w-[1240px] flex-wrap items-baseline gap-x-6 gap-y-2 px-4 py-6 text-[13px] text-steel md:px-8">
           {stats.played === 0 ? (
             <span>Win a medal in the Daily Quali to start your record.</span>
           ) : (
@@ -712,15 +713,10 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "mini", game: "archive" })}>
             Past dailies
           </button>
-          <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "mini", game: "privacy" })}>
-            Privacy
-          </button>
-          <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "mini", game: "legal" })}>
-            Legal
-          </button>
-          <span className="sm:ml-auto">An independent game. Circuit names refer to venues only.</span>
         </p>
-      </footer>
+      </section>
+
+      <Footer onAction={onAction} />
     </div>
   );
 }
