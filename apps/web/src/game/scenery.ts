@@ -660,6 +660,18 @@ export class Scenery {
     return this.style === "street" ? PALETTE.concrete : PALETTE.grass;
   }
 
+  private rubberLine: Path2D | null = null;
+  /**
+   * The dry racing line, where years of cars have laid rubber down: a darker,
+   * smoother band on the asphalt, widest where everyone takes the same line.
+   */
+  set rubber(line: { x: ArrayLike<number>; y: ArrayLike<number> }) {
+    const p = new Path2D();
+    for (let i = 0; i < line.x.length; i++) i ? p.lineTo(line.x[i], line.y[i]) : p.moveTo(line.x[i], line.y[i]);
+    p.closePath();
+    this.rubberLine = p;
+  }
+
   private _wet = false;
   /** Wet days: darker materials, a water film on the track, puddles (set before the first draw). */
   set wet(v: boolean) {
@@ -800,6 +812,21 @@ export class Scenery {
     ctx.strokeStyle = textured ? t.asphalt : PALETTE.asphalt;
     ctx.lineWidth = this.W - 2 * edge;
     ctx.stroke(this.centre);
+    if (this.rubberLine && textured) {
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "rgba(8,8,10,0.12)";
+      ctx.lineWidth = 3.4;
+      ctx.stroke(this.rubberLine);
+      ctx.strokeStyle = "rgba(6,6,8,0.16)";
+      ctx.lineWidth = 1.9;
+      ctx.stroke(this.rubberLine);
+      if (this._wet) {
+        // rubber is the slipperiest part of a wet track, and it shines
+        ctx.strokeStyle = "rgba(170,186,204,0.07)";
+        ctx.lineWidth = 2.2;
+        ctx.stroke(this.rubberLine);
+      }
+    }
     if (this._wet && t.sheen) {
       // a film of water: the grey sky mirrored in it, brighter than the dry surface
       ctx.globalCompositeOperation = "screen";

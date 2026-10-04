@@ -151,6 +151,7 @@ export interface Snapshot {
 }
 
 /** Race playback runs this many times faster than the simulated lap. */
+const REDUCED_MOTION = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 export const PLAYBACK_SPEED = 4;
 /** Race camera: track width on screen at low / top speed (zooms out as speed builds). */
 const RACE_TRACK_PX_SLOW = 84;
@@ -274,6 +275,7 @@ export class Game {
     const significant = new Set(this.controls.complexes.flatMap((c) => c.corners));
     this.scenery = new Scenery(this.pt, track, style, significant, opts.scenery ?? null);
     this.scenery.wet = this.condition === "wet";
+    if (track.optimalLine) this.scenery.rubber = resolveLine(this.pt, track.optimalLine, CONDITION_CARS.dry);
 
     this.pb = loadPB(this.store, track.version);
     // Continue from the session's last line, else (practice) your best line, else the centerline.
@@ -1325,6 +1327,7 @@ export class Game {
   private frame(now: number) {
     const dt = this.lastFrame ? Math.min(0.05, (now - this.lastFrame) / 1000) : 0;
     this.lastFrame = now;
+    this.frameDt = dt;
     let animating = this.camera.tick(now);
 
     if (this.phase === "lights") {
@@ -1367,7 +1370,7 @@ export class Game {
         this.camera.scale += (targetScale - this.camera.scale) * ease(1.6);
       }
       // camera shake above ~260 km/h (kerbs, bumps), off for reduced motion
-      const amp = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : Math.max(0, (kmh - 260) / 90) * 1.3;
+      const amp = REDUCED_MOTION ? 0 : Math.max(0, (kmh - 260) / 90) * 1.3;
       // a low rumble from layered sines, not a new random jolt every frame
       const ts = now / 1000;
       this.shake = [
@@ -1398,7 +1401,7 @@ export class Game {
   }
 
   private updateStreaks(kmh: number, dt: number) {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (REDUCED_MOTION) {
       this.streaks = [];
       return;
     }
@@ -1476,9 +1479,32 @@ export class Game {
     this.sparks = this.sparks.filter((sp) => sp.life > 0);
   }
 
+  /** Length of the last frame, seconds (motion blur spans it). */
+  private frameDt = 0;
   private vignetteCache: { w: number; h: number; c: HTMLCanvasElement } | null = null;
 
   /** A soft dark falloff toward the frame edges, rendered once per canvas size. */
+  /**
+   * Sunlight from the north-west, fixed to the world like the shadows: a warm
+   * lift on the sun side of the frame, a cool, slightly deeper tone on the far
+   * side. Turns the flat even light of a map into an afternoon.
+   */
+  private sunGrade(ctx: CanvasRenderingContext2D) {
+    const inv = ctx.getTransform().inverse();
+    const w = this.canvas!.width;
+    const h = this.canvas!.height;
+    const c = inv.transformPoint(new DOMPoint(w / 2, h / 2));
+    const corner = inv.transformPoint(new DOMPoint(0, 0));
+    const r = Math.hypot(corner.x - c.x, corner.y - c.y);
+    const d = r * Math.SQRT1_2;
+    const g = ctx.createLinearGradient(c.x - d, c.y + d, c.x + d, c.y - d);
+    g.addColorStop(0, "rgba(255,214,160,0.10)");
+    g.addColorStop(0.45, "rgba(255,230,200,0)");
+    g.addColorStop(1, "rgba(24,40,70,0.12)");
+    ctx.fillStyle = g;
+    ctx.fillRect(c.x - r, c.y - r, 2 * r, 2 * r);
+  }
+
   private vignette(): HTMLCanvasElement {
     const { w, h } = this.camera;
     if (this.vignetteCache?.w === w && this.vignetteCache.h === h) return this.vignetteCache.c;
@@ -1499,7 +1525,7 @@ export class Game {
 
   /** Rain across the lens: short slanted streaks falling fast, denser than the wind streaks. */
   private updateRain(dt: number) {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (REDUCED_MOTION) {
       this.rain = [];
       return;
     }
@@ -1616,6 +1642,16 @@ export class Game {
           ctx.fill();
         }
       }
+      if (this.phase === "race" && !REDUCED_MOTION && this.frameDt > 0) {
+        // motion blur: echoes along the path driven during this frame (the car covers
+        // several metres per frame at playback speed), faintest furthest back
+        const span = this.frameDt * 1000 * PLAYBACK_SPEED;
+        const n = Math.min(4, Math.floor((p.speed * span) / 1000 / 0.9));
+        for (let k = n; k >= 1; k--) {
+          const e = this.sampleAt(this.sim, this.raceT - (span * k) / (n + 1));
+          this.cars.drawEcho(ctx, e.x, e.y, e.heading, px, 0.2 * (1 - k / (n + 1)));
+        }
+      }
       this.cars.draw(ctx, p.x, p.y, p.heading, px, false, p);
       if (this.sparks.length) {
         ctx.save();
@@ -1634,6 +1670,7 @@ export class Game {
       }
     }
     this.scenery.drawClouds(ctx, performance.now() / 1000, px);
+    if (this.condition !== "wet") this.sunGrade(ctx);
 
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     // broadcast lens: the frame's corners fall off a little, drawing the eye to the car

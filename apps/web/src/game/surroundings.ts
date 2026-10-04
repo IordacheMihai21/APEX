@@ -167,7 +167,8 @@ export class Surroundings {
   private readonly rail = new Path2D();
   private readonly raceway = new Path2D();
   private readonly pitlane = new Path2D();
-  private readonly buildings: Buildings;
+  /** Buildings and trees in 250 m blocks, so a frame only draws the blocks on screen. */
+  private readonly blocks: { b: Buildings; x0: number; y0: number; x1: number; y1: number }[] = [];
   private readonly yachts = new Path2D();
   private readonly yachtDecks = new Path2D();
   private hasYachts = false;
@@ -179,7 +180,7 @@ export class Surroundings {
   /** Wet days: darker, cooler ground, flat light (set before the first draw). */
   set wet(v: boolean) {
     this._wet = v;
-    this.buildings.wet = v;
+    for (const k of this.blocks) k.b.wet = v;
     this.tex = null;
   }
 
@@ -207,7 +208,39 @@ export class Surroundings {
 
     const palette = ROOFS[TILE_ROOFS.has(trackId) ? "tile" : "slate"];
     this.flora = FLORA_BY_TRACK[trackId] ?? "temperate";
-    this.buildings = new Buildings(data.buildings, data.trees, palette, centerline, this.flora);
+    {
+      // group by block of each footprint's first corner (or tree); a block's box
+      // covers everything in it plus the longest shadow, so culling never clips one
+      const BLOCK = 250;
+      const groups = new Map<string, { b: typeof data.buildings; t: number[]; box: [number, number, number, number] }>();
+      const group = (x: number, y: number) => {
+        const key = `${Math.floor(x / BLOCK)},${Math.floor(y / BLOCK)}`;
+        let g = groups.get(key);
+        if (!g) groups.set(key, (g = { b: [], t: [], box: [Infinity, Infinity, -Infinity, -Infinity] }));
+        return g;
+      };
+      const grow = (box: [number, number, number, number], x: number, y: number, m: number) => {
+        box[0] = Math.min(box[0], x - m);
+        box[1] = Math.min(box[1], y - m);
+        box[2] = Math.max(box[2], x + m);
+        box[3] = Math.max(box[3], y + m);
+      };
+      for (const b of data.buildings) {
+        if (b.p.length < 6) continue;
+        const g = group(b.p[0], b.p[1]);
+        g.b.push(b);
+        for (let i = 0; i < b.p.length; i += 2) grow(g.box, b.p[i], b.p[i + 1], 4 + b.h * 1.2);
+      }
+      for (let i = 0; i < data.trees.length; i += 2) {
+        const g = group(data.trees[i], data.trees[i + 1]);
+        g.t.push(data.trees[i], data.trees[i + 1]);
+        grow(g.box, data.trees[i], data.trees[i + 1], 30);
+      }
+      for (const g of groups.values()) {
+        const [x0, y0, x1, y1] = g.box;
+        this.blocks.push({ b: new Buildings(g.b, g.t, palette, centerline, this.flora), x0, y0, x1, y1 });
+      }
+    }
 
     // Monaco: yachts moored in the harbour water near the circuit
     if (trackId === "monaco") this.placeYachts(data, centerline);
@@ -451,8 +484,30 @@ export class Surroundings {
       ctx.fill(this.yachtDecks);
     }
 
-    this.buildings.draw(ctx, px);
-    this.buildings.drawTrees(ctx, px);
+    // only the blocks inside the view (the screen's corners taken back into the world)
+    const inv = ctx.getTransform().inverse();
+    const { width: cw, height: ch } = ctx.canvas;
+    let vx0 = Infinity;
+    let vy0 = Infinity;
+    let vx1 = -Infinity;
+    let vy1 = -Infinity;
+    for (const [sx, sy] of [
+      [0, 0],
+      [cw, 0],
+      [0, ch],
+      [cw, ch],
+    ]) {
+      const p = inv.transformPoint(new DOMPoint(sx, sy));
+      vx0 = Math.min(vx0, p.x);
+      vy0 = Math.min(vy0, p.y);
+      vx1 = Math.max(vx1, p.x);
+      vy1 = Math.max(vy1, p.y);
+    }
+    const shown = this.blocks.filter((k) => k.x1 >= vx0 && k.x0 <= vx1 && k.y1 >= vy0 && k.y0 <= vy1);
+    for (const k of shown) k.b.drawShadows(ctx);
+    for (const k of shown) k.b.draw(ctx, px);
+    for (const k of shown) k.b.drawTrees(ctx, px, "shadow");
+    for (const k of shown) k.b.drawTrees(ctx, px, "crown");
   }
 
   /** Landmarks stand tall, so they're drawn after the run-off and barriers. */

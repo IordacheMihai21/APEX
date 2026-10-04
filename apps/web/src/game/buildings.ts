@@ -2,6 +2,8 @@ import { canvas, rng } from "./scenery";
 import { roofMembrane, roofTiles } from "./materials";
 import { type Flora, type Species, type TreeSprite, pickSpecies, treeSprites } from "./trees";
 
+const REDUCED_MOTION = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 /**
  * Buildings and trees as a satellite photo shows them. Roofs carry the detail:
  * hip roofs on houses (a ridge skeleton, every face shaded by its angle to the
@@ -110,6 +112,10 @@ export class Buildings {
   private readonly parapets = new Path2D();
   private readonly units = new Path2D();
   private readonly unitShadows = new Path2D();
+  /** Plant units in relief: sun-side edges, shade-side edges, fan grilles. */
+  private readonly unitLit = new Path2D();
+  private readonly unitDark = new Path2D();
+  private readonly unitFans = new Path2D();
   private readonly skylights = new Path2D();
   private readonly stands: { seats: Path2D; canopy: Path2D; ribs: Path2D; aisles: Path2D; angle: number }[] = [];
   private readonly pitRoofs = new Path2D();
@@ -243,6 +249,26 @@ export class Buildings {
       ];
       poly(this.unitShadows, box.map(([bx, by]) => [bx + 0.7, by - 0.7] as Pt));
       poly(this.units, box);
+      // box corners run counter-clockwise: an edge whose outward normal faces the
+      // north-west sun catches the light, the opposite edges fall into shade
+      for (let e = 0; e < 4; e++) {
+        const [ax, ay] = box[e];
+        const [bx, by] = box[(e + 1) % 4];
+        const lit = (by - ay) * -1 + -(bx - ax) * 1 > 0;
+        const path = lit ? this.unitLit : this.unitDark;
+        path.moveTo(ax, ay);
+        path.lineTo(bx, by);
+      }
+      // condenser fans on the bigger units
+      const fans = w > 2.4 ? 2 : h > 0.9 ? 1 : 0;
+      for (let f = 0; f < fans; f++) {
+        const s0 = fans === 2 ? (f ? 0.5 : -0.5) * w : 0;
+        const fx = x + u[0] * s0;
+        const fy = y + u[1] * s0;
+        const fr = Math.min(w / fans, h) * 0.62;
+        this.unitFans.moveTo(fx + fr, fy);
+        this.unitFans.arc(fx, fy, fr, 0, Math.PI * 2);
+      }
     }
     if (len > 70 && wid > 22) {
       for (const off of [-0.25, 0.25]) {
@@ -321,13 +347,17 @@ export class Buildings {
     }
   }
 
-  draw(ctx: CanvasRenderingContext2D, px: number) {
-    const detailed = px < 0.9;
+  /** Cast shadows on the ground: drawn for every block on screen before any roof, so none falls across a neighbour's roof. */
+  drawShadows(ctx: CanvasRenderingContext2D) {
     const k = this.wet ? 0.35 : 1;
     ctx.fillStyle = `rgba(6,8,10,${0.28 * k})`;
     ctx.fill(this.shadowFar);
     ctx.fillStyle = `rgba(6,8,10,${0.32 * k})`;
     ctx.fill(this.shadowNear);
+  }
+
+  draw(ctx: CanvasRenderingContext2D, px: number) {
+    const detailed = px < 0.9;
     // contact shadow: the ground darkens right at the walls (ambient occlusion)
     if (detailed) {
       ctx.lineJoin = "round";
@@ -360,8 +390,10 @@ export class Buildings {
       }
       this.membrane!.setTransform(new DOMMatrix().scale(0.06, 0.06));
       ctx.globalCompositeOperation = "multiply";
+      ctx.globalAlpha = 0.65;
       ctx.fillStyle = this.membrane!;
       ctx.fill(this.flatAll);
+      ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = "source-over";
       if (this.wet) {
         // wet roofs: darker, with a faint sheen
@@ -423,6 +455,16 @@ export class Buildings {
     ctx.fill(this.unitShadows);
     ctx.fillStyle = "#c3c6c9";
     ctx.fill(this.units);
+    ctx.lineWidth = 0.18;
+    ctx.strokeStyle = "rgba(255,255,255,0.7)";
+    ctx.stroke(this.unitLit);
+    ctx.strokeStyle = "rgba(40,44,50,0.55)";
+    ctx.stroke(this.unitDark);
+    ctx.fillStyle = "#4a4f56";
+    ctx.fill(this.unitFans);
+    ctx.lineWidth = 0.08;
+    ctx.strokeStyle = "rgba(20,22,26,0.7)";
+    ctx.stroke(this.unitFans);
     ctx.fillStyle = "rgba(150,190,215,0.55)";
     ctx.fill(this.skylights);
     ctx.fillStyle = "#3a3e44";
@@ -430,7 +472,12 @@ export class Buildings {
   }
 
   /** Trees after buildings so canopies overhang roofs a little, as they do. */
-  drawTrees(ctx: CanvasRenderingContext2D, px: number) {
+  /**
+   * Trees in two passes (all shadows on screen first, then all crowns, so no
+   * shadow lands on a neighbouring block's canopy). Crowns move a little in
+   * the wind, a slow sway of a few centimetres against their fixed shadows.
+   */
+  drawTrees(ctx: CanvasRenderingContext2D, px: number, pass: "shadow" | "crown") {
     if (px > 2.5 || !this.trees.length) return;
     if (!this.sprites) this.sprites = treeSprites(this.flora, this.wet);
     const pick = (t: (typeof this.trees)[number]) => {
@@ -440,22 +487,30 @@ export class Buildings {
     const smoothing = ctx.imageSmoothingQuality;
     ctx.imageSmoothingQuality = "high";
     // shadows first, cut from each crown's own silhouette, cast south-east by the tree's height
-    ctx.globalAlpha = this.wet ? 0.18 : 0.55;
-    for (const t of this.trees) {
-      const s = pick(t);
-      const off = t.r * (t.species === "conifer" ? 1.3 : t.species === "palm" ? 1.6 : 0.95);
-      ctx.save();
-      ctx.translate(t.x + off, t.y - off);
-      ctx.rotate(t.rot);
-      ctx.scale(1, -1);
-      ctx.drawImage(s.shadow, -t.r * 1.1, -t.r * 1.1, t.r * 2.2, t.r * 2.2);
-      ctx.restore();
+    if (pass === "shadow") {
+      ctx.globalAlpha = this.wet ? 0.18 : 0.55;
+      for (const t of this.trees) {
+        const s = pick(t);
+        const off = t.r * (t.species === "conifer" ? 1.3 : t.species === "palm" ? 1.6 : 0.95);
+        ctx.save();
+        ctx.translate(t.x + off, t.y - off);
+        ctx.rotate(t.rot);
+        ctx.scale(1, -1);
+        ctx.drawImage(s.shadow, -t.r * 1.1, -t.r * 1.1, t.r * 2.2, t.r * 2.2);
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+      ctx.imageSmoothingQuality = smoothing;
+      return;
     }
-    ctx.globalAlpha = 1;
+    // gusts roll across the map as a travelling wave; wet days are windier
+    const time = REDUCED_MOTION ? 0 : performance.now() / 1000;
+    const gust = this.wet ? 0.09 : 0.05;
     for (const t of this.trees) {
       ctx.save();
       // sprites are drawn y-down; flip so the lit side stays north-west, turn a little for variety
-      ctx.translate(t.x, t.y);
+      const w = Math.sin(time * 0.9 + t.x * 0.035 + t.y * 0.02) + 0.4 * Math.sin(time * 2.3 + t.x * 0.11);
+      ctx.translate(t.x + w * gust * t.r, t.y - w * gust * t.r * 0.4);
       ctx.rotate(t.rot);
       ctx.scale(1, -1);
       ctx.drawImage(pick(t).crown, -t.r, -t.r, t.r * 2, t.r * 2);

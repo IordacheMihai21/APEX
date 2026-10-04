@@ -539,6 +539,26 @@ export class CarSprites {
   }
 
   /**
+   * One motion-blur echo of the player's body: no shadows, wheels or glow,
+   * only the sprite at low alpha. Several of these along the path the car
+   * drove during the frame turn a car that jumps metres per frame into a
+   * smear, the way a camera shutter would see it.
+   */
+  drawEcho(ctx: Ctx, x: number, y: number, heading: number, px: number, alpha: number) {
+    const k = Math.max(PRESENCE, (44 * px) / CAR_LENGTH);
+    const t = ctx.getTransform();
+    const m = this.mip(Math.hypot(t.a, t.b) * k);
+    const L = this.L * k;
+    const W = this.W * k;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    ctx.rotate(heading);
+    ctx.drawImage(m.player, -L / 2, -W / 2, L, W);
+    ctx.restore();
+  }
+
+  /**
    * Draw at a world position and heading. `px` is metres per CSS pixel; the
    * car never drops below ~44 CSS px long so the livery and wings read when
    * zoomed out (a map marker, not a speck).
