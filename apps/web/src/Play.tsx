@@ -357,7 +357,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
     <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center min-[720px]:px-3 min-[720px]:pb-3">
       <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/94 px-3 pt-2.5 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:border">
         {coach.active && (
-          <div key={coach.step} className="coach-in mb-2.5 flex items-start gap-3 border-l-2 border-ink bg-ink/10 py-2 pr-2 pl-3" role="status">
+          <div key={coach.step} className="coach-in mb-2.5 flex items-start gap-3 rounded-sm border border-ink/30 bg-ink/10 px-3 py-2" role="status">
             <span className="mt-[7px] flex shrink-0 gap-1" aria-label={`Tip ${coach.step + 1} of ${COACH.length}`}>
               {COACH.map((_, i) => (
                 <span key={i} className={`h-1 w-3 ${i <= coach.step ? "bg-ink" : "bg-asphalt"}`} />
@@ -456,7 +456,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
           </>
         )}
 
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <button className={iconBtn} onClick={() => game.undo()} disabled={!s.canUndo} aria-label="Undo" title="Undo">
             <Undo />
           </button>
@@ -468,7 +468,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
               Best line
             </button>
           )}
-          <button className={`${primaryBtn} flex-1 ${coach.active && coach.step === 2 ? "coach-ring" : ""}`} onClick={() => game.race()}>
+          <button className={`${primaryBtn} flex-1 basis-40 ${coach.active && coach.step === 2 ? "coach-ring" : ""}`} onClick={() => game.race()}>
             Lights out
           </button>
         </div>

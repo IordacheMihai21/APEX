@@ -175,7 +175,7 @@ export class Game {
   private readonly reference: SimulationResult;
   private readonly bbox: [number, number, number, number];
   readonly scenery: Scenery;
-  private readonly cars = new CarSprites();
+  private readonly cars: CarSprites;
   /** complex index for each gated corner name */
   private readonly complexOfCorner = new Map<string, number>();
 
@@ -250,6 +250,7 @@ export class Game {
     // without that condition's line (an old track file), fall back to dry rather than mislead
     if (this.condition !== "dry" && !cond) this.condition = "dry";
     this.car = CONDITION_CARS[this.condition];
+    this.cars = new CarSprites(this.condition === "wet");
     this.optimal = cond?.optimalLine ?? track.optimalLine!;
     this.store = this.condition === "dry" ? track.id : `${track.id}~${this.condition}`;
     this.focus = opts.focus ?? null;
@@ -272,6 +273,7 @@ export class Game {
     const style = CATALOG.find((t) => t.id === track.id)?.style ?? "permanent";
     const significant = new Set(this.controls.complexes.flatMap((c) => c.corners));
     this.scenery = new Scenery(this.pt, track, style, significant, opts.scenery ?? null);
+    this.scenery.wet = this.condition === "wet";
 
     this.pb = loadPB(this.store, track.version);
     // Continue from the session's last line, else (practice) your best line, else the centerline.
@@ -1533,7 +1535,7 @@ export class Game {
       // a wet day: everything a shade darker and cooler, as under cloud on a damp track
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = "rgba(16,26,42,0.24)";
+      ctx.fillStyle = "rgba(16,26,42,0.14)";
       ctx.fillRect(0, 0, this.canvas!.width, this.canvas!.height);
       ctx.restore();
     }
@@ -1631,6 +1633,7 @@ export class Game {
         ctx.restore();
       }
     }
+    this.scenery.drawClouds(ctx, performance.now() / 1000, px);
 
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     // broadcast lens: the frame's corners fall off a little, drawing the eye to the car

@@ -1,4 +1,7 @@
+import { boatBox, boatSprites } from "./boats";
 import { Buildings } from "./buildings";
+import { asphalt as asphaltMat, concrete as concreteMat, grass as grassMat, water as waterMat } from "./materials";
+import { FLORA_BY_TRACK, type Flora, forestTile } from "./trees";
 import { canvas, hex, noiseTexture, rng } from "./scenery";
 
 /**
@@ -27,16 +30,16 @@ const SHADOW = { dx: 0.45, dy: -0.45 };
 const LAND = {
   water: "#24465c",
   waterEdge: "#3b6a84",
-  wood: "#1f3a1f",
-  scrub: "#3a4a2c",
+  wood: "#284724",
+  scrub: "#4b5935",
   sand: "#b9a681",
-  grass: "#36552f",
-  farm: "#4a5a33",
-  urban: "#3c3f42",
-  parking: "#45494e",
+  grass: "#466636",
+  farm: "#636e3d",
+  urban: "#5b5954",
+  parking: "#55585b",
   pier: "#8d8a83",
-  road: "#3f4348",
-  roadEdge: "#565b61",
+  road: "#44474b",
+  roadEdge: "#6a6d70",
   rail: "#2c2a28",
 };
 
@@ -152,8 +155,17 @@ export class Surroundings {
   private readonly yachts = new Path2D();
   private readonly yachtDecks = new Path2D();
   private hasYachts = false;
+  private readonly boats: { x: number; y: number; a: number; len: number; v: number }[] = [];
   private readonly landmarks: SceneryData["landmarks"];
-  private tex: { canopy: CanvasPattern; water: CanvasPattern; sand: CanvasPattern } | null = null;
+  private tex: { canopy: CanvasPattern; water: CanvasPattern; sand: CanvasPattern; meadow: CanvasPattern; paving: CanvasPattern; road: CanvasPattern } | null = null;
+  private readonly flora: Flora;
+  private _wet = false;
+  /** Wet days: darker, cooler ground, flat light (set before the first draw). */
+  set wet(v: boolean) {
+    this._wet = v;
+    this.buildings.wet = v;
+    this.tex = null;
+  }
 
   constructor(
     data: SceneryData,
@@ -178,7 +190,8 @@ export class Surroundings {
     for (const r of data.raceway) linePath(r.pit ? this.pitlane : this.raceway, r.p);
 
     const palette = ROOFS[TILE_ROOFS.has(trackId) ? "tile" : "slate"];
-    this.buildings = new Buildings(data.buildings, data.trees, palette, centerline);
+    this.flora = FLORA_BY_TRACK[trackId] ?? "temperate";
+    this.buildings = new Buildings(data.buildings, data.trees, palette, centerline, this.flora);
 
     // Monaco: yachts moored in the harbour water near the circuit
     if (trackId === "monaco") this.placeYachts(data, centerline);
@@ -252,6 +265,7 @@ export class Surroundings {
     deck.forEach(([hx, hy], k) => (k ? this.yachtDecks.lineTo(hx, hy) : this.yachtDecks.moveTo(hx, hy)));
     this.yachtDecks.closePath();
     this.hasYachts = true;
+    this.boats.push({ x: px, y: py, a, len, v: Math.floor(Math.abs(Math.sin(px * 12.9898 + py * 78.233)) * 4) });
   }
 
   private textures(ctx: CanvasRenderingContext2D) {
@@ -262,9 +276,18 @@ export class Surroundings {
       p.setTransform(new DOMMatrix().scale(k, k));
       return p;
     };
-    const water = noiseTexture(256, hex(LAND.water), 6, { rate: 0.01, light: 14, dark: 6 }, 31);
+    const wet = this._wet;
+    // the sea and harbours are choppier than ponds; on a wet day the water goes grey
+    const waterBase: [number, number, number] = wet ? [34, 54, 66] : this.trackId === "monaco" ? [26, 74, 98] : [32, 66, 84];
     const sand = noiseTexture(256, hex(LAND.sand), 14, { rate: 0.05, light: 18, dark: 16 }, 32);
-    this.tex = { canopy: pattern(canopyTexture(), 110), water: pattern(water, 40), sand: pattern(sand, 12) };
+    this.tex = {
+      canopy: pattern(forestTile(this.flora, wet), 120),
+      water: pattern(waterMat(waterBase, 81, false), 70),
+      sand: pattern(sand, 12),
+      meadow: pattern(grassMat(43, wet), 22),
+      paving: pattern(concreteMat(hex(LAND.urban), 72, 48), 14),
+      road: pattern(asphaltMat(hex(LAND.road), 53, wet), 8),
+    };
     return this.tex;
   }
 
@@ -272,32 +295,85 @@ export class Surroundings {
   draw(ctx: CanvasRenderingContext2D, px: number) {
     const t = this.textures(ctx);
     const detailed = px < 0.9;
+    // materials hold up well zoomed out too (the overview is still), so only a far view goes flat
+    const textured = px < 5;
     const fill = (k: Area, style: string | CanvasPattern) => {
       const p = this.areas.get(k);
       if (!p) return;
       ctx.fillStyle = style;
       ctx.fill(p);
     };
-    fill("farm", LAND.farm);
-    fill("grass", LAND.grass);
-    fill("urban", LAND.urban);
-    fill("parking", LAND.parking);
-    fill("scrub", LAND.scrub);
-    fill("sand", detailed ? t.sand : LAND.sand);
-    fill("wood", detailed ? t.canopy : LAND.wood);
-    // water with a lighter shoreline
+    // textured land, then each kind tinted over it so meadow, farmland and scrub read apart
+    const tinted = (k: Area, tex: CanvasPattern, tint: string, flat: string) => {
+      const p = this.areas.get(k);
+      if (!p) return;
+      ctx.fillStyle = textured ? tex : flat;
+      ctx.fill(p);
+      if (textured) {
+        ctx.fillStyle = tint;
+        ctx.fill(p);
+      }
+    };
+    tinted("farm", t.meadow, "rgba(120,110,50,0.32)", LAND.farm);
+    tinted("grass", t.meadow, "rgba(0,0,0,0)", LAND.grass);
+    tinted("urban", t.paving, "rgba(0,0,0,0)", LAND.urban);
+    tinted("parking", t.road, "rgba(90,96,104,0.25)", LAND.parking);
+    tinted("scrub", t.meadow, "rgba(70,72,40,0.38)", LAND.scrub);
+    fill("sand", textured ? t.sand : LAND.sand);
+    const wood = this.areas.get("wood");
+    if (wood) {
+      // the treeline is 20 m tall: it throws a band of shade on the field to the south-east
+      ctx.save();
+      ctx.translate(4, -4);
+      ctx.fillStyle = `rgba(4,10,6,${this._wet ? 0.15 : 0.38})`;
+      ctx.fill(wood);
+      ctx.restore();
+      ctx.fillStyle = textured ? t.canopy : LAND.wood;
+      ctx.fill(wood);
+      if (textured) {
+        // a ragged edge: crowns overhang the polygon a little
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = t.canopy;
+        ctx.lineWidth = 3;
+        ctx.stroke(wood);
+      }
+    }
+    // water: shallows lighter along the shore, a thin line of surf where it meets land
     const water = this.areas.get("water");
     if (water) {
-      ctx.fillStyle = detailed ? t.water : LAND.water;
+      ctx.fillStyle = textured ? t.water : LAND.water;
       ctx.fill(water);
-      ctx.strokeStyle = LAND.waterEdge;
-      ctx.lineWidth = Math.max(0.8, 1.5 * px);
-      ctx.stroke(water);
+      if (textured) {
+        ctx.save();
+        ctx.clip(water);
+        ctx.lineJoin = "round";
+        for (const [w, a] of [
+          [14, 0.07],
+          [7, 0.09],
+          [3, 0.12],
+        ] as const) {
+          ctx.strokeStyle = `rgba(120,190,200,${a})`;
+          ctx.lineWidth = w;
+          ctx.stroke(water);
+        }
+        ctx.strokeStyle = "rgba(235,245,245,0.35)";
+        ctx.lineWidth = Math.max(0.6, 0.8 * px);
+        ctx.stroke(water);
+        ctx.restore();
+      } else {
+        ctx.strokeStyle = LAND.waterEdge;
+        ctx.lineWidth = Math.max(0.8, 1.5 * px);
+        ctx.stroke(water);
+      }
     }
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = LAND.water;
     for (const w of this.waterways) {
+      // rivers: dark banks, the water textured like the rest
+      ctx.strokeStyle = "rgba(20,30,24,0.6)";
+      ctx.lineWidth = w.w + 1.6;
+      ctx.stroke(w.path);
+      ctx.strokeStyle = textured ? t.water : LAND.water;
       ctx.lineWidth = w.w;
       ctx.stroke(w.path);
     }
@@ -309,7 +385,7 @@ export class Surroundings {
       ctx.lineWidth = r.w + 1.2;
       ctx.stroke(r.path);
     }
-    ctx.strokeStyle = LAND.road;
+    ctx.strokeStyle = textured ? t.road : LAND.road;
     for (const r of this.roads) {
       ctx.lineWidth = r.w;
       ctx.stroke(r.path);
@@ -329,7 +405,27 @@ export class Surroundings {
     ctx.lineWidth = 12;
     ctx.stroke(this.pitlane);
 
-    if (this.hasYachts) {
+    if (this.hasYachts && px < 3) {
+      // moored yachts: soft shadow on the water to the south-east, then the boat
+      const sprites = boatSprites();
+      const smooth = ctx.imageSmoothingQuality;
+      ctx.imageSmoothingQuality = "high";
+      for (const pass of [0, 1])
+        for (const b of this.boats) {
+          const sp = sprites[b.v];
+          const [w, h] = boatBox(b.len);
+          ctx.save();
+          if (pass === 0) {
+            ctx.translate(b.len * 0.05, -b.len * 0.05);
+            ctx.globalAlpha = this._wet ? 0.25 : 0.55;
+          }
+          ctx.translate(b.x, b.y);
+          ctx.rotate(b.a);
+          ctx.drawImage(pass === 0 ? sp.shadow : sp.img, -w / 2, -h / 2, w, h);
+          ctx.restore();
+        }
+      ctx.imageSmoothingQuality = smooth;
+    } else if (this.hasYachts) {
       ctx.fillStyle = "rgba(0,0,0,0.3)";
       ctx.save();
       ctx.translate(1.2, -1.2);

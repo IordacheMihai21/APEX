@@ -1,3 +1,4 @@
+import * as M from "./materials";
 import { type GameTrack, type PreparedTrack, curvature } from "@apex/engine";
 import { type SceneryData, Surroundings } from "./surroundings";
 
@@ -19,10 +20,10 @@ import { type SceneryData, Surroundings } from "./surroundings";
 export type CircuitStyle = "permanent" | "street";
 
 const PALETTE = {
-  grass: "#2c4426",
-  grassLight: "#35512e",
-  gravel: "#a39277",
-  runoff: "#474c53",
+  grass: "#3b5a2f",
+  grassLight: "#456838",
+  gravel: "#b3a284",
+  runoff: "#53585e",
   asphalt: "#2e3136",
   paint: "#f2f2ee",
   kerbRed: "#e5332a",
@@ -33,7 +34,7 @@ const PALETTE = {
   fence: "rgba(205,210,215,0.55)",
   marshal: "#e9e7e2",
   wall: "#9aa0a6",
-  concrete: "#43484e",
+  concrete: "#585752",
 };
 
 /** Deterministic PRNG so textures look the same on every load. */
@@ -101,32 +102,24 @@ interface Textures {
   grass: CanvasPattern;
   stripes: CanvasPattern;
   gravel: CanvasPattern;
+  macro: CanvasPattern;
+  clouds: CanvasPattern;
+  /** wet days only: sky reflected in the water film on the track */
+  sheen: CanvasPattern | null;
 }
 
-function makeTextures(ctx: CanvasRenderingContext2D): Textures {
+function makeTextures(ctx: CanvasRenderingContext2D, wet: boolean): Textures {
   const pattern = (src: HTMLCanvasElement, metresPerTile: number, angle = 0) => {
     const p = ctx.createPattern(src, "repeat")!;
     const k = metresPerTile / src.width;
     p.setTransform(new DOMMatrix().rotate(angle).scale(k, k));
     return p;
   };
-  const asphalt = noiseTexture(256, hex(PALETTE.asphalt), 10, { rate: 0.02, light: 26, dark: 14 }, 11);
-  const runoff = noiseTexture(256, hex(PALETTE.runoff), 12, { rate: 0.015, light: 22, dark: 12 }, 12);
-  const grass = noiseTexture(256, hex(PALETTE.grass), 14, { rate: 0.05, light: 12, dark: 10 }, 13);
-  const gravel = noiseTexture(256, hex(PALETTE.gravel), 26, { rate: 0.12, light: 34, dark: 40 }, 14);
-  // urban paving: noise plus a faint slab grid
-  const concrete = noiseTexture(256, hex(PALETTE.concrete), 8, { rate: 0.01, light: 14, dark: 10 }, 15);
-  const cctx = concrete.getContext("2d")!;
-  cctx.strokeStyle = "rgba(0,0,0,0.18)";
-  cctx.lineWidth = 2;
-  for (let k = 0; k <= 256; k += 64) {
-    cctx.beginPath();
-    cctx.moveTo(k, 0);
-    cctx.lineTo(k, 256);
-    cctx.moveTo(0, k);
-    cctx.lineTo(256, k);
-    cctx.stroke();
-  }
+  const asphalt = M.asphalt(hex(PALETTE.asphalt), 51, wet);
+  const runoff = M.asphalt([78, 82, 88], 52, wet);
+  const grass = M.grass(41, wet);
+  const gravel = M.gravel(61, wet);
+  const concrete = M.concrete(hex(PALETTE.concrete), 71);
   // mowing stripes: one light band per tile, rotated in world space
   const [st, sctx] = canvas(64);
   sctx.fillStyle = "rgba(255,255,255,0)";
@@ -134,12 +127,15 @@ function makeTextures(ctx: CanvasRenderingContext2D): Textures {
   sctx.fillStyle = "rgba(96,140,72,0.075)";
   sctx.fillRect(0, 0, 32, 64);
   return {
-    concrete: pattern(concrete, 8),
-    asphalt: pattern(asphalt, 5),
-    runoff: pattern(runoff, 6),
-    grass: pattern(grass, 9),
+    concrete: pattern(concrete, 12),
+    asphalt: pattern(asphalt, 9),
+    runoff: pattern(runoff, 11),
+    grass: pattern(grass, 20),
     stripes: pattern(st, 30, 32),
-    gravel: pattern(gravel, 4),
+    gravel: pattern(gravel, 10),
+    macro: pattern(M.macro(), 700, 17),
+    clouds: pattern(M.cloudShadows(), 1600),
+    sheen: wet ? pattern(M.water([150, 160, 172], 83, true), 30, 64) : null,
   };
 }
 
@@ -194,6 +190,8 @@ export class Scenery {
   private readonly flags = new Path2D();
   private readonly world: Surroundings | null;
   private readonly bounds: [number, number, number, number];
+  /** Standing water for wet days, near the track edges (built once). */
+  private readonly puddles = new Path2D();
 
   constructor(
     private pt: PreparedTrack,
@@ -216,6 +214,21 @@ export class Scenery {
       Math.max(...xs.map((p) => p[0])) + pad,
       Math.max(...xs.map((p) => p[1])) + pad,
     ];
+    // puddles: low spots near both edges, every 25-60 m, a few metres long
+    {
+      const r = rng(97);
+      const { n, cx, cy, nx, ny } = this.pt;
+      for (let i = 0; i < n; i += Math.max(1, Math.round((25 + r() * 35) / this.pt.step))) {
+        if (r() < 0.45) continue;
+        const side = r() < 0.5 ? 1 : -1;
+        const off = side * (this.W / 2 - 0.6 - r() * 1.4);
+        const x = cx[i] + nx[i] * off;
+        const y = cy[i] + ny[i] * off;
+        const a = Math.atan2(cy[(i + 1) % n] - cy[i], cx[(i + 1) % n] - cx[i]);
+        this.puddles.ellipse(x, y, 1.2 + r() * 2.8, 0.4 + r() * 0.8, a, 0, Math.PI * 2);
+        this.puddles.closePath();
+      }
+    }
     this.buildRunoff();
     this.buildKerbs();
     this.buildGrid();
@@ -632,15 +645,43 @@ export class Scenery {
     return this.style === "street" ? PALETTE.concrete : PALETTE.grass;
   }
 
+  private _wet = false;
+  /** Wet days: darker materials, a water film on the track, puddles (set before the first draw). */
+  set wet(v: boolean) {
+    this._wet = v;
+    this.tex = null;
+    if (this.world) this.world.wet = v;
+  }
+  get wet() {
+    return this._wet;
+  }
+
+  /**
+   * Cloud shadows drifting over the whole scene (cars included), as on a
+   * broadcast aerial on a bright, broken-cloud day. Off on wet days: under
+   * full overcast there are no cloud edges, only flat light. `t` in seconds.
+   */
+  drawClouds(ctx: CanvasRenderingContext2D, t: number, px: number) {
+    if (this._wet || !this.tex || px > 6) return;
+    const [x0, y0, x1, y1] = this.bounds;
+    const drift = t * 2.2; // m/s of wind
+    this.tex.clouds.setTransform(new DOMMatrix().translate(drift, drift * 0.45).scale(1600 / 256, 1600 / 256));
+    ctx.globalAlpha = 0.34;
+    ctx.fillStyle = this.tex.clouds;
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.globalAlpha = 1;
+  }
+
   /** Everything under the racing line. `px` = one CSS pixel in metres. */
   draw(ctx: CanvasRenderingContext2D, px: number) {
-    if (!this.tex) this.tex = makeTextures(ctx);
+    if (!this.tex) this.tex = makeTextures(ctx, this._wet);
     const t = this.tex;
-    const detailed = px < 0.9; // textures and small props only when zoomed in enough to see them
+    const detailed = px < 0.9; // small props and fine marks only when zoomed in enough to see them
+    const textured = px < 5; // materials read zoomed out too
     const [x0, y0, x1, y1] = this.bounds;
 
     const street = this.style === "street";
-    ctx.fillStyle = street ? (detailed ? t.concrete : PALETTE.concrete) : detailed ? t.grass : PALETTE.grass;
+    ctx.fillStyle = street ? (textured ? t.concrete : PALETTE.concrete) : textured ? t.grass : PALETTE.grass;
     ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
     if (detailed && !street) {
       ctx.fillStyle = t.stripes;
@@ -649,9 +690,17 @@ export class Scenery {
 
     this.world?.draw(ctx, px);
 
-    ctx.fillStyle = detailed ? t.runoff : PALETTE.runoff;
+    // large-scale patchiness over all the land, as in a real aerial photo; hides tile repeats
+    ctx.globalCompositeOperation = "soft-light";
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = t.macro;
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+
+    ctx.fillStyle = textured ? t.runoff : PALETTE.runoff;
     ctx.fill(this.paved);
-    ctx.fillStyle = detailed ? t.gravel : PALETTE.gravel;
+    ctx.fillStyle = textured ? t.gravel : PALETTE.gravel;
     ctx.fill(this.gravel);
     if (detailed) {
       // gravel traps: a darker, raked rim where the stones meet the run-off
@@ -733,9 +782,26 @@ export class Scenery {
     ctx.strokeStyle = PALETTE.paint;
     ctx.lineWidth = this.W + 0.2;
     ctx.stroke(this.centre);
-    ctx.strokeStyle = detailed ? t.asphalt : PALETTE.asphalt;
+    ctx.strokeStyle = textured ? t.asphalt : PALETTE.asphalt;
     ctx.lineWidth = this.W - 2 * edge;
     ctx.stroke(this.centre);
+    if (this._wet && t.sheen) {
+      // a film of water: the grey sky mirrored in it, brighter than the dry surface
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = 0.16;
+      ctx.strokeStyle = t.sheen;
+      ctx.stroke(this.centre);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+      if (detailed) {
+        // standing water: darker, glossy puddles with a light rim, near the edges and in the run-off
+        ctx.fillStyle = "rgba(14,18,24,0.42)";
+        ctx.fill(this.puddles);
+        ctx.strokeStyle = "rgba(190,205,220,0.28)";
+        ctx.lineWidth = 0.12;
+        ctx.stroke(this.puddles);
+      }
+    }
 
     if (detailed) {
       // the surface: paving seams, newer asphalt patches, sealant, lock-up marks
@@ -764,6 +830,32 @@ export class Scenery {
       ctx.fill(this.kerbRed);
       ctx.fillStyle = PALETTE.kerbWhite;
       ctx.fill(this.kerbWhite);
+      for (const kerb of [this.kerbRed, this.kerbWhite]) {
+        ctx.save();
+        ctx.clip(kerb);
+        // rubber and dirt ground into the paint, densest where the cars ride it
+        ctx.globalCompositeOperation = "multiply";
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = t.asphalt;
+        ctx.fill(kerb);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 1;
+        // rounded profile: lit on the sun side, shaded on the far side
+        ctx.lineWidth = 0.18;
+        ctx.translate(0.07, -0.07);
+        ctx.strokeStyle = "rgba(255,255,255,0.28)";
+        ctx.stroke(kerb);
+        ctx.translate(-0.14, 0.14);
+        ctx.strokeStyle = "rgba(0,0,0,0.3)";
+        ctx.stroke(kerb);
+        ctx.restore();
+      }
+      if (this._wet) {
+        // painted kerbs go glassy in the rain
+        ctx.fillStyle = "rgba(200,215,230,0.12)";
+        ctx.fill(this.kerbRed);
+        ctx.fill(this.kerbWhite);
+      }
       ctx.strokeStyle = PALETTE.paint;
       ctx.lineWidth = 0.22;
       ctx.stroke(this.grid);

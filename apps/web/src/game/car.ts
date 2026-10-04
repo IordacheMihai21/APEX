@@ -36,7 +36,9 @@ const LIVERIES: Record<"player" | "ghost", Livery> = {
 const CARBON = "#141518";
 const CARBON_HI = "#2a2c31";
 const TYRE = "#0f1012";
-const COMPOUND = "#f5c518"; // sidewall band (a medium-compound yellow)
+/** Sidewall band: a medium slick in the dry, full wets (blue) on a wet day. */
+const COMPOUND = { dry: "#f5c518", wet: "#2f7fd6" };
+type Tyres = keyof typeof COMPOUND;
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -81,21 +83,97 @@ function across(ctx: Ctx, half: number, dark: string, mid: string, light: string
   return g;
 }
 
-/** A tyre seen from above: a rounded block with a lit tread crown and a coloured sidewall band. */
-function tyre(ctx: Ctx, x: number, y: number, len: number, wid: number, outside: 1 | -1) {
+let weave: HTMLCanvasElement | null = null;
+/**
+ * 2x2 twill carbon weave as a pattern, sized in metres (a 2 cm tow), so bare
+ * carbon reads as woven fibre with a sheen, not flat black.
+ */
+function carbon(ctx: Ctx): CanvasPattern {
+  if (!weave) {
+    weave = document.createElement("canvas");
+    weave.width = weave.height = 16;
+    const w = weave.getContext("2d")!;
+    w.fillStyle = CARBON;
+    w.fillRect(0, 0, 16, 16);
+    for (let i = 0; i < 4; i++)
+      for (let j = 0; j < 4; j++) {
+        // alternate tows run across and along, offset each row: the twill diagonal
+        const along = (i + j) % 4 < 2;
+        const g = along ? w.createLinearGradient(i * 4, 0, i * 4 + 4, 0) : w.createLinearGradient(0, j * 4, 0, j * 4 + 4);
+        g.addColorStop(0, "#101114");
+        g.addColorStop(0.5, along ? "#2c2f35" : "#202227");
+        g.addColorStop(1, "#101114");
+        w.fillStyle = g;
+        w.fillRect(i * 4 + 0.3, j * 4 + 0.3, 3.4, 3.4);
+      }
+  }
+  const p = ctx.createPattern(weave, "repeat")!;
+  p.setTransform(new DOMMatrix().scale(0.04 / 16));
+  return p;
+}
+
+/**
+ * A tyre seen from above: a rounded block, shaded as a cylinder rolling along
+ * x, with a scrubbed tread crown, the rim's dark shoulder, and the compound
+ * band on the outer sidewall. Wets carry their deep tread grooves.
+ */
+function tyre(ctx: Ctx, x: number, y: number, len: number, wid: number, outside: 1 | -1, kind: Tyres = "dry") {
+  const x0 = x - len / 2;
+  const y0 = y - wid / 2;
   ctx.fillStyle = TYRE;
   ctx.beginPath();
-  ctx.roundRect(x - len / 2, y - wid / 2, len, wid, Math.min(len, wid) * 0.3);
+  ctx.roundRect(x0, y0, len, wid, Math.min(len, wid) * 0.3);
   ctx.fill();
-  const g = ctx.createLinearGradient(x - len / 2, 0, x + len / 2, 0);
-  g.addColorStop(0, "rgba(255,255,255,0)");
-  g.addColorStop(0.5, "rgba(255,255,255,0.10)");
-  g.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = g;
-  ctx.fillRect(x - len / 2, y - wid / 2 + wid * 0.12, len, wid * 0.76);
+  ctx.save();
+  ctx.clip();
+  // rolling cylinder: dark where the tread turns away fore and aft
+  const roll = ctx.createLinearGradient(x0, 0, x0 + len, 0);
+  roll.addColorStop(0, "rgba(0,0,0,0.55)");
+  roll.addColorStop(0.22, "rgba(255,255,255,0.03)");
+  roll.addColorStop(0.5, "rgba(255,255,255,0.12)");
+  roll.addColorStop(0.78, "rgba(255,255,255,0.03)");
+  roll.addColorStop(1, "rgba(0,0,0,0.55)");
+  ctx.fillStyle = roll;
+  ctx.fillRect(x0, y0, len, wid);
+  // shoulders: the tread rolls over to the sidewalls
+  const sh = ctx.createLinearGradient(0, y0, 0, y0 + wid);
+  sh.addColorStop(0, "rgba(0,0,0,0.5)");
+  sh.addColorStop(0.16, "rgba(0,0,0,0)");
+  sh.addColorStop(0.84, "rgba(0,0,0,0)");
+  sh.addColorStop(1, "rgba(0,0,0,0.5)");
+  ctx.fillStyle = sh;
+  ctx.fillRect(x0, y0, len, wid);
+  if (kind === "wet") {
+    // directional grooves: a chevron that clears water to both shoulders
+    ctx.strokeStyle = "rgba(0,0,0,0.45)";
+    ctx.lineWidth = 0.01;
+    ctx.beginPath();
+    for (let gx = x0 - 0.1; gx < x0 + len + 0.1; gx += 0.095) {
+      ctx.moveTo(gx, y0 + wid * 0.12);
+      ctx.lineTo(gx + 0.06, y);
+      ctx.lineTo(gx, y0 + wid * 0.88);
+    }
+    ctx.moveTo(x0, y - wid * 0.2);
+    ctx.lineTo(x0 + len, y - wid * 0.2);
+    ctx.moveTo(x0, y + wid * 0.2);
+    ctx.lineTo(x0 + len, y + wid * 0.2);
+    ctx.stroke();
+  } else {
+    // scrubbed slick: rubber pick-up and graining as faint streaks along the crown
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
+    ctx.lineWidth = 0.008;
+    ctx.beginPath();
+    for (let k = 1; k < 9; k++) {
+      const yy = y0 + (wid * k) / 9;
+      ctx.moveTo(x0, yy);
+      ctx.lineTo(x0 + len, yy + ((k * 7) % 3) * 0.002);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
   // the outer sidewall shows a sliver of compound colour
-  ctx.fillStyle = COMPOUND;
-  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = COMPOUND[kind];
+  ctx.globalAlpha = 0.9;
   ctx.fillRect(x - len * 0.32, y + outside * (wid / 2 - 0.035) - 0.0125, len * 0.64, 0.025);
   ctx.globalAlpha = 1;
 }
@@ -123,10 +201,14 @@ const FLOOR: [number, number][] = [
   [-2.25, 0.52],
 ];
 
-function drawBody(ctx: Ctx, l: Livery, wheels = true) {
+function drawBody(ctx: Ctx, l: Livery, wheels = true, kind: Tyres = "dry") {
   // floor and diffuser: carbon, with a lit leading edge and strakes behind the axle
-  ctx.fillStyle = CARBON;
+  ctx.fillStyle = carbon(ctx);
   symmetric(ctx, FLOOR);
+  ctx.fill();
+  // floor edge wing: a lit lip all the way round
+  ctx.fillStyle = "rgba(255,255,255,0.05)";
+  symmetric(ctx, FLOOR.map(([x, w]) => [x, w * 0.97] as [number, number]));
   ctx.fill();
   ctx.strokeStyle = CARBON_HI;
   ctx.lineWidth = 0.025;
@@ -158,7 +240,7 @@ function drawBody(ctx: Ctx, l: Livery, wheels = true) {
   ctx.stroke();
 
   // rear tyres live in the sprite (they don't steer)
-  if (wheels) for (const s of [-1, 1] as const) tyre(ctx, REAR_AXLE, s * TRACK_HALF, 0.74, 0.42, s);
+  if (wheels) for (const s of [-1, 1] as const) tyre(ctx, REAR_AXLE, s * TRACK_HALF, 0.74, 0.42, s, kind);
 
   // body: cylindrical shading, then a dark undercut where the sidepods fall away
   ctx.fillStyle = across(ctx, 0.66, l.bodyDark, l.body, l.bodyLight);
@@ -173,13 +255,56 @@ function drawBody(ctx: Ctx, l: Livery, wheels = true) {
   ctx.fillStyle = ramp;
   for (const s of [-1, 1]) ctx.fillRect(-1.3, s > 0 ? 0.3 : -0.7, 1.5, 0.4);
   ctx.restore();
+  // clear coat: the sky mirrored along the crown of the nose and engine cover,
+  // and a soft hot spot where the sun (high, north-west) catches the sidepod
+  ctx.save();
+  symmetric(ctx, BODY);
+  ctx.clip();
+  const sky = ctx.createLinearGradient(0, -0.3, 0, 0.3);
+  sky.addColorStop(0, "rgba(255,255,255,0)");
+  sky.addColorStop(0.38, "rgba(255,255,255,0.05)");
+  sky.addColorStop(0.46, "rgba(255,255,255,0.32)");
+  sky.addColorStop(0.52, "rgba(255,255,255,0.08)");
+  sky.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = sky;
+  ctx.fillRect(-2.3, -0.3, 5.1, 0.6);
+  const sun = ctx.createRadialGradient(0.0, -0.46, 0, 0.0, -0.46, 0.42);
+  sun.addColorStop(0, "rgba(255,255,255,0.34)");
+  sun.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = sun;
+  ctx.fillRect(-0.5, -0.9, 1, 0.9);
+  // panel lines: engine cover, sidepod and nose seams
+  ctx.strokeStyle = "rgba(0,0,0,0.32)";
+  ctx.lineWidth = 0.009;
+  ctx.beginPath();
+  for (const k of [-1, 1]) {
+    ctx.moveTo(0.05, k * 0.3);
+    ctx.bezierCurveTo(-0.5, k * 0.36, -1.2, k * 0.24, -1.95, k * 0.12);
+    ctx.moveTo(0.3, k * 0.6);
+    ctx.quadraticCurveTo(-0.3, k * 0.66, -0.75, k * 0.52);
+  }
+  ctx.moveTo(1.2, -0.2);
+  ctx.lineTo(1.2, 0.2);
+  ctx.stroke();
+  // cooling louvres on top of each sidepod
+  ctx.strokeStyle = "rgba(0,0,0,0.5)";
+  ctx.lineWidth = 0.012;
+  ctx.beginPath();
+  for (const k of [-1, 1])
+    for (let i = 0; i < 6; i++) {
+      const lx = -0.82 - i * 0.07;
+      ctx.moveTo(lx, k * 0.33);
+      ctx.lineTo(lx - 0.02, k * 0.47);
+    }
+  ctx.stroke();
+  ctx.restore();
   ctx.strokeStyle = "rgba(0,0,0,0.4)";
   ctx.lineWidth = 0.018;
   symmetric(ctx, BODY);
   ctx.stroke();
 
   // sidepod inlets
-  ctx.fillStyle = CARBON;
+  ctx.fillStyle = carbon(ctx);
   for (const s of [-1, 1]) {
     ctx.beginPath();
     ctx.moveTo(0.42, s * 0.42);
@@ -210,7 +335,7 @@ function drawBody(ctx: Ctx, l: Livery, wheels = true) {
   ctx.fill();
 
   // engine cover spine and fin, lit along the crown
-  ctx.fillStyle = CARBON;
+  ctx.fillStyle = carbon(ctx);
   ctx.fillRect(-2.1, -0.025, 1.75, 0.05);
   ctx.fillStyle = "rgba(255,255,255,0.18)";
   ctx.fillRect(-2.1, -0.008, 1.75, 0.016);
@@ -228,6 +353,12 @@ function drawBody(ctx: Ctx, l: Livery, wheels = true) {
   ctx.beginPath();
   ctx.arc(0.13, 0, 0.13, 0, Math.PI * 2);
   ctx.fill();
+  ctx.strokeStyle = l.accent; // helmet stripe, front to back over the crown
+  ctx.lineWidth = 0.025;
+  ctx.beginPath();
+  ctx.moveTo(0.25, 0);
+  ctx.lineTo(0.0, 0);
+  ctx.stroke();
   ctx.fillStyle = "#1d1f23"; // visor
   ctx.beginPath();
   ctx.ellipse(0.22, 0, 0.035, 0.09, 0, 0, Math.PI * 2);
@@ -284,8 +415,11 @@ function drawBody(ctx: Ctx, l: Livery, wheels = true) {
   for (const s of [-1, 1]) ctx.fillRect(2.58, s * 0.99 - 0.035, 0.4, 0.07);
 
   // rear wing: mainplane, flap (lit leading edge), beam wing below, livery endplates
-  ctx.fillStyle = CARBON;
+  ctx.fillStyle = carbon(ctx);
   ctx.fillRect(-2.78, -0.56, 0.4, 1.12);
+  // DRS actuator pod in the middle of the flap
+  ctx.fillStyle = "#3a3d43";
+  ctx.fillRect(-2.62, -0.03, 0.16, 0.06);
   ctx.fillStyle = "#24262b";
   ctx.fillRect(-2.7, -0.54, 0.13, 1.08);
   ctx.fillStyle = "rgba(255,255,255,0.16)";
@@ -296,8 +430,8 @@ function drawBody(ctx: Ctx, l: Livery, wheels = true) {
   ctx.fillRect(-2.78, -0.2, 0.06, 0.4);
 }
 
-function drawFrontTyre(ctx: Ctx) {
-  tyre(ctx, 0, 0, 0.66, 0.34, 1);
+function drawFrontTyre(ctx: Ctx, kind: Tyres) {
+  tyre(ctx, 0, 0, 0.66, 0.34, 1, kind);
 }
 
 /**
@@ -378,14 +512,19 @@ export class CarSprites {
   private readonly L = CAR_LENGTH + 2 * PAD;
   private readonly W = CAR_WIDTH + 2 * PAD;
 
-  constructor() {
+  /** Wet days: full wets, and the rain light blinks. */
+  readonly wet: boolean;
+
+  constructor(wet = false) {
+    this.wet = wet;
+    const kind: Tyres = wet ? "wet" : "dry";
     this.mips = MIPS.map((ppm) => {
       const [p, pc] = canvas(ppm, this.L, this.W);
-      drawBody(pc, LIVERIES.player);
+      drawBody(pc, LIVERIES.player, true, kind);
       const [g, gc] = canvas(ppm, this.L, this.W);
-      drawBody(gc, LIVERIES.ghost);
+      drawBody(gc, LIVERIES.ghost, true, kind);
       const [t, tc] = canvas(ppm, 0.8, 0.5);
-      drawFrontTyre(tc);
+      drawFrontTyre(tc, kind);
       // the shadow silhouette includes the front wheels at rest
       const [full, fc] = canvas(ppm, this.L, this.W);
       fc.drawImage(p, -this.L / 2, -this.W / 2, this.L, this.W);
@@ -472,6 +611,19 @@ export class CarSprites {
         ctx.fillStyle = g;
         ctx.fillRect(gx - r, gy - r, r * 2, r * 2);
       }
+      ctx.globalCompositeOperation = "source-over";
+    }
+    // rain light: the red LED under the rear wing, flashing, as the rules require in the wet
+    if (this.wet && !ghost && Math.floor(performance.now() / 250) % 2 === 0) {
+      ctx.globalCompositeOperation = "lighter";
+      const gx = -2.62 * k;
+      const r = 0.45 * k;
+      const g = ctx.createRadialGradient(gx, 0, 0, gx, 0, r);
+      g.addColorStop(0, "rgba(255,70,60,0.95)");
+      g.addColorStop(0.25, "rgba(255,30,30,0.4)");
+      g.addColorStop(1, "rgba(255,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(gx - r, -r, r * 2, r * 2);
       ctx.globalCompositeOperation = "source-over";
     }
     ctx.restore();

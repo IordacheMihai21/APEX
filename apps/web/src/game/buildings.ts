@@ -1,4 +1,6 @@
 import { canvas, rng } from "./scenery";
+import { roofMembrane, roofTiles } from "./materials";
+import { type Flora, type Species, type TreeSprite, pickSpecies, treeSprites } from "./trees";
 
 /**
  * Buildings and trees as a satellite photo shows them. Roofs carry the detail:
@@ -98,41 +100,6 @@ function poly(path: Path2D, pts: Pt[]) {
   path.closePath();
 }
 
-/** Tree crown sprite: shaded dome of leaf clumps, lit from the north-west. */
-function treeSprite(seed: number, base: [number, number, number]): HTMLCanvasElement {
-  const S = 64;
-  const [c, ctx] = canvas(S);
-  const r = rng(seed);
-  const R = S * 0.46;
-  const col = (f: number, a = 1) => `rgba(${Math.round(base[0] * f)},${Math.round(base[1] * f)},${Math.round(base[2] * f)},${a})`;
-  // dome: dark rim to lit north-west
-  const g = ctx.createRadialGradient(S * 0.38, S * 0.38, R * 0.1, S / 2, S / 2, R);
-  g.addColorStop(0, col(1.35));
-  g.addColorStop(0.65, col(0.95));
-  g.addColorStop(1, col(0.55));
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(S / 2, S / 2, R, 0, Math.PI * 2);
-  ctx.fill();
-  // leaf clumps
-  for (let k = 0; k < 26; k++) {
-    const a = r() * Math.PI * 2;
-    const d = Math.sqrt(r()) * R * 0.78;
-    const x = S / 2 + Math.cos(a) * d;
-    const y = S / 2 + Math.sin(a) * d;
-    const cr = R * (0.16 + r() * 0.16);
-    const lit = 1 - ((x - S * 0.3) + (y - S * 0.3)) / (S * 1.4);
-    const cg = ctx.createRadialGradient(x - cr * 0.35, y - cr * 0.35, cr * 0.1, x, y, cr);
-    cg.addColorStop(0, col(0.9 + lit * 0.7, 0.9));
-    cg.addColorStop(1, col(0.55 + lit * 0.3, 0));
-    ctx.fillStyle = cg;
-    ctx.beginPath();
-    ctx.arc(x, y, cr, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  return c;
-}
-
 export class Buildings {
   private readonly shadowFar = new Path2D();
   private readonly shadowNear = new Path2D();
@@ -147,9 +114,17 @@ export class Buildings {
   private readonly stands: { seats: Path2D; canopy: Path2D; ribs: Path2D; aisles: Path2D; angle: number }[] = [];
   private readonly pitRoofs = new Path2D();
   private readonly doors = new Path2D();
-  private readonly trees: { x: number; y: number; r: number; v: number }[] = [];
-  private sprites: HTMLCanvasElement[] | null = null;
+  private readonly trees: { x: number; y: number; r: number; species: Species; v: number; rot: number }[] = [];
+  private sprites: Record<Species, TreeSprite[]> | null = null;
   private seatPattern: CanvasPattern | null = null;
+  /** hip-roof faces, each with the direction of its eave so tile courses run along it */
+  private readonly tileFaces: { path: Path2D; angle: number }[] = [];
+  private readonly flatAll = new Path2D();
+  private readonly footprints = new Path2D();
+  private tiles: CanvasPattern | null = null;
+  private membrane: CanvasPattern | null = null;
+  /** Overcast (wet) days: shadows soften almost away and canopies darken. */
+  wet = false;
 
   constructor(
     buildings: BuildingData[],
@@ -157,6 +132,7 @@ export class Buildings {
     palette: string[],
     /** sampled centreline, to know which side of a grandstand or pit building faces the track */
     private readonly track: Pt[],
+    private readonly flora: Flora = "temperate",
   ) {
     const r = rng(11);
     for (const b of buildings) {
@@ -164,6 +140,7 @@ export class Buildings {
       if (pts.length < 3) continue;
       if (signedArea(pts) < 0) pts.reverse(); // counter-clockwise, so edge normals point outward
       const area = signedArea(pts);
+      poly(this.footprints, pts);
       // shadow: two passes for a soft edge
       poly(this.shadowFar, pts.map(([x, y]) => [x + SHADOW.dx * b.h, y + SHADOW.dy * b.h] as Pt));
       poly(this.shadowNear, pts.map(([x, y]) => [x + SHADOW.dx * b.h * 0.6, y + SHADOW.dy * b.h * 0.6] as Pt));
@@ -172,7 +149,12 @@ export class Buildings {
       else if (area < 420 && b.h <= 12) this.hipRoof(pts, palette[Math.floor(r() * palette.length)]);
       else this.flatRoof(pts, area, r);
     }
-    for (let i = 0; i < trees.length; i += 2) this.trees.push({ x: trees[i], y: trees[i + 1], r: 2.8 + r() * 2.6, v: Math.floor(r() * 3) });
+    for (let i = 0; i < trees.length; i += 2) {
+      const species = pickSpecies(this.flora, r());
+      // crown radius by species: conifers narrow, broadleaf wide, palms in between
+      const rad = species === "conifer" ? 1.8 + r() * 1.6 : species === "palm" ? 2.4 + r() * 1.2 : 2.8 + r() * 2.8;
+      this.trees.push({ x: trees[i], y: trees[i + 1], r: rad, species, v: Math.floor(r() * 8), rot: (r() - 0.5) * 0.5 });
+    }
   }
 
   /**
@@ -218,6 +200,9 @@ export class Buildings {
       const tone = TONES[Math.max(0, Math.min(3, Math.round((light + 1) * 1.5)))];
       const face = this.bucket(this.faces, shade(color, tone));
       poly(face, [p, q, onRidge(q), onRidge(p)]);
+      const own = new Path2D();
+      poly(own, [p, q, onRidge(q), onRidge(p)]);
+      this.tileFaces.push({ path: own, angle: Math.atan2(q[1] - p[1], q[0] - p[0]) });
     }
     this.ridges.moveTo(a[0], a[1]);
     this.ridges.lineTo(b[0], b[1]);
@@ -232,8 +217,10 @@ export class Buildings {
 
   /** Flat roof: membrane, parapet, plant units with shadows, skylights on long sheds. */
   private flatRoof(pts: Pt[], area: number, r: () => number) {
-    const greys = ["#8c8f93", "#9da0a3", "#7a7d81", "#a9a7a1"];
+    // sun-bleached membranes, gravel ballast and painted concrete: lighter than the streets around them
+    const greys = ["#b2afa8", "#c4c0b6", "#a19f9a", "#d0ccc2", "#97958f"];
     poly(this.bucket(this.flats, greys[Math.floor(r() * greys.length)]), pts);
+    poly(this.flatAll, pts);
     poly(this.parapets, pts);
     const { u, len, wid } = axis(pts);
     const [cx, cy] = centroid(pts);
@@ -336,10 +323,21 @@ export class Buildings {
 
   draw(ctx: CanvasRenderingContext2D, px: number) {
     const detailed = px < 0.9;
-    ctx.fillStyle = "rgba(6,8,10,0.2)";
+    const k = this.wet ? 0.35 : 1;
+    ctx.fillStyle = `rgba(6,8,10,${0.28 * k})`;
     ctx.fill(this.shadowFar);
-    ctx.fillStyle = "rgba(6,8,10,0.24)";
+    ctx.fillStyle = `rgba(6,8,10,${0.32 * k})`;
     ctx.fill(this.shadowNear);
+    // contact shadow: the ground darkens right at the walls (ambient occlusion)
+    if (detailed) {
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = `rgba(4,6,8,${0.22 * (this.wet ? 1.2 : 1)})`;
+      ctx.lineWidth = 1.6;
+      ctx.stroke(this.footprints);
+      ctx.strokeStyle = `rgba(4,6,8,${0.18 * (this.wet ? 1.2 : 1)})`;
+      ctx.lineWidth = 0.7;
+      ctx.stroke(this.footprints);
+    }
 
     for (const [color, path] of this.faces) {
       ctx.fillStyle = color;
@@ -348,6 +346,29 @@ export class Buildings {
     for (const [color, path] of this.flats) {
       ctx.fillStyle = color;
       ctx.fill(path);
+    }
+    if (px < 3) {
+      // clay or slate courses along each eave; a mottled membrane on flat roofs
+      if (!this.tiles) {
+        this.tiles = ctx.createPattern(roofTiles(), "repeat");
+        this.membrane = ctx.createPattern(roofMembrane(), "repeat");
+      }
+      for (const f of this.tileFaces) {
+        this.tiles!.setTransform(new DOMMatrix().rotate((f.angle * 180) / Math.PI).scale(0.034, 0.034));
+        ctx.fillStyle = this.tiles!;
+        ctx.fill(f.path);
+      }
+      this.membrane!.setTransform(new DOMMatrix().scale(0.06, 0.06));
+      ctx.globalCompositeOperation = "multiply";
+      ctx.fillStyle = this.membrane!;
+      ctx.fill(this.flatAll);
+      ctx.globalCompositeOperation = "source-over";
+      if (this.wet) {
+        // wet roofs: darker, with a faint sheen
+        ctx.fillStyle = "rgba(10,16,24,0.22)";
+        ctx.fill(this.flatAll);
+        for (const f of this.tileFaces) ctx.fill(f.path);
+      }
     }
     ctx.fillStyle = "#c9cbcd";
     ctx.fill(this.pitRoofs);
@@ -411,21 +432,35 @@ export class Buildings {
   /** Trees after buildings so canopies overhang roofs a little, as they do. */
   drawTrees(ctx: CanvasRenderingContext2D, px: number) {
     if (px > 2.5 || !this.trees.length) return;
-    if (!this.sprites) this.sprites = [treeSprite(3, [44, 78, 36]), treeSprite(5, [52, 86, 40]), treeSprite(8, [38, 68, 34])];
-    ctx.fillStyle = "rgba(6,10,6,0.32)";
-    ctx.beginPath();
+    if (!this.sprites) this.sprites = treeSprites(this.flora, this.wet);
+    const pick = (t: (typeof this.trees)[number]) => {
+      const list = this.sprites![t.species].length ? this.sprites![t.species] : this.sprites!.broad;
+      return list[t.v % list.length];
+    };
+    const smoothing = ctx.imageSmoothingQuality;
+    ctx.imageSmoothingQuality = "high";
+    // shadows first, cut from each crown's own silhouette, cast south-east by the tree's height
+    ctx.globalAlpha = this.wet ? 0.18 : 0.55;
     for (const t of this.trees) {
-      ctx.moveTo(t.x + t.r * 1.0 + t.r, t.y - t.r * 1.0);
-      ctx.arc(t.x + t.r * 1.0, t.y - t.r * 1.0, t.r, 0, Math.PI * 2);
-    }
-    ctx.fill();
-    for (const t of this.trees) {
+      const s = pick(t);
+      const off = t.r * (t.species === "conifer" ? 1.3 : t.species === "palm" ? 1.6 : 0.95);
       ctx.save();
-      // sprites are drawn in a y-down frame; flip so the lit side stays north-west
-      ctx.translate(t.x, t.y);
+      ctx.translate(t.x + off, t.y - off);
+      ctx.rotate(t.rot);
       ctx.scale(1, -1);
-      ctx.drawImage(this.sprites[t.v], -t.r, -t.r, t.r * 2, t.r * 2);
+      ctx.drawImage(s.shadow, -t.r * 1.1, -t.r * 1.1, t.r * 2.2, t.r * 2.2);
       ctx.restore();
     }
+    ctx.globalAlpha = 1;
+    for (const t of this.trees) {
+      ctx.save();
+      // sprites are drawn y-down; flip so the lit side stays north-west, turn a little for variety
+      ctx.translate(t.x, t.y);
+      ctx.rotate(t.rot);
+      ctx.scale(1, -1);
+      ctx.drawImage(pick(t).crown, -t.r, -t.r, t.r * 2, t.r * 2);
+      ctx.restore();
+    }
+    ctx.imageSmoothingQuality = smoothing;
   }
 }
