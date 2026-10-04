@@ -79,6 +79,18 @@ export function Legal() {
             B.V.
           </p>
           <p>Circuit names are used only to identify the real venues and remain the marks of their owners. The game uses no team, driver or sponsor names, logos or liveries.</p>
+          <p>
+            If you own a name, mark or data used here and want it changed or removed, write to us
+            {OPERATOR.email ? (
+              <>
+                {" "}at{" "}
+                <a className={link} href={`mailto:${OPERATOR.email}`}>
+                  {OPERATOR.email}
+                </a>
+              </>
+            ) : null}{" "}
+            with what it is and where it appears. We reply within a few working days and act on valid requests promptly.
+          </p>
         </Section>
 
         <Section title="Map data">
