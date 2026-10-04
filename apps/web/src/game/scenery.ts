@@ -108,6 +108,20 @@ interface Textures {
   sheen: CanvasPattern | null;
 }
 
+/** The circuit's own materials, as calls into the memoised generators (so they can also be made ahead, see prewarm.ts). */
+export function trackMaterials(wet: boolean) {
+  return {
+    asphalt: () => M.asphalt(hex(PALETTE.asphalt), 51, wet),
+    runoff: () => M.asphalt([78, 82, 88], 52, wet),
+    grass: () => M.grass(41, wet),
+    gravel: () => M.gravel(61, wet),
+    concrete: () => M.concrete(hex(PALETTE.concrete), 71),
+    macro: () => M.macro(),
+    clouds: () => M.cloudShadows(),
+    sheen: () => (wet ? M.water([150, 160, 172], 83, true) : null),
+  };
+}
+
 function makeTextures(ctx: CanvasRenderingContext2D, wet: boolean): Textures {
   const pattern = (src: HTMLCanvasElement, metresPerTile: number, angle = 0) => {
     const p = ctx.createPattern(src, "repeat")!;
@@ -115,11 +129,12 @@ function makeTextures(ctx: CanvasRenderingContext2D, wet: boolean): Textures {
     p.setTransform(new DOMMatrix().rotate(angle).scale(k, k));
     return p;
   };
-  const asphalt = M.asphalt(hex(PALETTE.asphalt), 51, wet);
-  const runoff = M.asphalt([78, 82, 88], 52, wet);
-  const grass = M.grass(41, wet);
-  const gravel = M.gravel(61, wet);
-  const concrete = M.concrete(hex(PALETTE.concrete), 71);
+  const m = trackMaterials(wet);
+  const asphalt = m.asphalt();
+  const runoff = m.runoff();
+  const grass = m.grass();
+  const gravel = m.gravel();
+  const concrete = m.concrete();
   // mowing stripes: one light band per tile, rotated in world space
   const [st, sctx] = canvas(64);
   sctx.fillStyle = "rgba(255,255,255,0)";
@@ -133,9 +148,9 @@ function makeTextures(ctx: CanvasRenderingContext2D, wet: boolean): Textures {
     grass: pattern(grass, 20),
     stripes: pattern(st, 30, 32),
     gravel: pattern(gravel, 10),
-    macro: pattern(M.macro(), 700, 17),
-    clouds: pattern(M.cloudShadows(), 1600),
-    sheen: wet ? pattern(M.water([150, 160, 172], 83, true), 30, 64) : null,
+    macro: pattern(m.macro(), 700, 17),
+    clouds: pattern(m.clouds(), 1600),
+    sheen: wet ? pattern(m.sheen()!, 30, 64) : null,
   };
 }
 

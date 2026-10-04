@@ -1,7 +1,7 @@
 import { boatBox, boatSprites } from "./boats";
 import { Buildings } from "./buildings";
 import { asphalt as asphaltMat, concrete as concreteMat, grass as grassMat, water as waterMat } from "./materials";
-import { FLORA_BY_TRACK, type Flora, forestTile } from "./trees";
+import { FLORA_BY_TRACK, type Flora, forestTile, treeSprites } from "./trees";
 import { canvas, hex, noiseTexture, rng } from "./scenery";
 
 /**
@@ -42,6 +42,22 @@ const LAND = {
   roadEdge: "#6a6d70",
   rail: "#2c2a28",
 };
+
+/** The surroundings' materials, trees and boats for a circuit, as calls into the memoised generators. */
+export function worldMaterials(trackId: string, wet: boolean) {
+  const flora = FLORA_BY_TRACK[trackId] ?? "temperate";
+  // the sea and harbours are choppier than ponds; on a wet day the water goes grey
+  const waterBase: [number, number, number] = wet ? [34, 54, 66] : trackId === "monaco" ? [26, 74, 98] : [32, 66, 84];
+  return {
+    canopy: () => forestTile(flora, wet),
+    water: () => waterMat(waterBase, 81, false),
+    meadow: () => grassMat(43, wet),
+    paving: () => concreteMat(hex(LAND.urban), 72, 48),
+    road: () => asphaltMat(hex(LAND.road), 53, wet),
+    trees: () => treeSprites(flora, wet),
+    boats: () => (trackId === "monaco" ? boatSprites() : null),
+  };
+}
 
 /** Roof palettes by region: terracotta where the tiles are, greys and slate elsewhere. */
 const ROOFS: Record<"tile" | "slate", string[]> = {
@@ -276,17 +292,15 @@ export class Surroundings {
       p.setTransform(new DOMMatrix().scale(k, k));
       return p;
     };
-    const wet = this._wet;
-    // the sea and harbours are choppier than ponds; on a wet day the water goes grey
-    const waterBase: [number, number, number] = wet ? [34, 54, 66] : this.trackId === "monaco" ? [26, 74, 98] : [32, 66, 84];
+    const m = worldMaterials(this.trackId, this._wet);
     const sand = noiseTexture(256, hex(LAND.sand), 14, { rate: 0.05, light: 18, dark: 16 }, 32);
     this.tex = {
-      canopy: pattern(forestTile(this.flora, wet), 120),
-      water: pattern(waterMat(waterBase, 81, false), 70),
+      canopy: pattern(m.canopy(), 120),
+      water: pattern(m.water(), 70),
       sand: pattern(sand, 12),
-      meadow: pattern(grassMat(43, wet), 22),
-      paving: pattern(concreteMat(hex(LAND.urban), 72, 48), 14),
-      road: pattern(asphaltMat(hex(LAND.road), 53, wet), 8),
+      meadow: pattern(m.meadow(), 22),
+      paving: pattern(m.paving(), 14),
+      road: pattern(m.road(), 8),
     };
     return this.tex;
   }

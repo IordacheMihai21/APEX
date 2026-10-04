@@ -294,7 +294,16 @@ const FROND: RGB[] = [
 ];
 
 /** A set of sprites for one flora: several variants per species it uses. */
+const spriteCache = new Map<string, Record<Species, TreeSprite[]>>();
+/** The sprite set for a flora and weather, made once per page (about 70 ms). */
 export function treeSprites(flora: Flora, wet: boolean): Record<Species, TreeSprite[]> {
+  const key = `${flora}|${wet}`;
+  let s = spriteCache.get(key);
+  if (!s) spriteCache.set(key, (s = makeTreeSprites(flora, wet)));
+  return s;
+}
+
+function makeTreeSprites(flora: Flora, wet: boolean): Record<Species, TreeSprite[]> {
   const make = (species: Species, n: number): TreeSprite[] =>
     Array.from({ length: n }, (_, i) => {
       const crown =
@@ -310,7 +319,16 @@ export function treeSprites(flora: Flora, wet: boolean): Record<Species, TreeSpr
  * with their shadows, over a dark understorey, wrapped at the edges.
  * `metres` is the tile's size in the world; crowns are 6-11 m across.
  */
+const forestCache = new Map<string, HTMLCanvasElement>();
+/** A tile of forest canopy, made once per page per flora and weather (about 80 ms). */
 export function forestTile(flora: Flora, wet: boolean, metres = 120): HTMLCanvasElement {
+  const key = `${flora}|${wet}|${metres}`;
+  let c = forestCache.get(key);
+  if (!c) forestCache.set(key, (c = makeForestTile(flora, wet, metres)));
+  return c;
+}
+
+function makeForestTile(flora: Flora, wet: boolean, metres: number): HTMLCanvasElement {
   const S = 1024;
   const pxm = S / metres;
   const [c, ctx] = sprite(S);

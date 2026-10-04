@@ -457,6 +457,11 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   // the official figures, the same ones the minigames use (our corner groups can differ)
   const facts = CIRCUITS.find((c) => c.id === daily.trackId);
   const condition = conditionOf(daily);
+  // while the hub sits idle, build today's circuit textures so lights out opens without a freeze
+  useEffect(() => {
+    const t = setTimeout(() => import("../game/prewarm").then((m) => m.prewarm(daily.trackId, condition === "wet")).catch(() => {}), 1200);
+    return () => clearTimeout(t);
+  }, [daily.trackId, condition]);
   const o = OUTLINES[daily.trackId];
   const perfectMs = condition === "dry" ? o.lapMs : (o.conditions[condition]?.lapMs ?? o.lapMs);
   const left = msToNextDay(new Date(now));
