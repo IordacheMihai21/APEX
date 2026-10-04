@@ -31,7 +31,7 @@ Sources: [OWASP HTTP Headers Cheat Sheet](https://cheatsheetseries.owasp.org/che
 | Strict input validation (day window, circuit list, UUID, knot count and range), 16 kB body limit | **Done** |
 | Rate limits: 60 submissions per device per day, 300 per IP per hour (IP stored only as a salted daily SHA-256 hash) | **Done**, deployed |
 | CORS restricted to the site's origin | **You**: once the domain exists, set the function secret `ALLOWED_ORIGINS=https://yourdomain` (Supabase dashboard → Edge Functions → Secrets) |
-| Right to erasure ("Delete my leaderboard results" on /privacy) and 30-day retention | **You**: approve the migration that adds `forget_device` and `prune_leaderboard` (it contains DELETE statements, so it waits for your OK). The button and the function are already deployed. |
+| Right to erasure ("Delete my leaderboard results" on /privacy) and 30-day retention | **Done**: `forget_device` and `prune_leaderboard` are live, the button and the function are deployed. **Later**: schedule `prune_leaderboard()` daily (pg_cron) so the 30 days hold without a manual run. |
 | `rls_auto_enable()` advisor warning | Supabase's own event-trigger helper (turns RLS on for new tables); it can't be called as an API. Harmless, left as is. |
 
 Sources: [Supabase rate limits](https://supabase.com/docs/guides/auth/rate-limits), [anon key and RLS](https://www.stingrai.io/blog/supabase-powerful-but-one-misconfiguration-away-from-disaster).
@@ -45,7 +45,7 @@ Sources: [Supabase rate limits](https://supabase.com/docs/guides/auth/rate-limit
 - **The device id is personal data** (pseudonymous, GDPR recital 26), so the
   leaderboard needs: a legal basis (legitimate interest, art. 6(1)(f)), a
   notice, a retention limit, and a way to delete. **Done** in the code
-  (notice, 30 days stated, delete button); **You**: approve the migration above.
+  (notice, 30 days stated, delete button, erasure and retention functions live).
   Players see only aggregates, never ids or lines.
 - **Plausible** is cookieless and keeps no personal data; it's widely treated
   as consent-free ([Plausible's legal assessment](https://plausible.io/blog/legal-assessment-gdpr-eprivacy)),
