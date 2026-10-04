@@ -17,7 +17,9 @@
     "check": "tsx tools/track-builder/src/check-tracks.ts",
     "dev": "npm run dev -w @apex/web",
     "build:web": "npm run build -w @apex/web",
-    "build:conditions": "tsx tools/track-builder/src/build-conditions.ts"
+    "build:conditions": "tsx tools/track-builder/src/build-conditions.ts",
+    "build:functions": "tsx tools/functions/build.ts",
+    "deploy:functions": "npm run build:functions && npx -y supabase@2 functions deploy submit-lap --project-ref acglshyvgeikyrvjfjue --no-verify-jwt --use-api"
   },
   "devDependencies": {
     "tsx": "^4.23.15",

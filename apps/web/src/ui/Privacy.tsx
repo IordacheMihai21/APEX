@@ -1,4 +1,5 @@
 import { ANALYTICS_ON } from "../analytics";
+import { ONLINE } from "../online";
 import { secondaryBtn } from "./styles";
 
 const ADS = !!import.meta.env.VITE_ADSENSE_CLIENT;
@@ -39,11 +40,24 @@ export function Privacy() {
 
         <Section title="What stays on your device">
           <p>
-            Your progress is saved in your browser's local storage on this device only: daily results and streaks, personal bests and lines on each circuit, minigame records, and your settings (sound, colour-blind colours). It
-            never leaves the device and we can't see it. Clearing this site's data in your browser deletes it.
+            Your progress is saved in your browser's local storage on this device: daily results and streaks, personal bests and lines on each circuit, minigame records, and your settings (sound, colour-blind colours).{" "}
+            {ONLINE ? "Apart from the daily leaderboard entry described below, it never leaves the device." : "It never leaves the device."} Clearing this site's data in your browser deletes it.
           </p>
           <p>The app also keeps a short local log of game events (for example "lap finished") to help us improve the game during development. It stays on your device too.</p>
         </Section>
+
+        {ONLINE && (
+          <Section title="Daily leaderboard">
+            <p>
+              When you finish a Daily Quali lap, the app sends today's date, the circuit, the conditions, your best line of the day (the points of your racing line) and a random device number made on this device, so the
+              game can tell you how you compare. The server times the line itself; no name, account or email is involved.
+            </p>
+            <p>
+              It's stored in a database run by Supabase in the EU (Frankfurt). Other players only ever see totals (how many played, how many were faster, the median), never your device number or your line. We don't store
+              your IP address with your result; Supabase keeps short-lived server logs for running the service. Clearing this site's data gives you a new device number.
+            </p>
+          </Section>
+        )}
 
         {ANALYTICS_ON && (
           <Section title="Visit statistics">

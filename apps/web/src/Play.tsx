@@ -17,7 +17,8 @@ import { Roll } from "./ui/Roll";
 import { delta, lapTime } from "./ui/format";
 import { ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, Undo, WholeTrack } from "./ui/icons";
 import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
-import { Loading, ShareButton, dailyShare, dayHeadline, useCountdown } from "./Dialogs";
+import { Loading, ShareButton, StandingLine, boardOf, dailyShare, dayHeadline, useCountdown } from "./Dialogs";
+import { submitDailyLine } from "./online";
 import { CORNER_MEDAL_MS, type CornerWeek, cornerMedal, cornerShare, daysLeft, loadCornerWeek, recordCornerRun, weekNumber, weeklyCorner } from "./modes/corner";
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
@@ -70,6 +71,9 @@ export function Play({
           g = new Game(t, { scenery, mode, lapLimit: DAILY_LAPS, lapsUsed: rec.laps.length, startKnots: rec.knots, locked: rec.status !== "playing", condition: conditionOf(rec) });
           g.onLap = (lap) => {
             const next = recordLap(loadDaily(day, !!day), { lapTimeMs: lap.lapTimeMs, grades: lap.grades }, lap.knots);
+            // today's best line goes on the board (the server times it); archive replays don't
+            const board = boardOf(next);
+            if (board) void submitDailyLine(board, next.bestKnots ?? lap.knots);
             setDaily(next);
             if (next.status !== "playing") g.lock();
           };
@@ -669,6 +673,7 @@ function ResultSheet({
         </div>
         <div className="mt-2">
           <MedalRow trackId={game.track.id} medal={lapMedal} lapTimeMs={r.lapTimeMs} stamp={!!lapMedal && r.newPb} condition={game.condition} />
+          {s.mode === "daily" && daily && <StandingLine daily={daily} className="border-t border-line py-2" />}
           <div className="border-t border-line pt-2 pb-1">
             <SectorCells sectors={s.sectors} large />
             <p className="caption mt-1 flex flex-wrap gap-x-3">
@@ -740,6 +745,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
     <div className="absolute inset-x-0 bottom-0 flex justify-center">
       <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/95 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
         <h2 className="wide text-[20px] leading-none text-paint">{dayHeadline(daily)}</h2>
+        <StandingLine daily={daily} className="mt-1.5" />
         <p className="mt-1.5 text-[14px] text-paint/75">
           {daily.archive ? "An archive replay, unranked." : `New circuit in ${countdown}.`}
           {game.getSnapshot().perfectShown ? " The perfect line is now drawn under yours." : ""}

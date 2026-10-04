@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CATALOG } from "./game/catalog";
 import { OUTLINES } from "./game/outlines";
 import type { Condition } from "@apex/engine";
-import { CONDITION_NAME, type DailyRecord, bestMedal, dailyNumber, loadDaily, msToNextDay, shareText } from "./modes/daily";
+import { CONDITION_NAME, conditionOf, type DailyRecord, bestMedal, dailyNumber, loadDaily, msToNextDay, shareText } from "./modes/daily";
 import { GRADE_EMOJI } from "./modes/grading";
 
 import { MEDAL_NAME } from "./modes/medals";
@@ -10,6 +10,8 @@ import { challengeUrl } from "./modes/challenge";
 import { Share } from "./ui/icons";
 import { primaryBtn, secondaryBtn } from "./ui/styles";
 import { track } from "./analytics";
+import { cachedStanding, refreshStanding, standingLine, useStanding } from "./online";
+import { lapTime } from "./ui/format";
 
 export function useCountdown() {
   const [left, setLeft] = useState(() => msToNextDay());
@@ -59,10 +61,36 @@ export function ShareButton({
 }
 
 /** Today's share text and card, in one place for every share button. */
+/** The day's leaderboard (today's live daily only; archive replays aren't ranked). */
+export function boardOf(daily: DailyRecord) {
+  return daily.archive ? null : { day: daily.key, trackId: daily.trackId, condition: conditionOf(daily) };
+}
+
+/** The standing line for a day, kept current, with a refresh when it first shows. */
+export function StandingLine({ daily, className = "" }: { daily: DailyRecord; className?: string }) {
+  const board = boardOf(daily);
+  const standing = useStanding(board);
+  useEffect(() => {
+    if (board && standing) void refreshStanding(board, standing.yourBestMs);
+    // once per board
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [board?.day, board?.trackId]);
+  if (!standing) return null;
+  return (
+    <p className={`text-[14px] text-paint ${className}`}>
+      {standingLine(standing)} <span className="text-steel">Median {lapTime(standing.medianMs)}.</span>
+    </p>
+  );
+}
+
 export function dailyShare(daily: DailyRecord) {
   const info = CATALOG.find((t) => t.id === daily.trackId)!;
+  const board = boardOf(daily);
+  const standing = board ? cachedStanding(board) : null;
+  const base = shareText(daily, info.name, info.flag, GRADE_EMOJI, daily.bestKnots && challengeUrl({ trackId: daily.trackId, knots: daily.bestKnots }));
   return {
-    text: shareText(daily, info.name, info.flag, GRADE_EMOJI, daily.bestKnots && challengeUrl({ trackId: daily.trackId, knots: daily.bestKnots })),
+    // the standing goes after the first line, before the grid
+    text: standing && standing.players > 1 ? base.replace("\n", `\n${standingLine(standing)}\n`) : base,
     image: () => import("./ui/shareCard").then((m) => m.dailyCard(daily)),
   };
 }
@@ -109,6 +137,7 @@ export function DailySummary({ onClose, onWatch }: { onClose: () => void; onWatc
         <p className="mt-1.5 text-[14px] text-paint/75">
           Daily quali #{dailyNumber()}, {info.name}. Next circuit in <span className="num">{countdown}</span>.
         </p>
+        <StandingLine daily={daily} className="mt-2" />
         <div className="mt-4 aspect-[4/5] w-full border border-line bg-night">
           {card ? <img src={card} alt={`Share card: ${dayHeadline(daily)} at ${info.name}`} className="card-in h-full w-full" /> : <div className="skeleton h-full w-full" aria-hidden="true" />}
         </div>

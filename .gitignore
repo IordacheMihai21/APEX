@@ -11,3 +11,7 @@ apps/web/.impeccable/mocks/
 # local env files (secrets and per-machine settings)
 .env*.local
 .env.production
+
+# generated edge function bundles (npm run build:functions) and Supabase CLI temp files
+supabase/functions/*/index.ts
+supabase/.temp/

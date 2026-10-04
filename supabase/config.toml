@@ -1,0 +1,7 @@
+# Supabase CLI config for APEX (project "APEX", ref acglshyvgeikyrvjfjue).
+project_id = "apex"
+
+[functions.submit-lap]
+# The app calls it with the publishable key, which isn't a JWT; the function
+# validates every field itself and only ever writes re-simulated laps.
+verify_jwt = false
