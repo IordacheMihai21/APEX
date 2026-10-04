@@ -174,7 +174,7 @@ function CornerMap({ trackId, complex }: { trackId: string; complex: number }) {
   return (
     <svg viewBox="0 0 1000 1000" className="aspect-square w-full overflow-visible" role="img" aria-label={`Map of ${CATALOG.find((t) => t.id === trackId)?.name} with the corner marked`}>
       <path d={detail.ribbon} fill="none" stroke="#23262d" strokeWidth={w} strokeLinejoin="round" strokeLinecap="round" />
-      <path d={detail.groups[complex]} fill="none" stroke="var(--color-ink)" strokeWidth={w * 0.55} strokeLinejoin="round" strokeLinecap="round" className="corner-glow" />
+      <path d={detail.corners[complex]} fill="none" stroke="var(--color-ink)" strokeWidth={w * 0.55} strokeLinejoin="round" strokeLinecap="round" className="corner-glow" />
     </svg>
   );
 }

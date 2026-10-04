@@ -1,6 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
-import { setSoundEnabled, soundEnabled } from "./game/audio";
 import { colourBlind, setColourBlind } from "./game/palette";
 import { CATALOG } from "./game/catalog";
 import type { Condition } from "@apex/engine";
@@ -11,7 +10,7 @@ import { type HubAction, Hub } from "./ui/Hub";
 import { ADS_ON, AdSlot } from "./ui/Ads";
 import { Stats } from "./ui/Stats";
 import { decodeChallenge } from "./modes/challenge";
-import { ChevronLeft, ColourBlind, SoundOff, SoundOn } from "./ui/icons";
+import { ChevronLeft, ColourBlind } from "./ui/icons";
 import { DailySummary, Loading, TrackPicker } from "./Dialogs";
 import { pageview } from "./analytics";
 import { weeklyCorner } from "./modes/corner";
@@ -102,7 +101,6 @@ export function App() {
   const [picking, setPicking] = useState(false);
   const [summary, setSummary] = useState(false);
   const [stats, setStats] = useState(false);
-  const [sound, setSound] = useState(soundEnabled);
 
   useEffect(() => {
     const url = new URL(location.href);
@@ -140,10 +138,6 @@ export function App() {
     setCb(!cb);
   };
 
-  const toggleSound = () => {
-    setSoundEnabled(!sound);
-    setSound(!sound);
-  };
 
   // AdSense asks for ads well away from games that are played with the mouse
   // (150 px or more): the side rails stay off the race screen, where you drag
@@ -185,15 +179,6 @@ export function App() {
           className={`grid w-12 shrink-0 place-items-center border-l border-line hover:bg-graphite ${cb ? "text-ink" : "text-steel"}`}
         >
           <ColourBlind />
-        </button>
-        <button
-          onClick={toggleSound}
-          aria-pressed={sound}
-          aria-label={sound ? "Engine sound on. Turn off" : "Engine sound off. Turn on"}
-          title={sound ? "Sound on" : "Sound off"}
-          className={`grid w-12 shrink-0 place-items-center border-l border-line hover:bg-graphite ${sound ? "text-ink" : "text-steel"}`}
-        >
-          {sound ? <SoundOn /> : <SoundOff />}
         </button>
         </span>
       </header>

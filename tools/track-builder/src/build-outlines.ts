@@ -91,19 +91,26 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith(".v1.json"))) {
   keyTimes[TIMING_KEYS] = 1;
   keyPoints[TIMING_KEYS] = 1;
 
-  // one open path per corner group (the game's grading unit), timing line to timing line, on the racing line
+  // one open path per corner group (the game's grading unit), on the racing line. Each runs
+  // from its own timing line to the next group's, so together they colour the whole lap:
+  // the straight after a group belongs to it (its exit sets the speed down that straight),
+  // and corners outside every group (flat-out kinks) ride along with the group before.
   const corners = track.corners;
-  const groups = (track.controls?.complexes ?? []).map((cx) => {
-    const j0 = corners.findIndex((c) => c.name === cx.corners[0]);
-    const jl = corners.findIndex((c) => c.name === cx.corners[cx.corners.length - 1]);
-    const a = corners[j0].timingStartIndex;
-    const b = corners[(jl + 1) % corners.length].timingStartIndex;
+  const complexes = track.controls?.complexes ?? [];
+  const startOf = (cx: { corners: string[] }) => corners[corners.findIndex((c) => c.name === cx.corners[0])].timingStartIndex;
+  const span = (a: number, b: number) => {
     const len = (b - a + n) % n || n;
     const step = Math.max(1, Math.round(n / LINE_POINTS));
     const pts: string[] = [];
     for (let o = 0; o <= len; o += step) pts.push(line((a + o) % n).join(" "));
     pts.push(line(b % n).join(" "));
     return `M${pts.join("L")}`;
+  };
+  const groups = complexes.map((cx, gi) => span(startOf(cx), startOf(complexes[(gi + 1) % complexes.length])));
+  // the corners alone (timing line to the next corner's), for maps that point at one corner
+  const cornerOnly = complexes.map((cx) => {
+    const jl = corners.findIndex((c) => c.name === cx.corners[cx.corners.length - 1]);
+    return span(startOf(cx), corners[(jl + 1) % corners.length].timingStartIndex);
   });
 
   // medal times, rounded up to the hundredth so the target reads cleanly
@@ -137,6 +144,7 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith(".v1.json"))) {
     line: path(LINE_POINTS, line),
     start: [sx, sy, +((Math.atan2(ty - sy, tx - sx) * 180) / Math.PI).toFixed(1)],
     groups,
+    corners: cornerOnly,
     keyTimes: keyTimes.join(";"),
     keyPoints: keyPoints.join(";"),
     lapMs: Math.round(lap.lapTimeMs),
@@ -152,7 +160,7 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith(".v1.json"))) {
 // The hub only animates today's circuit, so the heavy paths (fine ribbon, racing
 // line, corner groups, car timing) go to one lazily loaded file per circuit; the
 // light index below (thumbnails, stats, medals) ships with the first page.
-const HEAVY = ["ribbon", "line", "groups", "keyTimes", "keyPoints"] as const;
+const HEAVY = ["ribbon", "line", "groups", "corners", "keyTimes", "keyPoints"] as const;
 const detailDir = resolve(import.meta.dirname, "../../../apps/web/src/game/outline-detail");
 rmSync(detailDir, { recursive: true, force: true });
 mkdirSync(detailDir, { recursive: true });
@@ -188,8 +196,10 @@ export interface OutlineDetail {
   ribbon: string;
   /** the optimal racing line */
   line: string;
-  /** one open path per corner group (controls.complexes order), along the optimal line */
+  /** one open path per corner group (controls.complexes order), along the optimal line; together they cover the lap */
   groups: string[];
+  /** the same groups cut to the corners alone (no following straight), for pointing at one corner */
+  corners: string[];
   /** animateMotion timing so a car laps at the optimal lap's speeds */
   keyTimes: string;
   keyPoints: string;

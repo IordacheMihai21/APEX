@@ -28,7 +28,6 @@ import { C, lossColor } from "./palette";
 import { type PersonalBest, loadPB, loadSectorBests, logEvent, savePB, saveSectorBests } from "./storage";
 import { type Grade, type GroupGrade, gradeFor } from "../modes/grading";
 import { type DriveState, driveState } from "./drive";
-import { engine, soundEnabled } from "./audio";
 
 export type Phase = "setup" | "lights" | "race" | "result";
 export type Mode = "daily" | "season" | "practice" | "corner";
@@ -678,7 +677,6 @@ export class Game {
     this.lastRaced = this.z.join(",");
     const i0 = this.focus !== null ? this.indexAt(sim, this.raceT) : 0;
     this.camera.animateTo(sim.samples.x[i0], sim.samples.y[i0], RACE_TRACK_PX_SLOW / this.track.widthMeters, this.headingAt(i0) - Math.PI / 2, 450);
-    if (soundEnabled()) engine.resume();
     logEvent("run_started", { track: this.track.id, mode: this.opts.mode });
     trackEvent("Lap started", { mode: this.opts.mode, circuit: this.track.id, condition: this.condition });
     this.emit();
@@ -843,7 +841,6 @@ export class Game {
     this.sparks = [];
     this.prevSpeed = 0;
     this.camera.animateTo(sim.samples.x[0], sim.samples.y[0], RACE_TRACK_PX_SLOW / this.track.widthMeters, this.headingAt(0) - Math.PI / 2, 450);
-    if (soundEnabled()) engine.resume();
     logEvent("perfect_watched", { track: this.track.id });
     this.emit();
   }
@@ -855,7 +852,6 @@ export class Game {
     this.phase = "setup";
     this.sim = null;
     this.grades = null;
-    engine.silence();
     this.showOverview();
     this.emit();
   }
@@ -895,7 +891,6 @@ export class Game {
     };
     this.phase = "result";
     if (this.opts.lapLimit !== null && this.lapsUsed >= this.opts.lapLimit) this.locked = true;
-    engine.silence();
     this.frameResult();
     this.onLap?.({ lapTimeMs: sim.lapTimeMs, deltas: grades.map((g) => g.deltaMs), grades: grades.map((g) => g.grade), allPurple, knots: this.z.slice() });
     logEvent("run_completed", { track: this.track.id, lapTimeMs: sim.lapTimeMs, deltaMs: this.result.deltaTargetMs, newPb, attempt: this.attempts });
@@ -1338,7 +1333,6 @@ export class Game {
         this.lightsLit = lit;
         this.emit();
       }
-      if (soundEnabled()) engine.update(9000 + lit * 600 + Math.random() * 300, 1, 0);
       if (t >= 5 * this.lightMs + this.lightsHold) {
         this.phase = "race";
         this.lastEmit = 0;
@@ -1380,10 +1374,6 @@ export class Game {
       this.updateEffects(p, dt);
       this.raceKmh = kmh;
       this.updateStreaks(kmh, dt);
-      if (soundEnabled()) {
-        const d = driveState(kmh);
-        engine.update(d.rpm, d.gear, speed01);
-      }
       if (now - this.lastEmit > 50) {
         this.lastEmit = now;
         this.emit();

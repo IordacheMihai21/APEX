@@ -75,7 +75,7 @@ export function Privacy() {
 
         <Section title="What stays on your device">
           <p>
-            Your progress is saved in your browser's local storage on this device: daily results and streaks, personal bests and lines on each circuit, minigame records, and your settings (sound, colour-blind colours).{" "}
+            Your progress is saved in your browser's local storage on this device: daily results and streaks, personal bests and lines on each circuit, minigame records, and your settings (colour-blind colours).{" "}
             {ONLINE ? "Apart from the daily leaderboard entry described below, it never leaves the device." : "It never leaves the device."} Clearing this site's data in your browser deletes it.
           </p>
           <p>The app also keeps a short local log of game events (for example "lap finished") to help us improve the game during development. It stays on your device too.</p>

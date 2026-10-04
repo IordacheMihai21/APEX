@@ -23,8 +23,10 @@ export interface OutlineDetail {
   ribbon: string;
   /** the optimal racing line */
   line: string;
-  /** one open path per corner group (controls.complexes order), along the optimal line */
+  /** one open path per corner group (controls.complexes order), along the optimal line; together they cover the lap */
   groups: string[];
+  /** the same groups cut to the corners alone (no following straight), for pointing at one corner */
+  corners: string[];
   /** animateMotion timing so a car laps at the optimal lap's speeds */
   keyTimes: string;
   keyPoints: string;

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { track } from "../analytics";
-import { soundEnabled } from "../game/audio";
 import { LIGHT_MS, type ReactionRecord, average, loadReaction, randomHold, recordJump, recordReaction, verdict } from "../modes/reaction";
 import { Gantry } from "./Gantry";
 import { Segments } from "./Segments";
@@ -8,25 +7,6 @@ import { Share } from "./icons";
 import { primaryBtn, secondaryBtn } from "./styles";
 
 type Phase = "idle" | "lights" | "hold" | "go" | "done" | "jump";
-
-/** A short start-light beep (only with sound on). */
-let audio: AudioContext | null = null;
-function beep(freq: number, ms: number) {
-  if (!soundEnabled()) return;
-  try {
-    audio ??= new AudioContext();
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    o.frequency.value = freq;
-    g.gain.setValueAtTime(0.12, audio.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + ms / 1000);
-    o.connect(g).connect(audio.destination);
-    o.start();
-    o.stop(audio.currentTime + ms / 1000);
-  } catch {
-    /* no audio */
-  }
-}
 
 const secs = (ms: number) => (ms / 1000).toFixed(3);
 
@@ -59,7 +39,6 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
       timers.current.push(
         window.setTimeout(() => {
           setLit(k);
-          beep(660, 120);
           if (k === 5) {
             setPhase("hold");
             timers.current.push(
@@ -81,7 +60,6 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
       setLit(0);
       setPhase("jump");
       setRec((r) => recordJump(r));
-      beep(220, 300);
     } else if (phase === "go") {
       const t = Math.round(performance.now() - outAt.current);
       setMs(t);

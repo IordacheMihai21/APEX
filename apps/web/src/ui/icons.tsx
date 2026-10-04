@@ -16,8 +16,6 @@ import {
   Minus as PhMinus,
   Plus as PhPlus,
   ShareNetwork,
-  SpeakerHigh,
-  SpeakerSlash,
   Wind,
 } from "@phosphor-icons/react";
 
@@ -38,8 +36,6 @@ export const NudgeLeft = make(ArrowLineLeft);
 export const NudgeRight = make(ArrowLineRight);
 export const Frame = make(CornersOut);
 export const WholeTrack = make(MapTrifold);
-export const SoundOn = make(SpeakerHigh);
-export const SoundOff = make(SpeakerSlash);
 export const Share = make(ShareNetwork);
 export const Undo = make(ArrowCounterClockwise);
 export const ColourBlind = make(Palette);

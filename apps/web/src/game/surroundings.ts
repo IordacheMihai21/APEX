@@ -2,7 +2,7 @@ import { boatBox, boatSprites } from "./boats";
 import { Buildings } from "./buildings";
 import { asphalt as asphaltMat, concrete as concreteMat, grass as grassMat, water as waterMat } from "./materials";
 import { FLORA_BY_TRACK, type Flora, forestTile, treeSprites } from "./trees";
-import { canvas, hex, noiseTexture, rng } from "./scenery";
+import { hex, noiseTexture, rng } from "./scenery";
 
 /**
  * The real world around a circuit, from OpenStreetMap (data/scenery/<id>.json,
@@ -99,63 +99,6 @@ function inside(flat: number[], x: number, y: number): boolean {
     const xj = flat[j];
     const yj = flat[j + 1];
     if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
-  }
-  return c;
-}
-
-/**
- * Woodland seen from above: irregular crowns built from leaf clusters, each lit
- * from the north-west with its own shadow on the south-east, dark gaps between
- * trees, and a spread of greens so it never repeats as identical bubbles.
- */
-function canopyTexture(): HTMLCanvasElement {
-  const S = 512;
-  const [c, ctx] = canvas(S);
-  ctx.fillStyle = "#132514";
-  ctx.fillRect(0, 0, S, S);
-  const r = rng(21);
-  const greens: [number, number, number][] = [
-    [34, 62, 30],
-    [42, 72, 34],
-    [30, 56, 32],
-    [50, 78, 38],
-    [38, 60, 28],
-    [46, 70, 44],
-  ];
-  const wrap = (x: number, y: number, rad: number, draw: (x: number, y: number) => void) => {
-    for (const ox of [0, S, -S]) for (const oy of [0, S, -S]) if (x + ox > -rad && x + ox < S + rad && y + oy > -rad && y + oy < S + rad) draw(x + ox, y + oy);
-  };
-  for (let k = 0; k < 520; k++) {
-    const x = r() * S;
-    const y = r() * S;
-    const R = 9 + r() * 13;
-    const [gr, gg, gb] = greens[Math.floor(r() * greens.length)];
-    // crown shadow, south-east
-    wrap(x, y, R * 1.6, (cx, cy) => {
-      ctx.fillStyle = "rgba(4,10,5,0.45)";
-      ctx.beginPath();
-      ctx.arc(cx + R * 0.35, cy + R * 0.35, R * 0.95, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    // the crown: 5-8 leaf clusters around the centre
-    const n = 5 + Math.floor(r() * 4);
-    for (let j = 0; j < n; j++) {
-      const a = r() * Math.PI * 2;
-      const d = R * (0.15 + r() * 0.45);
-      const lx = x + Math.cos(a) * d;
-      const ly = y + Math.sin(a) * d;
-      const lr = R * (0.38 + r() * 0.25);
-      wrap(lx, ly, lr, (cx, cy) => {
-        const g = ctx.createRadialGradient(cx - lr * 0.4, cy - lr * 0.4, lr * 0.05, cx, cy, lr);
-        g.addColorStop(0, `rgb(${gr * 1.45},${gg * 1.4},${gb * 1.3})`);
-        g.addColorStop(0.55, `rgb(${gr},${gg},${gb})`);
-        g.addColorStop(1, `rgba(${gr * 0.6},${gg * 0.6},${gb * 0.6},0.9)`);
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(cx, cy, lr, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    }
   }
   return c;
 }
@@ -341,7 +284,6 @@ export class Surroundings {
   /** Land cover, water, roads, raceway, buildings and trees: everything under the run-off. */
   draw(ctx: CanvasRenderingContext2D, px: number) {
     const t = this.textures(ctx);
-    const detailed = px < 0.9;
     // materials hold up well zoomed out too (the overview is still), so only a far view goes flat
     const textured = px < 5;
     const fill = (k: Area, style: string | CanvasPattern) => {

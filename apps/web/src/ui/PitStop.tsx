@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { track } from "../analytics";
-import { soundEnabled } from "../game/audio";
 import { FRONT_AXLE, REAR_AXLE, TRACK_HALF, bareCar } from "../game/car";
 import { asphaltDataUrl } from "../game/scenery";
 import { dailyNumber, dateKey } from "../modes/daily";
@@ -46,51 +45,6 @@ const WHEEL_AT: Record<Wheel, { x: number; y: number; side: -1 | 1; front: boole
 const GRADE_BG: Record<StepGrade, string> = { purple: "bg-purple", green: "bg-green", yellow: "bg-yellow", red: "bg-kerb" };
 const GRADE_TEXT: Record<StepGrade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 
-/* Sound (only with sound on): a wheel gun's rattle, the green-light pip, a wrong-key buzz. */
-let audio: AudioContext | null = null;
-function ac(): AudioContext | null {
-  if (!soundEnabled()) return null;
-  try {
-    audio ??= new AudioContext();
-    return audio;
-  } catch {
-    return null;
-  }
-}
-function gun() {
-  const a = ac();
-  if (!a) return;
-  const len = 0.16;
-  const buf = a.createBuffer(1, Math.floor(a.sampleRate * len), a.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) {
-    const t = i / a.sampleRate;
-    // noise chopped at ~45 Hz: the impact gun's ratchet
-    d[i] = (Math.random() * 2 - 1) * (Math.sin(t * 2 * Math.PI * 45) > 0 ? 1 : 0.15) * (1 - t / len);
-  }
-  const src = a.createBufferSource();
-  src.buffer = buf;
-  const f = a.createBiquadFilter();
-  f.type = "bandpass";
-  f.frequency.value = 2400;
-  f.Q.value = 0.8;
-  const g = a.createGain();
-  g.gain.value = 0.35;
-  src.connect(f).connect(g).connect(a.destination);
-  src.start();
-}
-function tone(freq: number, ms: number, gain = 0.1) {
-  const a = ac();
-  if (!a) return;
-  const o = a.createOscillator();
-  const g = a.createGain();
-  o.frequency.value = freq;
-  g.gain.setValueAtTime(gain, a.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + ms / 1000);
-  o.connect(g).connect(a.destination);
-  o.start();
-  o.stop(a.currentTime + ms / 1000);
-}
 const buzz = (ms: number | number[]) => navigator.vibrate?.(ms);
 
 /** The car without wheels, drawn once from the game's own sprite code. */
@@ -214,20 +168,17 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
         setWrong((w) => w + 1);
         setFlash(want);
         later(() => setFlash(null), 260);
-        tone(140, 180, 0.12);
         buzz([30, 40, 30]);
         return;
       }
       setSplits((s) => [...s, now - lastT.current]);
       lastT.current = now;
-      gun();
       buzz(12);
       if (step === 3) {
         setPhase("hold");
         later(() => {
           greenAt.current = performance.now();
           setPhase("green");
-          tone(880, 140);
         }, plan.greenDelayMs);
       } else setStep(step + 1);
     },
@@ -238,7 +189,6 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
     if (phase === "hold") {
       if (!early) {
         setEarly(true);
-        tone(140, 220, 0.12);
         buzz([40, 30, 40]);
       }
       return;
