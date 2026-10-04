@@ -73,6 +73,13 @@ export function Privacy() {
           <p>APEX has no accounts. You never give us a name, an email address or a password to play.</p>
         </Section>
 
+        <Section title="Loading the site">
+          <p>
+            Like any website, APEX is delivered by a hosting provider. To send you the pages, its servers necessarily receive your IP address and basic browser details, and keep short-lived access logs to keep the
+            service running and secure (legitimate interest, Art. 6(1)(f) GDPR). We don't use these logs to identify or follow players.
+          </p>
+        </Section>
+
         <Section title="What stays on your device">
           <p>
             Your progress is saved in your browser's local storage on this device: daily results and streaks, personal bests and lines on each circuit, minigame records, and your settings (colour-blind colours).{" "}
@@ -113,6 +120,9 @@ export function Privacy() {
               that consent (Art. 6(1)(a) GDPR).
             </p>
             <p>
+              Google may process this data in the United States. Google is certified under the EU-U.S. Data Privacy Framework, which the European Commission recognises as giving adequate protection (Art. 45 GDPR).
+            </p>
+            <p>
               How Google uses information from sites that use its services:{" "}
               <a className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noreferrer">
                 policies.google.com/technologies/partner-sites
@@ -145,6 +155,14 @@ export function Privacy() {
           </p>
         </Section>
 
+        <Section title="Security">
+          <p>
+            The site only runs over HTTPS and sends strict security headers.{" "}
+            {ONLINE && "The leaderboard database can't be read or written from the browser; results go through a server function that checks every submission and re-times the lap itself. "}
+            No method is perfectly secure, but we keep what we hold to the minimum above.
+          </p>
+        </Section>
+
         <Section title="Your rights">
           <p>
             Under the GDPR you can ask to access, correct or delete personal data about you, object to its use, or restrict it. Leaderboard results can be deleted at once with the button above; for anything else, write to us
@@ -162,6 +180,10 @@ export function Privacy() {
             </a>
             ), or the authority where you live.
           </p>
+        </Section>
+
+        <Section title="Changes to this policy">
+          <p>If what APEX collects changes, we update this page first and change the date at the top. Links to other sites (OpenStreetMap, Google) follow those sites' own policies.</p>
         </Section>
 
         <Section title="Who runs APEX">
