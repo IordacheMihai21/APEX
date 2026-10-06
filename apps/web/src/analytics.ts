@@ -2,12 +2,24 @@
  * Plausible analytics: cookieless and aggregate (no personal data, nothing
  * stored on the device), loaded only when VITE_PLAUSIBLE_DOMAIN is set. The
  * app has its own addresses but changes them with replaceState, so page views
- * are sent by hand (Plausible's manual script) whenever the screen changes.
+ * are sent by hand whenever the screen changes.
+ *
+ * Two kinds of Plausible script work:
+ * - the site's own script (VITE_PLAUSIBLE_SRC = https://plausible.io/js/pa-….js,
+ *   from Site settings > Site installation), started with plausible.init and
+ *   automatic page views off; what Plausible gives new sites;
+ * - the older manual script with data-domain (the default when no SRC is set).
  */
 const DOMAIN = import.meta.env.VITE_PLAUSIBLE_DOMAIN as string | undefined;
 const SRC = (import.meta.env.VITE_PLAUSIBLE_SRC as string | undefined) || "https://plausible.io/js/script.manual.js";
+/** the site's own script (pa-….js) takes plausible.init; the older ones take data-domain */
+const SITE_SCRIPT = /\/pa-[^/]+\.js$/.test(SRC);
 
-type Plausible = ((event: string, options?: { u?: string; props?: Record<string, string | number | boolean> }) => void) & { q?: unknown[] };
+type Plausible = ((event: string, options?: { u?: string; url?: string; props?: Record<string, string | number | boolean> }) => void) & {
+  q?: unknown[];
+  o?: unknown;
+  init?: (options: Record<string, unknown>) => void;
+};
 declare global {
   interface Window {
     plausible?: Plausible;
@@ -23,9 +35,16 @@ export function initAnalytics() {
   // queue calls made before the script arrives
   window.plausible ??= Object.assign((...args: unknown[]) => void (window.plausible!.q ??= []).push(args), {});
   const s = document.createElement("script");
-  s.defer = true;
-  s.dataset.domain = DOMAIN;
   s.src = SRC;
+  if (SITE_SCRIPT) {
+    // the snippet Plausible gives: init queued for the script, page views sent by the app
+    s.async = true;
+    window.plausible.init ??= (o: Record<string, unknown>) => void (window.plausible!.o = o);
+    window.plausible.init({ autoCapturePageviews: false });
+  } else {
+    s.defer = true;
+    s.dataset.domain = DOMAIN;
+  }
   document.head.appendChild(s);
 }
 
@@ -36,7 +55,8 @@ export function pageview() {
   const path = location.pathname;
   if (path === lastPath) return;
   lastPath = path;
-  window.plausible?.("pageview", { u: location.origin + path });
+  const url = location.origin + path;
+  window.plausible?.("pageview", SITE_SCRIPT ? { url } : { u: url });
 }
 
 /** A named event with a few small properties (no ids, no times of day, nothing personal). */
