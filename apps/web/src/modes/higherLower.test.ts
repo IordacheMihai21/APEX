@@ -1,6 +1,21 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { circuit, seeded } from "./circuits";
-import { STATS, firstRound, isRight, loadHigherLower, nextRound, recordRun, value } from "./higherLower";
+import {
+  DAILY_CALLS,
+  STATS,
+  dailyCalls,
+  dailyDoneDays,
+  dailyRounds,
+  dailyScore,
+  dailyShare,
+  firstRound,
+  isRight,
+  loadHigherLower,
+  nextRound,
+  recordDailyCall,
+  recordRun,
+  value,
+} from "./higherLower";
 
 const store: Record<string, string> = {};
 beforeEach(() => {
@@ -37,5 +52,29 @@ describe("higher or lower", () => {
     recordRun(4);
     recordRun(2);
     expect(loadHigherLower()).toEqual({ best: 4, runs: 2 });
+  });
+});
+
+describe("higher or lower, daily edition", () => {
+  const ids = (key: string) => dailyRounds(key).map((r) => `${r.left.id}>${r.right.id}:${r.stat.key}`);
+
+  it("deals the same ten chained calls to everyone on a day, and new ones the next day", () => {
+    const today = dailyRounds("2026-10-20");
+    expect(today).toHaveLength(DAILY_CALLS);
+    for (let i = 1; i < today.length; i++) expect(today[i].left.id).toBe(today[i - 1].right.id);
+    for (const r of today) expect(value(r.right, r.stat.key)).not.toBe(value(r.left, r.stat.key));
+    expect(ids("2026-10-20")).toEqual(ids("2026-10-20"));
+    expect(ids("2026-10-21")).not.toEqual(ids("2026-10-20"));
+  });
+
+  it("records each call, stops at ten, and scores out of ten", () => {
+    const key = "2026-10-20";
+    expect(dailyCalls(key)).toEqual([]);
+    for (let i = 0; i < 12; i++) recordDailyCall(i % 3 !== 0, key);
+    const calls = dailyCalls(key);
+    expect(calls).toHaveLength(DAILY_CALLS);
+    expect(dailyScore(calls)).toBe(6);
+    expect(dailyDoneDays()).toEqual([key]);
+    expect(dailyShare(calls, "https://lapdle.com/higher-lower", key)).toMatch(/^Lapdle Higher or lower #\d+ 6\/10\n(🟩|🟥){10}\nhttps:/u);
   });
 });

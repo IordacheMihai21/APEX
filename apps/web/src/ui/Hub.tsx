@@ -96,12 +96,12 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
         <ul className="flex min-w-0 flex-1 items-stretch">
           {items.map((i) => (
             <li key={i.key} className="min-w-0 flex-1 border-line sm:flex-none sm:border-l">
-              <button onClick={i.act} aria-label={`${i.name}: ${i.state}`} className="today-item flex h-full w-full min-w-0 items-center gap-1.5 py-3 pr-1.5 text-left sm:gap-2.5 sm:py-2.5 sm:px-4">
+              <button onClick={i.act} aria-label={`${i.name}: ${i.state}`} className="today-item flex h-full w-full min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-center sm:flex-row sm:justify-start sm:gap-2.5 sm:px-4 sm:py-2.5 sm:text-left">
                 <span className={`grid h-5 w-4 shrink-0 place-items-center sm:h-6 sm:w-6 ${i.done ? "text-paint" : "text-steel/60"}`}>
                   {i.medal ? <MedalDisc medal={i.medal} size={16} /> : i.done ? <Chequered className="h-4 w-4" /> : <span className="h-2 w-2 border border-current" />}
                 </span>
                 <span className="min-w-0 leading-tight">
-                  <span className="block truncate text-[12px] font-semibold text-paint sm:text-[13px]">
+                  <span className="block truncate text-[11px] font-semibold text-paint sm:text-[13px]">
                     {i.short ? (
                       <>
                         <span className="sm:hidden">{i.short}</span>
@@ -208,6 +208,7 @@ function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
   const mystery = loadMystery();
   const answer = OUTLINES[mysteryAnswer(mystery.key)];
   const hl = loadHigherLower();
+  const hlToday = game("higher-lower").today();
   const reaction = loadReaction();
   const pit = loadPitStop();
   const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
@@ -235,8 +236,9 @@ function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
       game: "higher-lower" as const,
       title: game("higher-lower").name,
       blurb: game("higher-lower").blurb,
-      status: hl.best ? `Best streak ${hl.best}` : "Endless",
-      cta: "Start a run",
+      // today's ten first; once done, the endless run
+      status: hlToday.state === "done" ? `Today ${hlToday.label}. Endless next.` : hlToday.state === "playing" ? hlToday.label : hl.best ? `New today. Best run ${hl.best}` : "New today",
+      cta: hlToday.state === "done" ? "Start a run" : hlToday.state === "playing" ? "Finish today's ten" : "Today's ten calls",
       art: (
         <span className="wide flex items-center gap-3 text-[34px] leading-none text-paint">
           7.004 <span className="flex flex-col text-steel"><Up className="h-5 w-5" /><Down className="h-5 w-5" /></span> <span className="text-steel/50">?</span>

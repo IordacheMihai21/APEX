@@ -11,7 +11,7 @@ import { DAILY_LAPS, allDailies, bestMedal, dateKey, loadDaily } from "../modes/
 import { type Medal, MEDAL_NAME } from "../modes/medals";
 import { MYSTERY_TRIES, isOver, isSolved, loadMystery, mysteryDoneDays } from "../modes/mystery";
 import { loadPitStop, secs, todaysStop } from "../modes/pitstop";
-import { loadHigherLower } from "../modes/higherLower";
+import { DAILY_CALLS, dailyCalls, dailyDone, dailyDoneDays, dailyScore } from "../modes/higherLower";
 import { loadReaction } from "../modes/reaction";
 
 export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "reaction";
@@ -118,25 +118,27 @@ export const GAMES: GameDef[] = [
   {
     id: "higher-lower",
     name: "Higher or lower",
-    short: "Higher or lower",
+    short: "Hi-Lo",
     route: "/higher-lower",
-    cadence: "endless",
-    inDailySet: false,
-    tagline: "Real circuit facts, one miss ends it",
-    blurb: "Longer lap, more corners, earlier Grand Prix? Call it and keep the streak alive.",
+    cadence: "daily",
+    inDailySet: true,
+    tagline: "Ten calls on real circuit facts",
+    blurb: "Longer lap, more corners, earlier Grand Prix? Today's ten calls are the same for everyone. Endless runs too.",
     title: "Higher or lower: racing circuit facts | Lapdle",
     howTo: {
       steps: [
         "Two circuits and one real fact: length, corners, race laps, first Grand Prix or the pole time.",
         "Call the second circuit against the first: longer or shorter, more or fewer, earlier or later, quicker or slower.",
-        "Right, and a new circuit comes in. One wrong call ends the run.",
+        "The daily ten is the same for everyone and a miss costs a point. In Endless, one wrong call ends the run.",
       ],
-      tip: "Arrow keys work too. Endless: chase your longest run.",
+      tip: "Arrow keys work too. The daily ten resets at midnight.",
     },
-    today() {
-      const r = loadHigherLower();
-      return { state: "new", label: r.best ? `Best streak ${r.best}` : "Endless" };
+    today(day = dateKey()) {
+      const calls = dailyCalls(day);
+      if (dailyDone(calls)) return { state: "done", label: `${dailyScore(calls)}/${DAILY_CALLS}` };
+      return calls.length ? { state: "playing", label: `${DAILY_CALLS - calls.length} calls left` } : { state: "new", label: "Not started" };
     },
+    doneDays: dailyDoneDays,
   },
   {
     id: "reaction",

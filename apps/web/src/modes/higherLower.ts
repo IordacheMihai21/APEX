@@ -1,4 +1,5 @@
-import { CIRCUITS, type CircuitFacts, load, save } from "./circuits";
+import { CIRCUITS, type CircuitFacts, load, save, seeded } from "./circuits";
+import { dailyNumber, dateKey } from "./daily";
 
 /**
  * Higher or lower: one circuit's fact is shown, guess whether the next
@@ -72,4 +73,64 @@ export function recordRun(streak: number): HigherLowerRecord {
   const next = { best: Math.max(r.best, streak), runs: r.runs + 1 };
   save(KEY, next);
   return next;
+}
+
+/*
+ * The daily edition: the same ten calls for everyone each day, chained like a
+ * run (each round's second circuit is the next round's first), and all ten
+ * are played: a miss costs a point, not the round. Scored out of ten.
+ */
+export const DAILY_CALLS = 10;
+const DAILY_KEY = "apex.higherlower.daily.v1";
+
+/** Today's ten rounds: deterministic from the day, so every player gets the same calls. */
+export function dailyRounds(key = dateKey()): Round[] {
+  const rand = seeded(dailyNumber(key) * 104_729 + 31);
+  const rounds = [firstRound(rand)];
+  while (rounds.length < DAILY_CALLS) {
+    const prev = rounds[rounds.length - 1];
+    rounds.push(nextRound(prev.right, rand, prev.stat.key));
+  }
+  return rounds;
+}
+
+export interface HigherLowerDaily {
+  /** each call made so far: right or wrong, in order */
+  days: Record<string, boolean[]>;
+}
+const loadDays = () => load<HigherLowerDaily>(DAILY_KEY, { days: {} }).days;
+
+/** The calls made on a day (empty if not started). */
+export const dailyCalls = (key = dateKey()): boolean[] => loadDays()[key] ?? [];
+export const dailyDone = (calls: boolean[]) => calls.length >= DAILY_CALLS;
+export const dailyScore = (calls: boolean[]) => calls.filter(Boolean).length;
+
+/** Record one call of today's ten; ignored once all ten are in. */
+export function recordDailyCall(right: boolean, key = dateKey()): boolean[] {
+  const days = loadDays();
+  const calls = days[key] ?? [];
+  if (dailyDone(calls)) return calls;
+  const next = [...calls, right];
+  save(DAILY_KEY, { days: { ...days, [key]: next } });
+  return next;
+}
+
+/** Every day whose ten calls were all made. */
+export const dailyDoneDays = () =>
+  Object.entries(loadDays())
+    .filter(([, c]) => dailyDone(c))
+    .map(([k]) => k);
+
+/** Days played, average and best score, over finished days. */
+export function dailyStats() {
+  const scores = dailyDoneDays().map((k) => dailyScore(loadDays()[k]));
+  return {
+    played: scores.length,
+    best: scores.length ? Math.max(...scores) : null,
+    average: scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null,
+  };
+}
+
+export function dailyShare(calls: boolean[], link: string, key = dateKey()): string {
+  return `Lapdle Higher or lower #${dailyNumber(key)} ${dailyScore(calls)}/${DAILY_CALLS}\n${calls.map((c) => (c ? "🟩" : "🟥")).join("")}\n${link}`;
 }
