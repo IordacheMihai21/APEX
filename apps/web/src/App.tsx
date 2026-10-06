@@ -190,7 +190,7 @@ export function App() {
           )}
           <div className="flex min-w-0 items-center gap-3 px-3">
             <span className="wide text-[17px] leading-none tracking-[0.02em] text-paint sm:text-[20px]">
-              LAPDLE<span className="text-steel">/</span>
+              LAPDLE
             </span>
             {track && screen.kind === "play" && (
               <div className="min-w-0 leading-tight">

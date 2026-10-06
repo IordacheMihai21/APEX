@@ -37,7 +37,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
       <div className="mx-auto grid max-w-[1240px] gap-10 px-4 pt-12 pb-10 md:px-8 lg:grid-cols-[5fr_7fr] lg:gap-16 lg:pt-14">
         <div className="max-w-[46ch]">
           <span className="wide text-[26px] leading-none tracking-[0.02em] text-paint">
-            LAPDLE<span className="text-steel">/</span>
+            LAPDLE
           </span>
           <p className="mt-4 text-[15px] leading-relaxed text-paint/85">A daily racing-line puzzle on real circuits. Set your line through every corner, drive it, chase the perfect lap.</p>
           <p className="mt-3 text-[13px] leading-relaxed text-steel">
