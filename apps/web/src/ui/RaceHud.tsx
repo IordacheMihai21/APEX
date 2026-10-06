@@ -105,19 +105,19 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
   return (
     <>
       {/* top right, stacked: the lap clock with its sector cells, then the split for the group just cleared */}
-      <div className="pointer-events-none absolute top-2 right-2 flex w-[148px] flex-col gap-1.5 min-[720px]:w-[188px]">
+      <div className="pointer-events-none absolute top-2 right-2 flex w-[124px] flex-col gap-1.5 min-[720px]:w-[188px]">
         <div className="border border-line bg-night/88">
-          <div className="label flex justify-between border-b border-line px-2 py-1.5">
+          <div className="label flex justify-between border-b border-line px-2 py-1 min-[720px]:py-1.5">
             <span className={s.demo ? "text-purple" : "text-paint"}>
               {s.demo ? "Perfect lap" : `Lap ${s.lapsUsed + 1}${s.lapLimit !== null ? `/${s.lapLimit}` : ""}`}
             </span>
             <span>×4</span>
           </div>
-          <div className="px-2 pt-1.5 pb-2">
-            <div className="wide num text-[20px] leading-none text-paint min-[720px]:text-[26px]">{lapTime(s.raceTimeMs)}</div>
-            <div className="mt-1.5 flex items-baseline justify-between">
+          <div className="px-2 pt-1 pb-1.5 min-[720px]:pt-1.5 min-[720px]:pb-2">
+            <div className="wide num text-[17px] leading-none text-paint min-[720px]:text-[26px]">{lapTime(s.raceTimeMs)}</div>
+            <div className="mt-1 flex items-baseline justify-between min-[720px]:mt-1.5">
               <span className="label">To {s.paceLabel}</span>
-              <span className={`num text-[14px] font-bold ${d <= 0 ? "text-green" : "text-paint"}`}>
+              <span className={`num text-[12px] font-bold min-[720px]:text-[14px] ${d <= 0 ? "text-green" : "text-paint"}`}>
                 {d >= 0 ? "+" : "−"}
                 {(Math.abs(d) / 1000).toFixed(2)}
               </span>
@@ -142,9 +142,15 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
 
       {/* start lights */}
       {(s.phase === "lights" || lightsOut) && (
-        <div className="pointer-events-none absolute inset-x-0 top-[28%] flex flex-col items-center gap-4">
-          <Gantry lit={s.phase === "lights" ? s.lights : 0} size="lg" />
-          {lightsOut && <p className="slam wide text-[26px] uppercase tracking-[0.04em] text-paint [text-shadow:0_2px_14px_rgba(0,0,0,0.85)]">Lights out</p>}
+        // phones: smaller, in the open middle of the screen: below the lap box, well above the car on the grid
+        <div className="pointer-events-none absolute inset-x-0 top-[28%] flex flex-col items-center gap-4 max-[719px]:top-[30%] max-[719px]:gap-2">
+          <span className="max-[719px]:hidden">
+            <Gantry lit={s.phase === "lights" ? s.lights : 0} size="lg" />
+          </span>
+          <span className="min-[720px]:hidden">
+            <Gantry lit={s.phase === "lights" ? s.lights : 0} size="md" />
+          </span>
+          {lightsOut && <p className="slam wide text-[26px] max-[719px]:text-[18px] uppercase tracking-[0.04em] text-paint [text-shadow:0_2px_14px_rgba(0,0,0,0.85)]">Lights out</p>}
         </div>
       )}
 

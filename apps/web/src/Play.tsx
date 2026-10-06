@@ -6,6 +6,8 @@ import { DAILY_HINT_AFTER_LAPS, DAILY_LAPS, type DailyRecord, bestMedal, conditi
 import { type Grade, gradeFor } from "./modes/grading";
 import { type RoundOutcome, SEASON_LAPS, SEASON_ROUNDS, type SeasonStore, currentTrack, loadSeason, newSeason, recordSeasonLap, rivalMs, seasonDone } from "./modes/season";
 import { CornerTower } from "./ui/CornerTower";
+import { PhoneSheet } from "./ui/PhoneSheet";
+import { usePhone } from "./ui/usePhone";
 import { GateSlider } from "./ui/GateSlider";
 import { LapGrid } from "./ui/LapGrid";
 import { RaceHud, SectorCells } from "./ui/RaceHud";
@@ -15,7 +17,7 @@ import { MEDAL_COLOR, MEDAL_NAME, medalFor, realPole } from "./modes/medals";
 import { challengeUrl } from "./modes/challenge";
 import { Roll } from "./ui/Roll";
 import { delta, lapTime } from "./ui/format";
-import { ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, Undo, WholeTrack } from "./ui/icons";
+import { ChevronDown, ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, Undo, WholeTrack } from "./ui/icons";
 import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 import { Loading, ShareButton, StandingLine, boardOf, dailyShare, dayHeadline, useCountdown } from "./Dialogs";
 import { submitDailyLine } from "./online";
@@ -181,6 +183,8 @@ function GameView({
   const names = game.controls.complexes.map((c) => c.name);
   const lapRows = s.mode === "daily" ? (daily?.laps.map((l) => l.grades) ?? []) : s.mode === "season" ? (round?.laps ?? []) : practiceLaps;
   const racing = s.phase === "race" || s.phase === "lights";
+  const phone = usePhone();
+  const [towerOpen, setTowerOpen] = useState(false);
   const showGrades = s.grades && (s.phase === "result" || s.phase === "setup");
   const rows = names.map((name, i) => {
     const g = s.grades?.[i];
@@ -206,26 +210,29 @@ function GameView({
       )}
       {/* one corner needs no tower of corners */}
       <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5">
-      {/* phones: the tower only while racing (setup and result list the corners in their panels) */}
-      <div ref={tower} className={game.focus !== null ? "hidden" : racing ? "" : "max-[719px]:hidden"}>
+      {/* phones: the corners fold into a tab (setup and race); the result sheet lists them itself */}
+      {phone && game.focus === null && s.phase !== "result" && (
+        <button
+          type="button"
+          onClick={() => setTowerOpen((o) => !o)}
+          aria-expanded={towerOpen}
+          className="flex items-center gap-2 border border-line bg-night/90 py-1.5 pr-2 pl-2.5 text-left"
+        >
+          <span className="label text-paint">{header}</span>
+          <span className="text-[12px] font-bold text-paint [font-stretch:80%]">{rows[s.activeGroup]?.name}</span>
+          <ChevronDown className={`h-3.5 w-3.5 text-steel transition-transform ${towerOpen ? "rotate-180" : ""}`} />
+        </button>
+      )}
+      <div ref={tower} className={game.focus !== null || (phone && (!towerOpen || s.phase === "result")) ? "hidden" : ""}>
         <CornerTower
           rows={rows}
           active={s.activeGroup}
-          header={header}
+          header={phone ? "" : header}
           live={racing}
           onSelect={s.phase === "setup" && !s.locked ? (i) => game.selectGate(i, 0) : s.phase === "result" && !s.locked ? (i) => game.adjust(game.controls.complexes[i].corners[0]) : undefined}
         />
       </div>
-      {game.scenery.hasOsm && (
-        <a
-          href="https://www.openstreetmap.org/copyright"
-          target="_blank"
-          rel="noreferrer"
-          className="bg-night/60 px-1.5 py-0.5 text-[10px] text-steel/80 hover:text-paint min-[720px]:hidden"
-        >
-          © OpenStreetMap
-        </a>
-      )}
+      {phone && game.scenery.hasOsm && <OsmCredit />}
       </div>
       {s.phase === "setup" && !s.locked && <ViewControls game={game} />}
       {s.phase === "setup" && !s.locked && <ControlBar s={s} game={game} coach={coach} />}
@@ -594,8 +601,8 @@ function ResultSheet({
   // hints open after two laps in the daily, any time elsewhere; daily hints are counted for the share text
   const hintsOpen = s.mode !== "daily" || s.lapsUsed >= DAILY_HINT_AFTER_LAPS;
   const worst = r.losses.filter((l) => l.deltaMs > 50 && l.complex >= 0).slice(0, 3);
-  const wide = typeof window !== "undefined" && window.innerWidth >= 720;
-  const ref = useInset(game, wide ? "right" : "bottom");
+  const phone = usePhone();
+  const ref = useInset(game, "right");
   const countdown = useCountdown();
   const info = CATALOG.find((t) => t.id === game.track.id)!;
   const total = s.mode === "daily" ? DAILY_LAPS : s.mode === "season" ? SEASON_LAPS : Math.max(1, lapRows.length);
@@ -669,13 +676,8 @@ function ResultSheet({
   const vsRival = s.mode === "season" && s.rivalMs !== null ? r.lapTimeMs - s.rivalMs : null;
   const pbDelta = r.pbBeforeMs === null ? null : r.lapTimeMs - r.pbBeforeMs;
 
-  return (
-    <div
-      ref={ref}
-      className="absolute inset-x-0 bottom-0 max-h-[70%] overflow-y-auto min-[720px]:inset-x-auto min-[720px]:top-2 min-[720px]:right-2 min-[720px]:bottom-2 min-[720px]:max-h-none min-[720px]:w-[380px]"
-    >
-      <div className="wipe-in border-t border-line bg-night/95 px-4 pt-4 pb-[max(14px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:h-full min-[720px]:border min-[720px]:px-3 min-[720px]:pt-3">
-        {/* timing card */}
+  const timeCard = (
+    <>
         <div className="flex items-end justify-between gap-3">
           <div>
             <div className="caption">Lap time</div>
@@ -685,6 +687,10 @@ function ResultSheet({
             {r.allPurple ? "Perfect" : delta(r.deltaTargetMs)}
           </div>
         </div>
+    </>
+  );
+  const statsBlock = (
+    <>
         <div className="mt-2">
           <MedalRow trackId={game.track.id} medal={lapMedal} lapTimeMs={r.lapTimeMs} stamp={!!lapMedal && r.newPb} condition={game.condition} />
           {s.mode === "daily" && daily && <StandingLine daily={daily} className="border-t border-line py-2" />}
@@ -720,9 +726,10 @@ function ResultSheet({
             tone={pbDelta === null || r.newPb ? "text-ink" : "text-paint"}
           />
         </div>
-
-        {s.mapViews.length > 1 && <MapViewSwitch s={s} game={game} />}
-
+    </>
+  );
+  const outcomeBlock = (
+    <>
         {/* outcome and the lap board */}
         <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-line pt-3">
           <h2 className="wide text-[20px] leading-none text-paint">{headline}</h2>
@@ -732,6 +739,10 @@ function ResultSheet({
             </span>
           )}
         </div>
+    </>
+  );
+  const lapBoard = (
+    <>
         <p className="mt-1.5 text-[14px] leading-snug text-paint/75">{body}</p>
         <div className="mt-2.5">
           <LapGrid rows={lapRows} total={total} cols={names.length} labels={names} revealLast />
@@ -745,6 +756,50 @@ function ResultSheet({
             {!hintsOpen && <li className="caption py-2">Hints open after lap {DAILY_HINT_AFTER_LAPS}.</li>}
           </ul>
         )}
+    </>
+  );
+
+  if (phone)
+    return (
+      <PhoneSheet
+        game={game}
+        summary={
+          <>
+            {timeCard}
+            <div className="mt-2 flex items-baseline justify-between gap-3">
+              <h2 className="wide text-[18px] leading-none text-paint">{headline}</h2>
+              {s.mode !== "practice" && (
+                <span className="caption num">
+                  Lap {lapRows.length} of {total}
+                </span>
+              )}
+            </div>
+          </>
+        }
+        actions={actions}
+        details={
+          <>
+            {statsBlock}
+            {s.mapViews.length > 1 && <MapViewSwitch s={s} game={game} />}
+            <div className="mt-3 border-t border-line pt-3" />
+            {lapBoard}
+            <Legend />
+          </>
+        }
+      />
+    );
+
+  return (
+    <div
+      ref={ref}
+      className="absolute inset-x-0 bottom-0 max-h-[70%] overflow-y-auto min-[720px]:inset-x-auto min-[720px]:top-2 min-[720px]:right-2 min-[720px]:bottom-2 min-[720px]:max-h-none min-[720px]:w-[380px]"
+    >
+      <div className="wipe-in border-t border-line bg-night/95 px-4 pt-4 pb-[max(14px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:h-full min-[720px]:border min-[720px]:px-3 min-[720px]:pt-3">
+        {timeCard}
+        {statsBlock}
+        {s.mapViews.length > 1 && <MapViewSwitch s={s} game={game} />}
+        {outcomeBlock}
+        {lapBoard}
         <Legend />
         <div className="mt-3 flex flex-wrap gap-2">{actions}</div>
       </div>
@@ -857,6 +912,38 @@ function CornerResult({ game, week, onGrid }: { game: Game; week: CornerWeek | n
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The OpenStreetMap credit on phones: shown for five seconds, then folded into
+ * an (i) in the corner that brings it back. The OSMF attribution guidelines
+ * allow this on mobile devices; wider screens keep it on show.
+ */
+function OsmCredit() {
+  const [open, setOpen] = useState(true);
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => setOpen(false), 5000);
+    return () => clearTimeout(t);
+  }, [open]);
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Map data credits"
+        aria-expanded={open}
+        className="grid h-6 w-6 place-items-center rounded-full border border-line bg-night/80 text-[12px] font-bold text-steel"
+      >
+        i
+      </button>
+      {open && (
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="bg-night/80 px-1.5 py-0.5 text-[11px] text-steel hover:text-paint">
+          © OpenStreetMap contributors
+        </a>
+      )}
     </div>
   );
 }

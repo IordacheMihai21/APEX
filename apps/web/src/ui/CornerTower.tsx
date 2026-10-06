@@ -31,7 +31,7 @@ export function CornerTower({
 }) {
   return (
     <nav aria-label="Corners" className="pointer-events-auto w-[84px] min-[720px]:w-[172px]">
-      <div className="label border-b border-line bg-night/90 px-2 py-1.5 text-paint">{header}</div>
+      {header && <div className="label border-b border-line bg-night/90 px-2 py-1.5 text-paint">{header}</div>}
       <ol className="bg-night/82 backdrop-blur-[2px]">
         {rows.map((r, i) => {
           const on = i === active;
