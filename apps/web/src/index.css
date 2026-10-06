@@ -116,6 +116,22 @@ canvas {
   animation: wipe-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* the end-of-game card rises from the bottom (a sheet on phones, a card on wider screens) */
+@keyframes finish-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+.finish-in {
+  animation: finish-in 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .finish-in {
+    animation: none;
+  }
+}
+
 /* Lap tiles flip in as the car passes each corner group. */
 @keyframes tile-flip {
   0% {

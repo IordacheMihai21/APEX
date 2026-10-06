@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState, useRef } from "react";
 import { flushSync } from "react-dom";
 import { colourBlind, setColourBlind } from "./game/palette";
 import { CATALOG } from "./game/catalog";
@@ -141,6 +141,15 @@ export function App() {
     };
     window.addEventListener("popstate", on);
     return () => window.removeEventListener("popstate", on);
+  }, []);
+
+  // "Play next" on a minigame's finish card
+  const goRef = useRef<(to: string) => void>(() => {});
+  goRef.current = (to: string) => (to === "daily" ? act({ kind: "daily" }) : setScreen({ kind: to as Mini }));
+  useEffect(() => {
+    const on = (e: Event) => goRef.current((e as CustomEvent<string>).detail);
+    window.addEventListener("lapdle:go", on);
+    return () => window.removeEventListener("lapdle:go", on);
   }, []);
 
   const act = (a: HubAction) => {

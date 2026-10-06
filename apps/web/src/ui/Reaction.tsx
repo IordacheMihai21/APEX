@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { FinishCard } from "./FinishCard";
 import { track } from "../analytics";
 import { LIGHT_MS, type ReactionRecord, average, loadReaction, randomHold, recordJump, recordReaction, verdict } from "../modes/reaction";
 import { Gantry } from "./Gantry";
@@ -21,6 +22,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
   const [ms, setMs] = useState<number | null>(null);
   const [rec, setRec] = useState<ReactionRecord>(loadReaction);
   const [copied, setCopied] = useState(false);
+  const [finish, setFinish] = useState(false);
   const timers = useRef<number[]>([]);
   const outAt = useRef(0);
 
@@ -60,17 +62,21 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
       setLit(0);
       setPhase("jump");
       setRec((r) => recordJump(r));
+      timers.current.push(window.setTimeout(() => setFinish(true), 700));
     } else if (phase === "go") {
       const t = Math.round(performance.now() - outAt.current);
       setMs(t);
       setPhase("done");
       setRec((r) => recordReaction(r, t));
       track("Minigame finished", { game: "reaction" });
+      // a beat to read the number on the stage, then the card
+      timers.current.push(window.setTimeout(() => setFinish(true), 700));
     }
   }, [phase, start]);
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
+      if (finish) return; // the finish card has the keys while open
       if (e.code === "Space" || e.key === "Enter") {
         e.preventDefault();
         tap();
@@ -78,7 +84,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
-  }, [tap]);
+  }, [tap, finish]);
 
   const avg = average(rec);
   const share = async () => {
@@ -150,6 +156,26 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
             Now find the perfect lap
           </button>
         </div>
+      )}
+
+      {finish && (phase === "done" || phase === "jump") && (
+        <FinishCard
+          game="reaction"
+          eyebrow="Lights out"
+          title={phase === "jump" ? "Jump start" : verdict(ms!)}
+          tone={phase === "jump" || (ms !== null && ms < 100) ? "loss" : rec.best !== null && ms !== null && ms <= rec.best ? "win" : "neutral"}
+          value={phase === "jump" ? "-.---" : secs(ms!)}
+          valueLabel="seconds"
+          message={phase === "jump" ? "You moved before the lights went out." : "Racing drivers react in about 0.2 s; most people take about 0.27 s."}
+          stats={[
+            ["Best", rec.best !== null ? secs(rec.best) : "-"],
+            ["Average", avg !== null ? secs(avg) : "-"],
+            ["Jump starts", String(rec.jumps)],
+          ]}
+          shareText={`Lapdle lights out: ${secs(ms ?? rec.best ?? 0)}s${rec.best !== null ? ` (best ${secs(rec.best)}s)` : ""}. How fast off the line are you? ${location.origin}/reaction`}
+          again={{ label: "Try again", onClick: () => (setFinish(false), start()) }}
+          onClose={() => setFinish(false)}
+        />
       )}
     </div>
   );

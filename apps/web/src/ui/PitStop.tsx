@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdBelow } from "./Ads";
+import { FinishCard } from "./FinishCard";
 import { track } from "../analytics";
 import { FRONT_AXLE, REAR_AXLE, TRACK_HALF, bareCar } from "../game/car";
 import { asphaltDataUrl } from "../game/scenery";
@@ -101,6 +102,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
   const [early, setEarly] = useState(false);
   const [flash, setFlash] = useState<Wheel | null>(null);
   const [result, setResult] = useState<PitResult | null>(null);
+  const [finish, setFinish] = useState(false);
   const [copied, setCopied] = useState(false);
   const t0 = useRef(0);
   const lastT = useRef(0);
@@ -203,12 +205,15 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
     setRec((x) => recordStop(x, r, mode === "daily" ? dateKey() : null));
     track("Minigame finished", { game: "pit-stop", mode });
     setPhase("leaving");
-    later(() => setPhase("done"), reduce ? 50 : 700);
+    later(() => {
+      setPhase("done");
+      setFinish(true);
+    }, reduce ? 50 : 700);
   }, [phase, early, splits, wrong, mode, reduce]);
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey || finish) return; // the finish card has the keys while open
       const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
       if (key === " " || key === "Enter") {
         e.preventDefault();
@@ -218,7 +223,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
-  }, [phase, start, release, hit]);
+  }, [phase, start, release, hit, finish]);
 
   const share = async () => {
     if (!shown) return;
@@ -470,6 +475,36 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
           )}
         </div>
       </div>
+      {finish && shown && (
+        <FinishCard
+          game="pit-stop"
+          eyebrow={mode === "daily" ? `Pit stop #${dailyNumber()}` : "Pit stop, practice"}
+          title={verdict(shown.totalMs)}
+          tone={rec.best !== null && shown.totalMs <= rec.best ? "win" : "neutral"}
+          value={secs(shown.totalMs)}
+          valueLabel="seconds"
+          message={
+            shown.wrongKeys || shown.earlyRelease
+              ? `Includes ${(penaltyMs(shown) / 1000).toFixed(1)} s of penalties${shown.earlyRelease ? " (released before green)" : ""}.`
+              : mode === "daily"
+                ? "Today's stop is on the board. Practice as much as you like."
+                : "Clean stop: no penalties."
+          }
+          stats={[
+            ["Best", rec.best !== null ? secs(rec.best) : "-"],
+            ["Last 5", avg !== null ? secs(avg) : "-"],
+            ["Stops", String(rec.stops)],
+          ]}
+          shareText={mode === "daily" ? pitShare(shown, `${location.origin}/pit-stop`) : `Lapdle Pit stop: ${secs(shown.totalMs)} s. Beat it: ${location.origin}/pit-stop`}
+          again={
+            mode === "daily"
+              ? { label: "Practice stops", onClick: () => (setFinish(false), switchMode("practice")) }
+              : { label: "Go again", onClick: () => (setFinish(false), start()) }
+          }
+          daily={mode === "daily" ? "daily pit stop" : undefined}
+          onClose={() => setFinish(false)}
+        />
+      )}
       <AdBelow />
     </div>
   );

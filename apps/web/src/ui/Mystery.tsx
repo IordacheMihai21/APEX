@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AdBelow } from "./Ads";
+import { FinishCard } from "./FinishCard";
 import { track } from "../analytics";
 import { OUTLINES } from "../game/outlines";
 import { CIRCUITS, circuit } from "../modes/circuits";
@@ -16,6 +17,7 @@ import {
   loadMystery,
   mysteryAnswer,
   mysteryShare,
+  mysteryStats,
   recordGuess,
   revealOffset,
 } from "../modes/mystery";
@@ -89,6 +91,16 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
   const shown = over ? 1 : REVEAL[Math.min(day.guesses.length, REVEAL.length - 1)];
   const offset = revealOffset(day.key);
   const a = circuit(answer);
+
+  // the finish card opens when the round ends here (not on a revisit), once the outline has drawn
+  const wasOver = useRef(over);
+  const [finish, setFinish] = useState(false);
+  useEffect(() => {
+    let t = 0;
+    if (over && !wasOver.current) t = window.setTimeout(() => setFinish(true), 900);
+    wasOver.current = over;
+    return () => clearTimeout(t);
+  }, [over]);
 
   const share = async () => {
     const text = mysteryShare(day, `${location.origin}/mystery`);
@@ -204,6 +216,9 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
                 <button className={secondaryBtn} onClick={share}>
                   <Share className="h-4 w-4" /> {copied ? "Copied" : "Share"}
                 </button>
+                <button className={secondaryBtn} onClick={() => setFinish(true)}>
+                  See result
+                </button>
                 <button className={primaryBtn} onClick={onPlayDaily}>
                   Play the Daily Quali
                 </button>
@@ -238,6 +253,28 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
           )}
         </div>
       </div>
+      {finish && over && (() => {
+        const st = mysteryStats();
+        return (
+          <FinishCard
+            game="mystery"
+            eyebrow={`Mystery circuit #${dailyNumber(day.key)}`}
+            title={solved ? "Got it!" : "Out of guesses"}
+            tone={solved ? "win" : "loss"}
+            value={`${solved ? day.guesses.length : "X"}/${MYSTERY_TRIES}`}
+            valueLabel="guesses"
+            message={solved ? `It's ${a.name}.` : `It was ${a.name}.`}
+            stats={[
+              ["Played", String(st.played)],
+              ["Solved", st.played ? `${Math.round((100 * st.solved) / st.played)}%` : "-"],
+              ["Streak", String(st.streak)],
+            ]}
+            shareText={mysteryShare(day, `${location.origin}/mystery`)}
+            daily="mystery circuit"
+            onClose={() => setFinish(false)}
+          />
+        );
+      })()}
       <AdBelow />
     </div>
   );

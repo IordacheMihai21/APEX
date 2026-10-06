@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AdBelow } from "./Ads";
+import { FinishCard } from "./FinishCard";
 import { track } from "../analytics";
 import type { CircuitFacts } from "../modes/circuits";
 import { type Round, firstRound, isRight, loadHigherLower, nextRound, recordRun, value } from "../modes/higherLower";
@@ -35,6 +36,7 @@ export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
   const [newBest, setNewBest] = useState(false);
   const [copied, setCopied] = useState(false);
   const timer = useRef(0);
+  const [finish, setFinish] = useState(false);
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const call = (higher: boolean) => {
@@ -51,10 +53,14 @@ export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
       setNewBest(streak > rec.best);
       setRec(recordRun(streak));
       track("Minigame finished", { game: "higher-lower", streak });
+      // the card follows once the right answer has been on screen for a moment
+      timer.current = window.setTimeout(() => setFinish(true), 1400);
     }
   };
 
   const again = () => {
+    clearTimeout(timer.current);
+    setFinish(false);
     setRound(firstRound());
     setStreak(0);
     setNewBest(false);
@@ -65,7 +71,7 @@ export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
     const k = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") call(true);
       else if (e.key === "ArrowDown") call(false);
-      else if (e.key === "Enter" && phase === "wrong") again();
+      else if (e.key === "Enter" && phase === "wrong" && !finish) again();
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
@@ -152,6 +158,25 @@ export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
         )}
         <p className="caption mt-6 text-center">Pole laps are the real 2025 qualifying times.<span className="hidden [@media(hover:hover)]:inline"> Arrow keys work too.</span></p>
       </div>
+      {finish && phase === "wrong" && (
+        <FinishCard
+          game="higher-lower"
+          eyebrow="Higher or lower"
+          title={newBest ? "New best run!" : "Run over"}
+          tone={newBest ? "win" : "loss"}
+          value={String(streak)}
+          valueLabel={streak === 1 ? "right call" : "right calls in a row"}
+          message={newBest ? "Your longest run yet." : streak === 0 ? "Missed the first one. The next run starts fresh." : `Your best run is ${rec.best}.`}
+          stats={[
+            ["This run", String(streak)],
+            ["Best", String(rec.best)],
+            ["Runs", String(rec.runs)],
+          ]}
+          shareText={`Lapdle Higher or lower: ${streak} in a row on real circuit facts (best ${rec.best}). ${location.origin}/higher-lower`}
+          again={{ label: "Play again", onClick: again }}
+          onClose={() => setFinish(false)}
+        />
+      )}
       <AdBelow />
     </div>
   );
