@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -30,6 +33,43 @@ function launchFiles(env: Record<string, string>): Plugin {
   };
 }
 
+/**
+ * The service worker's precache: every file of the app's code (scripts, styles,
+ * the Latin fonts, the small circuit maps) is fetched when the app installs, so
+ * every game opens offline. Circuit data (tracks and scenery, ~1.5 MB) stays
+ * cached on first use. The list and a build id are written into dist/sw.js, so
+ * each deploy is a new service worker that refreshes the code.
+ */
+function precache(): Plugin {
+  let files: string[] = [];
+  let ssr = false;
+  let out = "";
+  return {
+    name: "apex-precache",
+    apply: "build",
+    configResolved(config) {
+      ssr = !!config.build.ssr;
+      out = resolve(config.root, config.build.outDir);
+    },
+    generateBundle(_, bundle) {
+      if (ssr) return;
+      const heavy = (ids: string[]) => ids.some((id) => /\/data\/(tracks|scenery)\//.test(id));
+      files = Object.values(bundle)
+        .filter((f) => (f.type === "chunk" ? !heavy(f.moduleIds) : /\.(css|js)$|latin-(ext-)?wdth.*\.woff2$/.test(f.fileName)))
+        .map((f) => `/${f.fileName}`)
+        .sort();
+    },
+    closeBundle() {
+      if (ssr || !files.length) return;
+      const sw = resolve(out, "sw.js");
+      const src = readFileSync(sw, "utf8");
+      const build = createHash("sha256").update(files.join("\n")).digest("hex").slice(0, 10);
+      if (!src.includes('const BUILD = "dev";') || !src.includes("const PRECACHE = [];")) throw new Error("precache: sw.js lost its placeholders");
+      writeFileSync(sw, src.replace('const BUILD = "dev";', `const BUILD = "${build}";`).replace("const PRECACHE = [];", `const PRECACHE = ${JSON.stringify(files)};`));
+    },
+  };
+}
+
 /** lapdle.com's AdSense publisher ID: public (it is in ads.txt and every ad), so it lives here. */
 const ADSENSE_PUBLISHER = "ca-pub-2515595867377612";
 
@@ -38,7 +78,7 @@ export default defineConfig(({ mode }) => {
   // production builds carry the publisher ID unless the host sets another; dev never loads ads
   if (mode === "production" && !env.VITE_ADSENSE_CLIENT) env.VITE_ADSENSE_CLIENT = ADSENSE_PUBLISHER;
   return {
-    plugins: [react(), tailwindcss(), launchFiles(env)],
+    plugins: [react(), tailwindcss(), launchFiles(env), precache()],
     define: { "import.meta.env.VITE_ADSENSE_CLIENT": JSON.stringify(env.VITE_ADSENSE_CLIENT ?? "") },
     // Track JSON lives in the repo-level data/ folder.
     server: { fs: { allow: ["../.."] }, port: 5173 },

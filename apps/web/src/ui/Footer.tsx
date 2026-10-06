@@ -3,6 +3,7 @@ import { ADS_CONSENT, OPERATOR, SOCIAL, openConsent } from "../legal";
 import { GAMES, type GamePage } from "../games/registry";
 import { loadSeason, seasonDone } from "../modes/season";
 import type { HubAction } from "./Hub";
+import { InstallLink } from "./Install";
 
 const ICON: Record<(typeof SOCIAL)[number]["id"], Icon> = { x: XLogo, instagram: InstagramLogo, tiktok: TiktokLogo, youtube: YoutubeLogo, discord: DiscordLogo };
 
@@ -97,6 +98,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
                   Circuit trivia
                 </a>
               </li>
+              <InstallLink className={link} />
               <li>
                 <a className={link} href="/about">
                   About

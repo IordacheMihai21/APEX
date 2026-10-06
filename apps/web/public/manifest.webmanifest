@@ -1,7 +1,8 @@
 {
+  "id": "/",
   "name": "Lapdle – Daily Racing Line Challenge",
   "short_name": "Lapdle",
-  "description": "A free daily racing line puzzle on real circuits. Set your line through every corner and chase the perfect lap.",
+  "description": "Free daily racing games on real circuits: the Daily Quali, Mystery circuit, Pit stop, Higher or lower and Braking point. New every day.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -32,14 +33,56 @@
   ],
   "shortcuts": [
     {
-      "name": "Lights out reaction test",
-      "url": "/reaction",
+      "name": "Daily Quali",
+      "short_name": "Quali",
+      "url": "/?play=daily",
       "icons": [
         {
           "src": "/icon-192.png",
-          "sizes": "192x192"
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Mystery circuit",
+      "short_name": "Mystery",
+      "url": "/mystery",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Braking point",
+      "short_name": "Braking",
+      "url": "/braking-point",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Higher or lower",
+      "short_name": "Hi-Lo",
+      "url": "/higher-lower",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }
+  ],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
   ]
 }

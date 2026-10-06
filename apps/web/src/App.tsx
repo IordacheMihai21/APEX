@@ -3,10 +3,11 @@ import { GAME_PAGES, type GameId, type GamePage, type InfoPage, PAGES, game } fr
 import { type ContentPage, contentMeta, contentPath, parseContent } from "./content/meta";
 import { flushSync } from "react-dom";
 import { colourBlind, setColourBlind } from "./game/palette";
-import { CATALOG } from "./game/catalog";
+import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
 import type { Condition } from "@apex/engine";
 import type { Mode } from "./game/game";
-import { CONDITION_NAME, dailyCondition, dailyNumber, loadDaily } from "./modes/daily";
+import { CONDITION_NAME, dailyCondition, dailyNumber, dailyTrack, loadDaily } from "./modes/daily";
+import { standalone } from "./install";
 import { currentTrack, loadSeason, newSeason } from "./modes/season";
 import { type HubAction, Hub } from "./ui/Hub";
 import { ADS_ON, AdSlot, adShows } from "./ui/Ads";
@@ -78,6 +79,8 @@ function initialScreen(): Screen {
   const path = location.pathname.replace(/\/$/, "").slice(1) || q.get("play");
   if (path === "corner") return { kind: "play", mode: "corner", trackId: weeklyCorner().trackId };
   if (path && isMini(path)) return { kind: path };
+  // the installed app's "Daily Quali" shortcut
+  if (path === "daily") return { kind: "play", mode: "daily", trackId: loadDaily().trackId };
   return { kind: "hub" };
 }
 
@@ -109,6 +112,8 @@ export function App() {
   useEffect(() => {
     const idle = window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1500));
     idle(() => void loadPlay().catch(() => {}));
+    // the installed app keeps today's circuit at hand, so the Daily Quali plays offline too
+    if (standalone()) idle(() => void Promise.all([loadTrack(dailyTrack()), loadScenery(dailyTrack())]).catch(() => {}));
   }, []);
   const [screen, setScreenNow] = useState<Screen>(initialScreen);
   // Grid <-> circuit goes through the cut (a slanted wipe) where view transitions exist.

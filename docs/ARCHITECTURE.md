@@ -111,6 +111,18 @@ id, so it outlives the 30-day retention without being personal data); and
 physics version starts new records. Without the functions the page says the
 records couldn't be loaded.
 
+## Installed app
+
+The site installs as an app (manifest, `public/sw.js`, `src/install.ts`). The
+service worker precaches all of the app's code at install: `vite.config.ts`
+(`precache`) writes the list of every built file except circuit data
+(tracks, scenery) and a build id into `dist/sw.js`, so each deploy is a new
+worker that refreshes the code; circuit data is cached on first use, and the
+installed app fetches today's circuit in the background so the Daily Quali
+plays offline. The hub's install band (after a first daily game) and the
+footer link open the browser's install prompt where there is one
+(beforeinstallprompt) and show the Add to Home Screen steps on iPhone and iPad.
+
 ## Braking point
 
 The braking zones come from the engine's perfect laps at build time:

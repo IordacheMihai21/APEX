@@ -7,6 +7,8 @@ import "./index.css";
 import { App } from "./App";
 import { initAnalytics } from "./analytics";
 import { visit } from "./games/events";
+// catch the browser's install offer before anything else can miss it
+import "./install";
 initAnalytics();
 visit();
 // apply the saved timing palette before the first paint

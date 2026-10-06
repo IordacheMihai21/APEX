@@ -1,16 +1,29 @@
-// Lapdle service worker: play offline once loaded.
+// Lapdle service worker: the installed app, playable offline.
+// Install: every file of the app's code is fetched up front (PRECACHE, written in by
+// the build with BUILD, see vite.config.ts), so every game opens offline.
 // Pages: network first (so a new build arrives at once), cached copy when offline.
 // Hashed build assets (code, circuits, scenery): cache first; their names change with every build.
 // Anything from another origin (ads, fonts CDNs) is left to the browser.
-const CACHE = "lapdle-v2"; // v2 drops v1, which could hold an HTML page saved under a script name
+const BUILD = "dev";
+const PRECACHE = [];
+const SHELL = `lapdle-shell-${BUILD}`; // this build's code
+const CACHE = "lapdle-v2"; // pages, and circuit data cached on first use (kept across builds)
 
-self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("install", (event) => {
+  // best effort: a file that fails to arrive is fetched (and cached) when first needed
+  event.waitUntil(
+    caches
+      .open(SHELL)
+      .then((c) => Promise.all(["/", "/manifest.webmanifest", "/icon-192.png", ...PRECACHE].map((url) => c.add(url).catch(() => {}))))
+      .then(() => self.skipWaiting()),
+  );
+});
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== SHELL).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });

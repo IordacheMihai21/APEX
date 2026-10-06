@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { GAMES, type GamePage, type InfoPage, game, todayProgress } from "../games/registry";
 import { playStreak } from "../games/profile";
+import { InstallBand } from "./Install";
 import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES, type Outline, type OutlineDetail, loadOutlineDetail } from "../game/outlines";
@@ -650,6 +651,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
 
       {/* the rest of today's set, then an ad before the extras */}
       <GameCards onAction={onAction} group="daily" />
+      <InstallBand />
       <AdBand />
 
       {/* more to play: the extras, then the weekly corner, the season and practice */}
