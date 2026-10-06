@@ -30,7 +30,7 @@ Sources: [OWASP HTTP Headers Cheat Sheet](https://cheatsheetseries.owasp.org/che
 | Server re-simulates the submitted line; times can't be forged | **Done** |
 | Strict input validation (day window, circuit list, UUID, knot count and range), 16 kB body limit | **Done** |
 | Rate limits: 60 submissions per device per day, 300 per IP per hour (IP stored only as a salted daily SHA-256 hash) | **Done**, deployed |
-| CORS restricted to the site's origin | **Done** (6 October 2026): `ALLOWED_ORIGINS=https://lapdle.com,https://www.lapdle.com,http://localhost:5173` |
+| CORS restricted to the site's origin | **Done** (6 October 2026): `ALLOWED_ORIGINS=https://lapdle.com,https://www.lapdle.com` (development builds never submit) |
 | Right to erasure ("Delete my leaderboard results" on /privacy) and 30-day retention | **Done**: `forget_device` and `prune_leaderboard` are live, the button and the function are deployed. Runs nightly at 03:17 UTC (pg_cron job `prune-leaderboard`). |
 | `rls_auto_enable()` advisor warning | Supabase's own event-trigger helper (turns RLS on for new tables); it can't be called as an API. Harmless, left as is. |
 

@@ -95,7 +95,8 @@ const headers = () => ({ apikey: KEY!, Authorization: `Bearer ${KEY}`, "Content-
 
 /** Send the day's best line; the server times it and answers with where you stand. */
 export async function submitDailyLine(b: Board, knots: number[]): Promise<Standing | null> {
-  if (!ONLINE) return null;
+  // only the live site puts laps on the board: test laps from a development build never do
+  if (!ONLINE || import.meta.env.DEV) return null;
   try {
     const res = await fetch(`${URL_}/functions/v1/submit-lap`, {
       method: "POST",
