@@ -458,10 +458,25 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   // the official figures, the same ones the minigames use (our corner groups can differ)
   const facts = CIRCUITS.find((c) => c.id === daily.trackId);
   const condition = conditionOf(daily);
-  // while the hub sits idle, build today's circuit textures so lights out opens without a freeze
+  // build today's circuit textures ahead, so lights out opens without a freeze. Not during page
+  // load (the work would block the first seconds): on the player's first touch, scroll or key,
+  // or after six quiet seconds, whichever comes first
   useEffect(() => {
-    const t = setTimeout(() => import("../game/prewarm").then((m) => m.prewarm(daily.trackId, condition === "wet")).catch(() => {}), 1200);
-    return () => clearTimeout(t);
+    let done = false;
+    const warm = () => {
+      if (done) return;
+      done = true;
+      stop();
+      import("../game/prewarm").then((m) => m.prewarm(daily.trackId, condition === "wet")).catch(() => {});
+    };
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+    const t = setTimeout(warm, 6000);
+    const stop = () => {
+      clearTimeout(t);
+      for (const e of events) window.removeEventListener(e, warm, true);
+    };
+    for (const e of events) window.addEventListener(e, warm, { capture: true, passive: true, once: true });
+    return stop;
   }, [daily.trackId, condition]);
   const o = OUTLINES[daily.trackId];
   const perfectMs = condition === "dry" ? o.lapMs : (o.conditions[condition]?.lapMs ?? o.lapMs);
