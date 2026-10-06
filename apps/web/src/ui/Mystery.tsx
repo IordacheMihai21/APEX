@@ -119,8 +119,10 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto grid max-w-[1080px] gap-8 px-4 pt-8 pb-12 md:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:pt-12">
-        <div>
+      <div className="mx-auto grid max-w-[1080px] gap-8 px-4 pt-8 pb-12 max-lg:gap-5 md:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:pt-12">
+        {/* phones: this column dissolves so the outline can pin to the top while the guesses scroll under it */}
+        <div className="max-lg:contents">
+          <div>
           <p className="caption">Mystery circuit #{dailyNumber(day.key)}</p>
           <div className="mt-2 flex items-start justify-between gap-3">
             <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">Name the circuit</h1>
@@ -129,9 +131,10 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
           <p className="mt-3 max-w-[42ch] text-[15px] text-steel">
             {MYSTERY_TRIES} guesses. Every miss draws more of the lap, and the clues say how close you were.
           </p>
+          </div>
 
-          <figure className="relative mt-6 border border-line bg-board/70 p-6">
-            <svg viewBox="0 0 1000 1000" className="mx-auto aspect-square w-full max-w-[420px]" role="img" aria-label={over ? `${a.name} circuit outline` : `${Math.round(shown * 100)} percent of the mystery circuit`}>
+          <figure className="relative mt-6 border border-line bg-board/70 p-6 max-lg:sticky max-lg:top-0 max-lg:z-10 max-lg:mt-0 max-lg:bg-board max-lg:p-3 max-lg:shadow-[0_10px_18px_rgb(10_11_13/0.85)]">
+            <svg viewBox="0 0 1000 1000" className="mx-auto aspect-square w-full max-w-[420px] max-lg:h-[min(34vh,300px)] max-lg:w-auto" role="img" aria-label={over ? `${a.name} circuit outline` : `${Math.round(shown * 100)} percent of the mystery circuit`}>
               <path d={o.outline} fill="none" stroke="var(--color-asphalt)" strokeWidth={over ? 46 : 0} strokeLinejoin="round" />
               <path
                 d={o.outline}
@@ -147,7 +150,7 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
               />
               {over && <circle cx={o.start[0]} cy={o.start[1]} r={40} fill="var(--color-ink)" stroke="var(--color-night)" strokeWidth={16} />}
             </svg>
-            <figcaption className="mt-4 flex items-baseline justify-between text-[13px] text-steel">
+            <figcaption className="mt-4 flex items-baseline justify-between text-[13px] text-steel max-lg:mt-2">
               {over ? (
                 <>
                   <span className="wide text-[20px] text-paint">{a.name}</span>
@@ -167,7 +170,7 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
           </figure>
         </div>
 
-        <div className="lg:pt-[92px]">
+        <div className="flex flex-col lg:block lg:pt-[92px]">
           <table className="w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               <col className="w-[30%]" />
@@ -229,7 +232,8 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
               </div>
             </div>
           ) : (
-            <div className="mt-8">
+            // phones: the answers come straight under the pinned outline, before the clue table
+            <div className="mt-8 max-lg:order-first max-lg:mt-0 max-lg:mb-6">
               <h2 className="text-[15px] font-semibold text-paint">Your guess</h2>
               <ul className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                 {CIRCUITS.map((c) => {
