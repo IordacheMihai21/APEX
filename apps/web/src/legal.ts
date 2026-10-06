@@ -9,7 +9,8 @@ export const OPERATOR = {
   address: (import.meta.env.VITE_OPERATOR_ADDRESS as string | undefined) || "",
   /** registration number, for a company or a sole trader (PFA) */
   registration: (import.meta.env.VITE_OPERATOR_REGISTRATION as string | undefined) || "",
-  email: (import.meta.env.VITE_CONTACT_EMAIL as string | undefined) || "",
+  /** the site's own address (Cloudflare Email Routing forwards it); env can override */
+  email: (import.meta.env.VITE_CONTACT_EMAIL as string | undefined) || "contact@lapdle.com",
 };
 
 export const OPERATOR_SET = !!(OPERATOR.name && OPERATOR.email);

@@ -188,7 +188,13 @@ export function Privacy() {
               . We are the data controller for the leaderboard.
             </p>
           ) : (
-            <p className="text-steel">Operator details are being added.</p>
+            <p>
+              Contact:{" "}
+              <a className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" href={`mailto:${OPERATOR.email}`}>
+                {OPERATOR.email}
+              </a>
+              . The operator's name and address are being added.
+            </p>
           )}
         </Section>
       </article>

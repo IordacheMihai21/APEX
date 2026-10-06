@@ -53,7 +53,13 @@ export function Legal() {
               </a>
             </p>
           ) : (
-            <p className="text-steel">Operator details are being added.</p>
+            <p>
+              Contact:{" "}
+              <a className={link} href={`mailto:${OPERATOR.email}`}>
+                {OPERATOR.email}
+              </a>
+              . The operator's name and address are being added.
+            </p>
           )}
         </Section>
 
