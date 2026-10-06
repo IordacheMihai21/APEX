@@ -58,7 +58,7 @@ export function Legal() {
               <a className={link} href={`mailto:${OPERATOR.email}`}>
                 {OPERATOR.email}
               </a>
-              . The operator's name and address are being added.
+              .
             </p>
           )}
         </Section>

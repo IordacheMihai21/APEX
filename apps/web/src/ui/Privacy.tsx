@@ -193,7 +193,7 @@ export function Privacy() {
               <a className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" href={`mailto:${OPERATOR.email}`}>
                 {OPERATOR.email}
               </a>
-              . The operator's name and address are being added.
+              .
             </p>
           )}
         </Section>
