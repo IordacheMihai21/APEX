@@ -1,2 +1,20 @@
-# Netlify / Cloudflare Pages: every app address is served by index.html
-/*  /index.html  200
+# Cloudflare Pages / Netlify: the app's own addresses are served by index.html.
+# Everything else falls through to a real 404 (404.html), so a script from an
+# old build fails cleanly and the app reloads into the new one instead of
+# receiving the home page in its place.
+/corner        /  200
+/archive       /  200
+/mystery       /  200
+/higher-lower  /  200
+/pit-stop      /  200
+/reaction      /  200
+/privacy       /  200
+/legal         /  200
+/corner/       /  200
+/archive/      /  200
+/mystery/      /  200
+/higher-lower/ /  200
+/pit-stop/     /  200
+/reaction/     /  200
+/privacy/      /  200
+/legal/        /  200
