@@ -1,11 +1,11 @@
-# APEX Architecture
+# Lapdle Architecture
 
 Status: Phase 1 (physics prototype). No UI, backend, or accounts yet.
 
 ## Repository layout
 
 ```
-APEX/
+Lapdle/
 ├── packages/
 │   └── engine/              @apex/engine — pure TypeScript, zero runtime deps
 │       ├── src/math/        dense solver, periodic cubic spline, cbrt

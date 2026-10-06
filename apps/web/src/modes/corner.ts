@@ -114,5 +114,5 @@ export function cornerShare(week: CornerWeek, corner: WeeklyCorner, key = dateKe
   const medal = cornerMedal(week.bestDeltaMs);
   const tag = medal ? { pole: "🟪 Pole", gold: "🥇 Gold", silver: "🥈 Silver", bronze: "🥉 Bronze" }[medal] : "No medal";
   const delta = week.bestDeltaMs <= 0 ? "on the perfect line" : `+${(week.bestDeltaMs / 1000).toFixed(3)} s to perfect`;
-  return `APEX Corner of the week #${weekNumber(key)}: ${corner.name}\n${tag}, ${delta} (${week.tries} ${week.tries === 1 ? "try" : "tries"})`;
+  return `Lapdle Corner of the week #${weekNumber(key)}: ${corner.name}\n${tag}, ${delta} (${week.tries} ${week.tries === 1 ? "try" : "tries"})`;
 }

@@ -9,7 +9,7 @@ const link = "text-left text-[14px] text-paint/80 transition-colors hover:text-p
 const heading = "caption text-steel";
 
 /**
- * The site footer: what APEX is and who it isn't affiliated with, every game
+ * The site footer: what Lapdle is and who it isn't affiliated with, every game
  * and page in two short columns, then contact, social accounts and cookie
  * choices. Square, hairline-divided, like the rest of the grid.
  */
@@ -37,7 +37,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
       <div className="mx-auto grid max-w-[1240px] gap-10 px-4 pt-12 pb-10 md:px-8 lg:grid-cols-[5fr_7fr] lg:gap-16 lg:pt-14">
         <div className="max-w-[46ch]">
           <span className="wide text-[26px] leading-none tracking-[0.02em] text-paint">
-            APEX<span className="text-steel">/</span>
+            LAPDLE<span className="text-steel">/</span>
           </span>
           <p className="mt-4 text-[15px] leading-relaxed text-paint/85">A daily racing-line puzzle on real circuits. Set your line through every corner, drive it, chase the perfect lap.</p>
           <p className="mt-3 text-[13px] leading-relaxed text-steel">
@@ -76,7 +76,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
             </ul>
           </nav>
           <div className="col-span-2 sm:col-span-1">
-            <h2 className={heading}>APEX</h2>
+            <h2 className={heading}>Lapdle</h2>
             <ul className="mt-3 space-y-2.5">
               <li>
                 <button className={link} onClick={() => onAction({ kind: "mini", game: "privacy" })}>
@@ -98,7 +98,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
               )}
             </ul>
             {SOCIAL.length > 0 && (
-              <ul className="mt-5 flex gap-1" aria-label="APEX on social media">
+              <ul className="mt-5 flex gap-1" aria-label="Lapdle on social media">
                 {SOCIAL.map((s) => {
                   const I = ICON[s.id];
                   return (
@@ -107,7 +107,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
                         href={s.url}
                         target="_blank"
                         rel="noreferrer me"
-                        aria-label={`APEX on ${s.name}`}
+                        aria-label={`Lapdle on ${s.name}`}
                         className="grid h-10 w-10 place-items-center border border-line text-paint/80 transition-colors hover:border-paint/40 hover:text-paint"
                       >
                         <I weight="bold" className="h-[18px] w-[18px]" aria-hidden="true" />
@@ -123,7 +123,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
       <div className="border-t border-line">
         <p className="mx-auto flex max-w-[1240px] flex-wrap justify-between gap-x-6 gap-y-1 px-4 pt-4 pb-[max(16px,env(safe-area-inset-bottom))] text-[12px] text-steel md:px-8">
           <span>
-            © {year} {OPERATOR.name || "APEX"}
+            © {year} {OPERATOR.name || "Lapdle"}
           </span>
           <span>Times and lines are simulated. Facts checked against official race pages.</span>
         </p>

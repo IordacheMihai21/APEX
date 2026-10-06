@@ -1,4 +1,4 @@
-# APEX game plan: better, more attractive, more interactive
+# Lapdle game plan: better, more attractive, more interactive
 
 Written 2026-10-01 after a research pass on daily games, time-attack racers and
 draw-the-line racers. Guiding question stays the roadmap's: does this make
@@ -31,14 +31,14 @@ Set line → Race → Retry better?
    ([Design the Game](https://www.designthegame.com/learning/tutorial/how-tactile-interactions-game-juice-drive-player-engagement), [Wayline on over-juicing](https://www.wayline.io/blog/the-juice-problem-how-exaggerated-feedback-is-harming-game-design))
 7. **The F1 daily space is all trivia.** Gridle, Paddockdle, Boxdle, Apexdle are
    guess-the-driver/circuit games. Nobody owns a *skill* daily with a real lap
-   time. That is APEX's opening. (Note: "Apexdle" exists; check naming/SEO.)
+   time. That is Lapdle's opening. (Note: "Apexdle" exists; check naming/SEO.)
    ([Gridle](https://playgridle.com/), [Apexdle](https://www.apexdle.games/))
 8. **Draw-the-line racers validated the mechanic** (DrawRace 2: 30 tracks,
    180 challenges; LineRacer: stars and checkpoints), and RACELN shows people
    enjoy seeing an optimal line computed for real circuits.
    ([DrawRace 2](https://en.wikipedia.org/wiki/DrawRace_2), [LineRacer](https://play.google.com/store/apps/details?id=com.lineracer.app&hl=en_US), [RACELN](https://raceln.com/))
 
-## 2. Where APEX stands
+## 2. Where Lapdle stands
 
 Strong: a real, deterministic physics lap time; 12 real circuits; the daily
 format, lap grid and share grid; broadcast presentation.
@@ -172,5 +172,5 @@ Using the local event log now, the backend later:
   fine-tuning.
 - **Backend means privacy and cost decisions** (anonymous, no accounts, rate
   limits).
-- **Naming:** check "APEX" against "Apexdle" and other daily F1 games before
+- **Naming:** check "Lapdle" against "Apexdle" and other daily F1 games before
   launch.

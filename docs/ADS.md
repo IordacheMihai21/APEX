@@ -1,6 +1,6 @@
 # Ads (Google AdSense)
 
-APEX is built to carry display ads the way daily-game sites such as
+Lapdle is built to carry display ads the way daily-game sites such as
 playfootball.games and futbol11 do: around the game, never in it.
 
 ## Placements

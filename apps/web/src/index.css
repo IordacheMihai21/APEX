@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * APEX tokens. Broadcast-dark ground, white type, orange = you, and the four
+ * Lapdle tokens. Broadcast-dark ground, white type, orange = you, and the four
  * sector colours as the only feedback language. Canvas colours live in
  * src/game/palette.ts and must match these values.
  */

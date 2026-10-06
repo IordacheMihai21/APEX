@@ -1,5 +1,5 @@
 /**
- * Who runs APEX, from env vars (see .env.example). Romanian Law 365/2002
+ * Who runs Lapdle, from env vars (see .env.example). Romanian Law 365/2002
  * (art. 5) and the EU e-Commerce Directive require an ad-funded site to show
  * its operator's name, address and a direct contact; the GDPR (art. 13)
  * requires the same on the privacy page.

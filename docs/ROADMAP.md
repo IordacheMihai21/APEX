@@ -1,4 +1,4 @@
-# APEX Roadmap
+# Lapdle Roadmap
 
 Guiding question at every step: **does this make Draw → Race → Retry better?**
 

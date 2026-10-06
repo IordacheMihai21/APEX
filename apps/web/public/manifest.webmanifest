@@ -1,6 +1,6 @@
 {
-  "name": "APEX: find the perfect lap",
-  "short_name": "APEX",
+  "name": "Lapdle: find the perfect lap",
+  "short_name": "Lapdle",
   "description": "A daily racing-line game on real circuits. Set the line, race the lap, chase the perfect time.",
   "start_url": "/",
   "scope": "/",

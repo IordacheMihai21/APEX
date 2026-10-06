@@ -278,5 +278,5 @@ export function shareText(rec: DailyRecord, trackName: string, flag: string, emo
   const pole = realPole(rec.trackId, conditionOf(rec));
   const fasterThanPole = pole && best < pole.ms ? `\nFaster than the real 2025 pole by ${((pole.ms - best) / 1000).toFixed(3)}s` : "";
   const cond = conditionOf(rec);
-  return `APEX Quali #${n}${rec.archive ? " (archive)" : ""} ${flag} ${trackName}${cond === "dry" ? "" : `, ${CONDITION_NAME[cond].toLowerCase()}`}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}${fasterThanPole}\n${rows}${race}`;
+  return `Lapdle Quali #${n}${rec.archive ? " (archive)" : ""} ${flag} ${trackName}${cond === "dry" ? "" : `, ${CONDITION_NAME[cond].toLowerCase()}`}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}${fasterThanPole}\n${rows}${race}`;
 }

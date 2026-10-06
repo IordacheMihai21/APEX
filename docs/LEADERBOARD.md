@@ -36,7 +36,7 @@ npm run deploy:functions
 ```
 
 That bundles `src.ts` into `index.ts` (`npm run build:functions`) and deploys it
-to the APEX project with JWT checks off (the publishable key isn't a JWT; the
+to the Lapdle project with JWT checks off (the publishable key isn't a JWT; the
 function validates every field itself).
 
 The app needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`

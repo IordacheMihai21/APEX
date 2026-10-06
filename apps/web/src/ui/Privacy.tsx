@@ -63,12 +63,12 @@ export function Privacy() {
         </header>
 
         <Section title="No account, no sign-in">
-          <p>APEX has no accounts. You never give us a name, an email address or a password to play.</p>
+          <p>Lapdle has no accounts. You never give us a name, an email address or a password to play.</p>
         </Section>
 
         <Section title="Loading the site">
           <p>
-            Like any website, APEX is delivered by a hosting provider. To send you the pages, its servers necessarily receive your IP address and basic browser details, and keep short-lived access logs to keep the
+            Like any website, Lapdle is delivered by a hosting provider. To send you the pages, its servers necessarily receive your IP address and basic browser details, and keep short-lived access logs to keep the
             service running and secure (legitimate interest, Art. 6(1)(f) GDPR). We don't use these logs to identify or follow players.
           </p>
         </Section>
@@ -133,14 +133,14 @@ export function Privacy() {
 
         <Section title="Map data and facts">
           <p>
-            Circuit surroundings come from OpenStreetMap (© OpenStreetMap contributors, ODbL). Circuit facts come from public sources. APEX is an independent game, not affiliated with Formula 1 or any team; circuit names refer to
+            Circuit surroundings come from OpenStreetMap (© OpenStreetMap contributors, ODbL). Circuit facts come from public sources. Lapdle is an independent game, not affiliated with Formula 1 or any team; circuit names refer to
             the venues only.
           </p>
         </Section>
 
         <Section title="Children">
           <p>
-            APEX is a general-audience game, not directed at children. It has no accounts and asks for no personal details. Where ads are shown, players under the age of digital consent (16 in Romania) shouldn't agree to
+            Lapdle is a general-audience game, not directed at children. It has no accounts and asks for no personal details. Where ads are shown, players under the age of digital consent (16 in Romania) shouldn't agree to
             personalised advertising; choose "Do not consent" in the cookie message, or ask a parent.
           </p>
         </Section>
@@ -173,10 +173,10 @@ export function Privacy() {
         </Section>
 
         <Section title="Changes to this policy">
-          <p>If what APEX collects changes, we update this page first and change the date at the top. Links to other sites (OpenStreetMap, Google) follow those sites' own policies.</p>
+          <p>If what Lapdle collects changes, we update this page first and change the date at the top. Links to other sites (OpenStreetMap, Google) follow those sites' own policies.</p>
         </Section>
 
-        <Section title="Who runs APEX">
+        <Section title="Who runs Lapdle">
           {OPERATOR_SET ? (
             <p>
               {OPERATOR.name}

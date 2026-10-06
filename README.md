@@ -1,4 +1,4 @@
-# APEX
+# Lapdle
 
 **Find the perfect lap.** A daily racing-line game: everyone gets the same
 circuit, sets their line through each corner, and a deterministic physics
@@ -36,5 +36,5 @@ Docs:
 - [DATA_SOURCES.md](docs/DATA_SOURCES.md): licences and what may ship
 - [ROADMAP.md](docs/ROADMAP.md): phases and what's next
 
-APEX is an independent game, not affiliated with Formula 1 or the FIA.
+Lapdle is an independent game, not affiliated with Formula 1 or the FIA.
 Circuit geometry: [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits) (MIT).

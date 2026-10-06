@@ -72,7 +72,7 @@ export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   const { stat, left, right } = round;
   const share = async () => {
-    const text = `APEX Higher or lower: ${streak} in a row on real circuit facts (best ${rec.best}). ${location.origin}/higher-lower`;
+    const text = `Lapdle Higher or lower: ${streak} in a row on real circuit facts (best ${rec.best}). ${location.origin}/higher-lower`;
     try {
       if (navigator.share) await navigator.share({ text });
       else {

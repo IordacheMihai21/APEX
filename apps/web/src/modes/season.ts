@@ -1,5 +1,5 @@
 /**
- * Perfect Season (the 38-0 of APEX): 12 real circuits in a random order,
+ * Perfect Season (the 38-0 of Lapdle): 12 real circuits in a random order,
  * 3 laps per round to beat a rival pole that tightens every round.
  * The impossible goal: 12–0.
  */

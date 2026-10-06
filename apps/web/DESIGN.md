@@ -1,5 +1,5 @@
 ---
-name: APEX
+name: Lapdle
 description: A daily racing-line game drawn as a circuit seen from the air, timed like a broadcast timing tower.
 colors:
   ink: "#ff6a13"
@@ -163,13 +163,13 @@ components:
     height: "clamp(14px, 3.2vh, 22px)"
 ---
 
-# Design System: APEX
+# Design System: Lapdle
 
 ## Overview
 
 **Creative North Star: "The Timing Tower at Night"**
 
-APEX reads like a race broadcast laid over a circuit seen from the air. The ground is broadcast black; the circuit underneath is drawn from real materials (grass, gravel, run-off, red-and-white kerbs, a detailed open-wheel car in the player's safety orange). Over it sit the graphics a timing feed actually uses: a left-edge tower with one row per corner group, a lap clock box, a timing card with a wide lap time and a delta plate, square hairline panels that wipe in from the side. The paddock hardware stays where it is real: the five-pod start gantry, the in-car speed in seven-segment digits, the rev lights.
+Lapdle reads like a race broadcast laid over a circuit seen from the air. The ground is broadcast black; the circuit underneath is drawn from real materials (grass, gravel, run-off, red-and-white kerbs, a detailed open-wheel car in the player's safety orange). Over it sit the graphics a timing feed actually uses: a left-edge tower with one row per corner group, a lap clock box, a timing card with a wide lap time and a delta plate, square hairline panels that wipe in from the side. The paddock hardware stays where it is real: the five-pod start gantry, the in-car speed in seven-segment digits, the rev lights.
 
 The world is clean, dark and dense. Everything is square, separated by 1px hairlines rather than cards and shadows; one angled cut marks the thing to press and the tower's position plates. One type family does all the talking at three widths: wide and heavy for times and names, normal for sentences, condensed for labels. Colour is scarce on purpose: paint and steel on near-black, one orange that means "you", and the four sector-timing colours that mean "how much time you lost". The hub keeps the starting grid: painted slots on textured asphalt, today's puzzle on pole, the gantry as the day's clock.
 
@@ -228,7 +228,7 @@ A broadcast-dark palette: four near-black neutrals in steps, painted off-white a
 ### Hierarchy
 - **Display** (wide 800, 34px, line-height 1, tabular): the lap time on the timing card.
 - **Headline** (wide 800, 18–22px, up to 30px on the hub at `lg`, line-height 0.95–1, uppercase): sheet and dialog headlines, the corner name in setup, hub slot names, "Lights out" on the race screen (26px, 0.04em). The lap clock runs 22–26px and stat values 20–24px, both tabular.
-- **Title** (wide 800, 15px, uppercase): primary button labels, track picker rows; the APEX wordmark at 19px.
+- **Title** (wide 800, 15px, uppercase): primary button labels, track picker rows; the LAPDLE wordmark at 19px.
 - **Body** (normal 400–600, 13–14px, line-height 1.375): status sentences, slot descriptions, the slider readout (13px 600, tabular), the track name in the header (14px 700).
 - **Data** (normal 700, 13–15px, tabular): timing-line values, the delta plate, deltas in the adjust cells and the live delta.
 - **Segment** (condensed 80–85%, 700, 12–13px): tower row names, gate tabs (uppercase, 0.04em), adjust-cell corner names.
@@ -301,7 +301,7 @@ Corner name (wide 20px), "Corner N of M" caption and a small "Next" outline butt
 - **Gate slider:** a 48px cross-section of the track in asphalt with a line border, 3px paint edges, a 10px kerb stripe on the inside edge, metre ticks, and a 28px orange knob ringed in 3px paint. Tap jumps, drag moves at reduced gain, pulling away from the bar enters fine mode (labelled in orange). Readout above in 13px 600 tabular; LEFT/RIGHT/INSIDE below as labels, INSIDE in kerb red. 40px nudge buttons flank it.
 
 ### Navigation
-- **Header:** night, 52px, line bottom border, joined cells split by hairlines: a 48px back chevron cell, the APEX wordmark (wide 19px), a mode label over the track name, and the colour-blind toggle cell on the right. The game has no sound.
+- **Header:** night, 52px, line bottom border, joined cells split by hairlines: a 48px back chevron cell, the LAPDLE wordmark (wide 19px), a mode label over the track name, and the colour-blind toggle cell on the right. The game has no sound.
 
 ### Corner Tower (signature)
 The broadcast timing tower turned to corners. A night/82 column with a blur, a label header ("Lap 2/6"), and one 27px row per corner group split by line/70 hairlines. Each row: an angled 22px graphite position plate (steel numeral), the corner name in condensed 700, the delta in its sector colour on wide screens, and a 4px grade bar on the right edge, the only colour on the tower. The active row inverts to paint with night text and a night plate. It is the same strip in all three phases: in setup a row jumps to that corner; in the race rows fill as the car clears them, each with `row-flash` (700ms paint/28 fading out); in the result a row opens that corner to fix.
@@ -359,7 +359,7 @@ Heading-up and following a heading smoothed over neighbouring samples, so the ca
 A row of square rev LEDs (green building, the last three blue, all blue on the shift flash; unlit graphite), a wide 40px gear numeral, and the speed in seven-segment digits with ghost segments, units as labels.
 
 ### Footer (hub)
-After the record strip, on night with a hairline top: on lg a 5fr/7fr split. Left: the wordmark (wide 26px), one sentence on what APEX is, the independence and OpenStreetMap notice in 13px steel, and "Cookie choices" (outlined, square) when ads are on. Right: three short columns under condensed steel captions: Play (Daily Quali, Corner of the week, Perfect Season, Free Practice, Past dailies), Between laps (the four minigames and Your record), APEX (Privacy, Legal and terms, the contact email, then square 40px social buttons for each account set in env). Phones: Play and Between laps side by side, APEX below. A bottom hairline row: © year and operator, and that times and lines are simulated.
+After the record strip, on night with a hairline top: on lg a 5fr/7fr split. Left: the wordmark (wide 26px), one sentence on what Lapdle is, the independence and OpenStreetMap notice in 13px steel, and "Cookie choices" (outlined, square) when ads are on. Right: three short columns under condensed steel captions: Play (Daily Quali, Corner of the week, Perfect Season, Free Practice, Past dailies), Between laps (the four minigames and Your record), Lapdle (Privacy, Legal and terms, the contact email, then square 40px social buttons for each account set in env). Phones: Play and Between laps side by side, Lapdle below. A bottom hairline row: © year and operator, and that times and lines are simulated.
 
 ### Ad slots
 Side rails (176px from 1280px, 316px from 1536px) are their own grid columns beside `main`, night background with a hairline toward the content, the slot centred vertically under a small "Advertisement" caption (11px steel/70). Below 1280px, one 300×250 slot sits in the hub between Perfect Season and Free Practice. No ad is ever placed next to game controls (setup bar, race HUD, result sheet). Without an AdSense client, production lays out no ad space; development and `?ads=preview` show dashed placeholders. See docs/ADS.md.

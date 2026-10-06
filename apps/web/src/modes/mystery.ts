@@ -123,7 +123,7 @@ export function mysteryShare(day: MysteryDay, link: string): string {
     return [f.country, f.length.mark, f.turns.mark, f.firstGp.mark].map((m) => SQUARE[m]).join("");
   });
   const score = isSolved(day) ? `${day.guesses.length}/${MYSTERY_TRIES}` : `X/${MYSTERY_TRIES}`;
-  return `APEX Mystery circuit #${dailyNumber(day.key)} ${score}\n${rows.join("\n")}\n${link}`;
+  return `Lapdle Mystery circuit #${dailyNumber(day.key)} ${score}\n${rows.join("\n")}\n${link}`;
 }
 
 export type { CircuitFacts };

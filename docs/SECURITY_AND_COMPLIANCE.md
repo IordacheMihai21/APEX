@@ -1,4 +1,4 @@
-# Security, privacy and legal: what APEX needs
+# Security, privacy and legal: what Lapdle needs
 
 Research done 4 October 2026 for a free, ad-funded browser game run from
 Romania, with an anonymous online leaderboard. Not legal advice: have the
@@ -66,7 +66,7 @@ Sources: [Supabase rate limits](https://supabase.com/docs/guides/auth/rate-limit
   is general-audience, has no accounts and asks for nothing; personalised ads
   rely on the CMP consent. The proposed Romanian "digital majority" law
   (Senate, October 2025; still before the Chamber of Deputies) targets account
-  creation; APEX has no accounts. **Later**: re-check when it passes.
+  creation; Lapdle has no accounts. **Later**: re-check when it passes.
 
 ## 4. Romanian / EU site obligations
 
@@ -75,7 +75,7 @@ Sources: [Supabase rate limits](https://supabase.com/docs/guides/auth/rate-limit
   contact (and registration number if registered), permanently and visibly.
   **Done**: `/legal` and the footer link; **You**: fill the env vars.
 - **Digital Services Act**: intermediary services must publish a single point
-  of contact (arts. 11-12). APEX stores no user content beyond anonymous lap
+  of contact (arts. 11-12). Lapdle stores no user content beyond anonymous lap
   lines, so this is light: the contact email on /legal covers it.
 - **Terms of use**: fair play, no automation, leaderboard may be reset, no
   warranty, consumer rights untouched, Romanian law. **Done** (`/legal`).
@@ -89,7 +89,7 @@ Sources: [Supabase rate limits](https://supabase.com/docs/guides/auth/rate-limit
   disclaimer is on /legal. **You**: never use F1/Formula 1/Grand Prix in the
   name, domain, app-store listings or ads.
 - **Name check**: "Apexdrawn" is a track-drawing driving game; **You**: check
-  "APEX" against EUIPO/national registers before buying the domain.
+  "Lapdle" against EUIPO/national registers before buying the domain.
 - **OpenStreetMap (ODbL)**: credit must be visible without clicking whenever
   the map shows, linked to the licence; the extracted scenery is a derivative
   database that must be available under the ODbL on request
@@ -112,5 +112,5 @@ Sources: [Supabase rate limits](https://supabase.com/docs/guides/auth/rate-limit
 [futbol11](https://futbol11.com/privacy-policy): progress stays in local
 storage, a third-party consent tool with a "Manage Consent" button, a contact
 email. [playfootball.games](https://playfootball.games/privacy/): a privacy
-policy naming the operating company and country. APEX now covers the same
+policy naming the operating company and country. Lapdle now covers the same
 ground, plus server-side cheat protection and a self-service delete button.

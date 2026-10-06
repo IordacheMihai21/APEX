@@ -7,7 +7,7 @@ geometry or names.
 
 ## Summary
 
-| Source | Licence | Use in APEX | Ship in product? |
+| Source | Licence | Use in Lapdle | Ship in product? |
 |---|---|---|---|
 | [F1DB](https://github.com/f1db/f1db) | CC BY 4.0 | Circuits, drivers, constructors, results, historical metadata | **Yes, with attribution** |
 | [f1db/f1-circuits-svg](https://github.com/f1db/f1-circuits-svg) | CC BY 4.0 | Reference layouts (78 circuits, with layout evolutions) | Yes with attribution, but see "Circuit layouts" |
@@ -53,7 +53,7 @@ ARCHITECTURE ADR-2). Keep it as a research benchmark.
   tracing). It does not settle rights that circuit owners or promoters may
   assert over a layout, name, or logo.
 - "F1", "Formula 1", "Grand Prix" and related marks belong to Formula One
-  Licensing B.V. Every source above disclaims affiliation. APEX must not
+  Licensing B.V. Every source above disclaims affiliation. Lapdle must not
   use these marks in branding, and must not use team logos, liveries,
   driver likenesses, or broadcast graphics.
 - **Decision (2026-09-30, product owner): the game uses real circuits.**
@@ -80,6 +80,6 @@ ARCHITECTURE ADR-2). Keep it as a research benchmark.
 - RACELN, ApexDrawn, OpenKartLine: line/lap-time tools or draw-your-own-
   track games.
 
-APEX's differentiators are the daily shared challenge, the Wordle-style
+Lapdle's differentiators are the daily shared challenge, the Wordle-style
 share loop and percentile, freehand-first input, and per-corner feedback,
 not the physics itself.

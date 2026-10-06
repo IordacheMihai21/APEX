@@ -13,7 +13,7 @@ from TV and games, and they want a quick, repeatable skill test they can
 share and brag about, not a sim-racing setup.
 
 ## Product Purpose
-APEX is a daily racing-line game. Players set the line through each corner of
+Lapdle is a daily racing-line game. Players set the line through each corner of
 a real circuit and a deterministic physics engine turns it into a lap time.
 Success = players come back daily and chase "the impossible" (a perfect lap)
 until they get it, then share it.
@@ -53,7 +53,7 @@ Modes (confirmed 2026-10-01):
 - Sound, if any, is opt-in.
 
 ## Brand Commitments
-Name: APEX (working name). Independent game, not affiliated with Formula 1,
+Name: Lapdle (domain lapdle.com). Renamed from the working name Lapdle, since "Apex" in games means Apex Legends. Independent game, not affiliated with Formula 1,
 the FIA, teams or drivers. No F1 logos, team liveries, driver likenesses or
 broadcast graphics copies. Venue names only.
 

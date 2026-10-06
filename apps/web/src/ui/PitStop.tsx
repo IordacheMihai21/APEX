@@ -221,7 +221,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   const share = async () => {
     if (!shown) return;
-    const text = mode === "daily" ? pitShare(shown, `${location.origin}/pit-stop`) : `APEX Pit stop: ${secs(shown.totalMs)} s. Beat it: ${location.origin}/pit-stop`;
+    const text = mode === "daily" ? pitShare(shown, `${location.origin}/pit-stop`) : `Lapdle Pit stop: ${secs(shown.totalMs)} s. Beat it: ${location.origin}/pit-stop`;
     try {
       if (navigator.share) await navigator.share({ text });
       else {

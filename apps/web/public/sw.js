@@ -1,8 +1,8 @@
-// APEX service worker: play offline once loaded.
+// Lapdle service worker: play offline once loaded.
 // Pages: network first (so a new build arrives at once), cached copy when offline.
 // Hashed build assets (code, circuits, scenery): cache first; their names change with every build.
 // Anything from another origin (ads, fonts CDNs) is left to the browser.
-const CACHE = "apex-v1";
+const CACHE = "lapdle-v1";
 
 self.addEventListener("install", () => self.skipWaiting());
 

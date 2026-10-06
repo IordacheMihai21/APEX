@@ -113,5 +113,5 @@ export const secs = (ms: number) => (ms / 1000).toFixed(3);
 export function pitShare(result: PitResult, link: string, key = dateKey()): string {
   const squares = result.splits.map((ms, i) => SQUARE[gradeStep(i, ms)]).join("");
   const pen = penaltyMs(result);
-  return `APEX Pit stop #${dailyNumber(key)} ${secs(result.totalMs)} s\n${squares}${pen ? ` +${(pen / 1000).toFixed(1)} s penalty` : ""}\n${link}`;
+  return `Lapdle Pit stop #${dailyNumber(key)} ${secs(result.totalMs)} s\n${squares}${pen ? ` +${(pen / 1000).toFixed(1)} s penalty` : ""}\n${link}`;
 }

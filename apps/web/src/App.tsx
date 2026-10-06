@@ -63,13 +63,13 @@ function initialScreen(): Screen {
 
 /** The minigames have their own addresses and titles, so they can be found and shared. */
 const MINI: Record<Mini, string> = {
-  reaction: "Lights out: start-light reaction test | APEX",
-  mystery: "Mystery circuit: guess the racing circuit | APEX",
-  "higher-lower": "Higher or lower: racing circuit facts | APEX",
-  "pit-stop": "Pit stop: change four tyres, go on green | APEX",
-  archive: "Daily Quali archive: every past circuit | APEX",
-  privacy: "Privacy | APEX",
-  legal: "Legal notice and terms | APEX",
+  reaction: "Lights out: start-light reaction test | Lapdle",
+  mystery: "Mystery circuit: guess the racing circuit | Lapdle",
+  "higher-lower": "Higher or lower: racing circuit facts | Lapdle",
+  "pit-stop": "Pit stop: change four tyres, go on green | Lapdle",
+  archive: "Daily Quali archive: every past circuit | Lapdle",
+  privacy: "Privacy | Lapdle",
+  legal: "Legal notice and terms | Lapdle",
 };
 
 const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice", corner: "Corner of the week" };
@@ -108,7 +108,7 @@ export function App() {
     const mini = screen.kind in MINI ? (screen.kind as Mini) : null;
     const corner = screen.kind === "play" && screen.mode === "corner";
     url.pathname = mini ? `/${mini}` : corner ? "/corner" : "/";
-    document.title = mini ? MINI[mini] : corner ? `Corner of the week: ${weeklyCorner().name} | APEX` : "APEX: find the perfect lap";
+    document.title = mini ? MINI[mini] : corner ? `Corner of the week: ${weeklyCorner().name} | Lapdle` : "Lapdle: find the perfect lap";
     if (screen.kind === "play" && screen.mode === "practice") {
       url.searchParams.set("play", "practice");
       url.searchParams.set("track", screen.trackId);
@@ -155,8 +155,8 @@ export function App() {
             </button>
           )}
           <div className="flex min-w-0 items-center gap-3 px-3">
-            <span className="wide text-[20px] leading-none tracking-[0.02em] text-paint">
-              APEX<span className="text-steel">/</span>
+            <span className="wide text-[17px] leading-none tracking-[0.02em] text-paint sm:text-[20px]">
+              LAPDLE<span className="text-steel">/</span>
             </span>
             {track && screen.kind === "play" && (
               <div className="min-w-0 leading-tight">

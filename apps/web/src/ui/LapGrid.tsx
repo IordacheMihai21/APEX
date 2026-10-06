@@ -9,7 +9,7 @@ const TILE: Record<Grade, string> = {
 
 /**
  * The lap grid: one row per lap, one tile per corner group (the Wordle board of
- * APEX). Empty rows show the laps still available; a live row reveals tile by
+ * Lapdle). Empty rows show the laps still available; a live row reveals tile by
  * tile with a flip as the car passes each group.
  */
 export function LapGrid({

@@ -11,7 +11,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-/** Software and data APEX ships, with their licences (checked against the installed packages). */
+/** Software and data Lapdle ships, with their licences (checked against the installed packages). */
 const SOFTWARE: [string, string, string][] = [
   ["React and React DOM", "MIT", "https://github.com/facebook/react/blob/main/LICENSE"],
   ["Phosphor Icons", "MIT", "https://github.com/phosphor-icons/react/blob/master/LICENSE"],
@@ -31,7 +31,7 @@ export function Legal() {
           <p className="mt-3 text-[14px] text-steel">Last updated 4 October 2026.</p>
         </header>
 
-        <Section title="Who runs APEX">
+        <Section title="Who runs Lapdle">
           {OPERATOR_SET ? (
             <p>
               {OPERATOR.name}
@@ -58,7 +58,7 @@ export function Legal() {
         </Section>
 
         <Section title="Terms of use">
-          <p>APEX is free to play in your browser. By playing you agree to these terms.</p>
+          <p>Lapdle is free to play in your browser. By playing you agree to these terms.</p>
           <p>
             Play fairly. Don't automate play or leaderboard submissions, flood the servers, or try to get around the game's limits or security. We may remove results, limit access or reset the leaderboard to keep it fair and
             working.
@@ -68,14 +68,14 @@ export function Legal() {
             and these terms; the date above shows the latest version.
           </p>
           <p>
-            APEX is provided as it is, without guarantees that it will always be available or free of errors. Lap times and facts are for fun. Nothing in these terms limits rights you have as a consumer under the law that
+            Lapdle is provided as it is, without guarantees that it will always be available or free of errors. Lap times and facts are for fun. Nothing in these terms limits rights you have as a consumer under the law that
             applies to you. These terms are governed by Romanian law.
           </p>
         </Section>
 
         <Section title="Trademarks">
           <p>
-            APEX is unofficial and not associated in any way with the Formula 1 companies. F1, FORMULA ONE, FORMULA 1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing
+            Lapdle is unofficial and not associated in any way with the Formula 1 companies. F1, FORMULA ONE, FORMULA 1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing
             B.V.
           </p>
           <p>Circuit names are used only to identify the real venues and remain the marks of their owners. The game uses no team, driver or sponsor names, logos or liveries.</p>

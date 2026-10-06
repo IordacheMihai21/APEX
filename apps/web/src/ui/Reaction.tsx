@@ -82,7 +82,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   const avg = average(rec);
   const share = async () => {
-    const text = `APEX lights out: ${secs(ms ?? rec.best ?? 0)}s${rec.best !== null ? ` (best ${secs(rec.best)}s)` : ""}. How fast off the line are you? ${location.origin}/reaction`;
+    const text = `Lapdle lights out: ${secs(ms ?? rec.best ?? 0)}s${rec.best !== null ? ` (best ${secs(rec.best)}s)` : ""}. How fast off the line are you? ${location.origin}/reaction`;
     try {
       if (navigator.share) await navigator.share({ text });
       else {

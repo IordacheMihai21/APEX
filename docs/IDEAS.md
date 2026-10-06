@@ -1,7 +1,7 @@
-# What other F1 and racing-line projects do well, and what APEX should take
+# What other F1 and racing-line projects do well, and what Lapdle should take
 
 Research round, 2026-10-01. Complements [GAME_PLAN.md](GAME_PLAN.md) (whose
-first sprint is done). Each idea names its source, why it fits APEX, and
+first sprint is done). Each idea names its source, why it fits Lapdle, and
 rough effort (S ≤ a day, M = 2–4 days, L = a week+).
 
 ## What's out there
@@ -18,7 +18,7 @@ rough effort (S ≤ a day, M = 2–4 days, L = a week+).
 | [f1-dash](https://github.com/slowlydev/f1-dash) | Live timing dashboard | Sector-coloured map, timing tower, mini-sectors. |
 | [Wordle](https://www.moengage.com/blog/wordle-viral-growth-story/) | Daily puzzle | High-contrast colour mode; post-game answer reveal; stats with a distribution graph. |
 
-## What APEX should take
+## What Lapdle should take
 
 ### Quick wins (no server)
 
@@ -113,7 +113,7 @@ good in a group chat. Gridle bundles four F1 stages a day under one brand.
 The smooth driving games feel premium mostly by loading at once and holding
 their frame rate, not by decoration.
 
-Audit of APEX: 60 fps on desktop with under 1 ms of script per frame (cached
+Audit of Lapdle: 60 fps on desktop with under 1 ms of script per frame (cached
 Path2D scenery), so play is smooth; the cost was loading. One 556 kB script
 (186 kB gzipped) held the engine, renderer and every circuit's hero paths
 before the hub could show. The hub then took about 2.5 s to finish its

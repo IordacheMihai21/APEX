@@ -1,4 +1,4 @@
-# APEX Physics — v0.2.0
+# Lapdle Physics — v0.2.0
 
 The physics exists to make one thing true: **a better racing line gives a
 faster lap, for reasons a player can see and learn.** Real-world accuracy

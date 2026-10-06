@@ -643,7 +643,7 @@ function ResultSheet({
           <ShareButton
             label="Challenge"
             variant="secondary"
-            text={`Beat my ${lapTime(r.lapTimeMs)} at ${info.name} in APEX: ${challengeUrl({ trackId: game.track.id, knots: game.currentKnots() })}`}
+            text={`Beat my ${lapTime(r.lapTimeMs)} at ${info.name} in Lapdle: ${challengeUrl({ trackId: game.track.id, knots: game.currentKnots() })}`}
           />
         )}
       </>

@@ -67,8 +67,8 @@ export async function dailyCard(daily: DailyRecord): Promise<Blob> {
   // header: wordmark left, puzzle number right, a hairline under both
   font(ctx, 800, 40, true);
   ctx.fillStyle = C.paint;
-  ctx.fillText("APEX", PAD, PAD + 34);
-  const mark = ctx.measureText("APEX").width;
+  ctx.fillText("LAPDLE", PAD, PAD + 34);
+  const mark = ctx.measureText("LAPDLE").width;
   ctx.fillStyle = C.steel;
   ctx.fillText("/", PAD + mark + 2, PAD + 34);
   font(ctx, 600, 30, false);
