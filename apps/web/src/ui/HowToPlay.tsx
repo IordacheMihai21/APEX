@@ -93,7 +93,12 @@ export function HowToPlay({ game, onOpenChange }: { game: Game; onOpenChange?: (
                 </li>
               ))}
             </ol>
-            <p className="mt-5 border-t border-line pt-4 text-[14px] text-steel">{g.tip}</p>
+            <p className="mt-5 border-t border-line pt-4 text-[14px] text-steel">
+              {g.tip}{" "}
+              <a href={`/how-to-play/${game}`} onClick={done} className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint">
+                Full guide
+              </a>
+            </p>
             <button className={`${primaryBtn} mt-5 w-full`} onClick={done}>
               Play
             </button>

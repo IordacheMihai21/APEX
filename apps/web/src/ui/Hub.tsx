@@ -773,7 +773,11 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
             </p>
             <p>
               You have six laps to earn a medal and close in on the perfect lap, and a new circuit arrives every day. Between laps, name a circuit from a few corners, call higher or lower on circuit facts, run a pit stop
-              or test your start against the lights. It plays in your browser, with no account and no download.
+              or test your start against the lights. It plays in your browser, with no account and no download.{" "}
+              <a href="/how-to-play" className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint">
+                How to play every game
+              </a>
+              .
             </p>
           </div>
         </div>

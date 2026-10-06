@@ -15,3 +15,6 @@ apps/web/.impeccable/mocks/
 # generated edge function bundles (npm run build:functions) and Supabase CLI temp files
 supabase/functions/*/index.ts
 supabase/.temp/
+
+# build-time renderer output (removed after each build)
+apps/web/dist-ssr/

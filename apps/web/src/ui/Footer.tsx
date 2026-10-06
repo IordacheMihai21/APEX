@@ -78,6 +78,16 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
             <h2 className={heading}>Lapdle</h2>
             <ul className="mt-3 space-y-2.5">
               <li>
+                <a className={link} href="/how-to-play">
+                  How to play
+                </a>
+              </li>
+              <li>
+                <a className={link} href="/about">
+                  About
+                </a>
+              </li>
+              <li>
                 <button className={link} onClick={() => onAction({ kind: "mini", game: "privacy" })}>
                   Privacy
                 </button>

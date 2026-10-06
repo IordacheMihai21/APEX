@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import redirects from "../../public/_redirects?raw";
 import sitemap from "../../public/sitemap.xml?raw";
-import { DAILY_SET, GAMES, GAME_PAGES, PUBLIC_ROUTES, game, todayProgress } from "./registry";
+import { CONTENT_ROUTES, DAILY_SET, GAMES, GAME_PAGES, PUBLIC_ROUTES, game, todayProgress } from "./registry";
 
 const store: Record<string, string> = {};
 beforeEach(() => {
@@ -28,6 +28,14 @@ describe("game registry", () => {
     for (const route of PUBLIC_ROUTES) {
       if (route !== "/") expect(redirects, `${route} in public/_redirects`).toMatch(new RegExp(`^${route}\\s+/\\s+200$`, "m"));
       expect(sitemap, `${route} in public/sitemap.xml`).toContain(`<loc>https://lapdle.com${route}</loc>`);
+    }
+  });
+
+  it("lists every pre-rendered content page in the sitemap, and gives each game a guide", () => {
+    for (const route of CONTENT_ROUTES) expect(sitemap, `${route} in public/sitemap.xml`).toContain(`<loc>https://lapdle.com${route}</loc>`);
+    for (const g of GAMES) {
+      expect(g.guide.intro.length, g.id).toBeGreaterThan(30);
+      expect(g.guide.tips.length, g.id).toBeGreaterThanOrEqual(3);
     }
   });
 

@@ -7,6 +7,13 @@
   <url><loc>https://lapdle.com/reaction</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/corner</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/archive</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/how-to-play</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/how-to-play/quali</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/how-to-play/mystery</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/how-to-play/pit-stop</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/how-to-play/higher-lower</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/how-to-play/reaction</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/about</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://lapdle.com/privacy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
   <url><loc>https://lapdle.com/legal</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
 </urlset>

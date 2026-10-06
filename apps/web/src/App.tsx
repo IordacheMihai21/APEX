@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState, useRef } from "react";
-import { GAME_PAGES, type GamePage, type InfoPage, PAGES, game } from "./games/registry";
+import { GAME_PAGES, type GameId, type GamePage, type InfoPage, PAGES, game } from "./games/registry";
+import { type ContentPage, contentMeta, contentPath, parseContent } from "./content/meta";
 import { flushSync } from "react-dom";
 import { colourBlind, setColourBlind } from "./game/palette";
 import { CATALOG } from "./game/catalog";
@@ -42,11 +43,14 @@ const Legal = lazy(() => fresh(() => import("./ui/Legal")).then((m) => ({ defaul
 const Privacy = lazy(() => fresh(() => import("./ui/Privacy")).then((m) => ({ default: m.Privacy })));
 const Archive = lazy(() => fresh(() => import("./ui/Archive")).then((m) => ({ default: m.Archive })));
 const PitStop = lazy(() => fresh(() => import("./ui/PitStop")).then((m) => ({ default: m.PitStop })));
+const About = lazy(() => fresh(() => import("./content/Guides")).then((m) => ({ default: m.About })));
+const HowToPlayIndex = lazy(() => fresh(() => import("./content/Guides")).then((m) => ({ default: m.HowToPlayIndex })));
+const HowToPlayGuide = lazy(() => fresh(() => import("./content/Guides")).then((m) => ({ default: m.HowToPlayGuide })));
 const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) => ({ default: m.HigherLower })));
 
 /** A screen with its own address: a game's page or an info page (both declared in games/registry). */
 type Mini = GamePage | InfoPage;
-type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 function initialScreen(): Screen {
   const q = new URLSearchParams(location.search);
@@ -57,6 +61,8 @@ function initialScreen(): Screen {
   const cond = q.get("cond");
   const condition = cond === "wet" || cond === "lowdf" ? cond : undefined;
   if (mode === "practice" && CATALOG.some((t) => t.id === track)) return { kind: "play", mode, trackId: track!, condition };
+  const fromPath = screenFromPath(location.pathname);
+  if (fromPath && fromPath.kind !== "hub") return fromPath;
   const path = location.pathname.replace(/\/$/, "").slice(1) || q.get("play");
   if (path === "corner") return { kind: "play", mode: "corner", trackId: weeklyCorner().trackId };
   if (path && isMini(path)) return { kind: path };
@@ -64,6 +70,18 @@ function initialScreen(): Screen {
 }
 
 const isMini = (k: string): k is Mini => (GAME_PAGES as readonly string[]).includes(k) || k in PAGES;
+/** The screen an address leads to (pages with their own path; query-string links are read in initialScreen). */
+function screenFromPath(pathname: string): Screen | null {
+  const p = pathname.replace(/^\/+|\/+$/g, "");
+  if (p === "") return { kind: "hub" };
+  if (p === "corner") return { kind: "play", mode: "corner", trackId: weeklyCorner().trackId };
+  if (isMini(p)) return { kind: p };
+  const c = parseContent(p);
+  if (c) return c.page === "about" ? { kind: "about" } : { kind: "howto", game: c.game };
+  return null;
+}
+const asContent = (s: Screen): ContentPage | null => (s.kind === "about" ? { page: "about" } : s.kind === "howto" ? { page: "howto", game: s.game } : null);
+
 /** The page title of a screen with its own address. */
 const miniTitle = (k: Mini) => (k in PAGES ? PAGES[k as InfoPage] : game(k as GamePage).title);
 
@@ -102,8 +120,9 @@ export function App() {
     url.search = "";
     const mini = isMini(screen.kind) ? screen.kind : null;
     const corner = screen.kind === "play" && screen.mode === "corner";
-    url.pathname = mini ? `/${mini}` : corner ? "/corner" : "/";
-    document.title = mini ? miniTitle(mini) : corner ? `Corner of the week: ${weeklyCorner().name} | Lapdle` : game("quali").title;
+    const content = asContent(screen);
+    url.pathname = mini ? `/${mini}` : corner ? "/corner" : content ? contentPath(content) : "/";
+    document.title = content ? contentMeta(content).title : mini ? miniTitle(mini) : corner ? `Corner of the week: ${weeklyCorner().name} | Lapdle` : game("quali").title;
     // each page is its own canonical address (practice and challenge links point back at the page they belong to)
     const canonical = `https://lapdle.com${url.pathname === "/" ? "/" : url.pathname}`;
     document.querySelector('link[rel="canonical"]')?.setAttribute("href", canonical);
@@ -140,6 +159,23 @@ export function App() {
     };
     window.addEventListener("popstate", on);
     return () => window.removeEventListener("popstate", on);
+  }, []);
+
+  // links in content pages and elsewhere: an anchor to one of the app's own pages opens it in place
+  useEffect(() => {
+    const on = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a || a.target || a.origin !== location.origin || a.hasAttribute("download")) return;
+      const next = screenFromPath(a.pathname);
+      if (!next) return;
+      e.preventDefault();
+      setScreen(next);
+      document.querySelector("main [class*='overflow-y-auto']")?.scrollTo({ top: 0 });
+    };
+    document.addEventListener("click", on);
+    return () => document.removeEventListener("click", on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // "Play next" on a minigame's finish card
@@ -230,6 +266,10 @@ export function App() {
           <Reaction onPlayDaily={() => act({ kind: "daily" })} />
         ) : screen.kind === "mystery" ? (
           <Mystery onPlayDaily={() => act({ kind: "daily" })} />
+        ) : screen.kind === "about" ? (
+          <About />
+        ) : screen.kind === "howto" ? (
+          screen.game ? <HowToPlayGuide id={screen.game} /> : <HowToPlayIndex />
         ) : screen.kind === "legal" ? (
           <Legal />
         ) : screen.kind === "privacy" ? (

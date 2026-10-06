@@ -70,6 +70,21 @@ To add a game:
 3. Its route in `public/_redirects` and `public/sitemap.xml`
    (`registry.test.ts` fails until both list it).
 
+## Content pages (pre-rendered)
+
+How to play (an index and one guide per game, written from the registry's
+`howTo` and `guide` fields) and About are React components in
+`apps/web/src/content/Guides.tsx`. The build renders them to static HTML
+(`vite build --ssr src/ssg/entry.tsx`, then `scripts/prerender.mjs`): one file
+per route in `CONTENT_ROUTES` (`dist/about.html`, `dist/how-to-play/mystery.html`,
+...), each with its own title, description, canonical and preview tags and the
+page's markup inside `#root`. Cloudflare Pages serves them at clean addresses
+(`/about`, `/how-to-play/mystery`); in the browser the app takes over and
+renders the same page. Links between pages are plain anchors: the app opens
+any link to one of its own pages in place (`screenFromPath` in `App.tsx`).
+To add a content page: a component, a parser case in `content/meta.ts`, its
+route in `CONTENT_ROUTES` and in `public/sitemap.xml` (the registry test checks).
+
 ## Data flow
 
 ```

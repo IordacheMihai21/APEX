@@ -42,6 +42,8 @@ export interface GameDef {
   /** the page title (also the search result title) */
   title: string;
   howTo?: { steps: string[]; tip: string };
+  /** the full How to play page: what it is, how it's scored, tips */
+  guide: { intro: string; scoring: string; tips: string[] };
   today(day?: string): TodayStatus;
   /** for daily games: every day the round was finished, read in one go (streaks scan the whole history) */
   doneDays?(): string[];
@@ -58,6 +60,26 @@ export const GAMES: GameDef[] = [
     tagline: "Today's circuit, six laps for a medal",
     blurb: "One real circuit a day. Set your line through every corner, drive it, and chase the perfect lap in six laps.",
     title: "Lapdle – Daily Racing Line Challenge",
+    howTo: {
+      steps: [
+        "Each day brings one real circuit, seen from above. Pick a line for each corner: early apex, classic or late apex, or fine-tune every point yourself.",
+        "Press Lights out. The car drives your line with real physics: braking, turning in and accelerating as hard as your line allows.",
+        "Every corner gets a colour for the time it lost to the perfect lap. Improve your line and go again: you have six laps.",
+      ],
+      tip: "Bronze, silver and gold are lap times. Pole is a lap with every corner purple.",
+    },
+    guide: {
+      intro:
+        "The Daily Quali is Lapdle's main game: one real circuit a day and six laps to find the fastest racing line through it. Everyone gets the same circuit and the same conditions, so every lap can be compared.",
+      scoring:
+        "Each corner group is graded against the perfect lap: purple within 0.05 s, green within 0.15 s, yellow within 0.4 s, red slower. Your best lap of the day earns a medal: bronze, silver or gold for the lap time, pole for a lap with every corner purple. Some days are wet, or run with low downforce: the grip changes, and so do the perfect line and the medal times.",
+      tips: [
+        "Slow corners reward a late apex: brake in a straight line, turn in later and get on the power early.",
+        "In fast sweeps a classic line keeps the speed up; an early apex tends to run out of road on the exit.",
+        "Fix the reddest corner first. The coach under your result says why it lost time.",
+        "On wet days carry less speed into every corner: the grip is lower everywhere.",
+      ],
+    },
     today(day = dateKey()) {
       const d = loadDaily(day);
       const medal = bestMedal(d);
@@ -84,6 +106,16 @@ export const GAMES: GameDef[] = [
       ],
       tip: "Six guesses. A new circuit every day.",
     },
+    guide: {
+      intro: "Mystery circuit is a daily guessing game: name a real circuit from a few of its corners.",
+      scoring:
+        "You have six guesses. After each miss more of the lap is drawn, and your guess is compared with the answer on four clues: country, lap length, number of corners and the year of its first Grand Prix. Green means exact; yellow means close (the same continent, within 0.5 km, 2 corners or 10 years); the arrows point towards the answer.",
+      tips: [
+        "Open with a circuit whose numbers sit in the middle of the field: the arrows then tell you the most.",
+        "Read the shape: long straights, hairpins and esses narrow it down quickly.",
+        "Your result shares as coloured squares, without giving the answer away.",
+      ],
+    },
     today(day = dateKey()) {
       const m = loadMystery(day);
       if (isOver(m)) return { state: "done", label: isSolved(m) ? `Solved in ${m.guesses.length}` : "Missed" };
@@ -109,6 +141,16 @@ export const GAMES: GameDef[] = [
       ],
       tip: "The daily stop counts once a day. Practice as often as you like.",
     },
+    guide: {
+      intro: "Pit stop puts you on the wheel guns: change four tyres as fast as you can, then release the car.",
+      scoring:
+        "The clock runs from the moment the car stops to the release. The wheels light up one at a time: hit the key shown for each, or tap the lit tyre on a phone. A wrong key adds a time penalty, and so does releasing the car before the light turns green. Each wheel and the release are graded like sectors. The daily stop is the same for everyone and counts once a day; practice stops are unlimited.",
+      tips: [
+        "Look for the next wheel, not the one you just changed.",
+        "On a phone, keep your thumbs close to the tyres.",
+        "Wait for green: an early release is penalised.",
+      ],
+    },
     today(day = dateKey()) {
       const stop = todaysStop(loadPitStop(), day);
       return stop ? { state: "done", label: `${secs(stop.totalMs)} s` } : { state: "new", label: "Not started" };
@@ -132,6 +174,16 @@ export const GAMES: GameDef[] = [
         "The daily ten is the same for everyone and a miss costs a point. In Endless, one wrong call ends the run.",
       ],
       tip: "Arrow keys work too. The daily ten resets at midnight.",
+    },
+    guide: {
+      intro: "Higher or lower is a quick quiz on real circuit facts.",
+      scoring:
+        "Each round shows one circuit's fact (lap length, corners, race laps, the year of its first Grand Prix or its 2025 pole lap) and asks how a second circuit compares. The daily ten are the same for everyone and scored out of ten: a miss costs a point, not the round. In Endless mode a single wrong call ends the run, and your longest run is kept.",
+      tips: [
+        "Street circuits tend to be short, with a lot of corners.",
+        "The oldest venues held their first Grand Prix in 1950.",
+        "Pole laps follow lap length, but not exactly: the mix of corners and straights matters too.",
+      ],
     },
     today(day = dateKey()) {
       const calls = dailyCalls(day);
@@ -157,6 +209,16 @@ export const GAMES: GameDef[] = [
         "Moving before the lights go out is a jump start.",
       ],
       tip: "Racing drivers react in about 0.2 s. Most people take about 0.27 s.",
+    },
+    guide: {
+      intro: "Lights out tests your reaction to the start lights.",
+      scoring:
+        "Five red lights come on one a second, hold for a random moment, then go out together. Hit Launch the instant they do: your time runs from lights out to your press. Pressing before they go out is a jump start, and anything under 0.1 s counts as anticipation rather than reaction. Your best time and the average of your last five are kept.",
+      tips: [
+        "Watch the lights, not the button.",
+        "Rest your finger on the button, so only the press is left.",
+        "The hold is random: counting it won't help.",
+      ],
     },
     today() {
       const r = loadReaction();
@@ -186,6 +248,9 @@ export const PAGES = {
   legal: "Legal notice and terms | Lapdle",
 } as const;
 export type InfoPage = keyof typeof PAGES;
+
+/** Pre-rendered content pages (static HTML at build time, see src/ssg). */
+export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/how-to-play/${g.id}`)];
 
 /** Every public address of the site (the SPA serves them all from index.html). */
 export const PUBLIC_ROUTES = ["/", ...GAMES.flatMap((g) => (g.route ? [g.route] : [])), "/corner", ...Object.keys(PAGES).map((p) => `/${p}`)];
