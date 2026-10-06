@@ -9,12 +9,12 @@ import { MEDAL_EMOJI, MEDAL_NAME, type Medal, better, medalFor, realPole } from 
  */
 export const DAILY_LAPS = 6;
 /**
- * Day No. 1. Set VITE_LAUNCH_DATE to the real launch day for the live build:
- * numbering, the circuit rotation, the conditions and the archive all count
- * from it. A missing or malformed value falls back to the development date.
+ * Day No. 1: lapdle.com launched on 6 October 2026. Numbering, the circuit
+ * rotation, the conditions and the archive all count from it, so it never
+ * changes again. VITE_LAUNCH_DATE can override it for a test build.
  */
 const LAUNCH_ENV = (import.meta.env?.VITE_LAUNCH_DATE as string | undefined) ?? "";
-export const LAUNCH = /^\d{4}-\d{2}-\d{2}$/.test(LAUNCH_ENV) ? LAUNCH_ENV : "2026-10-01";
+export const LAUNCH = /^\d{4}-\d{2}-\d{2}$/.test(LAUNCH_ENV) ? LAUNCH_ENV : "2026-10-06";
 const POOL = ["monza", "spa", "silverstone", "suzuka", "monaco", "interlagos", "hungaroring", "red-bull-ring", "zandvoort", "austin", "barcelona", "imola"];
 const KEY = "apex.daily.v1";
 const ARCHIVE_KEY = "apex.archive.v1";

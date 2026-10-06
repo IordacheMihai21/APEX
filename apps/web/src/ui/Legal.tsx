@@ -53,7 +53,7 @@ export function Legal() {
               </a>
             </p>
           ) : (
-            <p className="text-steel">Operator details are added before launch.</p>
+            <p className="text-steel">Operator details are being added.</p>
           )}
         </Section>
 

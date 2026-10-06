@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { archiveDays, dailyCondition, dailyStats, dailyTrack, loadDaily, qualifyingDay, raceWeek, recordLap } from "./daily";
+import { LAUNCH, archiveDays, dailyCondition, dailyStats, dailyTrack, loadDaily, qualifyingDay, raceWeek, recordLap } from "./daily";
 import { medalFor, medalTimes, realPole } from "./medals";
+
+/** Day n of the game, counting launch day as 0. */
+const dayAt = (n: number) => {
+  const d = new Date(`${LAUNCH}T12:00:00`);
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 
 const store: Record<string, string> = {};
 beforeEach(() => {
@@ -27,38 +34,33 @@ describe("race weekends", () => {
   });
 
   it("leave other days on the rotation", () => {
-    const days = Array.from({ length: 12 }, (_, i) => dailyTrack(`2026-10-${String(i + 1).padStart(2, "0")}`));
+    const days = Array.from({ length: 12 }, (_, i) => dailyTrack(dayAt(i)));
     expect(new Set(days).size).toBe(12);
   });
 });
 
 describe("archive", () => {
   it("lists every past day, newest first, never today", () => {
-    const days = archiveDays("2026-10-04");
+    const days = archiveDays(dayAt(3));
     expect(days.map((d) => d.number)).toEqual([3, 2, 1]);
-    expect(days[0].key).toBe("2026-10-03");
-    expect(days[0].trackId).toBe(dailyTrack("2026-10-03"));
-    expect(archiveDays("2026-10-01")).toEqual([]);
+    expect(days[0].key).toBe(dayAt(2));
+    expect(days[0].trackId).toBe(dailyTrack(dayAt(2)));
+    expect(archiveDays(LAUNCH)).toEqual([]);
   });
 
   it("keeps replays apart from the days played live", () => {
-    const rec = loadDaily("2026-10-02", true);
+    const rec = loadDaily(dayAt(1), true);
     expect(rec.archive).toBe(true);
     recordLap(rec, { lapTimeMs: 90_000, grades: ["green"] }, [0]);
-    expect(loadDaily("2026-10-02", true).laps).toHaveLength(1);
-    expect(loadDaily("2026-10-02").laps).toHaveLength(0);
+    expect(loadDaily(dayAt(1), true).laps).toHaveLength(1);
+    expect(loadDaily(dayAt(1)).laps).toHaveLength(0);
     expect(dailyStats().played).toBe(0);
-    const [, day2] = archiveDays("2026-10-04");
+    const [, day2] = archiveDays(dayAt(3));
     expect(day2.replay?.laps).toHaveLength(1);
     expect(day2.live).toBeNull();
   });
 });
 
-const dayAt = (n: number) => {
-  const d = new Date("2026-10-01T12:00:00");
-  d.setDate(d.getDate() + n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 
 describe("conditions", () => {
   it("move each circuit to a new condition every cycle", () => {

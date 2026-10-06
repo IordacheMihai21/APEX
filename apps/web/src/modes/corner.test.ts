@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { WEEKLY_CORNERS, cornerMedal, cornerShare, daysLeft, loadCornerWeek, recordCornerRun, weekNumber, weekStart, weeklyCorner } from "./corner";
+import { LAUNCH } from "./daily";
 
 const store: Record<string, string> = {};
 beforeEach(() => {
@@ -19,9 +20,10 @@ describe("corner of the week", () => {
   });
 
   it("numbers weeks from launch and changes corner each week", () => {
-    expect(weekNumber("2026-10-01")).toBe(1);
-    expect(weekNumber("2026-10-05")).toBe(2);
-    expect(weeklyCorner("2026-10-05")).not.toEqual(weeklyCorner("2026-10-04"));
+    // launch, Tuesday 6 October 2026, falls in week 1; the next Monday starts week 2
+    expect(weekNumber(LAUNCH)).toBe(1);
+    expect(weekNumber("2026-10-12")).toBe(2);
+    expect(weeklyCorner("2026-10-12")).not.toEqual(weeklyCorner("2026-10-11"));
     expect(new Set(WEEKLY_CORNERS.map((c) => `${c.trackId}:${c.complex}`)).size).toBe(WEEKLY_CORNERS.length);
   });
 
