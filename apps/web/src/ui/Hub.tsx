@@ -218,6 +218,7 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
   const bpToday = game("braking-point").today();
   const orderToday = game("corner-order").today();
   const trapToday = game("speed-trap").today();
+  const lineupToday = game("line-up").today();
   const reaction = loadReaction();
   const pit = loadPitStop();
   const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
@@ -315,6 +316,20 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
         <span className="wide num flex items-baseline gap-2 text-[34px] leading-none text-paint" aria-hidden="true">
           2<span className="text-steel/50">??</span>
           <span className="text-[14px] text-steel">km/h</span>
+        </span>
+      ),
+    },
+    {
+      game: "line-up" as const,
+      title: game("line-up").name,
+      blurb: game("line-up").blurb,
+      status: lineupToday.state === "done" ? `Today ${lineupToday.label}. Back tomorrow.` : lineupToday.state === "playing" ? lineupToday.label : "New today",
+      cta: lineupToday.state === "done" ? "See today's groups" : "Find the groups",
+      art: (
+        <span className="grid grid-cols-4 gap-1" aria-hidden="true">
+          {["var(--color-yellow)", "var(--color-green)", "#5aa9ff", "var(--color-purple)"].flatMap((c, r) =>
+            [0, 1, 2, 3].map((i) => <span key={`${r}${i}`} className="h-3.5 w-7" style={{ background: (i + r) % 4 === 0 ? c : "var(--color-graphite)" }} />),
+          )}
         </span>
       ),
     },

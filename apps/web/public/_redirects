@@ -10,6 +10,7 @@
 /braking-point  /  200
 /corner-order   /  200
 /speed-trap     /  200
+/line-up        /  200
 /pit-stop      /  200
 /reaction      /  200
 /privacy       /  200
@@ -22,6 +23,7 @@
 /braking-point/ /  200
 /corner-order/  /  200
 /speed-trap/    /  200
+/line-up/       /  200
 /pit-stop/     /  200
 /reaction/     /  200
 /privacy/      /  200

@@ -16,9 +16,10 @@ import { loadReaction } from "../modes/reaction";
 import { STOPS_PER_DAY, brakingDone, brakingDoneDays, brakingScore, dayStops } from "../modes/braking";
 import { CIRCUITS, circuitSlug } from "../modes/circuits";
 import { ROUNDS as TRAP_ROUNDS, trapDone, trapDoneDays, trapRounds, trapScore } from "../modes/speedtrap";
+import { MISTAKES as LINEUP_MISTAKES, dailyLineup, lineupDoneDays, lineupGuesses, lineupState } from "../modes/lineup";
 import { ORDER_TRIES, orderDoneDays, orderOver, orderSolved, orderTries } from "../modes/order";
 
-export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "corner-order" | "speed-trap" | "reaction";
+export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "corner-order" | "speed-trap" | "line-up" | "reaction";
 
 /** Where a game stands today, for the "Today" bar and the hub. */
 export interface TodayStatus {
@@ -302,6 +303,41 @@ export const GAMES: GameDef[] = [
       return r.length ? { state: "playing", label: `${TRAP_ROUNDS - r.length} rounds left` } : { state: "new", label: "New today" };
     },
     doneDays: trapDoneDays,
+  },
+  {
+    id: "line-up",
+    name: "Line-up",
+    short: "Line-up",
+    route: "/line-up",
+    cadence: "daily",
+    inDailySet: false,
+    tagline: "Sixteen tiles, four groups of four",
+    blurb: "Circuits that share a fact, corners of the same circuit: find the four groups of four. Four mistakes allowed.",
+    title: "Line-up: find four groups of four circuits and corners | Lapdle",
+    howTo: {
+      steps: [
+        "Sixteen tiles: circuits and famous corners. They make four groups of four.",
+        "Pick four that belong together and submit. A right group locks in with its name; three right out of four says \"one away\".",
+        "Find all four groups before you make four mistakes.",
+      ],
+      tip: "Groups are circuits that share a fact (first Grand Prix, lap length, race laps, corners) or corners of the same circuit. A new line-up every day.",
+    },
+    guide: {
+      intro: "Line-up is a daily grouping puzzle: sixteen circuits and corners, four groups of four.",
+      scoring:
+        "Each group is either circuits that share a fact (the year of their first Grand Prix, how long a lap is, how many race laps, how many corners) or corners of the same circuit. Every tile fits exactly one of the day's groups. Submit four at a time: a right group locks in, a wrong one is a mistake, and three right out of four tells you you're one away. Four mistakes end the day. The groups are coloured from the easiest (yellow) to the hardest (purple).",
+      tips: [
+        "Start with the corner names: they belong to one circuit each.",
+        "Some circuits fit more than one fact. Leave them for last, once the other groups have narrowed it down.",
+        "The circuit guides have every fact used here.",
+      ],
+    },
+    today(day = dateKey()) {
+      const s = lineupState(dailyLineup(day), lineupGuesses(day));
+      if (s.over) return { state: "done", label: s.won ? `${s.mistakes} mistake${s.mistakes === 1 ? "" : "s"}` : "Missed" };
+      return s.found.length || s.mistakes ? { state: "playing", label: `${s.found.length}/4 groups` } : { state: "new", label: "New today" };
+    },
+    doneDays: lineupDoneDays,
   },
   {
     id: "reaction",

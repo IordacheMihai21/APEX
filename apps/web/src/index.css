@@ -1078,3 +1078,23 @@ canvas {
     animation: none;
   }
 }
+
+/* Line-up: a wrong four shakes the board */
+.lineup-shake {
+  animation: lineup-shake 420ms ease-in-out;
+}
+@keyframes lineup-shake {
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lineup-shake {
+    animation: none;
+  }
+}
