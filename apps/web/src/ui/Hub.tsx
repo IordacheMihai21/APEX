@@ -700,7 +700,12 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           <h2 id="practice-h" className="wide text-[34px] leading-none text-paint">
             Free Practice
           </h2>
-          <p className="mt-3 text-[15px] text-steel">Any circuit, unlimited laps, the perfect line on demand.</p>
+          <p className="mt-3 text-[15px] text-steel">
+            Any circuit, unlimited laps, the perfect line on demand.{" "}
+            <a href="/circuits" className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint">
+              Circuit guides
+            </a>
+          </p>
         </div>
         <ul className="mx-auto flex max-w-[1240px] snap-x snap-mandatory gap-3 overflow-x-auto px-4 pt-6 pb-12 [scrollbar-color:#2b2f37_transparent] [scrollbar-width:thin] md:px-8 lg:pb-16">
           {CATALOG.filter((t) => OUTLINES[t.id] && t.id !== "kestrel").map((t, i) => {

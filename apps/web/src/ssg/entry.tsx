@@ -1,11 +1,12 @@
 /**
- * Build-time rendering of the content pages (How to play, About) to static
+ * Build-time rendering of the content pages (How to play, Circuits, About) to static
  * HTML, so search engines and link previews get the full text without running
  * JavaScript. Built with `vite build --ssr` and used by scripts/prerender.mjs;
  * in the browser the app takes over and renders the same page.
  */
 import { renderToString } from "react-dom/server";
 import { About, HowToPlayGuide, HowToPlayIndex } from "../content/Guides";
+import { CircuitGuide, CircuitsIndex } from "../content/Circuits";
 import { contentMeta, parseContent } from "../content/meta";
 import { ChevronLeft } from "../ui/icons";
 import { CONTENT_ROUTES } from "../games/registry";
@@ -36,6 +37,7 @@ export const routes = CONTENT_ROUTES;
 export function render(path: string): { html: string; title: string; description: string } {
   const c = parseContent(path);
   if (!c) throw new Error(`not a content page: ${path}`);
-  const page = c.page === "about" ? <About /> : c.game ? <HowToPlayGuide id={c.game} /> : <HowToPlayIndex />;
+  const page =
+    c.page === "about" ? <About /> : c.page === "circuits" ? c.id ? <CircuitGuide id={c.id} /> : <CircuitsIndex /> : c.game ? <HowToPlayGuide id={c.game} /> : <HowToPlayIndex />;
   return { html: renderToString(<Frame>{page}</Frame>), ...contentMeta(c) };
 }

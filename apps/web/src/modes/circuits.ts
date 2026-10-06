@@ -55,6 +55,10 @@ export const CIRCUITS: CircuitFacts[] = CATALOG.filter((t) => FACTS[t.id]).map((
 
 export const circuit = (id: string) => CIRCUITS.find((c) => c.id === id)!;
 
+/** A circuit's public address segment (/circuits/<slug>): the venue's place name where the internal id carries a sponsor's. */
+export const circuitSlug = (id: string) => (id === "red-bull-ring" ? "spielberg" : id);
+export const circuitBySlug = (slug: string) => CIRCUITS.find((c) => circuitSlug(c.id) === slug);
+
 /** A small seeded generator (mulberry32), so a day's puzzle is the same for everyone. */
 export function seeded(seed: number): () => number {
   let a = seed >>> 0;

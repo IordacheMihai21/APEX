@@ -13,6 +13,7 @@ import { MYSTERY_TRIES, isOver, isSolved, loadMystery, mysteryDoneDays } from ".
 import { loadPitStop, secs, todaysStop } from "../modes/pitstop";
 import { DAILY_CALLS, dailyCalls, dailyDone, dailyDoneDays, dailyScore } from "../modes/higherLower";
 import { loadReaction } from "../modes/reaction";
+import { CIRCUITS, circuitSlug } from "../modes/circuits";
 
 export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "reaction";
 
@@ -250,7 +251,7 @@ export const PAGES = {
 export type InfoPage = keyof typeof PAGES;
 
 /** Pre-rendered content pages (static HTML at build time, see src/ssg). */
-export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/how-to-play/${g.id}`)];
+export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/how-to-play/${g.id}`), "/circuits", ...CIRCUITS.map((c) => `/circuits/${circuitSlug(c.id)}`)];
 
 /** Every public address of the site (the SPA serves them all from index.html). */
 export const PUBLIC_ROUTES = ["/", ...GAMES.flatMap((g) => (g.route ? [g.route] : [])), "/corner", ...Object.keys(PAGES).map((p) => `/${p}`)];

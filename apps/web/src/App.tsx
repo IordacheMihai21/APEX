@@ -46,21 +46,29 @@ const PitStop = lazy(() => fresh(() => import("./ui/PitStop")).then((m) => ({ de
 const About = lazy(() => fresh(() => import("./content/Guides")).then((m) => ({ default: m.About })));
 const HowToPlayIndex = lazy(() => fresh(() => import("./content/Guides")).then((m) => ({ default: m.HowToPlayIndex })));
 const HowToPlayGuide = lazy(() => fresh(() => import("./content/Guides")).then((m) => ({ default: m.HowToPlayGuide })));
+const CircuitsIndex = lazy(() => fresh(() => import("./content/Circuits")).then((m) => ({ default: m.CircuitsIndex })));
+const CircuitGuide = lazy(() => fresh(() => import("./content/Circuits")).then((m) => ({ default: m.CircuitGuide })));
 const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) => ({ default: m.HigherLower })));
 
 /** A screen with its own address: a game's page or an info page (both declared in games/registry). */
 type Mini = GamePage | InfoPage;
-type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+
+/** A practice link (?play=practice&track=…&cond=…), as the circuit guides use. */
+function practiceFromQuery(search: string): Screen | null {
+  const q = new URLSearchParams(search);
+  const track = q.get("track");
+  if (q.get("play") !== "practice" || !CATALOG.some((t) => t.id === track)) return null;
+  const cond = q.get("cond");
+  return { kind: "play", mode: "practice", trackId: track!, condition: cond === "wet" || cond === "lowdf" ? cond : undefined };
+}
 
 function initialScreen(): Screen {
   const q = new URLSearchParams(location.search);
-  const mode = q.get("play") as Mode | null;
-  const track = q.get("track");
   const vs = decodeChallenge(q.get("vs"));
   if (vs) return { kind: "play", mode: "practice", trackId: vs.trackId, challenge: vs.knots };
-  const cond = q.get("cond");
-  const condition = cond === "wet" || cond === "lowdf" ? cond : undefined;
-  if (mode === "practice" && CATALOG.some((t) => t.id === track)) return { kind: "play", mode, trackId: track!, condition };
+  const practice = practiceFromQuery(location.search);
+  if (practice) return practice;
   const fromPath = screenFromPath(location.pathname);
   if (fromPath && fromPath.kind !== "hub") return fromPath;
   const path = location.pathname.replace(/\/$/, "").slice(1) || q.get("play");
@@ -77,10 +85,15 @@ function screenFromPath(pathname: string): Screen | null {
   if (p === "corner") return { kind: "play", mode: "corner", trackId: weeklyCorner().trackId };
   if (isMini(p)) return { kind: p };
   const c = parseContent(p);
-  if (c) return c.page === "about" ? { kind: "about" } : { kind: "howto", game: c.game };
+  if (c) return c.page === "about" ? { kind: "about" } : c.page === "circuits" ? { kind: "circuits", id: c.id } : { kind: "howto", game: c.game };
   return null;
 }
-const asContent = (s: Screen): ContentPage | null => (s.kind === "about" ? { page: "about" } : s.kind === "howto" ? { page: "howto", game: s.game } : null);
+function asContent(s: Screen): ContentPage | null {
+  if (s.kind === "about") return { page: "about" };
+  if (s.kind === "howto") return { page: "howto", game: s.game };
+  if (s.kind === "circuits") return { page: "circuits", id: s.id };
+  return null;
+}
 
 /** The page title of a screen with its own address. */
 const miniTitle = (k: Mini) => (k in PAGES ? PAGES[k as InfoPage] : game(k as GamePage).title);
@@ -167,7 +180,7 @@ export function App() {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!a || a.target || a.origin !== location.origin || a.hasAttribute("download")) return;
-      const next = screenFromPath(a.pathname);
+      const next = practiceFromQuery(a.search) ?? screenFromPath(a.pathname);
       if (!next) return;
       e.preventDefault();
       setScreen(next);
@@ -270,6 +283,8 @@ export function App() {
           <About />
         ) : screen.kind === "howto" ? (
           screen.game ? <HowToPlayGuide id={screen.game} /> : <HowToPlayIndex />
+        ) : screen.kind === "circuits" ? (
+          screen.id ? <CircuitGuide id={screen.id} /> : <CircuitsIndex />
         ) : screen.kind === "legal" ? (
           <Legal />
         ) : screen.kind === "privacy" ? (

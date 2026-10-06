@@ -8,9 +8,9 @@ import { GAMES, type GameDef, type GameId, game } from "../games/registry";
  * anchors; the app turns clicks on them into in-app navigation.
  */
 
-const link = "text-paint underline decoration-line underline-offset-4 hover:decoration-paint";
+export const link = "text-paint underline decoration-line underline-offset-4 hover:decoration-paint";
 
-function Page({ children }: { children: React.ReactNode }) {
+export function Page({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-full overflow-y-auto">
       <article className="mx-auto max-w-[68ch] space-y-8 px-4 pt-8 pb-16 md:px-8 lg:pt-12">{children}</article>
@@ -18,7 +18,7 @@ function Page({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+export function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="border-t border-line pt-5">
       <h2 className="wide text-[22px] leading-tight text-paint">{title}</h2>

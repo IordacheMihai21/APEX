@@ -85,6 +85,15 @@ any link to one of its own pages in place (`screenFromPath` in `App.tsx`).
 To add a content page: a component, a parser case in `content/meta.ts`, its
 route in `CONTENT_ROUTES` and in `public/sitemap.xml` (the registry test checks).
 
+Circuit guides (`/circuits` and `/circuits/<slug>`, `content/Circuits.tsx`)
+are built from data: facts from `modes/circuits.ts`, the outline, perfect laps
+and medal times from `game/outlines.ts`, famous corners from the Corner of the
+week list, and the written character and driving notes from
+`content/circuitText.ts`. Slugs are the internal ids except where an id carries
+a sponsor's name (`red-bull-ring` is `/circuits/spielberg`; `circuitSlug`).
+Their practice links (`/?play=practice&track=<id>&cond=<wet|lowdf>`) open in
+place too (`practiceFromQuery`).
+
 ## Data flow
 
 ```
