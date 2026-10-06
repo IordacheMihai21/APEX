@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
     "build:tracks": "tsx tools/track-builder/src/build-tracks.ts",
     "build:outlines": "tsx tools/track-builder/src/build-outlines.ts",
+    "build:braking": "tsx tools/track-builder/src/build-braking.ts",
     "build:scenery": "tsx tools/track-builder/src/import-osm.ts && tsx tools/track-builder/src/trim-scenery.ts",
     "compare": "tsx tools/track-builder/src/compare-lines.ts",
     "check": "tsx tools/track-builder/src/check-tracks.ts",

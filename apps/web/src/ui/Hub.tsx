@@ -80,7 +80,7 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
   }));
   return (
     <nav aria-label="Today's dailies" className="border-b border-line bg-board/60">
-      <div className="mx-auto flex max-w-[1240px] items-stretch gap-x-6 px-4 md:px-8">
+      <div className="mx-auto flex max-w-[1240px] items-stretch gap-x-3 px-4 sm:gap-x-6 md:px-8">
         <p className="flex shrink-0 items-center gap-3 py-2.5">
           <span className="hidden text-[13px] text-steel sm:inline">Today</span>
           <span className="num text-[13px] font-semibold text-paint">
@@ -95,7 +95,7 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
         </p>
         <ul className="flex min-w-0 flex-1 items-stretch">
           {items.map((i) => (
-            <li key={i.key} className="min-w-0 flex-1 border-line sm:flex-none sm:border-l">
+            <li key={i.key} className="min-w-0 flex-1 border-line sm:border-l xl:flex-none">
               <button onClick={i.act} aria-label={`${i.name}: ${i.state}`} className="today-item flex h-full w-full min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-center sm:flex-row sm:justify-start sm:gap-2.5 sm:px-4 sm:py-2.5 sm:text-left">
                 <span className={`grid h-5 w-4 shrink-0 place-items-center sm:h-6 sm:w-6 ${i.done ? "text-paint" : "text-steel/60"}`}>
                   {i.medal ? <MedalDisc medal={i.medal} size={16} /> : i.done ? <Chequered className="h-4 w-4" /> : <span className="h-2 w-2 border border-current" />}
@@ -104,8 +104,8 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
                   <span className="block truncate text-[11px] font-semibold text-paint sm:text-[13px]">
                     {i.short ? (
                       <>
-                        <span className="sm:hidden">{i.short}</span>
-                        <span className="hidden sm:inline">{i.name}</span>
+                        <span className="xl:hidden">{i.short}</span>
+                        <span className="hidden xl:inline">{i.name}</span>
                       </>
                     ) : (
                       i.name
@@ -214,6 +214,7 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
   const answer = OUTLINES[mysteryAnswer(mystery.key)];
   const hl = loadHigherLower();
   const hlToday = game("higher-lower").today();
+  const bpToday = game("braking-point").today();
   const reaction = loadReaction();
   const pit = loadPitStop();
   const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
@@ -267,6 +268,22 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
       ),
     },
     {
+      game: "braking-point" as const,
+      title: game("braking-point").name,
+      blurb: game("braking-point").blurb,
+      status: bpToday.state === "done" ? `Today ${bpToday.label}. Back tomorrow.` : bpToday.state === "playing" ? bpToday.label : "New today",
+      cta: bpToday.state === "done" ? "Practice stops" : bpToday.state === "playing" ? "Finish today's stops" : "Hit the brakes",
+      art: (
+        <span className="flex items-end gap-1.5" aria-hidden="true">
+          {[300, 200, 100].map((m, i) => (
+            <span key={m} className="wide num grid place-items-center border-2 border-night bg-paint px-1.5 text-night" style={{ fontSize: 22 - i * 3, height: 36 - i * 5 }}>
+              {m}
+            </span>
+          ))}
+        </span>
+      ),
+    },
+    {
       game: "reaction" as const,
       title: game("reaction").name,
       blurb: game("reaction").blurb,
@@ -307,7 +324,7 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
             <p className="mt-3 text-[15px] text-steel">Any time, as often as you like.</p>
           </>
         )}
-        <ul className={`mt-6 grid gap-3 md:grid-cols-2 ${shown.length > 2 ? "lg:grid-cols-3" : ""}`}>
+        <ul className={`mt-6 grid gap-3 md:grid-cols-2 ${shown.length === 3 ? "lg:grid-cols-3" : shown.length >= 4 ? "xl:grid-cols-4" : ""}`}>
           {shown.map((g, i) => {
             const done = game(g.game).inDailySet && game(g.game).today().state === "done";
             return (

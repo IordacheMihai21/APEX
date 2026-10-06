@@ -94,6 +94,18 @@ a sponsor's name (`red-bull-ring` is `/circuits/spielberg`; `circuitSlug`).
 Their practice links (`/?play=practice&track=<id>&cond=<wet|lowdf>`) open in
 place too (`practiceFromQuery`).
 
+## Braking point
+
+The braking zones come from the engine's perfect laps at build time:
+`npm run build:braking` (tools/track-builder/src/build-braking.ts) writes
+`apps/web/src/game/braking.json`, the biggest stops of each real circuit (a
+drop of 80 km/h or more, with at least 120 m of accelerating run-up), each with
+its speed trace, braking point, road curvature ahead and map position. The game
+(`modes/braking.ts`) replays that trace and, from wherever the player brakes,
+the engine's own braking curve, so early and late stops are physics, not a
+guess. The JSON loads with the game's chunk only. Rerun the tool whenever
+tracks or the physics change.
+
 ## Data flow
 
 ```

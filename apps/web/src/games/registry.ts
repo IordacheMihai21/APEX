@@ -13,9 +13,10 @@ import { MYSTERY_TRIES, isOver, isSolved, loadMystery, mysteryDoneDays } from ".
 import { loadPitStop, secs, todaysStop } from "../modes/pitstop";
 import { DAILY_CALLS, dailyCalls, dailyDone, dailyDoneDays, dailyScore } from "../modes/higherLower";
 import { loadReaction } from "../modes/reaction";
+import { STOPS_PER_DAY, brakingDone, brakingDoneDays, brakingScore, dayStops } from "../modes/braking";
 import { CIRCUITS, circuitSlug } from "../modes/circuits";
 
-export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "reaction";
+export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "reaction";
 
 /** Where a game stands today, for the "Today" bar and the hub. */
 export interface TodayStatus {
@@ -127,7 +128,7 @@ export const GAMES: GameDef[] = [
   {
     id: "pit-stop",
     name: "Pit stop",
-    short: "Pit stop",
+    short: "Pit",
     route: "/pit-stop",
     cadence: "daily",
     inDailySet: true,
@@ -192,6 +193,42 @@ export const GAMES: GameDef[] = [
       return calls.length ? { state: "playing", label: `${DAILY_CALLS - calls.length} calls left` } : { state: "new", label: "Not started" };
     },
     doneDays: dailyDoneDays,
+  },
+  {
+    id: "braking-point",
+    name: "Braking point",
+    short: "Braking",
+    route: "/braking-point",
+    cadence: "daily",
+    inDailySet: true,
+    tagline: "Five big stops, brake as late as you dare",
+    blurb: "Flat out down the straight, then hit the brakes for the corner. Five real stops a day; too late and you're off.",
+    title: "Braking point: brake for the corner | Lapdle",
+    howTo: {
+      steps: [
+        "The car comes down a straight flat out, towards a real corner. The boards count down the metres to it.",
+        "Hit Brake (or Space) at the last moment you dare. The car then brakes as hard as the physics allows.",
+        "Score on how close you got to the perfect braking point. Too early costs time; too late and you arrive too fast, or go off.",
+      ],
+      tip: "Five stops a day, the same for everyone, out of 500 points. Practice stops are unlimited.",
+    },
+    guide: {
+      intro: "Braking point is a daily timing game: five of the biggest stops on real circuits, and one brake pedal.",
+      scoring:
+        "Each stop is scored out of 100 on how far you braked from the perfect braking point, the one the physics engine's perfect lap uses. Early costs less than late: 30 m early scores nothing, and so does 15 m late. Brake more than 20 m late, or arrive at the corner more than a quarter over its speed, and you go off the road for zero. Each stop gets a colour: purple within 2 m, green within 6 m, yellow within 12 m.",
+      tips: [
+        "The faster the straight, the earlier the braking point: speed takes distance to lose.",
+        "Use the boards. Most big stops start between the 150 and the 100 m boards.",
+        "Slow hairpins punish late braking the most: a few metres late is a lot of extra speed.",
+        "Early is safer than late. A late stop can score zero.",
+      ],
+    },
+    today(day = dateKey()) {
+      const stops = dayStops(day);
+      if (brakingDone(stops)) return { state: "done", label: `${brakingScore(stops)}/${STOPS_PER_DAY * 100}` };
+      return stops.length ? { state: "playing", label: `${STOPS_PER_DAY - stops.length} stops left` } : { state: "new", label: "Not started" };
+    },
+    doneDays: brakingDoneDays,
   },
   {
     id: "reaction",

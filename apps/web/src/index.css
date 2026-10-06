@@ -983,6 +983,25 @@ canvas {
     0 0 0 6px rgb(255 106 19 / 0.18),
     0 0 34px rgb(255 106 19 / 0.45);
 }
+/* Braking point's pedal sits inside the onboard view: smaller, same cap */
+.brake-pedal {
+  width: 104px;
+  height: 104px;
+}
+.brake-pedal .launch-cap {
+  width: 78px;
+  height: 78px;
+}
+@media (min-width: 640px) {
+  .brake-pedal {
+    width: 128px;
+    height: 128px;
+  }
+  .brake-pedal .launch-cap {
+    width: 96px;
+    height: 96px;
+  }
+}
 .launch-btn:focus-visible {
   outline: 2px solid var(--color-paint);
   outline-offset: 4px;

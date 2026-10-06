@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { recordDailyCall } from "../modes/higherLower";
+import { STOPS_PER_DAY, recordStop } from "../modes/braking";
 import { loadMystery, mysteryAnswer, recordGuess } from "../modes/mystery";
 import { playStreak } from "./profile";
 import { todayProgress } from "./registry";
@@ -62,7 +63,10 @@ describe("play streak", () => {
     expect(todayProgress(TODAY).done).toBe(3);
     expect(playStreak(TODAY).perfectDays).toBe(0);
     for (let i = 0; i < 10; i++) recordDailyCall(true, TODAY);
-    expect(todayProgress(TODAY)).toMatchObject({ done: 4, total: 4 });
+    expect(todayProgress(TODAY)).toMatchObject({ done: 4, total: 5 });
+    expect(playStreak(TODAY).perfectDays).toBe(0);
+    for (let i = 0; i < STOPS_PER_DAY; i++) recordStop({ metres: -3, cornerV: 20, off: false, lost: 0.05, points: 90 }, TODAY);
+    expect(todayProgress(TODAY)).toMatchObject({ done: 5, total: 5 });
     expect(playStreak(TODAY).perfectDays).toBe(1);
   });
 });
