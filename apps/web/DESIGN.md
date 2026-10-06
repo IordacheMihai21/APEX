@@ -364,6 +364,12 @@ A row of square rev LEDs (green building, the last three blue, all blue on the s
 ### Footer (hub)
 After the record strip, on night with a hairline top: on lg a 5fr/7fr split. Left: the wordmark (wide 26px), one sentence on what Lapdle is, the independence and OpenStreetMap notice in 13px steel, and "Cookie choices" (outlined, square) when ads are on. Right: three short columns under condensed steel captions: Play (Daily Quali, Corner of the week, Perfect Season, Free Practice, Past dailies), Between laps (the four minigames and Your record), Lapdle (Privacy, Legal and terms, the contact email, then square 40px social buttons for each account set in env). Phones: Play and Between laps side by side, Lapdle below. A bottom hairline row: © year and operator, and that times and lines are simulated.
 
+### How to play (every minigame)
+A round "?" (36 px, hairline) beside each minigame's title opens a How to play card, and it opens by itself on the first visit to each game (remembered per game on the device). Same shell as the finish card: caption, the game's name in wide 28px, three numbered steps (ink squares with the step number), a one-line tip, and Play. A cross in the top right corner, Escape or a tap outside close it. While it is open the game's keys are off.
+
+### Lights out control
+The stage is no longer a tap target: one push button, off a steering wheel, does it all. A 156 px carbon ring (knurled with a conic pattern) around a 116 px ink cap that sinks 4 px when pressed; "Start" (then "Again") arms the lights, and while they run it reads "Launch" and glows. It reacts on touch-down. Space and Enter still work; the rest of the page scrolls normally.
+
 ### Finish card (every minigame)
 When a minigame round ends, a card rises over it, like the daily-game sites close a round: a bottom sheet on phones, a 400 px card centred on wider screens, over night at 80%. Caption with the game and number, a one-line title in wide 28px (green for a win or a new best), the result in wide 48px with its unit, one sentence of context, three stats in a hairline row, Share (primary) and another go (secondary: Play again, Go again, Try again, Practice stops), the countdown to the next daily puzzle where there is one, then "Play next": the other games as rows. It opens after a beat (the outline drawn, the missed answer shown, the number read), closes with the cross, Escape or a tap outside, and can be reopened ("See result"). While it is open the game's own keys are off and taps never reach the stage underneath.
 

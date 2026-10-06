@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
 import { track } from "../analytics";
@@ -213,7 +214,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey || finish) return; // the finish card has the keys while open
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey || finish || modalOpen()) return; // a card has the keys while open
       const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
       if (key === " " || key === "Enter") {
         e.preventDefault();
@@ -267,7 +268,10 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
               </button>
             ))}
           </div>
-          <h1 className="wide mt-4 text-[clamp(32px,6vw,56px)] leading-none text-paint lg:mt-5">Pit stop</h1>
+          <div className="mt-4 flex items-start justify-between gap-3 lg:mt-5">
+            <h1 className="wide text-[clamp(32px,6vw,56px)] leading-none text-paint">Pit stop</h1>
+            <HowToPlay game="pit-stop" />
+          </div>
           <p className="mt-2.5 max-w-[44ch] text-[14px] text-steel lg:mt-3 lg:text-[15px]">
             Each wheel lights up in turn: hit its key, or tap the lit tyre on a phone. Then release the car on green. The fastest stop on record is 1.80 s.
           </p>

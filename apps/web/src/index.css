@@ -929,3 +929,61 @@ canvas {
     animation: none;
   }
 }
+
+/* Lights out: a push button off a steering wheel. A carbon ring, an orange cap that
+   sinks when pressed; armed (lights running) it glows, ready to launch. */
+.launch-btn {
+  display: grid;
+  place-items: center;
+  width: 156px;
+  height: 156px;
+  border-radius: 9999px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  background:
+    repeating-conic-gradient(from 0deg, rgb(255 255 255 / 0.05) 0deg 6deg, transparent 6deg 12deg),
+    radial-gradient(circle at 50% 30%, #2a2d33, #121317 70%);
+  box-shadow:
+    0 0 0 1px #2b2f37,
+    0 14px 30px rgb(0 0 0 / 0.55),
+    inset 0 2px 0 rgb(255 255 255 / 0.08);
+}
+.launch-cap {
+  display: grid;
+  place-items: center;
+  width: 116px;
+  height: 116px;
+  border-radius: 9999px;
+  color: var(--color-night);
+  text-transform: uppercase;
+  background: radial-gradient(circle at 50% 28%, #ffa36b, var(--color-ink) 48%, #b8430a 100%);
+  box-shadow:
+    inset 0 -8px 14px rgb(0 0 0 / 0.3),
+    inset 0 5px 8px rgb(255 255 255 / 0.3),
+    0 5px 0 #7a2c05,
+    0 8px 14px rgb(0 0 0 / 0.5);
+  transition:
+    transform 70ms ease,
+    box-shadow 70ms ease;
+}
+.launch-btn:active .launch-cap {
+  transform: translateY(4px);
+  box-shadow:
+    inset 0 -4px 10px rgb(0 0 0 / 0.3),
+    inset 0 5px 8px rgb(255 255 255 / 0.25),
+    0 1px 0 #7a2c05,
+    0 3px 6px rgb(0 0 0 / 0.5);
+}
+.launch-armed .launch-cap {
+  box-shadow:
+    inset 0 -8px 14px rgb(0 0 0 / 0.3),
+    inset 0 5px 8px rgb(255 255 255 / 0.3),
+    0 5px 0 #7a2c05,
+    0 0 0 6px rgb(255 106 19 / 0.18),
+    0 0 34px rgb(255 106 19 / 0.45);
+}
+.launch-btn:focus-visible {
+  outline: 2px solid var(--color-paint);
+  outline-offset: 4px;
+}

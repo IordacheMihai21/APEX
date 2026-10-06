@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
 import { track } from "../analytics";
@@ -69,6 +70,7 @@ export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
+      if (modalOpen()) return; // a how-to or finish card has the keys
       if (e.key === "ArrowUp") call(true);
       else if (e.key === "ArrowDown") call(false);
       else if (e.key === "Enter" && phase === "wrong" && !finish) again();
@@ -97,7 +99,10 @@ export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
       <div className="mx-auto max-w-[880px] px-4 pt-8 pb-12 md:px-8 lg:pt-12">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">Higher or lower</h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">Higher or lower</h1>
+              <HowToPlay game="higher-lower" />
+            </div>
             <p className="mt-3 max-w-[46ch] text-[15px] text-steel">Real facts about the circuits. Call the next one right and keep going; one miss ends the run.</p>
           </div>
           <dl className="flex gap-6 text-center">

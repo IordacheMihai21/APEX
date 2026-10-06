@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
 import { track } from "../analytics";
@@ -121,7 +122,10 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
       <div className="mx-auto grid max-w-[1080px] gap-8 px-4 pt-8 pb-12 md:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:pt-12">
         <div>
           <p className="caption">Mystery circuit #{dailyNumber(day.key)}</p>
-          <h1 className="wide mt-2 text-[clamp(30px,6vw,52px)] leading-none text-paint">Name the circuit</h1>
+          <div className="mt-2 flex items-start justify-between gap-3">
+            <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">Name the circuit</h1>
+            <HowToPlay game="mystery" />
+          </div>
           <p className="mt-3 max-w-[42ch] text-[15px] text-steel">
             {MYSTERY_TRIES} guesses. Every miss draws more of the lap, and the clues say how close you were.
           </p>

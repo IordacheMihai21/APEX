@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { HowToPlay, modalOpen } from "./HowToPlay";
 import { FinishCard } from "./FinishCard";
 import { track } from "../analytics";
 import { LIGHT_MS, type ReactionRecord, average, loadReaction, randomHold, recordJump, recordReaction, verdict } from "../modes/reaction";
@@ -76,7 +77,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if (finish) return; // the finish card has the keys while open
+      if (finish || modalOpen()) return; // a card has the keys while open
       if (e.code === "Space" || e.key === "Enter") {
         e.preventDefault();
         tap();
@@ -101,27 +102,26 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
     }
   };
 
+  // the lights are running (or just went out): the button is the launch control
+  const armed = phase === "lights" || phase === "hold" || phase === "go";
   const display = phase === "done" && ms !== null ? secs(ms) : phase === "jump" ? "-.---" : "0.000";
   const prompt =
     phase === "idle"
-      ? "Tap anywhere, or press Space, to start. Tap again the moment the lights go out."
+      ? "Press Start (or Space). Hit Launch the moment the lights go out."
       : phase === "lights" || phase === "hold"
         ? "Wait for it."
         : phase === "go"
           ? "Go!"
           : phase === "jump"
-            ? "Jump start. You moved before the lights went out. Tap to try again."
+            ? "Jump start. You moved before the lights went out. Press Again to retry."
             : verdict(ms!);
 
   return (
-    <div
-      className="flex h-full cursor-pointer touch-manipulation flex-col items-center overflow-y-auto px-4 pt-8 pb-10 select-none lg:pt-14"
-      onPointerDown={(e) => {
-        if ((e.target as HTMLElement).closest("button,a")) return;
-        tap();
-      }}
-    >
-      <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">Lights out</h1>
+    <div className="flex h-full flex-col items-center overflow-y-auto px-4 pt-8 pb-10 lg:pt-14">
+      <div className="flex w-full max-w-[520px] items-center justify-center gap-3">
+        <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">Lights out</h1>
+        <HowToPlay game="reaction" />
+      </div>
       <p className="mt-2 max-w-[42ch] text-center text-[15px] text-steel">How fast are you off the line? Racing drivers react in about 0.2 s; most people take about 0.27 s.</p>
 
       <div className="mt-10">
@@ -133,6 +133,24 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
         <span className="sr-only">{phase === "done" && ms !== null ? `${secs(ms)} seconds` : ""}</span>
       </div>
       <p className={`mt-4 min-h-[44px] max-w-[40ch] text-center text-[16px] ${phase === "jump" ? "text-lamp" : "text-paint/85"}`}>{prompt}</p>
+
+      {/* the one control: a steering-wheel push button. Start arms the lights; the same button launches */}
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault(); // react on touch-down, not on release: every millisecond counts
+          tap();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.preventDefault(); // Enter is handled on the window, once
+        }}
+        className={`launch-btn mt-6 ${armed ? "launch-armed" : ""}`}
+        aria-label={armed ? "Launch" : phase === "idle" ? "Start" : "Start again"}
+      >
+        <span className="launch-cap">
+          <span className="wide text-[18px] tracking-[0.06em]">{armed ? "Launch" : phase === "idle" ? "Start" : "Again"}</span>
+        </span>
+      </button>
 
       <dl className="mt-6 flex gap-8 text-center">
         {[
