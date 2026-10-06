@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { type GamePage, type InfoPage, game, todayProgress } from "../games/registry";
+import { playStreak } from "../games/profile";
 import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES, type Outline, type OutlineDetail, loadOutlineDetail } from "../game/outlines";
@@ -62,7 +63,7 @@ function useReducedMotion() {
  * finished), and the medal streak. Each entry opens its game.
  */
 function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; onAction: (a: HubAction) => void }) {
-  const stats = dailyStats();
+  const streak = playStreak(daily.key);
   // the daily set and today's status of each, from the registry
   const { items: today, done: played } = todayProgress(daily.key);
   const items = today.map(({ game: g, status }) => ({
@@ -80,9 +81,13 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
   return (
     <nav aria-label="Today's dailies" className="border-b border-line bg-board/60">
       <div className="mx-auto flex max-w-[1240px] items-stretch gap-x-6 px-4 md:px-8">
-        <p className="hidden shrink-0 items-center gap-3 py-2.5 sm:flex">
-          <span className="text-[13px] text-steel">Today</span>
-          <span className="flex gap-1" aria-label={`${played} of ${items.length} dailies played`}>
+        <p className="flex shrink-0 items-center gap-3 py-2.5">
+          <span className="hidden text-[13px] text-steel sm:inline">Today</span>
+          <span className="num text-[13px] font-semibold text-paint">
+            {played}/{items.length}
+            <span className="sr-only"> daily games played today</span>
+          </span>
+          <span className="hidden gap-1 sm:flex" aria-hidden="true">
             {items.map((i) => (
               <span key={i.key} className={`today-pip h-1.5 w-5 ${i.done ? "bg-ink" : "bg-asphalt"}`} />
             ))}
@@ -112,8 +117,11 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
             </li>
           ))}
         </ul>
-        <p className="flex shrink-0 items-center gap-1.5 border-l border-line py-2.5 pl-3 text-[12px] text-steel sm:gap-2 sm:pl-4" title="Days in a row with a Daily Quali medal">
-          <span className="wide num text-[18px] leading-none text-paint">{stats.streak}</span>
+        <p
+          className="flex shrink-0 items-center gap-1.5 border-l border-line py-2.5 pl-3 text-[12px] text-steel sm:gap-2 sm:pl-4"
+          title={`Days in a row with a daily game played. Best ${streak.best}.${streak.current && !streak.playedToday ? " Play one today to keep it." : ""}`}
+        >
+          <span className={`wide num text-[18px] leading-none ${streak.current && !streak.playedToday ? "text-steel" : "text-paint"}`}>{streak.current}</span>
           <span className="leading-tight">
             <span className="hidden sm:inline">day</span>
             <br className="hidden sm:inline" />

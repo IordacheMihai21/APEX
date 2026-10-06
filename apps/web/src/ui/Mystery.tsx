@@ -275,7 +275,7 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
             stats={[
               ["Played", String(st.played)],
               ["Solved", st.played ? `${Math.round((100 * st.solved) / st.played)}%` : "-"],
-              ["Streak", String(st.streak)],
+              ["Solved in a row", String(st.streak)],
             ]}
             shareText={mysteryShare(day, `${location.origin}/mystery`)}
             daily="mystery circuit"

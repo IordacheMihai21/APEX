@@ -77,6 +77,12 @@ export function recordGuess(day: MysteryDay, id: string): MysteryDay {
 }
 
 export const isSolved = (day: MysteryDay) => day.guesses.includes(mysteryAnswer(day.key));
+
+/** Every day whose mystery was finished (solved or out of guesses), read in one go. */
+export function mysteryDoneDays(): string[] {
+  const days = load<MysteryRecord>(KEY, { days: {} }).days;
+  return Object.keys(days).filter((key) => isOver({ key, guesses: days[key] }));
+}
 export const isOver = (day: MysteryDay) => isSolved(day) || day.guesses.length >= MYSTERY_TRIES;
 
 export interface MysteryStats {

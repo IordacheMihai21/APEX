@@ -54,6 +54,14 @@ the hub's Today bar and cards, the finish card's "Play next", the footer, the
 How to play cards and the analytics names. `todayProgress()` gives "x of y
 played today" for the daily set.
 
+The play streak and daily progress live in `games/profile.ts`, derived from
+the games' own records (nothing extra stored): a day counts when at least one
+game of the daily set was finished (each daily game exposes `doneDays()` so
+the whole history is read once); a perfect day is the whole set. The hub's
+Today bar shows "x/y" and the play streak; finish cards show today's progress
+and offer today's unplayed games first; a finished Daily Quali offers the next
+one ("Next: Mystery circuit").
+
 To add a game:
 
 1. Its logic in `src/modes/<game>.ts` (records in local storage, keyed by day

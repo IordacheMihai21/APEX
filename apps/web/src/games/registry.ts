@@ -7,9 +7,9 @@
  * This file holds identity, copy and today's status only. The games' own UI
  * is loaded lazily by the app; their logic lives in src/modes.
  */
-import { DAILY_LAPS, bestMedal, dateKey, loadDaily } from "../modes/daily";
+import { DAILY_LAPS, allDailies, bestMedal, dateKey, loadDaily } from "../modes/daily";
 import { type Medal, MEDAL_NAME } from "../modes/medals";
-import { MYSTERY_TRIES, isOver, isSolved, loadMystery } from "../modes/mystery";
+import { MYSTERY_TRIES, isOver, isSolved, loadMystery, mysteryDoneDays } from "../modes/mystery";
 import { loadPitStop, secs, todaysStop } from "../modes/pitstop";
 import { loadHigherLower } from "../modes/higherLower";
 import { loadReaction } from "../modes/reaction";
@@ -43,6 +43,8 @@ export interface GameDef {
   title: string;
   howTo?: { steps: string[]; tip: string };
   today(day?: string): TodayStatus;
+  /** for daily games: every day the round was finished, read in one go (streaks scan the whole history) */
+  doneDays?(): string[];
 }
 
 export const GAMES: GameDef[] = [
@@ -62,6 +64,7 @@ export const GAMES: GameDef[] = [
       if (d.status !== "playing") return { state: "done", label: d.status === "won" ? "Pole" : medal ? MEDAL_NAME[medal] : "No medal", medal };
       return d.laps.length ? { state: "playing", label: `${DAILY_LAPS - d.laps.length} laps left`, medal } : { state: "new", label: "Not started" };
     },
+    doneDays: () => allDailies().filter((d) => d.status !== "playing").map((d) => d.key),
   },
   {
     id: "mystery",
@@ -86,6 +89,7 @@ export const GAMES: GameDef[] = [
       if (isOver(m)) return { state: "done", label: isSolved(m) ? `Solved in ${m.guesses.length}` : "Missed" };
       return m.guesses.length ? { state: "playing", label: `${MYSTERY_TRIES - m.guesses.length} guesses left` } : { state: "new", label: "Not started" };
     },
+    doneDays: mysteryDoneDays,
   },
   {
     id: "pit-stop",
@@ -109,6 +113,7 @@ export const GAMES: GameDef[] = [
       const stop = todaysStop(loadPitStop(), day);
       return stop ? { state: "done", label: `${secs(stop.totalMs)} s` } : { state: "new", label: "Not started" };
     },
+    doneDays: () => Object.keys(loadPitStop().days),
   },
   {
     id: "higher-lower",

@@ -7,6 +7,7 @@ import { type Grade, gradeFor } from "./modes/grading";
 import { type RoundOutcome, SEASON_LAPS, SEASON_ROUNDS, type SeasonStore, currentTrack, loadSeason, newSeason, recordSeasonLap, rivalMs, seasonDone } from "./modes/season";
 import { CornerTower } from "./ui/CornerTower";
 import { DragSheet } from "./ui/PhoneSheet";
+import { NextToday } from "./ui/NextToday";
 import { usePhone } from "./ui/usePhone";
 import { GateSlider } from "./ui/GateSlider";
 import { LapGrid } from "./ui/LapGrid";
@@ -691,6 +692,7 @@ function ResultSheet({
     actions = (
       <>
         <ShareButton {...dailyShare(daily)} />
+        {!daily.archive && <NextToday />}
         <button className={secondaryBtn} onClick={() => game.watchPerfect()}>
           Watch perfect lap
         </button>
@@ -889,6 +891,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
         Watch the perfect lap
       </button>
       <ShareButton {...dailyShare(daily)} />
+      {!daily.archive && <NextToday />}
       <button className={secondaryBtn} onClick={onHub}>
         {daily.archive ? "Archive" : "Grid"}
       </button>
@@ -929,6 +932,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
             Watch the perfect lap
           </button>
           <ShareButton {...dailyShare(daily)} />
+          {!daily.archive && <NextToday />}
           <button className={secondaryBtn} onClick={onHub}>
             {daily.archive ? "Archive" : "Grid"}
           </button>

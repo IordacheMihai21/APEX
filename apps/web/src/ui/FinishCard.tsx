@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { GAMES, type GameId } from "../games/registry";
+import { playStreak } from "../games/profile";
+import { GAMES, type GameId, todayProgress } from "../games/registry";
 import { msToNextDay } from "../modes/daily";
 import { track } from "../analytics";
 import { ChevronRight, Share } from "./icons";
@@ -78,6 +79,15 @@ export function FinishCard({
     }
   };
 
+  // read when the card opens: the game that just finished has already saved its result
+  const progress = todayProgress();
+  const streak = playStreak();
+  const doneToday = new Set(progress.items.filter((i) => i.status.state === "done").map((i) => i.game.id));
+  // today's unplayed games first, then the rest; the game just played is not offered again
+  const next = GAMES.filter((g) => g.id !== game)
+    .map((g) => ({ g, left: g.inDailySet && !doneToday.has(g.id), done: g.inDailySet && doneToday.has(g.id) }))
+    .sort((a, b) => Number(b.left) - Number(a.left));
+
   const titleTone = tone === "win" ? "text-green" : tone === "loss" ? "text-paint" : "text-paint";
   return (
     <div
@@ -136,13 +146,36 @@ export function FinishCard({
           </p>
         )}
 
-        <h3 className="caption mt-5">Play next</h3>
+        {/* today's set: how much is done, the streak, then what's left first */}
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-line pt-4">
+          <span className="flex items-center gap-2.5">
+            <span className="caption">Today</span>
+            <span className="num text-[15px] font-semibold text-paint">
+              {progress.done}/{progress.total}
+              <span className="sr-only"> daily games played</span>
+            </span>
+            <span className="flex gap-1" aria-hidden="true">
+              {progress.items.map((i) => (
+                <span key={i.game.id} className={`h-1.5 w-4 ${i.status.state === "done" ? "bg-ink" : "bg-asphalt"}`} />
+              ))}
+            </span>
+          </span>
+          <span className="text-[13px] text-steel">
+            <span className="wide num text-[16px] text-paint">{streak.current}</span> day streak
+          </span>
+        </div>
+
+        <h3 className="caption mt-4">{progress.done === progress.total ? "All of today's done. Play more" : "Play next"}</h3>
         <ul className="mt-2 divide-y divide-line border-y border-line">
-          {GAMES.filter((g) => g.id !== game).map((g) => (
+          {next.map(({ g, left, done }) => (
             <li key={g.id}>
               <button className="group flex w-full items-center gap-3 py-2.5 text-left" onClick={() => go(g.id)}>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-semibold text-paint">{g.name}</span>
+                  <span className="flex items-center gap-2 text-[15px] font-semibold text-paint">
+                    {g.name}
+                    {left && <span className="bg-ink px-1.5 py-px text-[11px] font-bold tracking-[0.04em] text-night uppercase">Today</span>}
+                    {done && <span className="text-[12px] font-semibold text-steel">Done</span>}
+                  </span>
                   <span className="block truncate text-[13px] text-steel">{g.tagline}</span>
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-steel transition-transform group-hover:translate-x-0.5" />
