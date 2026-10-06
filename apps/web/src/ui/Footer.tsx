@@ -41,7 +41,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
           </span>
           <p className="mt-4 text-[15px] leading-relaxed text-paint/85">A daily racing-line puzzle on real circuits. Set your line through every corner, drive it, chase the perfect lap.</p>
           <p className="mt-3 text-[13px] leading-relaxed text-steel">
-            An independent game, not affiliated with Formula 1, the FIA or any team. Circuit names refer to the venues only. Map data © OpenStreetMap contributors.
+            An independent game, not affiliated with any racing series, governing body or team. Circuit names refer to the venues only. Map data © OpenStreetMap contributors.
           </p>
           {ADS_CONSENT && (
             <button onClick={openConsent} className="mt-5 border border-paint/20 px-3 py-2 text-[13px] font-semibold text-paint/90 transition-colors hover:border-paint/50">

@@ -133,7 +133,7 @@ export function Privacy() {
 
         <Section title="Map data and facts">
           <p>
-            Circuit surroundings come from OpenStreetMap (© OpenStreetMap contributors, ODbL). Circuit facts come from public sources. Lapdle is an independent game, not affiliated with Formula 1 or any team; circuit names refer to
+            Circuit surroundings come from OpenStreetMap (© OpenStreetMap contributors, ODbL). Circuit facts come from public sources. Lapdle is an independent game, not affiliated with any racing series, governing body or team; circuit names refer to
             the venues only.
           </p>
         </Section>

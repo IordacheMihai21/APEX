@@ -85,8 +85,9 @@ Sources: [Supabase rate limits](https://supabase.com/docs/guides/auth/rate-limit
 - **Formula 1 marks**: F1's guidelines say its word marks "cannot be used to
   brand any game", nor in domain names of commercial sites; editorial,
   descriptive use is tolerated ([F1 guidelines](https://www.formula1.com/en/information/guidelines.4EOKE9RRqevL4niTK9kWyt)).
-  **Done**: "F1" removed from page titles and game copy; the official
-  disclaimer is on /legal. **You**: never use F1/Formula 1/Grand Prix in the
+  **Done**: no series, team or driver is named anywhere on the site; /legal,
+  /privacy and the footer carry a generic non-affiliation notice (no racing
+  series, governing body, team or driver). **You**: never use F1/Formula 1/Grand Prix in the
   name, domain, app-store listings or ads.
 - **Name check**: "Apexdrawn" is a track-drawing driving game; **You**: check
   "Lapdle" against EUIPO/national registers before buying the domain.

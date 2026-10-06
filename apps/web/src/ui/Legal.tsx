@@ -81,8 +81,8 @@ export function Legal() {
 
         <Section title="Trademarks">
           <p>
-            Lapdle is unofficial and not associated in any way with the Formula 1 companies. F1, FORMULA ONE, FORMULA 1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing
-            B.V.
+            Lapdle is an independent game. It is not affiliated with, endorsed by or connected to any racing series, championship, governing body, team or driver. The names, marks and logos of racing series and
+            teams belong to their owners, and the game uses none of them.
           </p>
           <p>Circuit names are used only to identify the real venues and remain the marks of their owners. The game uses no team, driver or sponsor names, logos or liveries.</p>
           <p>
