@@ -21,6 +21,8 @@ import {
   trackControls,
   usableHalfWidth,
 } from "../../../packages/engine/src/index";
+// the game's own schedule, so the board only takes the day's real Daily Quali
+import { dailyCondition, dailyTrack } from "../../../apps/web/src/modes/schedule";
 import austin from "../../../data/tracks/austin.v1.json";
 import barcelona from "../../../data/tracks/barcelona.v1.json";
 import hungaroring from "../../../data/tracks/hungaroring.v1.json";
@@ -141,6 +143,7 @@ Deno.serve(async (req) => {
   if (typeof trackId !== "string" || !TRACKS[trackId]) return json(400, { error: "trackId" });
   if (condition !== "dry" && condition !== "wet" && condition !== "lowdf") return json(400, { error: "condition" });
   if (typeof deviceId !== "string" || !UUID.test(deviceId)) return json(400, { error: "deviceId" });
+  if (dailyTrack(day) !== trackId || dailyCondition(day) !== condition) return json(400, { error: "not that day's daily" });
 
   const track = TRACKS[trackId];
   let p = prepared.get(trackId);
