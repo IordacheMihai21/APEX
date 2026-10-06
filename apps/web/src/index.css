@@ -627,6 +627,19 @@ canvas {
     outline-color: var(--color-ink);
     animation: pit-pulse 700ms ease-in-out infinite alternate;
   }
+  /* a finger-sized target around each tyre (the tyre itself stays its real size) */
+  .pit-wheel::before {
+    content: "";
+    position: absolute;
+    inset: -14px -16px;
+  }
+  /* phones: the lit tyre is the only cue, so it glows as well as pulsing its outline */
+  @media (max-width: 767px) {
+    .pit-wheel-on {
+      outline-width: 3px;
+      box-shadow: 0 0 0 7px rgb(255 106 19 / 0.22), 0 0 22px rgb(255 106 19 / 0.55);
+    }
+  }
   .pit-wheel-flash {
     outline-color: var(--color-kerb);
     animation: none;

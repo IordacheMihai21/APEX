@@ -264,7 +264,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
           </div>
           <h1 className="wide mt-4 text-[clamp(32px,6vw,56px)] leading-none text-paint lg:mt-5">Pit stop</h1>
           <p className="mt-2.5 max-w-[44ch] text-[14px] text-steel lg:mt-3 lg:text-[15px]">
-            Each wheel lights up in turn: hit its key, or tap it on a phone. Then release the car on green. The fastest stop on record is 1.80 s.
+            Each wheel lights up in turn: hit its key, or tap the lit tyre on a phone. Then release the car on green. The fastest stop on record is 1.80 s.
           </p>
         </header>
 
@@ -391,9 +391,9 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
               <div key={w} className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2" style={{ left: pctX(x), top: pctY(y) }}>
                 <span className={`pit-crew block ${on ? "pit-crew-on" : ""} ${doneWheels.has(w) ? "pit-crew-done" : ""}`} />
                 {on && (
-                  <span className={`pit-key wide absolute top-1/2 -translate-y-1/2 ${p.side < 0 ? "right-[calc(100%+8px)]" : "left-[calc(100%+8px)]"}`}>
-                    <span className="max-[767px]:hidden">{plan.keys[step]}</span>
-                    <span className="md:hidden">Tap</span>
+                  // the key to press, for keyboards; on a phone the lit tyre itself is the target
+                  <span className={`pit-key wide absolute top-1/2 -translate-y-1/2 max-[767px]:hidden ${p.side < 0 ? "right-[calc(100%+8px)]" : "left-[calc(100%+8px)]"}`}>
+                    {plan.keys[step]}
                   </span>
                 )}
               </div>

@@ -1,108 +1,127 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Game } from "../game/game";
-import { ChevronDown } from "./icons";
 
 /**
- * Phone panels that fold like a maps app: pull a panel down and it shrinks
- * to a strip while the circuit takes the screen; pull it up and it opens
- * again. Swipes work anywhere on the strip (buttons inside still click); a tap
- * on the handle toggles too, and so do Enter and Space on it.
+ * A phone panel that follows the finger, like the sheets in a maps app. Its
+ * top part (`head`) is always on show; dragging it up unfolds the rest
+ * (`children`) and the circuit gives way, dragging it down folds the rest
+ * away and the circuit takes the screen. On release it settles on the nearer
+ * end, or the one the flick points to. Buttons inside still work; a drag
+ * that moved never counts as a click. `full` lets the open panel cover the
+ * whole screen (the lap result); otherwise it opens to its content's height.
  */
-function useSwipe(onUp: () => void, onDown: () => void) {
-  const start = useRef<{ y: number; t: number } | null>(null);
-  /** set when the last gesture was a swipe, so the click that may follow it isn't also a tap */
-  const swiped = useRef(false);
-  useEffect(() => () => void (start.current = null), []);
-  const down = (e: React.PointerEvent) => {
-    swiped.current = false;
-    start.current = { y: e.clientY, t: performance.now() };
+export function DragSheet({
+  game,
+  head,
+  children,
+  initial = "closed",
+  full = false,
+}: {
+  game: Game;
+  head: React.ReactNode;
+  children: React.ReactNode;
+  initial?: "open" | "closed";
+  full?: boolean;
+}) {
+  const root = useRef<HTMLDivElement>(null);
+  const top = useRef<HTMLDivElement>(null);
+  const body = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(initial === "open");
+  const [dragH, setDragH] = useState<number | null>(null);
+  const [h, setH] = useState({ min: 0, max: 0 });
+  const gesture = useRef<{ y: number; h: number; t: number; moved: boolean } | null>(null);
+  const swallowClick = useRef(false);
+
+  // the two ends: the head alone, and the head with everything under it (or the whole screen)
+  useLayoutEffect(() => {
+    const el = root.current;
+    const hd = top.current;
+    const bd = body.current;
+    if (!el || !hd || !bd) return;
+    const measure = () => {
+      const room = el.parentElement?.clientHeight ?? window.innerHeight;
+      const min = hd.offsetHeight;
+      const max = full ? room : Math.min(room * 0.92, min + bd.scrollHeight);
+      setH((p) => (p.min === min && p.max === max ? p : { min, max }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(hd);
+    ro.observe(bd);
+    if (el.parentElement) ro.observe(el.parentElement);
+    return () => ro.disconnect();
+  }, [full]);
+
+  // the camera frames the circuit into whatever the panel leaves free (once it settles)
+  useEffect(() => {
+    if (!h.max || dragH !== null) return;
+    const covered = open ? h.max : h.min;
+    // a panel over the whole screen leaves no map to frame: keep the circuit framed for the strip
+    game.setInsets({ bottom: full && open ? h.min : covered, right: 0 });
+  }, [game, open, h, dragH, full]);
+  useEffect(() => () => game.setInsets({ bottom: 0, right: 0 }), [game]);
+
+  const settle = open ? h.max : h.min;
+  const height = dragH ?? settle;
+
+  const onDown = (e: React.PointerEvent) => {
+    gesture.current = { y: e.clientY, h: height, t: performance.now(), moved: false };
+    const move = (ev: PointerEvent) => {
+      const g = gesture.current;
+      if (!g) return;
+      const dy = ev.clientY - g.y;
+      if (!g.moved && Math.abs(dy) < 6) return;
+      g.moved = true;
+      setDragH(Math.max(h.min, Math.min(h.max, g.h - dy)));
+    };
     const end = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", end);
       window.removeEventListener("pointercancel", end);
-      const s = start.current;
-      start.current = null;
-      if (!s) return;
-      const dy = ev.clientY - s.y;
-      const v = dy / Math.max(1, performance.now() - s.t);
-      if (dy < -32 || v < -0.4) {
-        swiped.current = true;
-        onUp();
-      } else if (dy > 32 || v > 0.4) {
-        swiped.current = true;
-        onDown();
-      }
+      const g = gesture.current;
+      gesture.current = null;
+      if (!g || !g.moved) return setDragH(null);
+      swallowClick.current = true;
+      const dy = ev.clientY - g.y;
+      const v = dy / Math.max(1, performance.now() - g.t); // px per ms, down is positive
+      const now = Math.max(h.min, Math.min(h.max, g.h - dy));
+      const toOpen = v < -0.35 ? true : v > 0.35 ? false : now > (h.min + h.max) / 2;
+      setOpen(toOpen);
+      setDragH(null);
     };
+    window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", end);
     window.addEventListener("pointercancel", end);
   };
-  return { down, swiped };
-}
 
-function Handle({ open, onToggle, openLabel, closedLabel }: { open: boolean; onToggle: () => void; openLabel: string; closedLabel: string }) {
   return (
-    <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full touch-none flex-col items-center gap-1 pt-2 pb-1.5">
-      <span className="h-1 w-10 rounded-full bg-paint/30" aria-hidden="true" />
-      <span className="caption flex items-center gap-1 text-steel">
-        {open ? openLabel : closedLabel}
-        <ChevronDown className={`h-3.5 w-3.5 ${open ? "" : "rotate-180"}`} />
-      </span>
-    </button>
-  );
-}
-
-/** Reports a panel's height to the game so the camera frames the circuit into the rest of the screen. */
-function useBottomInset(game: Game) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => game.setInsets({ bottom: el.offsetHeight, right: 0 }));
-    ro.observe(el);
-    return () => ro.disconnect();
-  });
-  useEffect(() => () => game.setInsets({ bottom: 0, right: 0 }), [game]);
-  return ref;
-}
-
-/**
- * The line-setup panel on phones. Open, it holds every control; pulled down,
- * it is a strip with the corner and Lights out, and the circuit fills the screen.
- */
-export function SetupSheet({ game, strip, children }: { game: Game; strip: React.ReactNode; children: React.ReactNode }) {
-  const [open, setOpen] = useState(true);
-  const ref = useBottomInset(game);
-  const swipe = useSwipe(
-    () => setOpen(true),
-    () => setOpen(false),
-  );
-  return (
-    <div ref={ref} onPointerDown={swipe.down} className="absolute inset-x-0 bottom-0 border-t border-line bg-night/94 backdrop-blur-[3px]">
-      <Handle open={open} onToggle={() => !swipe.swiped.current && setOpen((o) => !o)} openLabel="Map" closedLabel="Controls" />
-      <div className="px-4 pb-[max(14px,env(safe-area-inset-bottom))]">{open ? children : strip}</div>
-    </div>
-  );
-}
-
-/**
- * The result on phones. Down: the lap time, the outcome and the actions in a
- * strip, the circuit large above it. Up: the lap fills the whole screen with
- * every stat, and the circuit is out of the way until it is pulled down again.
- */
-export function ResultPhoneSheet({ game, summary, actions, details }: { game: Game; summary: React.ReactNode; actions: React.ReactNode; details: React.ReactNode }) {
-  const [full, setFull] = useState(false);
-  const ref = useBottomInset(game);
-  const swipe = useSwipe(
-    () => setFull(true),
-    () => setFull(false),
-  );
-  return (
-    <div ref={ref} className={`absolute inset-x-0 bottom-0 flex flex-col border-t border-line bg-night/97 backdrop-blur-[3px] ${full ? "top-0" : ""}`}>
-      <div onPointerDown={swipe.down} className="shrink-0">
-        <Handle open={full} onToggle={() => !swipe.swiped.current && setFull((f) => !f)} openLabel="Circuit" closedLabel="Stats" />
-        <div className="px-4">{summary}</div>
-        <div className="flex flex-wrap gap-2.5 px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))]">{actions}</div>
+    <div
+      ref={root}
+      onClickCapture={(e) => {
+        // the click that ends a drag is not a tap on whatever button it ended over
+        if (swallowClick.current) {
+          swallowClick.current = false;
+          e.stopPropagation();
+          e.preventDefault();
+        }
+      }}
+      className="absolute inset-x-0 bottom-0 flex flex-col overflow-hidden border-t border-line bg-night/96 backdrop-blur-[3px]"
+      style={{ height: height || undefined, transition: dragH === null ? "height 300ms cubic-bezier(0.2, 0.8, 0.2, 1)" : "none" }}
+    >
+      <div ref={top} onPointerDown={onDown} className="shrink-0 touch-none select-none px-4 pb-3">
+        <div className="flex justify-center pt-2 pb-2.5" aria-hidden="true">
+          <span className="h-1 w-10 rounded-full bg-paint/30" />
+        </div>
+        {head}
       </div>
-      {full && <div className="min-h-0 flex-1 overflow-y-auto border-t border-line px-4 pb-8">{details}</div>}
+      <div
+        className={`min-h-0 flex-1 border-t border-line ${open && dragH === null ? "overflow-y-auto" : "overflow-hidden"}`}
+        aria-hidden={!open}
+      >
+        <div ref={body} className="px-4 pt-1 pb-[max(16px,env(safe-area-inset-bottom))]">
+          {children}
+        </div>
+      </div>
     </div>
   );
 }

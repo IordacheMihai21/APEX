@@ -114,9 +114,34 @@ export function App() {
       url.searchParams.set("track", screen.trackId);
       if (screen.condition && screen.condition !== "dry") url.searchParams.set("cond", screen.condition);
     }
-    history.replaceState(null, "", url);
+    // history: the grid is one entry, any game or page sits one entry above it, so a phone's
+    // Back (or the browser's) returns to the grid instead of leaving the site, even when the
+    // visit started on a deep link like /mystery
+    const at = (history.state as { lapdle?: string } | null)?.lapdle;
+    if (screen.kind === "hub") {
+      if (at === "screen") history.back();
+      else history.replaceState({ lapdle: "hub" }, "", url);
+    } else if (at === "screen") history.replaceState({ lapdle: "screen" }, "", url);
+    else {
+      if (at !== "hub") history.replaceState({ lapdle: "hub" }, "", "/");
+      history.pushState({ lapdle: "screen" }, "", url);
+    }
     pageview();
   }, [screen]);
+
+  // Back from a game or page lands on the grid entry: show the grid
+  useEffect(() => {
+    const on = (e: PopStateEvent) => {
+      if ((e.state as { lapdle?: string } | null)?.lapdle !== "screen") {
+        setPicking(false);
+        setStats(false);
+        setSummary(false);
+        setScreenNow({ kind: "hub" });
+      }
+    };
+    window.addEventListener("popstate", on);
+    return () => window.removeEventListener("popstate", on);
+  }, []);
 
   const act = (a: HubAction) => {
     if (a.kind === "daily") setScreen({ kind: "play", mode: "daily", trackId: loadDaily().trackId });

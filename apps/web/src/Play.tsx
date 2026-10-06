@@ -6,7 +6,7 @@ import { DAILY_HINT_AFTER_LAPS, DAILY_LAPS, type DailyRecord, bestMedal, conditi
 import { type Grade, gradeFor } from "./modes/grading";
 import { type RoundOutcome, SEASON_LAPS, SEASON_ROUNDS, type SeasonStore, currentTrack, loadSeason, newSeason, recordSeasonLap, rivalMs, seasonDone } from "./modes/season";
 import { CornerTower } from "./ui/CornerTower";
-import { ResultPhoneSheet, SetupSheet } from "./ui/PhoneSheet";
+import { DragSheet } from "./ui/PhoneSheet";
 import { usePhone } from "./ui/usePhone";
 import { GateSlider } from "./ui/GateSlider";
 import { LapGrid } from "./ui/LapGrid";
@@ -374,7 +374,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
   const inside = cx.direction === "mixed" ? null : cx.direction;
   const gate = cx.gates[s.gate];
   const last = s.complex === game.controls.complexes.length - 1;
-  const controls = (
+  const coachTip = (
     <>
         {coach.active && (
           <div key={coach.step} className="coach-in mb-4 flex items-start gap-3 rounded-sm border border-ink/30 bg-ink/10 px-3 py-2" role="status">
@@ -389,6 +389,10 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
             </button>
           </div>
         )}
+    </>
+  );
+  const headRow = (
+    <>
         <div className="flex items-center justify-between gap-3">
           <h2 className="wide truncate text-[20px] leading-none text-paint">
             {s.mode === "corner" ? weeklyCorner().name : cx.name}
@@ -407,12 +411,20 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
           )}
         </div>
 
+    </>
+  );
+  const challengeLine = (
+    <>
         {s.challengeMs !== null && (
           <p className="mt-1.5 text-[13px] text-paint">
             Challenge: beat <span className="num font-bold">{lapTime(s.challengeMs)}</span>
           </p>
         )}
 
+    </>
+  );
+  const styleBlock = (
+    <>
         {/* the one-tap line for this corner */}
         <div className={`mt-3.5 grid grid-cols-3 border border-line ${coach.active && coach.step === 0 ? "coach-ring" : ""}`} role="radiogroup" aria-label="Line through this corner">
           {LINE_STYLES.map((st) => (
@@ -476,6 +488,10 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
           </>
         )}
 
+    </>
+  );
+  const actionRow = (
+    <>
         <div className="mt-4 flex flex-wrap gap-2.5">
           <button className={iconBtn} onClick={() => game.undo()} disabled={!s.canUndo} aria-label="Undo" title="Undo">
             <Undo />
@@ -494,32 +510,57 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
         </div>
     </>
   );
+  const actionRowPhone = (
+    <>
+        <div className="mt-4 flex flex-wrap gap-2.5">
+          <button className={iconBtn} onClick={() => game.undo()} disabled={!s.canUndo} aria-label="Undo" title="Undo">
+            <Undo />
+          </button>
+          <button className={secondaryBtn} onClick={() => setFine(!fine)} aria-expanded={fine}>
+            {fine ? "Done" : "Fine-tune"}
+          </button>
+          {s.pbMs !== null && s.mode === "practice" && (
+            <button className={secondaryBtn} onClick={() => game.loadBest()}>
+              Best line
+            </button>
+          )}
+        </div>
+    </>
+  );
 
-  // phones: the panel folds into a strip (corner, next, lights out) so the circuit can take the screen
+  // phones: the corner and Lights out stay on top; everything else unfolds under them as the panel is dragged up
   if (phone)
     return (
-      <SetupSheet
+      <DragSheet
         game={game}
-        strip={
-          <div className="flex flex-col gap-2.5">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="wide truncate text-[18px] leading-none text-paint">{s.mode === "corner" ? weeklyCorner().name : cx.name}</h2>
-              {game.focus === null && (
-                <button className="btn-line inline-flex shrink-0 items-center gap-1 border border-paint/20 py-1 pr-1.5 pl-2.5 text-[13px] font-semibold text-paint/90" onClick={() => game.nextComplex()}>
-                  {last ? "First corner" : "Next"}
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              )}
+        initial="open"
+        head={
+          <>
+            {headRow}
+            <div className="mt-3 flex">
+          <button className={`${primaryBtn} w-full ${coach.active && coach.step === 2 ? "coach-ring" : ""}`} onClick={() => game.race()}>
+            Lights out
+          </button>
             </div>
-            <button className={`${primaryBtn} w-full`} onClick={() => game.race()}>
-              Lights out
-            </button>
-          </div>
+          </>
         }
       >
-        {controls}
-      </SetupSheet>
+        {coachTip}
+        {challengeLine}
+        {styleBlock}
+        {actionRowPhone}
+      </DragSheet>
     );
+
+  const controls = (
+    <>
+      {coachTip}
+      {headRow}
+      {challengeLine}
+      {styleBlock}
+      {actionRow}
+    </>
+  );
 
   return (
     <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center min-[720px]:px-3 min-[720px]:pb-3">
@@ -794,9 +835,10 @@ function ResultSheet({
 
   if (phone)
     return (
-      <ResultPhoneSheet
+      <DragSheet
         game={game}
-        summary={
+        full
+        head={
           <>
             {timeCard}
             <div className="mt-2 flex items-baseline justify-between gap-3">
@@ -807,19 +849,16 @@ function ResultSheet({
                 </span>
               )}
             </div>
+            <div className="mt-3 flex flex-wrap gap-2.5">{actions}</div>
           </>
         }
-        actions={actions}
-        details={
-          <>
-            {statsBlock}
-            {s.mapViews.length > 1 && <MapViewSwitch s={s} game={game} />}
-            <div className="mt-3 border-t border-line pt-3" />
-            {lapBoard}
-            <Legend />
-          </>
-        }
-      />
+      >
+        {statsBlock}
+        {s.mapViews.length > 1 && <MapViewSwitch s={s} game={game} />}
+        <div className="mt-3 border-t border-line pt-3" />
+        {lapBoard}
+        <Legend />
+      </DragSheet>
     );
 
   return (
@@ -843,6 +882,36 @@ function ResultSheet({
 /** Daily already finished today: the circuit stays visible, with the result and a way out. */
 function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; onHub: () => void }) {
   const countdown = useCountdown();
+  const phone = usePhone();
+  const actions = (
+    <>
+      <button className={secondaryBtn} onClick={() => game.watchPerfect()}>
+        Watch the perfect lap
+      </button>
+      <ShareButton {...dailyShare(daily)} />
+      <button className={secondaryBtn} onClick={onHub}>
+        {daily.archive ? "Archive" : "Grid"}
+      </button>
+    </>
+  );
+  if (phone)
+    return (
+      <DragSheet
+        game={game}
+        head={
+          <>
+            <h2 className="wide text-[20px] leading-none text-paint">{dayHeadline(daily)}</h2>
+            <p className="mt-1.5 text-[14px] text-paint/75">{daily.archive ? "An archive replay, unranked." : `New circuit in ${countdown}.`}</p>
+            <div className="mt-3 flex flex-wrap gap-2.5">{actions}</div>
+          </>
+        }
+      >
+        <StandingLine daily={daily} className="mt-2" />
+        <div className="mt-3">
+          <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={game.controls.complexes.length} />
+        </div>
+      </DragSheet>
+    );
   return (
     <div className="absolute inset-x-0 bottom-0 flex justify-center">
       <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/95 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
