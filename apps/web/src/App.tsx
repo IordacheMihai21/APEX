@@ -54,11 +54,12 @@ const TriviaIndex = lazy(() => fresh(() => import("./content/Trivia")).then((m) 
 const TriviaQuiz = lazy(() => fresh(() => import("./content/Trivia")).then((m) => ({ default: m.TriviaQuiz })));
 const Records = lazy(() => fresh(() => import("./ui/Records")).then((m) => ({ default: m.Records })));
 const OrderCorners = lazy(() => fresh(() => import("./ui/OrderCorners")).then((m) => ({ default: m.OrderCorners })));
+const SpeedTrap = lazy(() => fresh(() => import("./ui/SpeedTrap")).then((m) => ({ default: m.SpeedTrap })));
 const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) => ({ default: m.HigherLower })));
 
 /** A screen with its own address: a game's page or an info page (both declared in games/registry). */
 type Mini = GamePage | InfoPage;
-type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "braking-point" } | { kind: "corner-order" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "braking-point" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 /** A practice link (?play=practice&track=…&cond=…), as the circuit guides use. */
 function practiceFromQuery(search: string): Screen | null {
@@ -308,6 +309,8 @@ export function App() {
           <Archive onPlay={(day, trackId) => setScreen({ kind: "play", mode: "daily", trackId, day })} />
         ) : screen.kind === "pit-stop" ? (
           <PitStop onPlayDaily={() => act({ kind: "daily" })} />
+        ) : screen.kind === "speed-trap" ? (
+          <SpeedTrap />
         ) : screen.kind === "corner-order" ? (
           <OrderCorners />
         ) : screen.kind === "braking-point" ? (

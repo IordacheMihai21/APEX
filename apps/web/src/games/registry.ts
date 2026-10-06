@@ -15,9 +15,10 @@ import { DAILY_CALLS, dailyCalls, dailyDone, dailyDoneDays, dailyScore } from ".
 import { loadReaction } from "../modes/reaction";
 import { STOPS_PER_DAY, brakingDone, brakingDoneDays, brakingScore, dayStops } from "../modes/braking";
 import { CIRCUITS, circuitSlug } from "../modes/circuits";
+import { ROUNDS as TRAP_ROUNDS, trapDone, trapDoneDays, trapRounds, trapScore } from "../modes/speedtrap";
 import { ORDER_TRIES, orderDoneDays, orderOver, orderSolved, orderTries } from "../modes/order";
 
-export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "corner-order" | "reaction";
+export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "corner-order" | "speed-trap" | "reaction";
 
 /** Where a game stands today, for the "Today" bar and the hub. */
 export interface TodayStatus {
@@ -266,6 +267,41 @@ export const GAMES: GameDef[] = [
       return tries.length ? { state: "playing", label: `${ORDER_TRIES - tries.length} checks left` } : { state: "new", label: "New today" };
     },
     doneDays: orderDoneDays,
+  },
+  {
+    id: "speed-trap",
+    name: "Speed trap",
+    short: "Speed",
+    route: "/speed-trap",
+    cadence: "daily",
+    inDailySet: false,
+    tagline: "How fast is the car at the dot?",
+    blurb: "Five spots on five circuits: a top speed, the slowest point of a corner, a fast sweep. Guess the speed on the perfect lap.",
+    title: "Speed trap: guess the speed at a point of the lap | Lapdle",
+    howTo: {
+      steps: [
+        "A circuit from above, with a spot on the lap and an arrow for the way the car is going. The caption says what's there: a straight, the slowest point of a corner, or a fast corner.",
+        "Set the speed you think the car does there on the perfect lap, with the slider or the + and − buttons, and lock it in.",
+        "The speedometer shows the real speed. The closer you are, the more points: up to 100 a round, five rounds a day.",
+      ],
+      tip: "Speeds are from Lapdle's physics on the perfect lap in the dry. Arrow keys nudge the guess; Shift moves 10 at a time.",
+    },
+    guide: {
+      intro: "Speed trap is a daily guessing game: how fast is the car at a given spot of a real circuit?",
+      scoring:
+        "Each day has five rounds on five different circuits: one top speed at the end of a straight, two of the slowest points of corners and two fast corners. The answer is the speed on Lapdle's perfect lap in the dry, as the physics engine drives it. A round scores 100 for the exact speed, less the further off you are, and nothing at 60 km/h or more off. Each round gets a colour: purple within 5 km/h, green within 15, yellow within 30.",
+      tips: [
+        "Top speeds sit between about 290 and 350 km/h: longer straights mean more.",
+        "Hairpins are slow, often under 80 km/h; a long, open corner can be taken at well over 200.",
+        "Look at how tight the corner is on the map, and how long the straight is before it.",
+      ],
+    },
+    today(day = dateKey()) {
+      const r = trapRounds(day);
+      if (trapDone(r)) return { state: "done", label: `${trapScore(r)}/${TRAP_ROUNDS * 100}` };
+      return r.length ? { state: "playing", label: `${TRAP_ROUNDS - r.length} rounds left` } : { state: "new", label: "New today" };
+    },
+    doneDays: trapDoneDays,
   },
   {
     id: "reaction",

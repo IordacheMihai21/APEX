@@ -217,6 +217,7 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
   const hlToday = game("higher-lower").today();
   const bpToday = game("braking-point").today();
   const orderToday = game("corner-order").today();
+  const trapToday = game("speed-trap").today();
   const reaction = loadReaction();
   const pit = loadPitStop();
   const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
@@ -301,6 +302,19 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
               <span className="num absolute -top-2 -left-1.5 bg-ink px-1 text-[11px] font-bold text-night">{[3, 1, 2][i]}</span>
             </span>
           ))}
+        </span>
+      ),
+    },
+    {
+      game: "speed-trap" as const,
+      title: game("speed-trap").name,
+      blurb: game("speed-trap").blurb,
+      status: trapToday.state === "done" ? `Today ${trapToday.label}. Back tomorrow.` : trapToday.state === "playing" ? trapToday.label : "New today",
+      cta: trapToday.state === "done" ? "See today's speeds" : "Clock the speed",
+      art: (
+        <span className="wide num flex items-baseline gap-2 text-[34px] leading-none text-paint" aria-hidden="true">
+          2<span className="text-steel/50">??</span>
+          <span className="text-[14px] text-steel">km/h</span>
         </span>
       ),
     },

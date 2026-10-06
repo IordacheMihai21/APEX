@@ -1006,3 +1006,75 @@ canvas {
   outline: 2px solid var(--color-paint);
   outline-offset: 4px;
 }
+
+/* Speed trap: the guess slider, the pulsing spot on the map, the speedometer's needles */
+.trap-range {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.trap-range::-webkit-slider-runnable-track {
+  height: 8px;
+  background: linear-gradient(90deg, var(--color-asphalt), #3a3f48);
+}
+.trap-range::-moz-range-track {
+  height: 8px;
+  background: linear-gradient(90deg, var(--color-asphalt), #3a3f48);
+}
+.trap-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  margin-top: -11px;
+  border: 3px solid var(--color-night);
+  border-radius: 9999px;
+  background: var(--color-ink);
+  box-shadow: 0 0 0 2px var(--color-ink);
+}
+.trap-range::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border: 3px solid var(--color-night);
+  border-radius: 9999px;
+  background: var(--color-ink);
+}
+.trap-range:focus-visible {
+  outline: 2px solid var(--color-paint);
+  outline-offset: 4px;
+}
+.trap-pulse {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: trap-pulse 1.6s ease-out infinite;
+}
+@keyframes trap-pulse {
+  from {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+.gauge-needle {
+  animation: needle-in 900ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+.gauge-needle-late {
+  animation-delay: 350ms;
+}
+@keyframes needle-in {
+  from {
+    transform: rotate(var(--from));
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trap-pulse,
+  .gauge-needle {
+    animation: none;
+  }
+}
