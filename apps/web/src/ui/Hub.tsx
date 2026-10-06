@@ -216,6 +216,7 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
   const hl = loadHigherLower();
   const hlToday = game("higher-lower").today();
   const bpToday = game("braking-point").today();
+  const orderToday = game("corner-order").today();
   const reaction = loadReaction();
   const pit = loadPitStop();
   const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
@@ -279,6 +280,25 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
           {[300, 200, 100].map((m, i) => (
             <span key={m} className="wide num grid place-items-center border-2 border-night bg-paint px-1.5 text-night" style={{ fontSize: 22 - i * 3, height: 36 - i * 5 }}>
               {m}
+            </span>
+          ))}
+        </span>
+      ),
+    },
+    {
+      game: "corner-order" as const,
+      title: game("corner-order").name,
+      blurb: game("corner-order").blurb,
+      status: orderToday.state === "done" ? `Today ${orderToday.label}. Back tomorrow.` : orderToday.state === "playing" ? orderToday.label : "New today",
+      cta: orderToday.state === "done" ? "See today's order" : "Sort the corners",
+      art: (
+        <span className="flex items-end gap-1.5" aria-hidden="true">
+          {["M8 34 Q8 8 34 8", "M6 30 L20 10 L34 30", "M8 8 Q34 8 34 34"].map((d, i) => (
+            <span key={d} className="relative grid h-11 w-11 place-items-center border border-line bg-night">
+              <svg viewBox="0 0 42 42" className="h-8 w-8">
+                <path d={d} fill="none" stroke="#f2f2ee" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="num absolute -top-2 -left-1.5 bg-ink px-1 text-[11px] font-bold text-night">{[3, 1, 2][i]}</span>
             </span>
           ))}
         </span>

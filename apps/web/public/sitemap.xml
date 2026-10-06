@@ -5,6 +5,7 @@
   <url><loc>https://lapdle.com/pit-stop</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/higher-lower</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/braking-point</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lapdle.com/corner-order</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/reaction</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/corner</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/archive</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
@@ -15,6 +16,7 @@
   <url><loc>https://lapdle.com/how-to-play/pit-stop</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/higher-lower</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/braking-point</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/how-to-play/corner-order</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/reaction</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/circuits</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/circuits/monza</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

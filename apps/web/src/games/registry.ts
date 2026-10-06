@@ -15,8 +15,9 @@ import { DAILY_CALLS, dailyCalls, dailyDone, dailyDoneDays, dailyScore } from ".
 import { loadReaction } from "../modes/reaction";
 import { STOPS_PER_DAY, brakingDone, brakingDoneDays, brakingScore, dayStops } from "../modes/braking";
 import { CIRCUITS, circuitSlug } from "../modes/circuits";
+import { ORDER_TRIES, orderDoneDays, orderOver, orderSolved, orderTries } from "../modes/order";
 
-export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "reaction";
+export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "corner-order" | "reaction";
 
 /** Where a game stands today, for the "Today" bar and the hub. */
 export interface TodayStatus {
@@ -229,6 +230,42 @@ export const GAMES: GameDef[] = [
       return stops.length ? { state: "playing", label: `${STOPS_PER_DAY - stops.length} stops left` } : { state: "new", label: "Not started" };
     },
     doneDays: brakingDoneDays,
+  },
+  {
+    id: "corner-order",
+    name: "Order the corners",
+    short: "Order",
+    route: "/corner-order",
+    cadence: "daily",
+    // a daily extra: the set stays at five, which is what the phone's Today bar holds
+    inDailySet: false,
+    tagline: "Six corners, put them in lap order",
+    blurb: "Six corners of one circuit, shuffled. Put them in the order the car meets them, in four checks. A new circuit every day.",
+    title: "Order the corners: put a circuit's corners in lap order | Lapdle",
+    howTo: {
+      steps: [
+        "You get one circuit from above, with the start line and an arrow for the way round, and six of its corners as shuffled tiles.",
+        "Tap the tiles into the slots in the order the car meets them, from the start line round the lap. The dot on a tile is where the car comes in.",
+        "Check: the right slots turn green and stay. You have four checks.",
+      ],
+      tip: "Each tile is drawn the way it sits on the map, north up. A new circuit every day.",
+    },
+    guide: {
+      intro: "Order the corners is a daily puzzle: put six corners of a real circuit in lap order.",
+      scoring:
+        "Every day brings one circuit, never the day's Daily Quali or Mystery circuit, drawn from above with its start line and direction of travel. Six of its corners are shown as tiles, each cut from the racing line and drawn the way it sits on the map. Place them in lap order and check: the right ones turn green and lock, the rest go back. You have four checks; the fewer you need, the better.",
+      tips: [
+        "Find the start line and follow the arrow: the first tile is the first real turn after it.",
+        "Match the tiles by their shape and the way they face; the dot shows where the car enters.",
+        "Lock in the corners you're sure of first: every right one narrows the rest.",
+      ],
+    },
+    today(day = dateKey()) {
+      const tries = orderTries(day);
+      if (orderOver(tries)) return { state: "done", label: orderSolved(tries) ? `${tries.length}/${ORDER_TRIES}` : `X/${ORDER_TRIES}` };
+      return tries.length ? { state: "playing", label: `${ORDER_TRIES - tries.length} checks left` } : { state: "new", label: "New today" };
+    },
+    doneDays: orderDoneDays,
   },
   {
     id: "reaction",

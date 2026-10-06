@@ -8,6 +8,7 @@
 /mystery       /  200
 /higher-lower  /  200
 /braking-point  /  200
+/corner-order   /  200
 /pit-stop      /  200
 /reaction      /  200
 /privacy       /  200
@@ -18,6 +19,7 @@
 /mystery/      /  200
 /higher-lower/ /  200
 /braking-point/ /  200
+/corner-order/  /  200
 /pit-stop/     /  200
 /reaction/     /  200
 /privacy/      /  200
