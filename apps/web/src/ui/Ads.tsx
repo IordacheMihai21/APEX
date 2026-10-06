@@ -11,8 +11,8 @@ import { useEffect, useRef } from "react";
  *   VITE_ADSENSE_CLIENT      ca-pub-…           (no client = no ads)
  *   VITE_ADSENSE_SLOT_RAIL   slot id for the side rails
  *   VITE_ADSENSE_SLOT_INLINE slot id for the hub's in-content block
- * Without a client the slots render as labelled placeholders in development
- * (or with ?ads=preview) so the layout can be designed, and collapse otherwise.
+ * Units without a slot id render as labelled placeholders in development (or
+ * with ?ads=preview) so the layout can be designed, and not at all otherwise.
  */
 const CLIENT = import.meta.env.VITE_ADSENSE_CLIENT as string | undefined;
 const SLOTS = {
@@ -23,11 +23,13 @@ const SLOTS = {
 const preview = typeof location !== "undefined" && new URLSearchParams(location.search).get("ads") === "preview";
 
 /** Whether ad space should be laid out at all. */
-export const ADS_ON = !!CLIENT || import.meta.env.DEV || preview;
+export const ADS_ON = (!!CLIENT && !!(SLOTS.rail || SLOTS.inline)) || import.meta.env.DEV || preview;
 
 let scriptAdded = false;
 function loadAdSense() {
   if (scriptAdded || !CLIENT) return;
+  // production pages already carry the script in <head> (vite.config.ts)
+  if (document.querySelector('script[src*="adsbygoogle.js"]')) return void (scriptAdded = true);
   scriptAdded = true;
   const s = document.createElement("script");
   s.async = true;
@@ -55,7 +57,8 @@ export function AdSlot({ kind, className = "" }: { kind: "rail" | "inline"; clas
       /* blocked by an ad blocker: the reserved space just stays empty */
     }
   }, [live]);
-  if (!ADS_ON) return null;
+  // a unit without its slot id never shows a placeholder on the live site
+  if (!ADS_ON || (!live && !import.meta.env.DEV && !preview)) return null;
   const size = kind === "rail" ? "h-[600px] w-full" : "h-[250px] w-[300px] max-w-full";
   return (
     <div className={`flex flex-col items-center gap-1 ${className}`}>
