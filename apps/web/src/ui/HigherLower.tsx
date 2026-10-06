@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { AdBelow } from "./Ads";
 import { track } from "../analytics";
 import type { CircuitFacts } from "../modes/circuits";
 import { type Round, firstRound, isRight, loadHigherLower, nextRound, recordRun, value } from "../modes/higherLower";
@@ -151,6 +152,7 @@ export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
         )}
         <p className="caption mt-6 text-center">Pole laps are the real 2025 qualifying times.<span className="hidden [@media(hover:hover)]:inline"> Arrow keys work too.</span></p>
       </div>
+      <AdBelow />
     </div>
   );
 }

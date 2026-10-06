@@ -7,7 +7,7 @@ import type { Mode } from "./game/game";
 import { CONDITION_NAME, dailyCondition, dailyNumber, loadDaily } from "./modes/daily";
 import { currentTrack, loadSeason, newSeason } from "./modes/season";
 import { type HubAction, Hub } from "./ui/Hub";
-import { ADS_ON, AdSlot } from "./ui/Ads";
+import { ADS_ON, AdSlot, adShows } from "./ui/Ads";
 import { Stats } from "./ui/Stats";
 import { decodeChallenge } from "./modes/challenge";
 import { ChevronLeft, ColourBlind } from "./ui/icons";
@@ -146,7 +146,7 @@ export function App() {
   const track = screen.kind === "play" ? CATALOG.find((t) => t.id === screen.trackId) : null;
 
   return (
-    <div className="grid h-dvh grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] overflow-hidden select-none">
+    <div className="grid h-dvh grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr_auto] overflow-hidden select-none">
       <header className="flex h-[52px] items-stretch justify-between border-b border-line bg-night pt-[env(safe-area-inset-top)]">
         <div className="flex min-w-0 items-stretch">
           {screen.kind !== "hub" && (
@@ -227,6 +227,13 @@ export function App() {
         </aside>
       )}
       </div>
+
+      {/* phones: a small strip under the page (its own row, so it never covers anything); never while racing */}
+      {screen.kind !== "play" && adShows("anchor") && (
+        <aside aria-label="Advertisement" className="flex justify-center border-t border-line bg-night pt-1 pb-[max(4px,env(safe-area-inset-bottom))] lg:hidden">
+          <AdSlot kind="anchor" />
+        </aside>
+      )}
 
       {picking && (
         <TrackPicker

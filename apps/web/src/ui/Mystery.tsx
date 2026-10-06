@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AdBelow } from "./Ads";
 import { track } from "../analytics";
 import { OUTLINES } from "../game/outlines";
 import { CIRCUITS, circuit } from "../modes/circuits";
@@ -237,6 +238,7 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
           )}
         </div>
       </div>
+      <AdBelow />
     </div>
   );
 }

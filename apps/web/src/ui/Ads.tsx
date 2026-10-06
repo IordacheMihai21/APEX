@@ -18,12 +18,18 @@ const CLIENT = import.meta.env.VITE_ADSENSE_CLIENT as string | undefined;
 const SLOTS = {
   rail: import.meta.env.VITE_ADSENSE_SLOT_RAIL as string | undefined,
   inline: import.meta.env.VITE_ADSENSE_SLOT_INLINE as string | undefined,
+  /** phones only: a 320×50 strip under the page, never on the race screen */
+  anchor: import.meta.env.VITE_ADSENSE_SLOT_ANCHOR as string | undefined,
 };
+type Kind = keyof typeof SLOTS;
 
 const preview = typeof location !== "undefined" && new URLSearchParams(location.search).get("ads") === "preview";
 
 /** Whether ad space should be laid out at all. */
-export const ADS_ON = (!!CLIENT && !!(SLOTS.rail || SLOTS.inline)) || import.meta.env.DEV || preview;
+export const ADS_ON = (!!CLIENT && !!(SLOTS.rail || SLOTS.inline || SLOTS.anchor)) || import.meta.env.DEV || preview;
+
+/** Whether a unit of this kind appears at all: a live unit, or a placeholder while designing. */
+export const adShows = (kind: Kind) => (!!CLIENT && !!SLOTS[kind]) || import.meta.env.DEV || preview;
 
 let scriptAdded = false;
 function loadAdSense() {
@@ -44,7 +50,7 @@ declare global {
   }
 }
 
-export function AdSlot({ kind, className = "" }: { kind: "rail" | "inline"; className?: string }) {
+export function AdSlot({ kind, className = "" }: { kind: Kind; className?: string }) {
   const ref = useRef<HTMLModElement>(null);
   const slot = SLOTS[kind];
   const live = !!CLIENT && !!slot;
@@ -59,7 +65,7 @@ export function AdSlot({ kind, className = "" }: { kind: "rail" | "inline"; clas
   }, [live]);
   // a unit without its slot id never shows a placeholder on the live site
   if (!ADS_ON || (!live && !import.meta.env.DEV && !preview)) return null;
-  const size = kind === "rail" ? "h-[600px] w-full" : "h-[250px] w-[300px] max-w-full";
+  const size = kind === "rail" ? "h-[600px] w-full" : kind === "anchor" ? "h-[50px] w-[320px] max-w-full" : "h-[250px] w-[300px] max-w-full";
   return (
     <div className={`flex flex-col items-center gap-1 ${className}`}>
       <span className="text-[11px] text-steel/70">Advertisement</span>
@@ -69,12 +75,25 @@ export function AdSlot({ kind, className = "" }: { kind: "rail" | "inline"; clas
           className={`adsbygoogle block ${size}`}
           data-ad-client={CLIENT}
           data-ad-slot={slot}
-          data-ad-format={kind === "rail" ? "vertical" : "rectangle"}
+          data-ad-format={kind === "rail" ? "vertical" : kind === "anchor" ? "horizontal" : "rectangle"}
           data-full-width-responsive="false"
         />
       ) : (
-        <div className={`${size} grid place-items-center border border-dashed border-line text-[12px] text-steel/60`}>{kind === "rail" ? "Ad 160×600 / 300×600" : "Ad 300×250"}</div>
+        <div className={`${size} grid place-items-center border border-dashed border-line text-[12px] text-steel/60`}>{kind === "rail" ? "Ad 160×600 / 300×600" : kind === "anchor" ? "Ad 320×50" : "Ad 300×250"}</div>
       )}
     </div>
+  );
+}
+
+/**
+ * The block under a minigame, as daily-game sites place it: after the game and
+ * its results, across the full width, separated by a hairline.
+ */
+export function AdBelow() {
+  if (!adShows("inline")) return null;
+  return (
+    <aside aria-label="Advertisement" className="flex justify-center border-t border-line px-4 py-10">
+      <AdSlot kind="inline" />
+    </aside>
   );
 }

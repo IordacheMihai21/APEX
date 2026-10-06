@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AdBelow } from "./Ads";
 import { track } from "../analytics";
 import { FRONT_AXLE, REAR_AXLE, TRACK_HALF, bareCar } from "../game/car";
 import { asphaltDataUrl } from "../game/scenery";
@@ -469,6 +470,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
           )}
         </div>
       </div>
+      <AdBelow />
     </div>
   );
 }
