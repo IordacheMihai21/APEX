@@ -3,7 +3,7 @@ import { PHYSICS_VERSION } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES } from "../game/outlines";
 import { CIRCUITS } from "../modes/circuits";
-import { CONDITION_NAME, dailyNumber } from "../modes/daily";
+import { CONDITION_NAME, LAUNCH, dailyCondition, dailyNumber, dailyTrack } from "../modes/daily";
 import { type BoardDay, type LapRecord, ONLINE, fetchRecentBoards, fetchRecords } from "../online";
 import { AdBelow } from "./Ads";
 import { delta, lapTime } from "./format";
@@ -20,6 +20,9 @@ function perfect(trackId: string, condition: (typeof CONDITIONS)[number]): numbe
   return condition === "dry" ? o.lapMs : (o.conditions[condition]?.lapMs ?? null);
 }
 
+/** A lap from that day's real Daily Quali board (since launch): test laps and laps on other circuits don't count. */
+const scheduled = (r: { day: string; trackId: string; condition: string }) => r.day >= LAUNCH && dailyTrack(r.day) === r.trackId && dailyCondition(r.day) === r.condition;
+
 type Load<T> = { state: "loading" } | { state: "ok"; data: T } | { state: "error" };
 
 /**
@@ -32,8 +35,8 @@ export function Records() {
   const [boards, setBoards] = useState<Load<BoardDay[]>>({ state: "loading" });
   useEffect(() => {
     let live = true;
-    fetchRecords(PHYSICS_VERSION).then((r) => live && setRecords(r ? { state: "ok", data: r } : { state: "error" }));
-    fetchRecentBoards().then((b) => live && setBoards(b ? { state: "ok", data: b } : { state: "error" }));
+    fetchRecords(PHYSICS_VERSION).then((r) => live && setRecords(r ? { state: "ok", data: r.filter(scheduled) } : { state: "error" }));
+    fetchRecentBoards().then((b) => live && setBoards(b ? { state: "ok", data: b.filter(scheduled) } : { state: "error" }));
     return () => {
       live = false;
     };
