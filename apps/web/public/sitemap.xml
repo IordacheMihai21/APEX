@@ -8,6 +8,7 @@
   <url><loc>https://lapdle.com/corner-order</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/speed-trap</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/line-up</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/aerial</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/reaction</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/corner</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/archive</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
@@ -21,6 +22,7 @@
   <url><loc>https://lapdle.com/how-to-play/corner-order</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/speed-trap</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/line-up</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/how-to-play/aerial</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/reaction</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/circuits</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/circuits/monza</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

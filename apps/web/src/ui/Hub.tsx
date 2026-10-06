@@ -219,6 +219,7 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
   const orderToday = game("corner-order").today();
   const trapToday = game("speed-trap").today();
   const lineupToday = game("line-up").today();
+  const aerialToday = game("aerial").today();
   const reaction = loadReaction();
   const pit = loadPitStop();
   const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
@@ -330,6 +331,21 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
           {["var(--color-yellow)", "var(--color-green)", "#5aa9ff", "var(--color-purple)"].flatMap((c, r) =>
             [0, 1, 2, 3].map((i) => <span key={`${r}${i}`} className="h-3.5 w-7" style={{ background: (i + r) % 4 === 0 ? c : "var(--color-graphite)" }} />),
           )}
+        </span>
+      ),
+    },
+    {
+      game: "aerial" as const,
+      title: game("aerial").name,
+      blurb: game("aerial").blurb,
+      status: aerialToday.state === "done" ? `Today ${aerialToday.label}. Back tomorrow.` : aerialToday.state === "playing" ? aerialToday.label : "New today",
+      cta: aerialToday.state === "done" ? "See today's circuit" : "Look down",
+      art: (
+        <span className="relative block h-12 w-20 overflow-hidden border border-line" aria-hidden="true" style={{ background: "#466636" }}>
+          <span className="absolute -top-2 -left-3 h-9 w-12 rounded-[40%]" style={{ background: "#284724" }} />
+          <span className="absolute -right-3 -bottom-3 h-9 w-11 rounded-[45%]" style={{ background: "#24465c" }} />
+          <span className="absolute top-5 left-0 h-[3px] w-full -rotate-12" style={{ background: "#6a6d70" }} />
+          <span className="absolute top-2 left-9 h-2.5 w-3" style={{ background: "#8a8378" }} />
         </span>
       ),
     },

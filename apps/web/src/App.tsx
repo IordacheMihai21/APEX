@@ -56,11 +56,12 @@ const Records = lazy(() => fresh(() => import("./ui/Records")).then((m) => ({ de
 const OrderCorners = lazy(() => fresh(() => import("./ui/OrderCorners")).then((m) => ({ default: m.OrderCorners })));
 const SpeedTrap = lazy(() => fresh(() => import("./ui/SpeedTrap")).then((m) => ({ default: m.SpeedTrap })));
 const Lineup = lazy(() => fresh(() => import("./ui/Lineup")).then((m) => ({ default: m.Lineup })));
+const AerialView = lazy(() => fresh(() => import("./ui/AerialView")).then((m) => ({ default: m.AerialView })));
 const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) => ({ default: m.HigherLower })));
 
 /** A screen with its own address: a game's page or an info page (both declared in games/registry). */
 type Mini = GamePage | InfoPage;
-type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "braking-point" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "braking-point" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "aerial" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 /** A practice link (?play=practice&track=…&cond=…), as the circuit guides use. */
 function practiceFromQuery(search: string): Screen | null {
@@ -310,6 +311,8 @@ export function App() {
           <Archive onPlay={(day, trackId) => setScreen({ kind: "play", mode: "daily", trackId, day })} />
         ) : screen.kind === "pit-stop" ? (
           <PitStop onPlayDaily={() => act({ kind: "daily" })} />
+        ) : screen.kind === "aerial" ? (
+          <AerialView />
         ) : screen.kind === "line-up" ? (
           <Lineup />
         ) : screen.kind === "speed-trap" ? (

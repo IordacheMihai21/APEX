@@ -17,9 +17,10 @@ import { STOPS_PER_DAY, brakingDone, brakingDoneDays, brakingScore, dayStops } f
 import { CIRCUITS, circuitSlug } from "../modes/circuits";
 import { ROUNDS as TRAP_ROUNDS, trapDone, trapDoneDays, trapRounds, trapScore } from "../modes/speedtrap";
 import { MISTAKES as LINEUP_MISTAKES, dailyLineup, lineupDoneDays, lineupGuesses, lineupState } from "../modes/lineup";
+import { AERIAL_TRIES, aerialDoneDays, aerialGuesses, aerialOver, aerialSolved } from "../modes/aerial";
 import { ORDER_TRIES, orderDoneDays, orderOver, orderSolved, orderTries } from "../modes/order";
 
-export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "corner-order" | "speed-trap" | "line-up" | "reaction";
+export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "corner-order" | "speed-trap" | "line-up" | "aerial" | "reaction";
 
 /** Where a game stands today, for the "Today" bar and the hub. */
 export interface TodayStatus {
@@ -338,6 +339,41 @@ export const GAMES: GameDef[] = [
       return s.found.length || s.mistakes ? { state: "playing", label: `${s.found.length}/4 groups` } : { state: "new", label: "New today" };
     },
     doneDays: lineupDoneDays,
+  },
+  {
+    id: "aerial",
+    name: "Aerial view",
+    short: "Aerial",
+    route: "/aerial",
+    cadence: "daily",
+    inDailySet: false,
+    tagline: "Name the circuit from above, without the track",
+    blurb: "Fields, woods, water, roads and towns from above, but no track. Name the circuit; every miss pulls the view out.",
+    title: "Aerial view: name the circuit from its surroundings | Lapdle",
+    howTo: {
+      steps: [
+        "You see a circuit's surroundings from above, drawn from map data: fields, woods, water, roads, buildings. The track itself is left out.",
+        "Pick the circuit you think it is. Every wrong guess pulls the view further out.",
+        "Six guesses. After three misses you get the continent, after five the country.",
+      ],
+      tip: "North is always up. A new circuit every day.",
+    },
+    guide: {
+      intro: "Aerial view is a daily guessing game: name a real circuit from its surroundings seen from above, with the track left out.",
+      scoring:
+        "The view starts close in, about 350 m across, near the track. Each wrong guess pulls it further out, to the whole area at the last guess; after three misses the continent is shown, after five the country. Six guesses in all. Once it's solved or the guesses run out, the circuit is drawn in. Never the day's Daily Quali, Mystery circuit or Order the corners circuit.",
+      tips: [
+        "Look for water: a harbour, a lake or a river narrows it down fast.",
+        "Dense towns and tall buildings point to a city circuit; forest and farmland to a country one.",
+        "The empty band where the track would be often shows its shape once the view pulls out.",
+      ],
+    },
+    today(day = dateKey()) {
+      const g = aerialGuesses(day);
+      if (aerialOver(g, day)) return { state: "done", label: aerialSolved(g, day) ? `${g.length}/${AERIAL_TRIES}` : `X/${AERIAL_TRIES}` };
+      return g.length ? { state: "playing", label: `${AERIAL_TRIES - g.length} guesses left` } : { state: "new", label: "New today" };
+    },
+    doneDays: aerialDoneDays,
   },
   {
     id: "reaction",

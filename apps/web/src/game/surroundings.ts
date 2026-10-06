@@ -119,6 +119,8 @@ export class Surroundings {
   private readonly landmarks: SceneryData["landmarks"];
   private tex: { canopy: CanvasPattern; water: CanvasPattern; sand: CanvasPattern; meadow: CanvasPattern; paving: CanvasPattern; road: CanvasPattern } | null = null;
   private readonly flora: Flora;
+  /** Draw the mapped raceway (old layouts, pit lane); Aerial view turns it off. */
+  showRaceway = true;
   private _wet = false;
   /** Wet days: darker, cooler ground, flat light (set before the first draw). */
   set wet(v: boolean) {
@@ -384,15 +386,18 @@ export class Surroundings {
     ctx.stroke(this.rail);
 
     // other raceway: the old and alternative layouts, and the pit lane with its white lines
-    ctx.strokeStyle = "#3a3d42";
-    ctx.lineWidth = 11;
-    ctx.stroke(this.raceway);
-    ctx.strokeStyle = "#f2f2ee";
-    ctx.lineWidth = 12.6;
-    ctx.stroke(this.pitlane);
-    ctx.strokeStyle = "#34373c";
-    ctx.lineWidth = 12;
-    ctx.stroke(this.pitlane);
+    // (off in Aerial view, where any piece of track would give the circuit away)
+    if (this.showRaceway) {
+      ctx.strokeStyle = "#3a3d42";
+      ctx.lineWidth = 11;
+      ctx.stroke(this.raceway);
+      ctx.strokeStyle = "#f2f2ee";
+      ctx.lineWidth = 12.6;
+      ctx.stroke(this.pitlane);
+      ctx.strokeStyle = "#34373c";
+      ctx.lineWidth = 12;
+      ctx.stroke(this.pitlane);
+    }
 
     if (this.hasYachts && px < 3) {
       // moored yachts: soft shadow on the water to the south-east, then the boat
