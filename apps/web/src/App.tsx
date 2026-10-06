@@ -108,7 +108,11 @@ export function App() {
     const mini = screen.kind in MINI ? (screen.kind as Mini) : null;
     const corner = screen.kind === "play" && screen.mode === "corner";
     url.pathname = mini ? `/${mini}` : corner ? "/corner" : "/";
-    document.title = mini ? MINI[mini] : corner ? `Corner of the week: ${weeklyCorner().name} | Lapdle` : "Lapdle: find the perfect lap";
+    document.title = mini ? MINI[mini] : corner ? `Corner of the week: ${weeklyCorner().name} | Lapdle` : "Lapdle – Daily Racing Line Challenge";
+    // each page is its own canonical address (practice and challenge links point back at the page they belong to)
+    const canonical = `https://lapdle.com${url.pathname === "/" ? "/" : url.pathname}`;
+    document.querySelector('link[rel="canonical"]')?.setAttribute("href", canonical);
+    document.querySelector('meta[property="og:url"]')?.setAttribute("content", canonical);
     if (screen.kind === "play" && screen.mode === "practice") {
       url.searchParams.set("play", "practice");
       url.searchParams.set("track", screen.trackId);

@@ -1,20 +1,45 @@
 {
-  "name": "Lapdle: find the perfect lap",
+  "name": "Lapdle – Daily Racing Line Challenge",
   "short_name": "Lapdle",
-  "description": "A daily racing-line game on real circuits. Set the line, race the lap, chase the perfect time.",
+  "description": "A free daily racing line puzzle on real circuits. Set your line through every corner and chase the perfect lap.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#0a0b0d",
   "theme_color": "#0a0b0d",
-  "categories": ["games", "sports"],
+  "categories": [
+    "games",
+    "sports"
+  ],
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Lights out reaction test", "url": "/reaction", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+    {
+      "name": "Lights out reaction test",
+      "url": "/reaction",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }

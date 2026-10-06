@@ -521,6 +521,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
             {quali ? ", race-weekend special" : ""}
           </p>
           <h1 id="daily-h" className="reveal-up wide mt-2 pb-1 text-[clamp(36px,12.5cqw,84px)] [overflow-wrap:anywhere] leading-[0.95] text-paint" style={d(100)}>
+            <span className="sr-only">Lapdle, the daily racing line challenge. Today's circuit: </span>
             <span>{info.name}</span>
           </h1>
           <p className="rise mt-2 text-[15px] text-steel" style={d(200)}>
@@ -714,6 +715,25 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
             Past dailies
           </button>
         </p>
+      </section>
+
+      {/* what Lapdle is, in plain words: for new visitors and for search engines */}
+      <section aria-labelledby="about-h" className="border-t border-line">
+        <div className="mx-auto max-w-[1240px] px-4 py-12 md:px-8 lg:py-16">
+          <h2 id="about-h" className="wide text-[clamp(24px,3.4vw,34px)] leading-none text-paint">
+            The daily racing line challenge
+          </h2>
+          <div className="mt-4 grid max-w-[1000px] gap-4 text-[15px] leading-relaxed text-paint/80 md:grid-cols-2 md:gap-10">
+            <p>
+              Lapdle is a free daily puzzle for anyone who loves a good racing line. Every day there is one real circuit to master. Choose how you take each corner (early apex, classic or late), then watch your car drive
+              that line with real physics and see, corner by corner, where the time went.
+            </p>
+            <p>
+              You have six laps to earn a medal and close in on the perfect lap, and a new circuit arrives every day. Between laps, name a circuit from a few corners, call higher or lower on circuit facts, run a pit stop
+              or test your start against the lights. It plays in your browser, with no account and no download.
+            </p>
+          </div>
+        </div>
       </section>
 
       <Footer onAction={onAction} />
