@@ -199,13 +199,15 @@ function GameView({
           href="https://www.openstreetmap.org/copyright"
           target="_blank"
           rel="noreferrer"
-          className="absolute top-2 left-1/2 -translate-x-1/2 bg-night/60 px-1.5 py-0.5 text-[11px] text-steel/80 hover:text-paint"
+          className="absolute top-2 left-1/2 -translate-x-1/2 bg-night/60 px-1.5 py-0.5 text-[11px] text-steel/80 hover:text-paint max-[719px]:hidden"
         >
           Map data © OpenStreetMap contributors
         </a>
       )}
       {/* one corner needs no tower of corners */}
-      <div ref={tower} className={`absolute top-2 left-2 ${game.focus !== null ? "hidden" : ""}`}>
+      <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5">
+      {/* phones: the tower only while racing (setup and result list the corners in their panels) */}
+      <div ref={tower} className={game.focus !== null ? "hidden" : racing ? "" : "max-[719px]:hidden"}>
         <CornerTower
           rows={rows}
           active={s.activeGroup}
@@ -213,6 +215,17 @@ function GameView({
           live={racing}
           onSelect={s.phase === "setup" && !s.locked ? (i) => game.selectGate(i, 0) : s.phase === "result" && !s.locked ? (i) => game.adjust(game.controls.complexes[i].corners[0]) : undefined}
         />
+      </div>
+      {game.scenery.hasOsm && (
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noreferrer"
+          className="bg-night/60 px-1.5 py-0.5 text-[10px] text-steel/80 hover:text-paint min-[720px]:hidden"
+        >
+          © OpenStreetMap
+        </a>
+      )}
       </div>
       {s.phase === "setup" && !s.locked && <ViewControls game={game} />}
       {s.phase === "setup" && !s.locked && <ControlBar s={s} game={game} coach={coach} />}
@@ -355,9 +368,9 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
   const last = s.complex === game.controls.complexes.length - 1;
   return (
     <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center min-[720px]:px-3 min-[720px]:pb-3">
-      <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/94 px-3 pt-2.5 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:border">
+      <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/94 px-4 pt-4 pb-[max(14px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:border min-[720px]:px-3 min-[720px]:pt-3">
         {coach.active && (
-          <div key={coach.step} className="coach-in mb-2.5 flex items-start gap-3 rounded-sm border border-ink/30 bg-ink/10 px-3 py-2" role="status">
+          <div key={coach.step} className="coach-in mb-4 flex items-start gap-3 rounded-sm border border-ink/30 bg-ink/10 px-3 py-2" role="status">
             <span className="mt-[7px] flex shrink-0 gap-1" aria-label={`Tip ${coach.step + 1} of ${COACH.length}`}>
               {COACH.map((_, i) => (
                 <span key={i} className={`h-1 w-3 ${i <= coach.step ? "bg-ink" : "bg-asphalt"}`} />
@@ -394,7 +407,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
         )}
 
         {/* the one-tap line for this corner */}
-        <div className={`mt-2.5 grid grid-cols-3 border border-line ${coach.active && coach.step === 0 ? "coach-ring" : ""}`} role="radiogroup" aria-label="Line through this corner">
+        <div className={`mt-3.5 grid grid-cols-3 border border-line ${coach.active && coach.step === 0 ? "coach-ring" : ""}`} role="radiogroup" aria-label="Line through this corner">
           {LINE_STYLES.map((st) => (
             <button
               key={st}
@@ -410,7 +423,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
             </button>
           ))}
         </div>
-        <p className="caption mt-1.5 min-h-[17px]">{s.style ? STYLE_HINT[s.style] : "Your own line. Pick a style to start from one, or fine-tune each point."}</p>
+        <p className="caption mt-2.5 min-h-[17px] leading-snug">{s.style ? STYLE_HINT[s.style] : "Your own line. Pick a style to start from one, or fine-tune each point."}</p>
         <p className="caption mt-0.5 hidden text-steel/70 [@media(hover:hover)_and_(min-width:720px)]:block">{game.focus !== null ? "Keys: 1, 2, 3 for a style, Enter to race." : "Keys: 1, 2, 3 for a style, ] for the next corner, Enter to race."}</p>
 
         {fine && (
@@ -456,7 +469,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
           </>
         )}
 
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2.5">
           <button className={iconBtn} onClick={() => game.undo()} disabled={!s.canUndo} aria-label="Undo" title="Undo">
             <Undo />
           </button>
@@ -659,9 +672,9 @@ function ResultSheet({
   return (
     <div
       ref={ref}
-      className="absolute inset-x-0 bottom-0 max-h-[78%] overflow-y-auto min-[720px]:inset-x-auto min-[720px]:top-2 min-[720px]:right-2 min-[720px]:bottom-2 min-[720px]:max-h-none min-[720px]:w-[380px]"
+      className="absolute inset-x-0 bottom-0 max-h-[70%] overflow-y-auto min-[720px]:inset-x-auto min-[720px]:top-2 min-[720px]:right-2 min-[720px]:bottom-2 min-[720px]:max-h-none min-[720px]:w-[380px]"
     >
-      <div className="wipe-in border-t border-line bg-night/95 px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:h-full min-[720px]:border">
+      <div className="wipe-in border-t border-line bg-night/95 px-4 pt-4 pb-[max(14px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:h-full min-[720px]:border min-[720px]:px-3 min-[720px]:pt-3">
         {/* timing card */}
         <div className="flex items-end justify-between gap-3">
           <div>
