@@ -1,20 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { GAMES, type GameId } from "../games/registry";
 import { msToNextDay } from "../modes/daily";
 import { track } from "../analytics";
 import { ChevronRight, Share } from "./icons";
 import { primaryBtn, secondaryBtn } from "./styles";
 
 /** Where a finished game can send the player next (App listens for this). */
-export type GoTo = "daily" | "mystery" | "higher-lower" | "pit-stop" | "reaction";
+export type GoTo = GameId;
 export const go = (to: GoTo) => window.dispatchEvent(new CustomEvent<GoTo>("lapdle:go", { detail: to }));
-
-const GAMES: { id: GoTo; name: string; line: string }[] = [
-  { id: "daily", name: "Daily Quali", line: "Today's circuit, six laps for a medal" },
-  { id: "mystery", name: "Mystery circuit", line: "Name the circuit from a few corners" },
-  { id: "pit-stop", name: "Pit stop", line: "Four wheels, then go on green" },
-  { id: "higher-lower", name: "Higher or lower", line: "Real circuit facts, one miss ends it" },
-  { id: "reaction", name: "Lights out", line: "Five lights, one tap" },
-];
 
 function clock(ms: number) {
   const x = Math.floor(ms / 1000);
@@ -150,7 +143,7 @@ export function FinishCard({
               <button className="group flex w-full items-center gap-3 py-2.5 text-left" onClick={() => go(g.id)}>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-semibold text-paint">{g.name}</span>
-                  <span className="block truncate text-[13px] text-steel">{g.line}</span>
+                  <span className="block truncate text-[13px] text-steel">{g.tagline}</span>
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-steel transition-transform group-hover:translate-x-0.5" />
               </button>

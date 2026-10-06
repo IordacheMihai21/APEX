@@ -40,6 +40,28 @@ Planned additions (not created yet, to avoid empty scaffolding):
 `supabase/` + `apps/api` (Phase 4),
 `tools/f1db-importer`, `tools/telemetry-analysis` (Phase 7, Python).
 
+## Games registry (`apps/web/src/games/registry.ts`)
+
+Lapdle is a hub of daily games. Every game is declared once in the registry:
+id, name and short name, its address (`route`), its cadence (`daily` or
+`endless`), whether it counts towards today's set (`inDailySet`), its
+one-line tagline and hub blurb, its page title, its How to play steps, and a
+`today(day)` function that reports where the player stands (`new`,
+`playing` or `done`, with a short label and an optional medal).
+
+Everything that lists games reads from it: the app's routing and page titles,
+the hub's Today bar and cards, the finish card's "Play next", the footer, the
+How to play cards and the analytics names. `todayProgress()` gives "x of y
+played today" for the daily set.
+
+To add a game:
+
+1. Its logic in `src/modes/<game>.ts` (records in local storage, keyed by day
+   for a daily game), its UI in `src/ui/<Game>.tsx` (lazy-loaded in `App.tsx`).
+2. One entry in `GAMES`.
+3. Its route in `public/_redirects` and `public/sitemap.xml`
+   (`registry.test.ts` fails until both list it).
+
 ## Data flow
 
 ```

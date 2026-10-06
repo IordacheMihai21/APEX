@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { type GamePage, type InfoPage, game, todayProgress } from "../games/registry";
 import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES, type Outline, type OutlineDetail, loadOutlineDetail } from "../game/outlines";
@@ -10,7 +11,7 @@ import { CIRCUITS } from "../modes/circuits";
 import { cornerMedal, daysLeft, loadCornerWeek, weekNumber, weeklyCorner } from "../modes/corner";
 import { loadHigherLower } from "../modes/higherLower";
 import { MYSTERY_TRIES, REVEAL, isOver, isSolved, loadMystery, mysteryAnswer, revealOffset } from "../modes/mystery";
-import { loadPitStop, secs, todaysStop } from "../modes/pitstop";
+import { loadPitStop, secs } from "../modes/pitstop";
 import { loadReaction } from "../modes/reaction";
 import { ADS_ON, AdSlot } from "./Ads";
 import { Chequered, Down, LowDownforce, Rain, Up } from "./icons";
@@ -29,7 +30,7 @@ export type HubAction =
   | { kind: "season"; fresh: boolean }
   | { kind: "practice" }
   | { kind: "practice-track"; trackId: string }
-  | { kind: "mini"; game: "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive" | "privacy" | "legal" }
+  | { kind: "mini"; game: GamePage | InfoPage }
   | { kind: "corner" }
   | { kind: "stats" };
 
@@ -61,56 +62,21 @@ function useReducedMotion() {
  * finished), and the medal streak. Each entry opens its game.
  */
 function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; onAction: (a: HubAction) => void }) {
-  const mystery = loadMystery();
   const stats = dailyStats();
-  const qualiDone = daily.status !== "playing";
-  const mysteryDone = isOver(mystery);
-  const pitToday = todaysStop(loadPitStop());
-  const medal = bestMedal(daily);
-  const items = [
-    {
-      key: "quali",
-      name: "Daily Quali",
-      short: "Quali" as string | null,
-      done: qualiDone,
-      state: qualiDone
-        ? daily.status === "won"
-          ? "Pole"
-          : medal
-            ? MEDAL_NAME[medal]
-            : "No medal"
-        : daily.laps.length
-          ? `${DAILY_LAPS - daily.laps.length} laps left`
-          : "Not started",
-      medal: medal,
-      act: () => onAction(qualiDone ? { kind: "daily-summary" } : { kind: "daily" }),
-    },
-    {
-      key: "mystery",
-      name: "Mystery circuit",
-      short: "Mystery",
-      done: mysteryDone,
-      state: mysteryDone
-        ? isSolved(mystery)
-          ? `Solved in ${mystery.guesses.length}`
-          : "Missed"
-        : mystery.guesses.length
-          ? `${MYSTERY_TRIES - mystery.guesses.length} guesses left`
-          : "Not started",
-      medal: null,
-      act: () => onAction({ kind: "mini", game: "mystery" }),
-    },
-    {
-      key: "pit",
-      name: "Pit stop",
-      short: "Pit stop",
-      done: !!pitToday,
-      state: pitToday ? `${secs(pitToday.totalMs)} s` : "Not started",
-      medal: null,
-      act: () => onAction({ kind: "mini", game: "pit-stop" }),
-    },
-  ];
-  const played = items.filter((i) => i.done).length;
+  // the daily set and today's status of each, from the registry
+  const { items: today, done: played } = todayProgress(daily.key);
+  const items = today.map(({ game: g, status }) => ({
+    key: g.id,
+    name: g.name,
+    short: g.short as string | null,
+    done: status.state === "done",
+    state: status.label,
+    medal: status.medal ?? null,
+    act: () =>
+      onAction(
+        g.id === "quali" ? (status.state === "done" ? { kind: "daily-summary" } : { kind: "daily" }) : { kind: "mini", game: g.route!.slice(1) as GamePage },
+      ),
+  }));
   return (
     <nav aria-label="Today's dailies" className="border-b border-line bg-board/60">
       <div className="mx-auto flex max-w-[1240px] items-stretch gap-x-6 px-4 md:px-8">
@@ -247,8 +213,8 @@ function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
   const games = [
     {
       game: "mystery" as const,
-      title: "Mystery circuit",
-      blurb: "Name the circuit from a few corners. Six guesses, a new one every day.",
+      title: game("mystery").name,
+      blurb: game("mystery").blurb,
       status,
       cta: isOver(mystery) ? "See today's answer" : "Guess the circuit",
       art: (
@@ -259,8 +225,8 @@ function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
     },
     {
       game: "higher-lower" as const,
-      title: "Higher or lower",
-      blurb: "Longer lap, more corners, earlier Grand Prix? Call it and keep the streak alive.",
+      title: game("higher-lower").name,
+      blurb: game("higher-lower").blurb,
       status: hl.best ? `Best streak ${hl.best}` : "Endless",
       cta: "Start a run",
       art: (
@@ -271,8 +237,8 @@ function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
     },
     {
       game: "pit-stop" as const,
-      title: "Pit stop",
-      blurb: "Four wheels light up one at a time. Change them, then go on green. The record is 1.80 s.",
+      title: game("pit-stop").name,
+      blurb: game("pit-stop").blurb,
       status: pit.days[dateKey()] ? `Today ${secs(pit.days[dateKey()].totalMs)} s` : pit.best !== null ? `Best ${secs(pit.best)} s` : "New today",
       cta: pit.days[dateKey()] ? "Practice stops" : "Box, box",
       art: (
@@ -287,8 +253,8 @@ function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
     },
     {
       game: "reaction" as const,
-      title: "Lights out",
-      blurb: "How fast are you off the line? Racing drivers react in about 0.2 s.",
+      title: game("reaction").name,
+      blurb: game("reaction").blurb,
       status: reaction.best !== null ? `Best ${(reaction.best / 1000).toFixed(3)} s` : "Five lights, one tap",
       cta: "Test your reaction",
       art: <Gantry lit={0} size="sm" label="Start lights" />,

@@ -1,5 +1,6 @@
 import { DiscordLogo, EnvelopeSimple, type Icon, InstagramLogo, TiktokLogo, XLogo, YoutubeLogo } from "@phosphor-icons/react";
 import { ADS_CONSENT, OPERATOR, SOCIAL, openConsent } from "../legal";
+import { GAMES, type GamePage } from "../games/registry";
 import { loadSeason, seasonDone } from "../modes/season";
 import type { HubAction } from "./Hub";
 
@@ -24,11 +25,9 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
     ["Free Practice", { kind: "practice" }],
     ["Past dailies", { kind: "mini", game: "archive" }],
   ];
+  // every game with its own page, from the registry, then the record
   const minis: [string, HubAction][] = [
-    ["Mystery circuit", { kind: "mini", game: "mystery" }],
-    ["Higher or lower", { kind: "mini", game: "higher-lower" }],
-    ["Pit stop", { kind: "mini", game: "pit-stop" }],
-    ["Lights out", { kind: "mini", game: "reaction" }],
+    ...GAMES.filter((g) => g.route).map((g): [string, HubAction] => [g.name, { kind: "mini", game: g.route!.slice(1) as GamePage }]),
     ["Your record", { kind: "stats" }],
   ];
   const year = new Date().getFullYear();

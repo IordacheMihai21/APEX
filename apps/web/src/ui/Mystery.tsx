@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { HowToPlay, modalOpen } from "./HowToPlay";
+import { HowToPlay } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
 import { track } from "../analytics";

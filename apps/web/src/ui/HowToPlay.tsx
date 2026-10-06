@@ -1,46 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { type GameId, game as gameDef } from "../games/registry";
 import { primaryBtn } from "./styles";
 
-type Game = "mystery" | "higher-lower" | "pit-stop" | "reaction";
-
-const GUIDE: Record<Game, { name: string; steps: string[]; tip: string }> = {
-  mystery: {
-    name: "Mystery circuit",
-    steps: [
-      "A few corners of a real circuit are drawn. Pick the circuit you think it is.",
-      "Every miss draws more of the lap and scores your guess: country, length, corners and first Grand Prix.",
-      "Green is exact, yellow is close, and the arrows say whether the answer is higher or lower.",
-    ],
-    tip: "Six guesses. A new circuit every day.",
-  },
-  "higher-lower": {
-    name: "Higher or lower",
-    steps: [
-      "Two circuits and one real fact: length, corners, race laps, first Grand Prix or the pole time.",
-      "Call the second circuit against the first: longer or shorter, more or fewer, earlier or later, quicker or slower.",
-      "Right, and a new circuit comes in. One wrong call ends the run.",
-    ],
-    tip: "Arrow keys work too. Endless: chase your longest run.",
-  },
-  "pit-stop": {
-    name: "Pit stop",
-    steps: [
-      "Call the car in: press Space, or tap the pit box.",
-      "The wheels light up one at a time. Hit the key shown beside it, or tap the lit tyre on a phone. A wrong key costs time.",
-      "When the light turns green, release the car: Space, or tap. Too early is a penalty.",
-    ],
-    tip: "The daily stop counts once a day. Practice as often as you like.",
-  },
-  reaction: {
-    name: "Lights out",
-    steps: [
-      "Press Start. The five red lights come on, one a second, then hold for a moment.",
-      "The instant they all go out, hit Launch. Space works too.",
-      "Moving before the lights go out is a jump start.",
-    ],
-    tip: "Racing drivers react in about 0.2 s. Most people take about 0.27 s.",
-  },
-};
+type Game = Exclude<GameId, "quali">;
 
 /** Whether a game's card (how-to or finish) is open: game keys stay off while one is. */
 export const modalOpen = () => typeof document !== "undefined" && !!document.querySelector('[aria-modal="true"]');
@@ -69,7 +31,8 @@ function markSeen(g: Game) {
 export function HowToPlay({ game, onOpenChange }: { game: Game; onOpenChange?: (open: boolean) => void }) {
   const [open, setOpen] = useState(() => !seen(game));
   const close = useRef<HTMLButtonElement>(null);
-  const g = GUIDE[game];
+  const def = gameDef(game);
+  const g = { name: def.name, steps: def.howTo?.steps ?? [], tip: def.howTo?.tip ?? "" };
 
   useEffect(() => {
     onOpenChange?.(open);

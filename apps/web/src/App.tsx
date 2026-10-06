@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState, useRef } from "react";
+import { GAME_PAGES, type GamePage, type InfoPage, PAGES, game } from "./games/registry";
 import { flushSync } from "react-dom";
 import { colourBlind, setColourBlind } from "./game/palette";
 import { CATALOG } from "./game/catalog";
@@ -43,7 +44,8 @@ const Archive = lazy(() => fresh(() => import("./ui/Archive")).then((m) => ({ de
 const PitStop = lazy(() => fresh(() => import("./ui/PitStop")).then((m) => ({ default: m.PitStop })));
 const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) => ({ default: m.HigherLower })));
 
-type Mini = "reaction" | "mystery" | "higher-lower" | "pit-stop" | "archive" | "privacy" | "legal";
+/** A screen with its own address: a game's page or an info page (both declared in games/registry). */
+type Mini = GamePage | InfoPage;
 type Screen = { kind: "hub" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 function initialScreen(): Screen {
@@ -57,20 +59,13 @@ function initialScreen(): Screen {
   if (mode === "practice" && CATALOG.some((t) => t.id === track)) return { kind: "play", mode, trackId: track!, condition };
   const path = location.pathname.replace(/\/$/, "").slice(1) || q.get("play");
   if (path === "corner") return { kind: "play", mode: "corner", trackId: weeklyCorner().trackId };
-  if (path && path in MINI) return { kind: path as Mini };
+  if (path && isMini(path)) return { kind: path };
   return { kind: "hub" };
 }
 
-/** The minigames have their own addresses and titles, so they can be found and shared. */
-const MINI: Record<Mini, string> = {
-  reaction: "Lights out: start-light reaction test | Lapdle",
-  mystery: "Mystery circuit: guess the racing circuit | Lapdle",
-  "higher-lower": "Higher or lower: racing circuit facts | Lapdle",
-  "pit-stop": "Pit stop: change four tyres, go on green | Lapdle",
-  archive: "Daily Quali archive: every past circuit | Lapdle",
-  privacy: "Privacy | Lapdle",
-  legal: "Legal notice and terms | Lapdle",
-};
+const isMini = (k: string): k is Mini => (GAME_PAGES as readonly string[]).includes(k) || k in PAGES;
+/** The page title of a screen with its own address. */
+const miniTitle = (k: Mini) => (k in PAGES ? PAGES[k as InfoPage] : game(k as GamePage).title);
 
 const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice", corner: "Corner of the week" };
 
@@ -105,10 +100,10 @@ export function App() {
   useEffect(() => {
     const url = new URL(location.href);
     url.search = "";
-    const mini = screen.kind in MINI ? (screen.kind as Mini) : null;
+    const mini = isMini(screen.kind) ? screen.kind : null;
     const corner = screen.kind === "play" && screen.mode === "corner";
     url.pathname = mini ? `/${mini}` : corner ? "/corner" : "/";
-    document.title = mini ? MINI[mini] : corner ? `Corner of the week: ${weeklyCorner().name} | Lapdle` : "Lapdle – Daily Racing Line Challenge";
+    document.title = mini ? miniTitle(mini) : corner ? `Corner of the week: ${weeklyCorner().name} | Lapdle` : game("quali").title;
     // each page is its own canonical address (practice and challenge links point back at the page they belong to)
     const canonical = `https://lapdle.com${url.pathname === "/" ? "/" : url.pathname}`;
     document.querySelector('link[rel="canonical"]')?.setAttribute("href", canonical);
@@ -149,7 +144,7 @@ export function App() {
 
   // "Play next" on a minigame's finish card
   const goRef = useRef<(to: string) => void>(() => {});
-  goRef.current = (to: string) => (to === "daily" ? act({ kind: "daily" }) : setScreen({ kind: to as Mini }));
+  goRef.current = (to: string) => (to === "quali" ? act({ kind: "daily" }) : isMini(to) ? setScreen({ kind: to }) : undefined);
   useEffect(() => {
     const on = (e: Event) => goRef.current((e as CustomEvent<string>).detail);
     window.addEventListener("lapdle:go", on);
