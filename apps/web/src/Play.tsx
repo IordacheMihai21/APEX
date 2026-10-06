@@ -6,7 +6,7 @@ import { DAILY_HINT_AFTER_LAPS, DAILY_LAPS, type DailyRecord, bestMedal, conditi
 import { type Grade, gradeFor } from "./modes/grading";
 import { type RoundOutcome, SEASON_LAPS, SEASON_ROUNDS, type SeasonStore, currentTrack, loadSeason, newSeason, recordSeasonLap, rivalMs, seasonDone } from "./modes/season";
 import { CornerTower } from "./ui/CornerTower";
-import { PhoneSheet } from "./ui/PhoneSheet";
+import { ResultPhoneSheet, SetupSheet } from "./ui/PhoneSheet";
 import { usePhone } from "./ui/usePhone";
 import { GateSlider } from "./ui/GateSlider";
 import { LapGrid } from "./ui/LapGrid";
@@ -367,15 +367,15 @@ function useCoach(s: Snapshot) {
 }
 
 function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: ReturnType<typeof useCoach> }) {
+  const phone = usePhone();
   const ref = useInset(game, "bottom");
   const [fine, setFine] = useFineTune();
   const cx = game.controls.complexes[s.complex];
   const inside = cx.direction === "mixed" ? null : cx.direction;
   const gate = cx.gates[s.gate];
   const last = s.complex === game.controls.complexes.length - 1;
-  return (
-    <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center min-[720px]:px-3 min-[720px]:pb-3">
-      <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/94 px-4 pt-4 pb-[max(14px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:border min-[720px]:px-3 min-[720px]:pt-3">
+  const controls = (
+    <>
         {coach.active && (
           <div key={coach.step} className="coach-in mb-4 flex items-start gap-3 rounded-sm border border-ink/30 bg-ink/10 px-3 py-2" role="status">
             <span className="mt-[7px] flex shrink-0 gap-1" aria-label={`Tip ${coach.step + 1} of ${COACH.length}`}>
@@ -492,6 +492,39 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
             Lights out
           </button>
         </div>
+    </>
+  );
+
+  // phones: the panel folds into a strip (corner, next, lights out) so the circuit can take the screen
+  if (phone)
+    return (
+      <SetupSheet
+        game={game}
+        strip={
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="wide truncate text-[18px] leading-none text-paint">{s.mode === "corner" ? weeklyCorner().name : cx.name}</h2>
+              {game.focus === null && (
+                <button className="btn-line inline-flex shrink-0 items-center gap-1 border border-paint/20 py-1 pr-1.5 pl-2.5 text-[13px] font-semibold text-paint/90" onClick={() => game.nextComplex()}>
+                  {last ? "First corner" : "Next"}
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <button className={`${primaryBtn} w-full`} onClick={() => game.race()}>
+              Lights out
+            </button>
+          </div>
+        }
+      >
+        {controls}
+      </SetupSheet>
+    );
+
+  return (
+    <div ref={ref} className="absolute inset-x-0 bottom-0 flex justify-center min-[720px]:px-3 min-[720px]:pb-3">
+      <div className="wipe-in w-full max-w-[560px] border-t border-line bg-night/94 px-4 pt-4 pb-[max(14px,env(safe-area-inset-bottom))] backdrop-blur-[3px] min-[720px]:border min-[720px]:px-3 min-[720px]:pt-3">
+        {controls}
       </div>
     </div>
   );
@@ -761,7 +794,7 @@ function ResultSheet({
 
   if (phone)
     return (
-      <PhoneSheet
+      <ResultPhoneSheet
         game={game}
         summary={
           <>
