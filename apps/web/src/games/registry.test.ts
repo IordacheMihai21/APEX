@@ -1,5 +1,6 @@
-import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
+import redirects from "../../public/_redirects?raw";
+import sitemap from "../../public/sitemap.xml?raw";
 import { DAILY_SET, GAMES, GAME_PAGES, PUBLIC_ROUTES, game, todayProgress } from "./registry";
 
 const store: Record<string, string> = {};
@@ -11,8 +12,6 @@ beforeEach(() => {
     removeItem: (k: string) => void delete store[k],
   } as Storage;
 });
-
-const publicFile = (name: string) => readFileSync(new URL(`../../public/${name}`, import.meta.url), "utf8");
 
 describe("game registry", () => {
   it("has one entry per game, each with its own id and address", () => {
@@ -26,8 +25,6 @@ describe("game registry", () => {
 
   it("serves and lists every public address", () => {
     // a game added to the registry also needs its rewrite and its sitemap entry
-    const redirects = publicFile("_redirects");
-    const sitemap = publicFile("sitemap.xml");
     for (const route of PUBLIC_ROUTES) {
       if (route !== "/") expect(redirects, `${route} in public/_redirects`).toMatch(new RegExp(`^${route}\\s+/\\s+200$`, "m"));
       expect(sitemap, `${route} in public/sitemap.xml`).toContain(`<loc>https://lapdle.com${route}</loc>`);
