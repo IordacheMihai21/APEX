@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { type GamePage, type InfoPage, game, todayProgress } from "../games/registry";
+import { GAMES, type GamePage, type InfoPage, game, todayProgress } from "../games/registry";
 import { playStreak } from "../games/profile";
 import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
@@ -204,7 +204,12 @@ function CornerBand({ onAction }: { onAction: (a: HubAction) => void }) {
 }
 
 /** Four quick games beside the lap: one daily puzzle, one streak, one reflex test. */
-function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
+/**
+ * The game cards, in two groups: today's set (the daily games besides the
+ * Quali, which has the hero) and the extras. Each card shows today's status
+ * and what its button does.
+ */
+function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; group: "daily" | "extras" }) {
   const mystery = loadMystery();
   const answer = OUTLINES[mysteryAnswer(mystery.key)];
   const hl = loadHigherLower();
@@ -249,7 +254,7 @@ function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
       game: "pit-stop" as const,
       title: game("pit-stop").name,
       blurb: game("pit-stop").blurb,
-      status: pit.days[dateKey()] ? `Today ${secs(pit.days[dateKey()].totalMs)} s` : pit.best !== null ? `Best ${secs(pit.best)} s` : "New today",
+      status: pit.days[dateKey()] ? `Today ${secs(pit.days[dateKey()].totalMs)} s` : pit.best !== null ? `New today. Best ${secs(pit.best)} s` : "New today",
       cta: pit.days[dateKey()] ? "Practice stops" : "Box, box",
       art: (
         <span className="flex gap-1.5" aria-hidden="true">
@@ -270,30 +275,77 @@ function Minigames({ onAction }: { onAction: (a: HubAction) => void }) {
       art: <Gantry lit={0} size="sm" label="Start lights" />,
     },
   ];
+  // in the registry's order, the same as the Today bar
+  const order = (id: string) => GAMES.findIndex((x) => x.id === id);
+  const shown = games.filter((g) => game(g.game).inDailySet === (group === "daily")).sort((a, b) => order(a.game) - order(b.game));
+  const progress = todayProgress();
   return (
-    <section aria-labelledby="games-h" className="border-t border-line">
+    <section aria-labelledby={`games-${group}-h`} className="border-t border-line">
       <div className="mx-auto max-w-[1240px] px-4 py-12 md:px-8 lg:py-16">
-        <h2 id="games-h" className="wide text-[34px] leading-none text-paint">
-          Minigames
-        </h2>
-        <p className="mt-3 text-[15px] text-steel">Quick ones for between laps.</p>
-        <ul className="mt-6 grid gap-3 md:grid-cols-2">
-          {games.map((g, i) => (
-            <li key={g.game} className="in-view" style={d(i * 60)}>
-              <button onClick={() => onAction({ kind: "mini", game: g.game })} className="track-tile flex h-full w-full flex-col border border-line bg-board/70 p-5 text-left">
-                <span className="flex h-[88px] items-center">{g.art}</span>
-                <span className="wide mt-5 text-[22px] leading-none text-paint">{g.title}</span>
-                <span className="mt-2 text-[14px] text-steel">{g.blurb}</span>
-                <span className="mt-auto flex items-baseline justify-between gap-3 pt-5">
-                  <span className="caption">{g.status}</span>
-                  <span className="text-[14px] font-semibold whitespace-nowrap text-ink">{g.cta}</span>
-                </span>
-              </button>
-            </li>
-          ))}
+        {group === "daily" ? (
+          <>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+              <h2 id="games-daily-h" className="wide text-[34px] leading-none text-paint">
+                Today's set
+              </h2>
+              <p className="text-[14px] text-steel">
+                <span className="num font-semibold text-paint">
+                  {progress.done} of {progress.total}
+                </span>{" "}
+                played. A new set at midnight.
+              </p>
+            </div>
+            <p className="mt-3 text-[15px] text-steel">
+              {COUNT_WORD[shown.length] ?? shown.length} more {shown.length === 1 ? "daily" : "dailies"} beside the Quali. The same puzzles for everyone, a few minutes each.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 id="games-extras-h" className="wide text-[34px] leading-none text-paint">
+              More to play
+            </h2>
+            <p className="mt-3 text-[15px] text-steel">Any time, as often as you like.</p>
+          </>
+        )}
+        <ul className={`mt-6 grid gap-3 md:grid-cols-2 ${shown.length > 2 ? "lg:grid-cols-3" : ""}`}>
+          {shown.map((g, i) => {
+            const done = game(g.game).inDailySet && game(g.game).today().state === "done";
+            return (
+              <li key={g.game} className="in-view" style={d(i * 60)}>
+                <button onClick={() => onAction({ kind: "mini", game: g.game })} className="track-tile flex h-full w-full flex-col border border-line bg-board/70 p-5 text-left">
+                  <span className="flex h-[88px] items-center justify-between gap-3">
+                    {g.art}
+                    {done && (
+                      <span className="flex shrink-0 items-center gap-1.5 self-start text-[12px] font-semibold text-paint/80">
+                        <Chequered className="h-4 w-4" /> Done
+                      </span>
+                    )}
+                  </span>
+                  <span className="wide mt-5 text-[22px] leading-none text-paint">{g.title}</span>
+                  <span className="mt-2 text-[14px] text-steel">{g.blurb}</span>
+                  <span className="mt-auto flex items-baseline justify-between gap-3 pt-5">
+                    <span className="caption">{g.status}</span>
+                    <span className="text-[14px] font-semibold whitespace-nowrap text-ink">{g.cta}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </section>
+  );
+}
+
+const COUNT_WORD: Record<number, string> = { 1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five", 6: "Six" };
+
+/** An in-content ad between sections, on phones and tablets; wide screens have the side rails. */
+function AdBand() {
+  if (!ADS_ON) return null;
+  return (
+    <div className="flex justify-center border-t border-line py-8 xl:hidden">
+      <AdSlot kind="inline" />
+    </div>
   );
 }
 
@@ -579,6 +631,13 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
         </figure>
       </section>
 
+      {/* the rest of today's set, then an ad before the extras */}
+      <GameCards onAction={onAction} group="daily" />
+      <AdBand />
+
+      {/* more to play: the extras, then the weekly corner, the season and practice */}
+      <GameCards onAction={onAction} group="extras" />
+
       {/* the corner of the week */}
       <CornerBand onAction={onAction} />
 
@@ -635,13 +694,6 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
         </div>
       </section>
 
-      {/* one in-content ad on phones and tablets; wide screens have the side rails */}
-      {ADS_ON && (
-        <div className="flex justify-center border-t border-line py-8 xl:hidden">
-          <AdSlot kind="inline" />
-        </div>
-      )}
-
       {/* free practice */}
       <section aria-labelledby="practice-h" className="border-t border-line">
         <div className="mx-auto max-w-[1240px] px-4 pt-12 md:px-8 lg:pt-16">
@@ -671,8 +723,6 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
         </ul>
       </section>
 
-      {/* the minigames: quick ones between laps */}
-      <Minigames onAction={onAction} />
 
       {/* record */}
       <section aria-label="Your record" className="border-t border-line">
@@ -707,6 +757,8 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           </button>
         </p>
       </section>
+
+      <AdBand />
 
       {/* what Lapdle is, in plain words: for new visitors and for search engines */}
       <section aria-labelledby="about-h" className="border-t border-line">
