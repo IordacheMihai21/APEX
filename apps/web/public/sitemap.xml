@@ -8,6 +8,7 @@
   <url><loc>https://lapdle.com/reaction</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/corner</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/archive</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/records</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/how-to-play/quali</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/mystery</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -28,6 +29,19 @@
   <url><loc>https://lapdle.com/circuits/austin</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/circuits/barcelona</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/circuits/imola</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/trivia/monza</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia/spa</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia/silverstone</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia/suzuka</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia/monaco</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia/interlagos</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia/hungaroring</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia/spielberg</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia/zandvoort</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia/austin</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia/barcelona</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/trivia/imola</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/about</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://lapdle.com/privacy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
   <url><loc>https://lapdle.com/legal</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>

@@ -90,7 +90,8 @@ export function Privacy() {
             <p>
               It's stored in a database run by Supabase in the EU (Frankfurt). Other players only ever see totals (how many played, how many were faster, the median), never your device number or your line. We don't store
               your IP address with your result (to stop abuse, the server counts requests per IP as a salted one-way hash, kept for up to two days); Supabase keeps short-lived server logs for running the service.
-              Results are kept for up to 30 days. The legal basis is our legitimate interest in running the leaderboard you see in the game (Art. 6(1)(f) GDPR).
+              Results are kept for up to 30 days. The fastest lap on each circuit is also kept as an anonymous lap record (the time and the day only, with no device number or line), so it can't be
+              traced back to anyone. The legal basis is our legitimate interest in running the leaderboard you see in the game (Art. 6(1)(f) GDPR).
             </p>
             <ForgetMe />
           </Section>

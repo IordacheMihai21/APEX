@@ -88,6 +88,16 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
                 </a>
               </li>
               <li>
+                <a className={link} href="/records">
+                  Lap records
+                </a>
+              </li>
+              <li>
+                <a className={link} href="/trivia">
+                  Circuit trivia
+                </a>
+              </li>
+              <li>
                 <a className={link} href="/about">
                   About
                 </a>

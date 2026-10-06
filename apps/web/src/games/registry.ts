@@ -282,13 +282,14 @@ export function todayProgress(day = dateKey()) {
 /** Pages that aren't games, with their titles. */
 export const PAGES = {
   archive: "Daily Quali archive: every past circuit | Lapdle",
+  records: "Lap records: the fastest Daily Quali laps | Lapdle",
   privacy: "Privacy | Lapdle",
   legal: "Legal notice and terms | Lapdle",
 } as const;
 export type InfoPage = keyof typeof PAGES;
 
 /** Pre-rendered content pages (static HTML at build time, see src/ssg). */
-export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/how-to-play/${g.id}`), "/circuits", ...CIRCUITS.map((c) => `/circuits/${circuitSlug(c.id)}`)];
+export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/how-to-play/${g.id}`), "/circuits", ...CIRCUITS.map((c) => `/circuits/${circuitSlug(c.id)}`), "/trivia", ...CIRCUITS.map((c) => `/trivia/${circuitSlug(c.id)}`)];
 
 /** Every public address of the site (the SPA serves them all from index.html). */
 export const PUBLIC_ROUTES = ["/", ...GAMES.flatMap((g) => (g.route ? [g.route] : [])), "/corner", ...Object.keys(PAGES).map((p) => `/${p}`)];

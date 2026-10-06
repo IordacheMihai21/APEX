@@ -159,3 +159,41 @@ export function standingLine(s: Standing): string {
   const pct = Math.round((100 * beat) / (s.players - 1));
   return `Faster than ${pct}% of today's ${s.players} players.`;
 }
+
+export interface LapRecord {
+  trackId: string;
+  condition: Condition;
+  lapMs: number;
+  day: string;
+}
+export interface BoardDay {
+  day: string;
+  trackId: string;
+  condition: Condition;
+  players: number;
+  bestMs: number;
+  medianMs: number;
+}
+
+async function rpc<T>(name: string, body: unknown): Promise<T | null> {
+  if (!ONLINE) return null;
+  try {
+    const res = await fetch(`${URL_}/rest/v1/rpc/${name}`, { method: "POST", headers: headers(), body: JSON.stringify(body) });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+/** The fastest lap ever on each circuit and condition, for this physics version (null: unreachable). */
+export async function fetchRecords(physics: string): Promise<LapRecord[] | null> {
+  const rows = await rpc<{ track_id: string; condition: Condition; lap_ms: number; day: string }[]>("lap_records", { p_physics: physics });
+  return rows && rows.map((r) => ({ trackId: r.track_id, condition: r.condition, lapMs: r.lap_ms, day: r.day }));
+}
+
+/** Totals of each daily board over the last 30 days, newest first (null: unreachable). */
+export async function fetchRecentBoards(): Promise<BoardDay[] | null> {
+  const rows = await rpc<{ day: string; track_id: string; condition: Condition; players: number; best_ms: number; median_ms: number }[]>("recent_boards", { p_days: 30 });
+  return rows && rows.map((r) => ({ day: r.day, trackId: r.track_id, condition: r.condition, players: r.players, bestMs: r.best_ms, medianMs: r.median_ms }));
+}

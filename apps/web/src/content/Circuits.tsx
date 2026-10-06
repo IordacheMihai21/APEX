@@ -171,6 +171,16 @@ export function CircuitGuide({ id }: { id: string }) {
         <p className="mt-3 text-[14px] text-steel">Free practice at {c.name}: unlimited laps, and the perfect line on demand. Pick a condition above to drive it in the wet or with low downforce.</p>
       </div>
 
+      <Section title={`${c.name} quiz`}>
+        <p>
+          Know it by heart?{" "}
+          <a className={link} href={`/trivia/${circuitSlug(id)}`}>
+            Take the {c.name} quiz
+          </a>
+          : a few quick questions on the circuit.
+        </p>
+      </Section>
+
       <Section title="More circuits">
         <ul className="flex flex-wrap gap-x-5 gap-y-2">
           {others.map((x) => (

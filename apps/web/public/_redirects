@@ -4,6 +4,7 @@
 # receiving the home page in its place.
 /corner        /  200
 /archive       /  200
+/records       /  200
 /mystery       /  200
 /higher-lower  /  200
 /braking-point  /  200
@@ -13,6 +14,7 @@
 /legal         /  200
 /corner/       /  200
 /archive/      /  200
+/records/      /  200
 /mystery/      /  200
 /higher-lower/ /  200
 /braking-point/ /  200
