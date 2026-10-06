@@ -3,7 +3,7 @@ import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
 import { NextToday } from "./NextToday";
-import { track } from "../analytics";
+import { gameFinished, gameStarted } from "../games/events";
 import ZONES from "../game/braking.json";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES } from "../game/outlines";
@@ -122,15 +122,20 @@ export function BrakingPoint() {
         const next = recordStop(r);
         setStops(next);
         if (brakingDone(next)) {
-          track("Minigame finished", { game: "braking-point", mode: "daily", score: brakingScore(next) });
+          const total = brakingScore(next);
+          gameFinished("braking-point", "daily", { score: total >= 400 ? "400-500" : total >= 300 ? "300-399" : total >= 200 ? "200-299" : total >= 100 ? "100-199" : "0-99" });
           window.setTimeout(() => setFinish(true), 1400);
         }
-      } else recordPractice();
+      } else {
+        recordPractice();
+        gameFinished("braking-point", "practice", { off: r.off });
+      }
     },
     [mode, z],
   );
 
   const start = useCallback(() => {
+    gameStarted("braking-point", mode);
     const st = sim.current;
     st.s = z.from;
     st.v = speedAt(z, z.from, null);
@@ -157,7 +162,7 @@ export function BrakingPoint() {
       st.raf = requestAnimationFrame(frame);
     };
     st.raf = requestAnimationFrame(frame);
-  }, [end, paint, z]);
+  }, [end, mode, paint, z]);
   useEffect(() => () => cancelAnimationFrame(sim.current.raf), []);
 
   const brake = useCallback(() => {

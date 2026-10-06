@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
 import { type Condition, LINE_STYLES, type LineStyle } from "@apex/engine";
 import { Game, type MapView, type Mode, type Snapshot } from "./game/game";
+import { gameFinished, gameStarted } from "./games/events";
 import { DAILY_HINT_AFTER_LAPS, DAILY_LAPS, type DailyRecord, bestMedal, conditionOf, recordHint, loadDaily, recordLap } from "./modes/daily";
 import { type Grade, gradeFor } from "./modes/grading";
 import { type RoundOutcome, SEASON_LAPS, SEASON_ROUNDS, type SeasonStore, currentTrack, loadSeason, newSeason, recordSeasonLap, rivalMs, seasonDone } from "./modes/season";
@@ -73,7 +74,11 @@ export function Play({
           setDaily(rec);
           g = new Game(t, { scenery, mode, lapLimit: DAILY_LAPS, lapsUsed: rec.laps.length, startKnots: rec.knots, locked: rec.status !== "playing", condition: conditionOf(rec) });
           g.onLap = (lap) => {
-            const next = recordLap(loadDaily(day, !!day), { lapTimeMs: lap.lapTimeMs, grades: lap.grades }, lap.knots);
+            const before = loadDaily(day, !!day);
+            const next = recordLap(before, { lapTimeMs: lap.lapTimeMs, grades: lap.grades }, lap.knots);
+            const qmode = day ? "archive" : "daily";
+            if (before.laps.length === 0) gameStarted("quali", qmode);
+            if (next.status !== "playing" && before.status === "playing") gameFinished("quali", qmode, { medal: bestMedal(next) ?? "none", laps: next.laps.length });
             // today's best line goes on the board (the server times it); archive replays don't
             const board = boardOf(next);
             if (board) void submitDailyLine(board, next.bestKnots ?? lap.knots);

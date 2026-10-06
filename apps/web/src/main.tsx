@@ -6,7 +6,9 @@ import { colourBlind, setColourBlind } from "./game/palette";
 import "./index.css";
 import { App } from "./App";
 import { initAnalytics } from "./analytics";
+import { visit } from "./games/events";
 initAnalytics();
+visit();
 // apply the saved timing palette before the first paint
 setColourBlind(colourBlind());
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
-import { track } from "../analytics";
+import { gameFinished, gameStarted } from "../games/events";
 import type { CircuitFacts } from "../modes/circuits";
 import {
   DAILY_CALLS,
@@ -59,6 +59,7 @@ function Endless({ onPlayDaily, modeSwitch }: { onPlayDaily: () => void; modeSwi
 
   const call = (higher: boolean) => {
     if (phase !== "ask") return;
+    gameStarted("higher-lower", "endless");
     if (isRight(round, higher)) {
       setPhase("right");
       setStreak((s) => s + 1);
@@ -70,7 +71,7 @@ function Endless({ onPlayDaily, modeSwitch }: { onPlayDaily: () => void; modeSwi
       setPhase("wrong");
       setNewBest(streak > rec.best);
       setRec(recordRun(streak));
-      track("Minigame finished", { game: "higher-lower", streak });
+      gameFinished("higher-lower", "endless", { streak });
       // the card follows once the right answer has been on screen for a moment
       timer.current = window.setTimeout(() => setFinish(true), 1400);
     }
@@ -255,6 +256,7 @@ function Daily({ modeSwitch, onEndless }: { modeSwitch: React.ReactNode; onEndle
 
   const call = (higher: boolean) => {
     if (phase !== "ask" || done || modalOpen()) return;
+    gameStarted("higher-lower", "daily");
     const right = isRight(round, higher);
     const next = recordDailyCall(right);
     setCalls(next);
@@ -262,7 +264,7 @@ function Daily({ modeSwitch, onEndless }: { modeSwitch: React.ReactNode; onEndle
     timer.current = window.setTimeout(() => {
       setPhase("ask");
       if (dailyDone(next)) {
-        track("Minigame finished", { game: "higher-lower", mode: "daily", score: dailyScore(next) });
+        gameFinished("higher-lower", "daily", { score: dailyScore(next) });
         setFinish(true);
       }
     }, 1300);

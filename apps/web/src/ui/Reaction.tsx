@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { FinishCard } from "./FinishCard";
-import { track } from "../analytics";
+import { gameFinished, gameStarted } from "../games/events";
 import { LIGHT_MS, type ReactionRecord, average, loadReaction, randomHold, recordJump, recordReaction, verdict } from "../modes/reaction";
 import { Gantry } from "./Gantry";
 import { Segments } from "./Segments";
@@ -34,6 +34,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
   useEffect(() => clear, []);
 
   const start = useCallback(() => {
+    gameStarted("reaction", "endless");
     clear();
     setMs(null);
     setLit(0);
@@ -69,7 +70,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
       setMs(t);
       setPhase("done");
       setRec((r) => recordReaction(r, t));
-      track("Minigame finished", { game: "reaction" });
+      gameFinished("reaction", "endless", { band: t < 200 ? "under 0.2 s" : t < 250 ? "0.2-0.25 s" : t < 300 ? "0.25-0.3 s" : "0.3 s+" });
       // a beat to read the number on the stage, then the card
       timers.current.push(window.setTimeout(() => setFinish(true), 700));
     }

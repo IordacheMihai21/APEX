@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
-import { track } from "../analytics";
+import { gameFinished, gameStarted } from "../games/events";
 import { FRONT_AXLE, REAR_AXLE, TRACK_HALF, bareCar } from "../game/car";
 import { asphaltDataUrl } from "../game/scenery";
 import { dailyNumber, dateKey } from "../modes/daily";
@@ -137,6 +137,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   const start = useCallback(() => {
     if (locked) return;
+    gameStarted("pit-stop", mode);
     clear();
     const p = mode === "daily" ? dailyPlan() : result ? makePlan() : plan;
     setPlan(p);
@@ -204,7 +205,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
     setSplits(all);
     setResult(r);
     setRec((x) => recordStop(x, r, mode === "daily" ? dateKey() : null));
-    track("Minigame finished", { game: "pit-stop", mode });
+    gameFinished("pit-stop", mode, { penalty: wrong > 0 || early });
     setPhase("leaving");
     later(() => {
       setPhase("done");

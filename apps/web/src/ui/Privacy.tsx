@@ -101,7 +101,8 @@ export function Privacy() {
           <Section title="Visit statistics">
             <p>
               We count visits with Plausible Analytics, which uses no cookies and collects no personal data: no IP addresses are stored and visitors can't be tracked across sites or days. We see totals such as how many people
-              opened the Daily Quali and how many laps were driven, by page, country and device type.
+              opened the Daily Quali and how many laps were driven, by page, country and device type. To see how often people come back, the app adds a few rough ranges worked out on your device (such as
+              "played yesterday" or "played 4 to 7 days"); no id, date or time is sent, and nothing is stored for it.
             </p>
           </Section>
         )}

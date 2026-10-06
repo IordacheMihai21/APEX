@@ -5,6 +5,7 @@ import { AdSlot } from "../ui/Ads";
 import { Share } from "../ui/icons";
 import { primaryBtn, secondaryBtn } from "../ui/styles";
 import { Page, Section, link } from "./Guides";
+import { gameFinished, gameStarted } from "../games/events";
 import { quiz, recordQuiz, triviaBest, verdict } from "./quiz";
 
 /**
@@ -64,8 +65,10 @@ export function TriviaQuiz({ id }: { id: string }) {
   const score = picked.filter((p, i) => p === qs[i].answer).length;
   const done = answered === qs.length;
   useEffect(() => {
-    if (done) recordQuiz(id, score);
-  }, [done, id, score]);
+    if (!done) return;
+    recordQuiz(id, score);
+    gameFinished("trivia", "endless", { circuit: id, score: `${score}/${qs.length}` });
+  }, [done, id, score, qs.length]);
 
   const at = CIRCUITS.findIndex((x) => x.id === id);
   const next = CIRCUITS[(at + 1) % CIRCUITS.length];
@@ -119,7 +122,10 @@ export function TriviaQuiz({ id }: { id: string }) {
                       key={o}
                       type="button"
                       disabled={p !== null}
-                      onClick={() => setPicked((xs) => xs.map((x, k) => (k === i ? j : x)))}
+                      onClick={() => {
+                        if (answered === 0) gameStarted("trivia", "endless");
+                        setPicked((xs) => xs.map((x, k) => (k === i ? j : x)));
+                      }}
                       className={`border px-3.5 py-3 text-left text-[15px] transition-colors ${
                         state === "open"
                           ? "border-line bg-board/70 text-paint hover:border-paint/40"

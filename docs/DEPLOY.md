@@ -40,7 +40,7 @@ Set these for the production build (host dashboard, or `apps/web/.env.production
 | `VITE_SITE_URL` | The public address. Absolute link-preview URLs, the canonical link, `sitemap.xml`. |
 | `VITE_LAUNCH_DATE` | Day No. 1 (YYYY-MM-DD). Numbering, the circuit and condition rotation, and the archive count from it. **Set it to launch day**, or the first public day will be "No. N" with an archive of test days. |
 | `VITE_ADSENSE_CLIENT`, `VITE_ADSENSE_SLOT_RAIL`, `VITE_ADSENSE_SLOT_INLINE` | Ads (see [ADS.md](ADS.md)). The client id also generates `ads.txt`. |
-| `VITE_PLAUSIBLE_DOMAIN` | Cookieless visit statistics with Plausible (page views per screen; events: Lap started, Lap finished, Share, Minigame finished). |
+| `VITE_PLAUSIBLE_DOMAIN` | Cookieless visit statistics with Plausible (page views per screen; events per game, see docs/ANALYTICS.md). |
 | `VITE_CONTACT_EMAIL` | Contact address on the privacy page. |
 
 SEO is static: `index.html` holds the title, description, robots, canonical (updated per page by the app), Open Graph, Twitter card and WebApplication structured data for https://lapdle.com; `public/robots.txt` and `public/sitemap.xml` list the public pages (add new routes there). The build adds `ads.txt` (with an AdSense client), the AdSense tags and a preload for the display font.

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { HowToPlay } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
-import { track } from "../analytics";
+import { gameFinished, gameStarted } from "../games/events";
 import { OUTLINES } from "../game/outlines";
 import { CIRCUITS, circuit } from "../modes/circuits";
 import { dailyNumber, msToNextDay } from "../modes/daily";
@@ -245,7 +245,8 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
                         onClick={() =>
                           setDay((d) => {
                             const next = recordGuess(d, c.id);
-                            if (isOver(next) && !isOver(d)) track("Minigame finished", { game: "mystery", solved: isSolved(next), guesses: next.guesses.length });
+                            if (d.guesses.length === 0) gameStarted("mystery", "daily");
+                            if (isOver(next) && !isOver(d)) gameFinished("mystery", "daily", { solved: isSolved(next), guesses: next.guesses.length });
                             return next;
                           })
                         }
