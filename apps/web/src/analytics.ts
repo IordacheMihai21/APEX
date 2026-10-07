@@ -29,8 +29,11 @@ declare global {
 export const ANALYTICS_ON = !!DOMAIN;
 
 let started = false;
+/** Only the live site counts: preview deployments and local builds of production never do. */
+const liveHost = () => typeof location !== "undefined" && DOMAIN !== undefined && (location.hostname === DOMAIN || location.hostname === `www.${DOMAIN}`);
+
 export function initAnalytics() {
-  if (started || !DOMAIN || import.meta.env.DEV) return;
+  if (started || !DOMAIN || import.meta.env.DEV || !liveHost()) return;
   started = true;
   // queue calls made before the script arrives
   window.plausible ??= Object.assign((...args: unknown[]) => void (window.plausible!.q ??= []).push(args), {});

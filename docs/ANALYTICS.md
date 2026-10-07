@@ -1,18 +1,14 @@
 # Analytics
 
 Lapdle counts with [Plausible](https://plausible.io): no cookies, no personal
-data, no consent banner. It's on when the build has `VITE_PLAUSIBLE_DOMAIN`,
-and never in development. In Cloudflare Pages (Settings > Variables and
-Secrets, production) set:
-
-| Variable | Value |
-| --- | --- |
-| `VITE_PLAUSIBLE_DOMAIN` | `lapdle.com` |
-| `VITE_PLAUSIBLE_SRC` | the site's own script from Plausible (Site settings > Site installation), `https://plausible.io/js/pa-….js` |
-
-then redeploy. With a `pa-….js` script the app calls `plausible.init` with
-automatic page views off and sends them itself; without `VITE_PLAUSIBLE_SRC`
-it uses the older `script.manual.js` with `data-domain`.
+data, no consent banner. Production builds use lapdle.com's Plausible site and
+its own script (`pa-KS7GUtru6oEsZyJ5DKZDM.js`, set in `vite.config.ts`; both are
+public, every visitor's browser loads them), and only on lapdle.com itself:
+development, Cloudflare preview deployments and local copies of a production
+build never send anything. `VITE_PLAUSIBLE_DOMAIN` and `VITE_PLAUSIBLE_SRC`
+override the site and script. With a `pa-….js` script the app calls
+`plausible.init` with automatic page views off and sends them itself; an older
+`data-domain` script (`script.manual.js`) works too.
 
 Plausible can't follow a person across days, so the events carry coarse
 buckets worked out on the device from what it already stores (see

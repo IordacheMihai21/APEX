@@ -72,14 +72,26 @@ function precache(): Plugin {
 
 /** lapdle.com's AdSense publisher ID: public (it is in ads.txt and every ad), so it lives here. */
 const ADSENSE_PUBLISHER = "ca-pub-2515595867377612";
+/** lapdle.com's Plausible site and its own script: public too (every visitor's browser loads it). */
+const PLAUSIBLE_DOMAIN = "lapdle.com";
+const PLAUSIBLE_SRC = "https://plausible.io/js/pa-KS7GUtru6oEsZyJ5DKZDM.js";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "VITE_");
   // production builds carry the publisher ID unless the host sets another; dev never loads ads
   if (mode === "production" && !env.VITE_ADSENSE_CLIENT) env.VITE_ADSENSE_CLIENT = ADSENSE_PUBLISHER;
+  // production builds count visits with lapdle.com's Plausible site unless the host sets another
+  if (mode === "production" && !env.VITE_PLAUSIBLE_DOMAIN) {
+    env.VITE_PLAUSIBLE_DOMAIN = PLAUSIBLE_DOMAIN;
+    env.VITE_PLAUSIBLE_SRC ||= PLAUSIBLE_SRC;
+  }
   return {
     plugins: [react(), tailwindcss(), launchFiles(env), precache()],
-    define: { "import.meta.env.VITE_ADSENSE_CLIENT": JSON.stringify(env.VITE_ADSENSE_CLIENT ?? "") },
+    define: {
+      "import.meta.env.VITE_ADSENSE_CLIENT": JSON.stringify(env.VITE_ADSENSE_CLIENT ?? ""),
+      "import.meta.env.VITE_PLAUSIBLE_DOMAIN": JSON.stringify(env.VITE_PLAUSIBLE_DOMAIN ?? ""),
+      "import.meta.env.VITE_PLAUSIBLE_SRC": JSON.stringify(env.VITE_PLAUSIBLE_SRC ?? ""),
+    },
     // Track JSON lives in the repo-level data/ folder.
     server: { fs: { allow: ["../.."] }, port: 5173 },
   };
