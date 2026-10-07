@@ -18,3 +18,4 @@ supabase/.temp/
 
 # build-time renderer output (removed after each build)
 apps/web/dist-ssr/
+marketing/
