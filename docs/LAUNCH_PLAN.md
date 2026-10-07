@@ -1,91 +1,188 @@
-# Lapdle launch plan
+# Lapdle launch plan: October 2026
 
-Launch day: Tuesday 6 October 2026 (Daily Quali No. 1). Everything below is
-yours to post; nothing goes out on its own. Read each community's rules before
-posting there, post as yourself (a solo maker), and answer every comment in the
-first hour. "F1" and "Formula 1" only describe what the game is about; never
-use them as the game's name, in usernames or in ads.
+How daily games grow, from the research: a shareable result spreads through
+group chats; one post in the right community (Immaculate Grid: r/baseball) or
+one big share lights the fuse; football dailies live on short video (creators
+filming themselves playing); directories and traffic swaps bring a steady
+trickle; SEO compounds slowly. No paid ads.
 
-## Day 1 (today)
+Lapdle's edge over the trivia-style racing dailies: **it's the one where you
+drive.** Lead every post with the racing line and the physics, not "another
+racing wordle". Our own copy never names a series, team or driver.
 
-1. **Play today's Daily yourself** on your phone and share the result card:
-   it's the first post on every account and shows what the game is in one image.
-2. **Claim the name** on X, TikTok, Instagram and Reddit (`lapdle`), and put
-   the links in Cloudflare (`VITE_SOCIAL_*`), then redeploy.
-3. **Daily-game directories** (free listings, steady traffic from people who
-   already play Wordle-style games every day):
-   - [Dailydle](https://www.dailydle.org/) (Submit a game)
-   - [DLE Games](https://dlegames.org/) (submit)
-   - [Seekdle](https://seekdle.com/)
-   - [Relaydle](https://relaydle.com/) (free listing; the win-screen traffic swap is separate)
-   Category: sports. Use the short description below.
-4. **Reddit, one post a day, not all at once** (same text everywhere looks like spam):
-   - r/WebGames (browser games are the point of the sub)
-   - r/playmygame (asks for feedback; say what you want feedback on)
-   - r/formula1: only where their rules allow fan projects (check the sidebar
-     and the daily discussion thread; their rules on self-promotion are strict)
-   - r/SideProject, r/IndieGaming later in the week, as a build story
+## October goals (by the 31st)
 
-## Week 1
+| Result | Base | Target | Stretch |
+| --- | --- | --- | --- |
+| Players on a typical day | 100 | **300** | 2,000+ |
+| Unique visitors in October | 3,000 | **10,000** | 50,000+ |
+| Come back next day | 25% | **30%+** | 40% |
+| Come back after a week | 8% | **12%+** | 20% |
+| Games per visit | 1.5 | **2+** | 3 |
+| Finished dailies shared | 3% | **5%+** | 10% |
 
-- **TikTok / Reels / Shorts, one clip a day**: screen-record a lap at 4x with
-  the perfect line, or a close medal finish. Hook in the first second, no intro.
-- **Show HN** (Hacker News) on a weekday morning US time, as a build story:
-  real circuits from OpenStreetMap, a deterministic physics engine, the
-  server re-timing every lap.
-- **F1 Discord servers and fan forums**: only where self-promo channels exist.
-- Watch where people drop off (Plausible, once set up) and fix the first
-  thing that trips players before posting more.
+Actions (what we control): 12+ directory listings · 6 community posts · 20
+short videos · 25 creator DMs · one race-weekend push (Austin, 23–25 Oct).
 
-## Short description (directories, bios)
+## The four weeks
 
-> A daily racing-line puzzle on real circuits. Set your line through every
-> corner, drive it, and chase the perfect lap. A new circuit every day.
+- **Week 1 (7–13): foundations.** Directories ✅ · first players from group
+  chats · social accounts · play daily yourself.
+- **Week 2 (14–20): community launch.** One post a day (below), two hours of
+  replying after each. Daily short videos start.
+- **Week 3 (21–27): Austin race week.** Videos on the Austin Quali, its braking
+  point and an aerial view; creator DMs ("beat my lap at Austin"). On Saturday
+  the 24th the Daily Quali is Austin.
+- **Week 4 (28–31): review.** Read Plausible, double down on what worked, fix
+  what loses players.
 
-## Post drafts
+## Directory listing text
 
-**Reddit (r/WebGames)**
+> **Lapdle**: https://lapdle.com
+> A daily racing-line game. Set your line through every corner of a real
+> circuit, then watch a physics-driven car drive it and chase the perfect lap.
+> Plus daily mini-games: guess the circuit, braking points, pit stops, corner
+> order and more.
+> Categories: Sports, Trivia, Geography · Tags: racing, motorsport, circuits, daily puzzle
 
-Title: `Lapdle: a daily racing-line puzzle on real circuits (free, browser)`
+## Group-chat message (week 1)
 
-> I made a daily game for people who like racing lines. Every day there's one
-> real circuit (today: Interlagos, with low downforce). You set how you take each
-> corner (early, classic or late apex, or fine-tune every point), the car
-> drives your line with real physics, and every corner gets a colour like a
-> sector time. Six laps to earn a medal; the perfect lap is shown live.
+> Made a daily racing game: you pick your line through each corner of a real
+> circuit and a physics car drives it. Today's is [circuit]. My best is
+> [your time], beat it 👇 https://lapdle.com
+
+Send your own share grid instead when you have one: a result is more inviting
+than a link.
+
+## Social accounts
+
+Same handle everywhere (`@lapdle`, or `@lapdlegame` if taken). Picture:
+`apps/web/public/icon-512.png`. Link: https://lapdle.com
+
+> Bio: Daily racing-line game. Pick your line, a physics car drives it, chase
+> the perfect lap. New circuit every day 🏁
+
+Then set the links in Cloudflare (`VITE_SOCIAL_X`, `VITE_SOCIAL_INSTAGRAM`,
+`VITE_SOCIAL_TIKTOK`, `VITE_SOCIAL_YOUTUBE`, `VITE_SOCIAL_DISCORD`) and redeploy;
+they appear in the footer.
+
+## Short videos (from week 2, one per weekday)
+
+Vertical, 20–30 s, a screen recording with a big caption. Show the guessing
+moment, then the reveal. Same clip to TikTok, Shorts and Reels.
+
+- **Aerial view:** "Which circuit is this?" Zoom-out, pause, reveal.
+- **Speed trap:** "How fast is the car here?" Slider, then the speedometer.
+- **Braking point:** "When would you brake?" The run, the brake, the result.
+- **Daily Quali:** "Today's perfect lap is 1:09.296. Can you get within a second?"
+- **Order the corners / Line-up:** "Only real fans get this."
+
+Caption: one question, then `lapdle.com`. Hashtags: #racing #motorsport
+#simracing #dailygame #puzzle.
+
+## Community posts (week 2): one a day, read each sub's rules first
+
+Post in your own voice; these are drafts to edit. Always add a short GIF or
+screenshot. Reply to every comment for the first two hours; take criticism as
+a gift ("good point, fixing that").
+
+### r/formula1 (self-promotion allowed; descriptive title, no clickbait)
+
+**Title:** I built a free daily game where you set the racing line on real circuits and a physics car drives it
+
+> Every day there's one circuit (today it's [circuit, conditions]).
+> You choose how to take each corner (early apex, classic, late, or drag every
+> point yourself), hit lights out, and the car drives your line with real grip,
+> braking and power limits. Each corner is coloured by how much time it lost
+> to the perfect lap; you get six laps to earn a medal.
 >
-> No account, no download, works on phones. There are also four quick
-> minigames (guess the circuit, higher or lower on circuit facts, a pit stop,
-> a reaction test). Feedback very welcome, especially on mobile.
+> There are some quick extras around it: guess the circuit from its
+> surroundings, find the braking point, a pit stop, put a circuit's corners in
+> lap order, and a few more.
 >
+> No account, no download, free: https://lapdle.com
+>
+> It's a fan project, not affiliated with anyone. I'd love to hear which
+> circuits feel off and what you'd add.
+
+### r/F1Technical (the physics angle; check the self-promo rules first)
+
+**Title:** I modelled racing lines and lap times for 12 real circuits as a daily game: how close can you get to the optimal line?
+
+> The car is a point-mass model with a friction circle (grip shared between
+> braking and cornering), downforce that grows with speed, drag and a power
+> limit. The speed profile is a forward/backward pass over the line's
+> curvature, and the "perfect lap" is a line optimiser running inside the same
+> corner controls the player gets. Wet and low-downforce days change the grip
+> and aero, so the best line and the braking points move.
+>
+> Circuits are traced from OpenStreetMap and scaled to their official lengths.
+> Happy to go into any part of it. Play: https://lapdle.com
+
+### r/simracing
+
+**Title:** Daily racing-line puzzle for the days you can't get on the rig
+
+> Short daily challenge: one real circuit, you set the line through every
+> corner, a physics car drives it and each corner shows the time lost to the
+> optimal line. Today's is [circuit, conditions]. Free, in
+> the browser: https://lapdle.com. Curious how sim racers' instincts
+> compare to the optimiser.
+
+### r/WebGames
+
+**Title:** Lapdle: a daily racing-line puzzle (set the line, a physics car drives it)
+
+> One circuit a day, six laps to find the fastest line, plus small daily
+> extras (guess the circuit from above, braking points, pit stop). Free, no
+> sign-up, works on phones: https://lapdle.com
+
+### Show HN (weekday, ~8–10am US Eastern)
+
+**Title:** Show HN: Lapdle – a daily racing-line puzzle with a deterministic physics engine
+
+> Lapdle is a daily game: you set the racing line through a real circuit and a
+> point-mass car drives it. A few things that were fun to build:
+>
+> - Circuits from OpenStreetMap, resampled and scaled to official lengths; the
+>   map with buildings, trees and water is drawn on a 2D canvas.
+> - A deterministic engine (only + − × ÷ √ in the timing path), so the
+>   leaderboard server re-simulates the submitted line instead of trusting a
+>   time.
+> - The "perfect lap" is a line optimiser constrained to the player's own
+>   corner controls, so it's always reachable.
+> - Mini-games generated from the same data: braking zones and speed traps
+>   taken from the optimal lap, a daily grouping puzzle that's only accepted if
+>   it has exactly one answer.
+>
+> No account, cookieless analytics, installable and playable offline.
 > https://lapdle.com
 
-**X / Threads**
+### r/SideProject (or r/IndieGaming)
 
-> Lapdle is live: one real circuit a day, find the perfect racing line. 🏁
-> Daily Quali No. 1: Interlagos, low downforce. How close can you get?
-> https://lapdle.com
+**Title:** Launched my daily racing game this week: 11 games, 12 circuits, no account needed
 
-(Attach your own result card from the Share button.)
+> Short story of what it is, one screenshot, what's next, and an honest ask:
+> "What would make you come back tomorrow?"
 
-**TikTok caption**
+## Creator DMs (week 3; send yourself, never automated)
 
-> Can you find the perfect line through Monaco? Daily racing puzzle, free in
-> your browser: lapdle.com #f1 #simracing #racingline #dailygame
+Small to mid racing creators (5k–100k): TikTok, YouTube, Twitch sim-racing streamers.
 
-**Show HN**
+> Hey [name], love your [specific video]. I made a free daily racing-line game
+> where you set the line and a physics car drives it. Today's is Austin and the
+> perfect lap is [time]. Think you could beat [your time] on stream? No strings,
+> just thought you'd enjoy it: https://lapdle.com
 
-Title: `Show HN: Lapdle, a daily racing-line puzzle on real circuits`
+## Weekly check (Plausible)
 
-> Every day one real circuit; you set the line through each corner and a
-> deterministic physics model drives it. Circuits and scenery come from
-> OpenStreetMap, the car model is a point-mass with tyre and aero limits, and
-> the leaderboard server re-simulates every submitted line, so times can't be
-> forged. Canvas 2D, React, no accounts. Happy to talk about the physics or
-> the rendering.
+- Visitors and players per day; where they came from (Sources).
+- Next-day return: Visit with `last_played` = yesterday.
+- Completion per game: Game finished ÷ Game started by `game`.
+- Shares ÷ finished daily games.
 
-## Before ads (when AdSense approves)
+## When AdSense approves
 
-Fill in the operator name and address and a working contact email in
-Cloudflare first (required by Romanian Law 365/2002 on an ad-funded site),
-turn on the AdSense GDPR message, then add the AdSense variables and redeploy.
+Create three display units (rail, in-content, phone anchor) and set
+`VITE_ADSENSE_SLOT_RAIL`, `VITE_ADSENSE_SLOT_INLINE`, `VITE_ADSENSE_SLOT_ANCHOR`
+in Cloudflare, then redeploy.
