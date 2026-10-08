@@ -67,8 +67,10 @@ To add a game:
 1. Its logic in `src/modes/<game>.ts` (records in local storage, keyed by day
    for a daily game), its UI in `src/ui/<Game>.tsx` (lazy-loaded in `App.tsx`).
 2. One entry in `GAMES`.
-3. Its route in `public/_redirects` and `public/sitemap.xml`
-   (`registry.test.ts` fails until both list it).
+3. Its route in `public/sitemap.xml` (`registry.test.ts` fails until it's
+   listed). Its static page comes from `content/Landing.tsx` automatically
+   (every `PUBLIC_ROUTES` entry is pre-rendered); never add a rewrite for it
+   in `public/_redirects`, which would hide that page.
 
 ## Content pages (pre-rendered)
 

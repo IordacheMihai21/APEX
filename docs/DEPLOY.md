@@ -4,24 +4,18 @@
 
 ## Routes
 
-The app is a single page; these addresses must all serve `index.html`:
+Every address is a real file in `dist`: the content pages and every page of
+the app itself (hub, games, archive, records, privacy, legal) are pre-rendered
+by `scripts/prerender.mjs`, so `/mystery` is `dist/mystery.html` with its own
+title, canonical and text, and the app takes over in the browser. The hub's
+query links (`/?play=practice&track=…&cond=…`, `/?vs=…` challenges) are served
+by `dist/index.html`. Nothing needs rewriting:
 
-| Path | Screen |
-|---|---|
-| `/` | the hub (also `?play=practice&track=…&cond=…`, `?vs=…` challenge links) |
-| `/archive` | Every past Daily Quali, replayable |
-| `/mystery` | Mystery circuit, the daily guess-the-circuit puzzle |
-| `/higher-lower` | Higher or lower on circuit facts |
-| `/pit-stop` | Pit stop: change four tyres, go on green |
-| `/corner` | Corner of the week |
-| `/reaction` | the lights-out reaction test |
-| `/privacy` | the privacy page |
-
-This is already configured for the common hosts:
-
+- **Cloudflare Pages / Netlify:** clean URLs serve `x.html` at `/x` (and
+  redirect `/x/` to `/x`); `apps/web/public/_redirects` is empty on purpose and
+  `_headers` sets caching and security headers.
 - **Vercel:** `apps/web/vercel.json` (rewrites plus cache headers). Set the project's root directory to `apps/web`.
-- **Netlify / Cloudflare Pages:** `apps/web/public/_redirects` and `_headers` ship in the build.
-- **nginx:** `try_files $uri /index.html;`, and `Cache-Control: no-cache` on `/sw.js`.
+- **nginx:** `try_files $uri $uri.html /index.html;`, and `Cache-Control: no-cache` on `/sw.js`.
 
 ## Installable app (PWA)
 
