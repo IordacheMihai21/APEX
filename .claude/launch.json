@@ -4,8 +4,28 @@
     {
       "name": "apex-web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "@apex/web"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@apex/web"
+      ],
       "port": 5173
+    },
+    {
+      "name": "apex-web-build",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview",
+        "-w",
+        "@apex/web",
+        "--",
+        "--port",
+        "4173",
+        "--strictPort"
+      ],
+      "port": 4173
     }
   ]
 }

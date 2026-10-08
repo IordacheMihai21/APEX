@@ -2,7 +2,7 @@
  * Every game on Lapdle, declared once. The hub, the "Today" bar, the finish
  * card's "Play next", the footer, the how-to cards, page titles and the
  * routing all read from here, so a new game is a folder plus one entry below
- * (and its route in public/_redirects and public/sitemap.xml; a test checks).
+ * (and its route in public/sitemap.xml; a test checks).
  *
  * This file holds identity, copy and today's status only. The games' own UI
  * is loaded lazily by the app; their logic lives in src/modes.
@@ -436,5 +436,5 @@ export type InfoPage = keyof typeof PAGES;
 /** Pre-rendered content pages (static HTML at build time, see src/ssg). */
 export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/how-to-play/${g.id}`), "/circuits", ...CIRCUITS.map((c) => `/circuits/${circuitSlug(c.id)}`), "/trivia", ...CIRCUITS.map((c) => `/trivia/${circuitSlug(c.id)}`)];
 
-/** Every public address of the site (the SPA serves them all from index.html). */
+/** Every public address of the app itself; each is a pre-rendered page (content/Landing.tsx) that the app takes over. */
 export const PUBLIC_ROUTES = ["/", ...GAMES.flatMap((g) => (g.route ? [g.route] : [])), "/corner", ...Object.keys(PAGES).map((p) => `/${p}`)];

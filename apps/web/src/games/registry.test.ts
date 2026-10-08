@@ -24,10 +24,11 @@ describe("game registry", () => {
   });
 
   it("serves and lists every public address", () => {
-    // a game added to the registry also needs its rewrite and its sitemap entry
+    // a game added to the registry also needs its sitemap entry; its page is pre-rendered
+    // (content/Landing.tsx), so a rewrite to the home page would only hide it
     for (const route of PUBLIC_ROUTES) {
-      if (route !== "/") expect(redirects, `${route} in public/_redirects`).toMatch(new RegExp(`^${route}\\s+/\\s+200$`, "m"));
       expect(sitemap, `${route} in public/sitemap.xml`).toContain(`<loc>https://lapdle.com${route}</loc>`);
+      expect(redirects, `${route} not rewritten in public/_redirects`).not.toMatch(new RegExp(`^${route}/?\\s`, "m"));
     }
   });
 

@@ -1,5 +1,6 @@
 /**
- * Build-time rendering of the content pages (How to play, Circuits, About) to static
+ * Build-time rendering of the content pages (How to play, Circuits, About) and the
+ * app's own pages (see content/Landing.tsx) to static
  * HTML, so search engines and link previews get the full text without running
  * JavaScript. Built with `vite build --ssr` and used by scripts/prerender.mjs;
  * in the browser the app takes over and renders the same page.
@@ -11,6 +12,7 @@ import { TriviaIndex, TriviaQuiz } from "../content/Trivia";
 import { contentMeta, parseContent } from "../content/meta";
 import { ChevronLeft } from "../ui/icons";
 import { CONTENT_ROUTES } from "../games/registry";
+import { LANDING_ROUTES, landing } from "../content/Landing";
 
 /** The app's frame around a page (the header as the app draws it, with a link back to the grid). */
 function Frame({ children }: { children: React.ReactNode }) {
@@ -34,6 +36,13 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 export const routes = CONTENT_ROUTES;
+/** The app's own pages (hub, games, archive, records…): static text the app replaces when it starts. */
+export const landingRoutes = LANDING_ROUTES;
+
+export function renderLanding(path: string): { html: string; title: string; description: string } {
+  const { node, title, description } = landing(path);
+  return { html: renderToString(<Frame>{node}</Frame>), title, description };
+}
 
 export function render(path: string): { html: string; title: string; description: string } {
   const c = parseContent(path);

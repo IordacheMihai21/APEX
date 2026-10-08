@@ -1,32 +1,5 @@
-# Cloudflare Pages / Netlify: the app's own addresses are served by index.html.
-# Everything else falls through to a real 404 (404.html), so a script from an
-# old build fails cleanly and the app reloads into the new one instead of
-# receiving the home page in its place.
-/corner        /  200
-/archive       /  200
-/records       /  200
-/mystery       /  200
-/higher-lower  /  200
-/braking-point  /  200
-/corner-order   /  200
-/speed-trap     /  200
-/line-up        /  200
-/aerial         /  200
-/pit-stop      /  200
-/reaction      /  200
-/privacy       /  200
-/legal         /  200
-/corner/       /  200
-/archive/      /  200
-/records/      /  200
-/mystery/      /  200
-/higher-lower/ /  200
-/braking-point/ /  200
-/corner-order/  /  200
-/speed-trap/    /  200
-/line-up/       /  200
-/aerial/        /  200
-/pit-stop/     /  200
-/reaction/     /  200
-/privacy/      /  200
-/legal/        /  200
+# Cloudflare Pages / Netlify: every page of the site is a pre-rendered file
+# (dist/mystery.html is served at /mystery, see scripts/prerender.mjs), so no
+# address needs rewriting. Anything else falls through to a real 404 (404.html),
+# so a script from an old build fails cleanly and the app reloads into the new
+# one instead of receiving the home page in its place.
