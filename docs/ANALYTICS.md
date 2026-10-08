@@ -10,6 +10,12 @@ override the site and script. With a `pa-….js` script the app calls
 `plausible.init` with automatic page views off and sends them itself; an older
 `data-domain` script (`script.manual.js`) works too.
 
+A visit's source comes from its referrer or from tagged links (`?ref=tiktok`,
+`?utm_source=reddit&utm_campaign=…`). The app reads those parameters when the
+page loads, before it rewrites its own address, and sends them with the first
+page view (`sourceQuery` in `src/analytics.ts`); its own parameters (`vs`,
+`play`, `track`) never go to Plausible.
+
 Plausible can't follow a person across days, so the events carry coarse
 buckets worked out on the device from what it already stores (see
 `apps/web/src/games/events.ts`). No ids, dates or times are sent.

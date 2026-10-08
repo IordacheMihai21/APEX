@@ -51,14 +51,33 @@ export function initAnalytics() {
   document.head.appendChild(s);
 }
 
+/** The query parameters Plausible reads a visit's source from (the rest it ignores). */
+const SOURCE_PARAMS = ["ref", "source", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+
+/** Only the source parameters of a query string ("?ref=tiktok"), or "" when there are none. */
+export function sourceQuery(search: string): string {
+  const q = new URLSearchParams(search);
+  const kept = new URLSearchParams();
+  for (const k of SOURCE_PARAMS) {
+    const v = q.get(k);
+    if (v) kept.set(k, v);
+  }
+  const s = kept.toString();
+  return s ? `?${s}` : "";
+}
+
+/** Read when the page loads, before the app rewrites its address, so a tagged link (?ref=tiktok) keeps its source. */
+let arrival = typeof location !== "undefined" ? sourceQuery(location.search) : "";
+
 let lastPath = "";
-/** A page view for the current address (deduplicated, so re-renders don't count twice). */
+/** A page view for the current address (deduplicated, so re-renders don't count twice); the first carries the visit's source. */
 export function pageview() {
   if (!started) return;
   const path = location.pathname;
   if (path === lastPath) return;
   lastPath = path;
-  const url = location.origin + path;
+  const url = location.origin + path + arrival;
+  arrival = "";
   window.plausible?.("pageview", SITE_SCRIPT ? { url } : { u: url });
 }
 
