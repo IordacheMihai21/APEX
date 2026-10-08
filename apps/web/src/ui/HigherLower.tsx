@@ -26,6 +26,7 @@ import { CircuitOutline } from "./Hub";
 import { Roll } from "./Roll";
 import { Down, Share, Up } from "./icons";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { shareLink } from "../shareLink";
 
 type Phase = "ask" | "right" | "wrong";
 
@@ -99,7 +100,7 @@ function Endless({ onPlayDaily, modeSwitch }: { onPlayDaily: () => void; modeSwi
 
   const { stat, left, right } = round;
   const share = async () => {
-    const text = `Lapdle Higher or lower: ${streak} in a row on real circuit facts (best ${rec.best}). ${location.origin}/higher-lower`;
+    const text = `Lapdle Higher or lower: ${streak} in a row on real circuit facts (best ${rec.best}). ${shareLink("/higher-lower", "share-higher-lower")}`;
     try {
       if (navigator.share) await navigator.share({ text });
       else {
@@ -196,7 +197,7 @@ function Endless({ onPlayDaily, modeSwitch }: { onPlayDaily: () => void; modeSwi
             ["Best", String(rec.best)],
             ["Runs", String(rec.runs)],
           ]}
-          shareText={`Lapdle Higher or lower: ${streak} in a row on real circuit facts (best ${rec.best}). ${location.origin}/higher-lower`}
+          shareText={`Lapdle Higher or lower: ${streak} in a row on real circuit facts (best ${rec.best}). ${shareLink("/higher-lower", "share-higher-lower")}`}
           again={{ label: "Play again", onClick: again }}
           onClose={() => setFinish(false)}
         />
@@ -382,7 +383,7 @@ function Daily({ modeSwitch, onEndless }: { modeSwitch: React.ReactNode; onEndle
             ["Average", st.average !== null ? st.average.toFixed(1) : "-"],
             ["Best", st.best !== null ? `${st.best}/${DAILY_CALLS}` : "-"],
           ]}
-          shareText={dailyShare(calls, `${location.origin}/higher-lower`)}
+          shareText={dailyShare(calls, shareLink("/higher-lower", "share-higher-lower"))}
           again={{ label: "Play endless", onClick: onEndless }}
           daily="daily ten"
           onClose={() => setFinish(false)}

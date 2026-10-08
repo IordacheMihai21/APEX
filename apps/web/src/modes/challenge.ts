@@ -41,5 +41,5 @@ export function decodeChallenge(code: string | null): Challenge | null {
 }
 
 export function challengeUrl(c: Challenge): string {
-  return `${location.origin}${location.pathname}?vs=${encodeChallenge(c)}`;
+  return `${location.origin}${location.pathname}?vs=${encodeChallenge(c)}&ref=challenge`;
 }

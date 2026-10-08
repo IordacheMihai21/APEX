@@ -9,6 +9,7 @@ import { circuit } from "../modes/circuits";
 import { dailyNumber } from "../modes/daily";
 import { type Corner, CORNERS_PER_DAY, ORDER_TRIES, marks, orderCircuit, orderOver, orderShare, orderSolved, orderStats, orderTries, pickCorners, recordTry, trayOrder } from "../modes/order";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { shareLink } from "../shareLink";
 
 /** A corner's shape, as it sits on the map (north up), with a dot where the car comes in. */
 function Tile({ c, tone = "plain" }: { c: Corner; tone?: "plain" | "right" | "wrong" }) {
@@ -284,7 +285,7 @@ export function OrderCorners() {
             ["Solved", String(st.solved)],
             ["Average", st.average !== null ? st.average.toFixed(1) : "-"],
           ]}
-          shareText={orderShare(tries, `${location.origin}/corner-order`)}
+          shareText={orderShare(tries, shareLink("/corner-order", "share-corner-order"))}
           daily="circuit"
           onClose={() => setFinish(false)}
         />

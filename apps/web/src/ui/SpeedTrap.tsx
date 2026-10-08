@@ -28,6 +28,7 @@ import {
   trapVerdict,
 } from "../modes/speedtrap";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { shareLink } from "../shareLink";
 
 const points = POINTS as TrapPoint[];
 const GRADE_BG: Record<TrapGrade, string> = { purple: "bg-purple", green: "bg-green", yellow: "bg-yellow", red: "bg-kerb" };
@@ -273,7 +274,7 @@ export function SpeedTrap() {
             ["Average", st.average !== null ? String(Math.round(st.average)) : "-"],
             ["Best", st.best !== null ? String(st.best) : "-"],
           ]}
-          shareText={trapShare(rounds, `${location.origin}/speed-trap`)}
+          shareText={trapShare(rounds, shareLink("/speed-trap", "share-speed-trap"))}
           daily="set of speed traps"
           onClose={() => setFinish(false)}
         />

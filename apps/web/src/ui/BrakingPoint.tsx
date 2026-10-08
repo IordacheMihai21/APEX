@@ -33,6 +33,7 @@ import { WEEKLY_CORNERS } from "../modes/corner";
 import { dailyNumber } from "../modes/daily";
 import { BOARDS, drawRun } from "./brakingView";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { shareLink } from "../shareLink";
 
 const zones = ZONES as Zone[];
 const kmh = (v: number) => Math.round(v * 3.6);
@@ -389,7 +390,7 @@ export function BrakingPoint() {
             ["Average", st.average !== null ? String(Math.round(st.average)) : "-"],
             ["Best", st.best !== null ? String(st.best) : "-"],
           ]}
-          shareText={brakingShare(stops, `${location.origin}/braking-point`)}
+          shareText={brakingShare(stops, shareLink("/braking-point", "share-braking-point"))}
           again={{ label: "Practice stops", onClick: practice }}
           daily="set of stops"
           onClose={() => setFinish(false)}

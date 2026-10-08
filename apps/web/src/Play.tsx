@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
 import { type Condition, LINE_STYLES, type LineStyle } from "@apex/engine";
 import { Game, type MapView, type Mode, type Snapshot } from "./game/game";
-import { gameFinished, gameStarted } from "./games/events";
+import { challengeLap, challengeOpened, gameFinished, gameStarted } from "./games/events";
 import { DAILY_HINT_AFTER_LAPS, DAILY_LAPS, type DailyRecord, bestMedal, conditionOf, recordHint, loadDaily, recordLap } from "./modes/daily";
 import { type Grade, gradeFor } from "./modes/grading";
 import { type RoundOutcome, SEASON_LAPS, SEASON_ROUNDS, type SeasonStore, currentTrack, loadSeason, newSeason, recordSeasonLap, rivalMs, seasonDone } from "./modes/season";
 import { CornerTower } from "./ui/CornerTower";
 import { DragSheet } from "./ui/PhoneSheet";
 import { NextToday } from "./ui/NextToday";
+import { go } from "./ui/FinishCard";
 import { usePhone } from "./ui/usePhone";
 import { GateSlider } from "./ui/GateSlider";
 import { LapGrid } from "./ui/LapGrid";
@@ -24,6 +25,7 @@ import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 import { Loading, ShareButton, StandingLine, boardOf, dailyShare, dayHeadline, useCountdown } from "./Dialogs";
 import { submitDailyLine } from "./online";
 import { CORNER_MEDAL_MS, type CornerWeek, cornerMedal, cornerShare, daysLeft, loadCornerWeek, recordCornerRun, weekNumber, weeklyCorner } from "./modes/corner";
+import { shareLink } from "./shareLink";
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 
@@ -105,7 +107,12 @@ export function Play({
           };
         } else {
           g = new Game(t, { scenery, mode, lapLimit: null, challengeKnots: challenge, condition });
-          g.onLap = (lap) => setPracticeLaps((p) => [...p, lap.grades].slice(-3));
+          const challengeMs = g.getSnapshot().challengeMs;
+          if (challengeMs !== null) challengeOpened(trackId);
+          g.onLap = (lap) => {
+            setPracticeLaps((p) => [...p, lap.grades].slice(-3));
+            if (challengeMs !== null) challengeLap(trackId, lap.lapTimeMs < challengeMs);
+          };
         }
         setGame(g);
         if (watch) setTimeout(() => g.watchPerfect(), 600);
@@ -735,9 +742,17 @@ function ResultSheet({
     const beat = s.challengeMs !== null && r.lapTimeMs < s.challengeMs;
     headline = r.allPurple ? "Pole" : beat ? "Challenge beaten" : s.mode === "practice" ? "Lap complete" : `${left} ${left === 1 ? "lap" : "laps"} left`;
     body = r.allPurple ? "Every corner perfect." : s.mode === "season" ? `Beat ${lapTime(s.rivalMs ?? 0)} to take pole.` : "Tap a corner to fix it.";
+    // someone who came in on a "beat my lap" link: today's Quali is what brings them back tomorrow
+    const today = s.challengeMs !== null ? loadDaily() : null;
+    const toDaily = today && today.status === "playing" ? CATALOG.find((t) => t.id === today.trackId) : undefined;
     actions = (
       <>
-        <button className={`${primaryBtn} flex-1`} onClick={() => game.adjust()} autoFocus>
+        {toDaily && (
+          <button className={`${primaryBtn} w-full`} onClick={() => go("quali")} aria-label={`Play today's Quali at ${toDaily.name}`}>
+            Play today's Quali {toDaily.flag}
+          </button>
+        )}
+        <button className={`${toDaily ? secondaryBtn : primaryBtn} flex-1`} onClick={() => game.adjust()} autoFocus={!toDaily}>
           Improve line
         </button>
         {s.mode === "practice" && (
@@ -1017,7 +1032,7 @@ function CornerResult({ game, week, onGrid }: { game: Game; week: CornerWeek | n
           <button className={`${primaryBtn} flex-1`} onClick={() => game.adjust()} autoFocus>
             Try again
           </button>
-          {week && <ShareButton text={`${cornerShare(week, wc)}\n${location.origin}/corner`} label="Share" variant="secondary" />}
+          {week && <ShareButton text={`${cornerShare(week, wc)}\n${shareLink("/corner", "share-corner")}`} label="Share" variant="secondary" />}
           <button className={secondaryBtn} onClick={onGrid}>
             Grid
           </button>

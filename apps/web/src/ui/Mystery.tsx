@@ -24,6 +24,7 @@ import {
 } from "../modes/mystery";
 import { Down, Share, Up } from "./icons";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { shareLink } from "../shareLink";
 
 const CELL: Record<Mark, string> = {
   hit: "bg-green text-night",
@@ -104,7 +105,7 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
   }, [over]);
 
   const share = async () => {
-    const text = mysteryShare(day, `${location.origin}/mystery`);
+    const text = mysteryShare(day, shareLink("/mystery", "share-mystery"));
     try {
       if (navigator.share) await navigator.share({ text });
       else {
@@ -278,7 +279,7 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
               ["Solved", st.played ? `${Math.round((100 * st.solved) / st.played)}%` : "-"],
               ["Solved in a row", String(st.streak)],
             ]}
-            shareText={mysteryShare(day, `${location.origin}/mystery`)}
+            shareText={mysteryShare(day, shareLink("/mystery", "share-mystery"))}
             daily="mystery circuit"
             onClose={() => setFinish(false)}
           />

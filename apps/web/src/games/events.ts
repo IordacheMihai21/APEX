@@ -64,6 +64,26 @@ export function gameStarted(game: Tracked, mode: Mode) {
   track("Game started", { game, mode, player: player() });
 }
 
+const challenge = { opened: false, raced: false, beaten: false };
+/** A "beat my lap" link was opened: the start of the referral funnel (once per page load). */
+export function challengeOpened(circuit: string) {
+  if (challenge.opened) return;
+  challenge.opened = true;
+  track("Challenge opened", { circuit, player: player() });
+}
+
+/** A lap against a challenge: the first one reports whether it beat the link's time, the first win reports once more. */
+export function challengeLap(circuit: string, beat: boolean) {
+  if (!challenge.raced) {
+    challenge.raced = true;
+    track("Challenge raced", { circuit, beat, player: player() });
+  }
+  if (beat && !challenge.beaten) {
+    challenge.beaten = true;
+    track("Challenge beaten", { circuit, player: player() });
+  }
+}
+
 /** A game was finished (its result saved now or in this render), so today's set counts it. */
 export function gameFinished(game: Tracked, mode: Mode, result: Props = {}) {
   // a tick later: some games save their result in a state updater, which runs after the click

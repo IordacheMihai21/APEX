@@ -7,6 +7,7 @@ import { gameFinished, gameStarted } from "../games/events";
 import { dailyNumber } from "../modes/daily";
 import { GROUP_SIZE, MISTAKES, dailyLineup, item, judge, lineupGuesses, lineupShare, lineupState, lineupStats, recordLineupGuess } from "../modes/lineup";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { shareLink } from "../shareLink";
 
 /** Group colours, easiest first (the share squares match: yellow, green, blue, purple). */
 const COLOURS = ["var(--color-yellow)", "var(--color-green)", "#5aa9ff", "var(--color-purple)"];
@@ -180,7 +181,7 @@ export function Lineup() {
             ["Won", String(st.won)],
             ["Perfect", String(st.perfect)],
           ]}
-          shareText={lineupShare(puzzle, guesses, `${location.origin}/line-up`)}
+          shareText={lineupShare(puzzle, guesses, shareLink("/line-up", "share-line-up"))}
           daily="line-up"
           onClose={() => setFinish(false)}
         />

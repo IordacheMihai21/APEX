@@ -7,6 +7,7 @@ import { primaryBtn, secondaryBtn } from "../ui/styles";
 import { Page, Section, link } from "./Guides";
 import { gameFinished, gameStarted } from "../games/events";
 import { quiz, recordQuiz, triviaBest, verdict } from "./quiz";
+import { shareLink } from "../shareLink";
 
 /**
  * Circuit trivia: an index and one quiz per circuit. The questions render to
@@ -72,7 +73,7 @@ export function TriviaQuiz({ id }: { id: string }) {
 
   const at = CIRCUITS.findIndex((x) => x.id === id);
   const next = CIRCUITS[(at + 1) % CIRCUITS.length];
-  const shareText = `Lapdle ${c.name} quiz: ${score}/${qs.length}\n${picked.map((p, i) => (p === qs[i].answer ? "🟩" : "🟥")).join("")}\n${typeof location !== "undefined" ? location.origin : "https://lapdle.com"}/trivia/${circuitSlug(id)}`;
+  const shareText = `Lapdle ${c.name} quiz: ${score}/${qs.length}\n${picked.map((p, i) => (p === qs[i].answer ? "🟩" : "🟥")).join("")}\n${shareLink(`/trivia/${circuitSlug(id)}`, "share-trivia")}`;
   const share = async () => {
     try {
       if (navigator.share) await navigator.share({ text: shareText });

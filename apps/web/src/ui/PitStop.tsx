@@ -26,6 +26,7 @@ import {
 import { Segments } from "./Segments";
 import { Share } from "./icons";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { shareLink } from "../shareLink";
 
 type Phase = "idle" | "entering" | "service" | "hold" | "green" | "leaving" | "done";
 type Mode = "daily" | "practice";
@@ -229,7 +230,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   const share = async () => {
     if (!shown) return;
-    const text = mode === "daily" ? pitShare(shown, `${location.origin}/pit-stop`) : `Lapdle Pit stop: ${secs(shown.totalMs)} s. Beat it: ${location.origin}/pit-stop`;
+    const text = mode === "daily" ? pitShare(shown, shareLink("/pit-stop", "share-pit-stop")) : `Lapdle Pit stop: ${secs(shown.totalMs)} s. Beat it: ${shareLink("/pit-stop", "share-pit-stop")}`;
     try {
       if (navigator.share) await navigator.share({ text });
       else {
@@ -500,7 +501,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
             ["Last 5", avg !== null ? secs(avg) : "-"],
             ["Stops", String(rec.stops)],
           ]}
-          shareText={mode === "daily" ? pitShare(shown, `${location.origin}/pit-stop`) : `Lapdle Pit stop: ${secs(shown.totalMs)} s. Beat it: ${location.origin}/pit-stop`}
+          shareText={mode === "daily" ? pitShare(shown, shareLink("/pit-stop", "share-pit-stop")) : `Lapdle Pit stop: ${secs(shown.totalMs)} s. Beat it: ${shareLink("/pit-stop", "share-pit-stop")}`}
           again={
             mode === "daily"
               ? { label: "Practice stops", onClick: () => (setFinish(false), switchMode("practice")) }

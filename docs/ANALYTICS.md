@@ -14,7 +14,10 @@ A visit's source comes from its referrer or from tagged links (`?ref=tiktok`,
 `?utm_source=reddit&utm_campaign=…`). The app reads those parameters when the
 page loads, before it rewrites its own address, and sends them with the first
 page view (`sourceQuery` in `src/analytics.ts`); its own parameters (`vs`,
-`play`, `track`) never go to Plausible.
+`play`, `track`) never go to Plausible. Shared results carry their own tag
+(`?ref=share-mystery`, `?ref=share-trivia`…, and `&ref=challenge` on a "beat
+my lap" link, `shareLink` in `src/shareLink.ts`), so visits from shares show
+under Sources as `share-…` and `challenge`.
 
 Plausible can't follow a person across days, so the events carry coarse
 buckets worked out on the device from what it already stores (see
@@ -30,6 +33,9 @@ buckets worked out on the device from what it already stores (see
 | `Game finished` | a game's result is in | `game`, `mode`, `player`, `today` (daily set done, e.g. `3/5`), plus a result: Quali `medal` and `laps`; Mystery `solved` and `guesses`; Higher or lower `score` or `streak`; Pit stop `penalty`; Braking point `score` band or `off`; Lights out `band`; trivia `circuit` and `score` |
 | `Daily set done` | the last game of today's set is finished | `player` |
 | `Share` | a result is shared | `what` |
+| `Challenge opened` | a "beat my lap" link is opened (once per page load) | `circuit`, `player` |
+| `Challenge raced` | the first lap against that challenge | `circuit`, `beat` (true/false), `player` |
+| `Challenge beaten` | the first lap that beats it | `circuit`, `player` |
 
 `game` is one of `quali`, `mystery`, `pit-stop`, `higher-lower`,
 `braking-point`, `reaction`, `trivia`.
@@ -37,10 +43,11 @@ buckets worked out on the device from what it already stores (see
 ## One-time setup in Plausible
 
 1. Site settings > Goals: add custom event goals `Visit`, `Game started`,
-   `Game finished`, `Daily set done`, `Share`.
+   `Game finished`, `Daily set done`, `Share`, `Challenge opened`,
+   `Challenge raced`, `Challenge beaten`.
 2. Site settings > Custom properties: add `game`, `mode`, `player`,
    `last_played`, `today`, `medal`, `score`, `streak`, `solved`, `guesses`,
-   `penalty`, `off`, `band`, `circuit`, `what`.
+   `penalty`, `off`, `band`, `circuit`, `what`, `beat`.
 
 ## The numbers partners ask for
 

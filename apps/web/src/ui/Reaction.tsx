@@ -7,6 +7,7 @@ import { Gantry } from "./Gantry";
 import { Segments } from "./Segments";
 import { Share } from "./icons";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { shareLink } from "../shareLink";
 
 type Phase = "idle" | "lights" | "hold" | "go" | "done" | "jump";
 
@@ -90,7 +91,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   const avg = average(rec);
   const share = async () => {
-    const text = `Lapdle lights out: ${secs(ms ?? rec.best ?? 0)}s${rec.best !== null ? ` (best ${secs(rec.best)}s)` : ""}. How fast off the line are you? ${location.origin}/reaction`;
+    const text = `Lapdle lights out: ${secs(ms ?? rec.best ?? 0)}s${rec.best !== null ? ` (best ${secs(rec.best)}s)` : ""}. How fast off the line are you? ${shareLink("/reaction", "share-reaction")}`;
     try {
       if (navigator.share) await navigator.share({ text });
       else {
@@ -191,7 +192,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
             ["Average", avg !== null ? secs(avg) : "-"],
             ["Jump starts", String(rec.jumps)],
           ]}
-          shareText={`Lapdle lights out: ${secs(ms ?? rec.best ?? 0)}s${rec.best !== null ? ` (best ${secs(rec.best)}s)` : ""}. How fast off the line are you? ${location.origin}/reaction`}
+          shareText={`Lapdle lights out: ${secs(ms ?? rec.best ?? 0)}s${rec.best !== null ? ` (best ${secs(rec.best)}s)` : ""}. How fast off the line are you? ${shareLink("/reaction", "share-reaction")}`}
           again={{ label: "Try again", onClick: () => (setFinish(false), start()) }}
           onClose={() => setFinish(false)}
         />

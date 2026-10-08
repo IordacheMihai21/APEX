@@ -25,6 +25,7 @@ import {
   recordAerialGuess,
 } from "../modes/aerial";
 import { primaryBtn } from "./styles";
+import { shareLink } from "../shareLink";
 
 const GROUND = "#466636";
 
@@ -265,7 +266,7 @@ export function AerialView() {
             ["Solved", String(st.solved)],
             ["Average", st.average !== null ? st.average.toFixed(1) : "-"],
           ]}
-          shareText={aerialShare(guesses, `${location.origin}/aerial`)}
+          shareText={aerialShare(guesses, shareLink("/aerial", "share-aerial"))}
           daily="aerial view"
           onClose={() => setFinish(false)}
         />
