@@ -33,6 +33,8 @@ buckets worked out on the device from what it already stores (see
 | `Game finished` | a game's result is in | `game`, `mode`, `player`, `today` (daily set done, e.g. `3/5`), plus a result: Quali `medal` and `laps`; Mystery `solved` and `guesses`; Higher or lower `score` or `streak`; Pit stop `penalty`; Braking point `score` band or `off`; Lights out `band`; trivia `circuit` and `score` |
 | `Daily set done` | the last game of today's set is finished | `player` |
 | `Share` | a result is shared | `what` |
+| `Lap started` | a lap of the race game is started (Quali, practice, season, corner) | `mode`, `circuit`, `condition` |
+| `Lap finished` | that lap is over | `mode`, `circuit`, `attempt` |
 | `Challenge opened` | a "beat my lap" link is opened (once per page load) | `circuit`, `player` |
 | `Challenge raced` | the first lap against that challenge | `circuit`, `beat` (true/false), `player` |
 | `Challenge beaten` | the first lap that beats it | `circuit`, `player` |
@@ -44,10 +46,12 @@ buckets worked out on the device from what it already stores (see
 
 1. Site settings > Goals: add custom event goals `Visit`, `Game started`,
    `Game finished`, `Daily set done`, `Share`, `Challenge opened`,
-   `Challenge raced`, `Challenge beaten`.
+   `Challenge raced`, `Challenge beaten`, `Lap started`, `Lap finished`,
+   `App installed`, `Install prompt`, `Install button`.
 2. Site settings > Custom properties: add `game`, `mode`, `player`,
    `last_played`, `today`, `medal`, `score`, `streak`, `solved`, `guesses`,
-   `penalty`, `off`, `band`, `circuit`, `what`, `beat`.
+   `penalty`, `off`, `band`, `circuit`, `what`, `beat`, `condition`,
+   `attempt`, `app`, `from`, `outcome`, `way`.
 
 ## The numbers partners ask for
 
