@@ -30,6 +30,7 @@ async function load() {
   scene?.dispose();
   scene = new CornerScene(canvas, data, cond.value as Condition);
   scene.resize(innerWidth, innerHeight);
+  (window as unknown as { scene: CornerScene }).scene = scene; // for poking at in the console
   restart();
 }
 function restart() {

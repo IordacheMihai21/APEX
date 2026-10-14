@@ -125,6 +125,9 @@ export class CornerScene {
   readonly camera = new THREE.PerspectiveCamera(58, 1, 0.1, 2500);
   private readonly car: THREE.Group;
   private readonly wheels: THREE.Object3D[];
+  private readonly frontWheels: THREE.Object3D[];
+  private steer = 0;
+  private lastPose: { x: number; y: number; heading: number } | null = null;
   private readonly rainLight: THREE.Mesh;
   private readonly sun: THREE.DirectionalLight;
   private readonly camPos = new THREE.Vector3();
@@ -287,6 +290,7 @@ export class CornerScene {
     const built = buildCar();
     this.car = built.car;
     this.wheels = built.wheels;
+    this.frontWheels = built.front;
     this.rainLight = built.rainLight;
     this.scene.add(this.car);
     this.track(built);
@@ -312,9 +316,18 @@ export class CornerScene {
     const p = toWorld(pose.x, pose.y).addScaledVector(sideways, slide);
     this.car.position.copy(p);
     this.car.rotation.y = Math.atan2(-dir.x, -dir.z) + slide * 0.02;
-    // wheels roll with the speed (radius 0.36 m)
+    // wheels roll with the speed (radius 0.36 m); the fronts steer with the line's curvature (wheelbase 3.4 m)
     this.wheelTurn -= (speed * dt) / 0.36;
+    const last = this.lastPose;
+    if (last) {
+      const ds = Math.hypot(pose.x - last.x, pose.y - last.y);
+      let dh = pose.heading - last.heading;
+      dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+      if (ds > 0.05) this.steer += (Math.atan(3.4 * (dh / ds)) - this.steer) * Math.min(1, dt * 10);
+    }
+    this.lastPose = pose;
     for (const w of this.wheels) w.rotation.x = this.wheelTurn;
+    for (const w of this.frontWheels) w.rotation.y = this.steer;
     (this.rainLight.material as THREE.MeshStandardMaterial).emissiveIntensity = braking ? 6 : 0.4;
 
     // chase camera: behind and above, looking down the road, eased so it swings smoothly through the corner

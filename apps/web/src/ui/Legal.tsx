@@ -16,6 +16,7 @@ const SOFTWARE: [string, string, string][] = [
   ["React and React DOM", "MIT", "https://github.com/facebook/react/blob/main/LICENSE"],
   ["Phosphor Icons", "MIT", "https://github.com/phosphor-icons/react/blob/master/LICENSE"],
   ["Archivo typeface (Omnibus-Type), via Fontsource", "SIL Open Font License 1.1", "https://github.com/Omnibus-Type/Archivo/blob/master/OFL.txt"],
+  ["three.js (Make the corner's 3D view)", "MIT", "https://github.com/mrdoob/three.js/blob/dev/LICENSE"],
 ];
 
 /**
@@ -114,6 +115,24 @@ export function Legal() {
               F1DB
             </a>
             , the open Formula 1 database, under the Creative Commons Attribution 4.0 licence (CC BY 4.0).
+          </p>
+        </Section>
+
+        <Section title="3D model">
+          <p>
+            The car in Make the corner is based on{" "}
+            <a className={link} href="https://sketchfab.com/3d-models/f1-2026-concept-polygon-model-ea3bde709b1e4dc9b0ec8557d106ed42" target="_blank" rel="noreferrer">
+              "F1 2026 concept (polygon model)"
+            </a>{" "}
+            by{" "}
+            <a className={link} href="https://sketchfab.com/Qvist_Designs" target="_blank" rel="noreferrer">
+              Qvist_designs
+            </a>
+            , under the{" "}
+            <a className={link} href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">
+              Creative Commons Attribution 4.0 licence (CC BY 4.0)
+            </a>
+            . We simplified it, split its wheels and painted it in Lapdle's colours. It is an original design, not a model of any real car or team.
           </p>
         </Section>
 

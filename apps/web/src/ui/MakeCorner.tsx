@@ -26,6 +26,7 @@ import {
   recordRun,
 } from "../modes/makeCornerDay";
 import { CornerScene } from "../game3d/cornerScene";
+import { CAR_CREDIT } from "../game3d/car";
 import { primaryBtn, secondaryBtn } from "./styles";
 import { shareLink } from "../shareLink";
 
@@ -472,6 +473,14 @@ export function MakeCorner() {
           </div>
         )}
       </div>
+
+      <p className="mt-6 px-4 text-center text-[12px] text-steel">
+        Car:{" "}
+        <a className="underline decoration-line underline-offset-4 hover:text-paint" href={CAR_CREDIT.url} target="_blank" rel="noreferrer">
+          {CAR_CREDIT.title}
+        </a>{" "}
+        by {CAR_CREDIT.author} ({CAR_CREDIT.license}), simplified and repainted
+      </p>
 
       <AdBelow />
 
