@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, useRef } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState, useRef } from "react";
 import { GAME_PAGES, type GameId, type GamePage, type InfoPage, PAGES, game } from "./games/registry";
 import { type ContentPage, contentMeta, contentPath, parseContent } from "./content/meta";
 import { flushSync } from "react-dom";
@@ -13,7 +13,8 @@ import { type HubAction, Hub } from "./ui/Hub";
 import { ADS_ON, AdSlot, adShows } from "./ui/Ads";
 import { Stats } from "./ui/Stats";
 import { decodeChallenge } from "./modes/challenge";
-import { ChevronLeft, ColourBlind } from "./ui/icons";
+import { ChevronLeft, ColourBlind, MenuIcon } from "./ui/icons";
+import { Menu } from "./ui/Menu";
 import { DailySummary, Loading, TrackPicker } from "./Dialogs";
 import { pageview } from "./analytics";
 import { weeklyCorner } from "./modes/corner";
@@ -228,6 +229,8 @@ export function App() {
     }
   };
 
+  const [menu, setMenu] = useState(false);
+  const closeMenu = useCallback(() => setMenu(false), []);
   const [cb, setCb] = useState(colourBlind);
   const toggleColourBlind = () => {
     setColourBlind(!cb);
@@ -243,29 +246,41 @@ export function App() {
 
   return (
     <div className="grid h-dvh grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr_auto] overflow-hidden select-none">
-      <header className="flex h-[52px] items-stretch justify-between border-b border-line bg-night pt-[env(safe-area-inset-top)]">
+      <header className="relative flex h-[52px] items-stretch justify-between border-b border-line bg-night pt-[env(safe-area-inset-top)]">
         <div className="flex min-w-0 items-stretch">
-          {screen.kind !== "hub" && (
+          {screen.kind === "hub" ? (
+            <button onClick={() => setMenu(true)} className="grid w-12 shrink-0 place-items-center border-r border-line text-paint transition-colors hover:bg-graphite active:bg-graphite" aria-label="Open the menu" aria-expanded={menu}>
+              <MenuIcon />
+            </button>
+          ) : (
             <button onClick={() => setScreen({ kind: "hub" })} className="back grid w-12 shrink-0 place-items-center border-r border-line text-paint transition-colors hover:bg-graphite active:bg-graphite" aria-label="Back to the grid">
               <ChevronLeft />
             </button>
           )}
-          <div className="flex min-w-0 items-center gap-3 px-3">
-            <span className="wide text-[17px] leading-none tracking-[0.02em] text-paint sm:text-[20px]">
-              LAPDLE
-            </span>
-            {track && screen.kind === "play" && (
-              <div className="min-w-0 leading-tight">
-                <div className="caption truncate">
-                  {screen.day ? `Archive, quali No. ${dailyNumber(screen.day)}` : MODE_LABEL[screen.mode]}
-                  {screen.mode === "daily" && dailyCondition(screen.day) !== "dry" ? `, ${CONDITION_NAME[dailyCondition(screen.day)].toLowerCase()}` : ""}
-                  {screen.mode === "practice" && screen.condition && screen.condition !== "dry" ? `, ${CONDITION_NAME[screen.condition].toLowerCase()}` : ""}
+          {screen.kind !== "hub" && (
+            <div className="flex min-w-0 items-center gap-3 px-3">
+              <button onClick={() => setScreen({ kind: "hub" })} className="wide text-[17px] leading-none tracking-[0.02em] text-paint sm:text-[20px]" aria-label="Lapdle home">
+                LAPDLE
+              </button>
+              {track && screen.kind === "play" && (
+                <div className="min-w-0 leading-tight">
+                  <div className="caption truncate">
+                    {screen.day ? `Archive, quali No. ${dailyNumber(screen.day)}` : MODE_LABEL[screen.mode]}
+                    {screen.mode === "daily" && dailyCondition(screen.day) !== "dry" ? `, ${CONDITION_NAME[dailyCondition(screen.day)].toLowerCase()}` : ""}
+                    {screen.mode === "practice" && screen.condition && screen.condition !== "dry" ? `, ${CONDITION_NAME[screen.condition].toLowerCase()}` : ""}
+                  </div>
+                  <div className="truncate text-[14px] font-bold text-paint">{track.name}</div>
                 </div>
-                <div className="truncate text-[14px] font-bold text-paint">{track.name}</div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
+        {/* on the home screen the wordmark sits in the middle, right above the Today bar */}
+        {screen.kind === "hub" && (
+          <button onClick={() => document.querySelector("main .hub")?.scrollTo({ top: 0, behavior: "smooth" })} className="wide absolute top-[env(safe-area-inset-top)] bottom-0 left-1/2 -translate-x-1/2 text-[19px] leading-none tracking-[0.02em] text-paint sm:text-[22px]" aria-label="Lapdle home">
+            LAPDLE
+          </button>
+        )}
         <span className="flex">
         <button
           onClick={toggleColourBlind}
@@ -361,6 +376,7 @@ export function App() {
         />
       )}
       {stats && <Stats onClose={() => setStats(false)} />}
+      <Menu open={menu} onClose={closeMenu} onAction={act} />
       {summary && (
         <DailySummary
           onClose={() => setSummary(false)}
