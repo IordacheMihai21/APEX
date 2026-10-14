@@ -4,19 +4,24 @@ import {
   ArrowUp,
   ArrowLineLeft,
   ArrowLineRight,
+  ArrowsDownUp,
   CaretDown,
   CaretLeft,
   CaretRight,
   CloudRain,
   CornersOut,
   FlagCheckered,
+  Gauge,
   type Icon,
   MapTrifold,
   Palette,
+  Question,
   Minus as PhMinus,
   Plus as PhPlus,
   ShareNetwork,
+  SteeringWheel,
   Wind,
+  Wrench,
 } from "@phosphor-icons/react";
 
 /** The control icons: Phosphor, bold weight throughout so every control shares one stroke. */
@@ -44,3 +49,12 @@ export const Down = make(ArrowDown);
 export const Chequered = make(FlagCheckered);
 export const Rain = make(CloudRain);
 export const LowDownforce = make(Wind);
+
+/** One mark per daily game, for the Today bar before the game is played. */
+export const GameMarks = {
+  quali: make(SteeringWheel),
+  mystery: make(Question),
+  "pit-stop": make(Wrench),
+  "higher-lower": make(ArrowsDownUp),
+  "braking-point": make(Gauge),
+} as const;

@@ -16,7 +16,7 @@ import { MYSTERY_TRIES, REVEAL, isOver, isSolved, loadMystery, mysteryAnswer, re
 import { loadPitStop, secs } from "../modes/pitstop";
 import { loadReaction } from "../modes/reaction";
 import { ADS_ON, AdSlot } from "./Ads";
-import { Chequered, Down, LowDownforce, Rain, Up } from "./icons";
+import { Chequered, Down, GameMarks, LowDownforce, Rain, Up } from "./icons";
 import { Footer } from "./Footer";
 import { Gantry } from "./Gantry";
 import { MedalDisc, MedalLadder, PoleTarget } from "./Medals";
@@ -63,6 +63,12 @@ function useReducedMotion() {
  * the two dailies are done, each one's state (a chequered flag once it's
  * finished), and the medal streak. Each entry opens its game.
  */
+/** A daily game's mark in the Today bar before it is played (a small dot for a game without one). */
+function TodayMark({ id }: { id: string }) {
+  const Mark = (GameMarks as Record<string, ((p: { className?: string }) => React.ReactElement) | undefined>)[id];
+  return Mark ? <Mark className="h-4 w-4" /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />;
+}
+
 function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; onAction: (a: HubAction) => void }) {
   const streak = playStreak(daily.key);
   // the daily set and today's status of each, from the registry
@@ -99,7 +105,7 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
             <li key={i.key} className="min-w-0 flex-1 border-line sm:border-l xl:flex-none">
               <button onClick={i.act} aria-label={`${i.name}: ${i.state}`} className="today-item flex h-full w-full min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-center sm:flex-row sm:justify-start sm:gap-2.5 sm:px-4 sm:py-2.5 sm:text-left">
                 <span className={`grid h-5 w-4 shrink-0 place-items-center sm:h-6 sm:w-6 ${i.done ? "text-paint" : "text-steel/60"}`}>
-                  {i.medal ? <MedalDisc medal={i.medal} size={16} /> : i.done ? <Chequered className="h-4 w-4" /> : <span className="h-2 w-2 border border-current" />}
+                  {i.medal ? <MedalDisc medal={i.medal} size={16} /> : i.done ? <Chequered className="h-4 w-4" /> : <TodayMark id={i.key} />}
                 </span>
                 <span className="min-w-0 leading-tight">
                   <span className="block truncate text-[11px] font-semibold text-paint sm:text-[13px]">
