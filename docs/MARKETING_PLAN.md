@@ -300,7 +300,7 @@ Răspunsurile din 10 oct sunt integrate mai sus. Mai rămân:
 | Circuite noi | Mexic, Las Vegas, Qatar, Abu Dhabi ar da conținut pentru weekendurile rămase; costă timp de dezvoltare | 8 nov |
 | Pauza competițională (dec–mar) | Perfect Season ca provocare, „best of 2026”, sondaj pentru circuitul următor | 8 nov |
 | Țintele | Un singur set, din date | 14 oct |
-| Play Store | Aplicația web publicată ca aplicație Android (TWA), fără rescriere. Primul semnal: comentariul „is it on playstore?” de pe TikTok (oct). Cost: taxă unică de cont de dezvoltator și un test închis cu testeri înainte de publicare (de verificat regulile actuale Google) | 8 nov |
+| Aplicație în magazine | **Play Store:** aplicația web publicată ca aplicație Android (TWA), fără rescriere; taxă unică de cont de dezvoltator și un test închis cu testeri înainte de publicare. **App Store:** cont Apple Developer cu taxă anuală, iar Apple respinge des aplicațiile care sunt doar un site împachetat, deci ar cere funcții native în plus (de exemplu notificări). Regulile ambelor magazine sunt de verificat la zi. Semnale: „is it on playstore?” pe TikTok și „they need to make it an app in the app store” pe YouTube (oct) | 8 nov |
 
 ---
 
