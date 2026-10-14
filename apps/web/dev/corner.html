@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Corner preview (dev)</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #0d0f12; color: #eee; font: 14px system-ui, sans-serif; overflow: hidden; }
+      canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+      #hud { position: fixed; left: 12px; top: 12px; right: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; pointer-events: none; }
+      #hud select, #hud button { pointer-events: auto; font: inherit; }
+      #speed { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); font: 900 44px system-ui; text-shadow: 0 2px 8px #000; }
+      #status { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); text-shadow: 0 1px 4px #000; white-space: nowrap; }
+    </style>
+  </head>
+  <body>
+    <canvas id="c"></canvas>
+    <div id="hud">
+      <select id="corner"></select>
+      <select id="cond"><option>dry</option><option>wet</option><option>lowdf</option></select>
+      <button id="restart">Restart</button>
+      <button id="auto">Perfect calls</button>
+    </div>
+    <div id="status"></div>
+    <div id="speed"></div>
+    <script type="module" src="../src/dev/cornerDev.ts"></script>
+  </body>
+</html>
