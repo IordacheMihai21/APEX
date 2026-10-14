@@ -56,12 +56,13 @@ export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () =
   );
 
   return (
-    <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+    <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open} inert={!open}>
       <div className={`absolute inset-0 bg-night/70 transition-opacity duration-200 ${open ? "opacity-100" : "opacity-0"}`} onClick={onClose} />
       <div
         ref={panel}
-        role="dialog"
-        aria-modal="true"
+        // a dialog only while open: the games pause their keys while any aria-modal is on the page
+        role={open ? "dialog" : undefined}
+        aria-modal={open ? "true" : undefined}
         aria-label="Menu"
         className={`absolute inset-y-0 left-0 flex w-[min(86vw,340px)] flex-col border-r border-line bg-night pt-[env(safe-area-inset-top)] transition-transform duration-200 ease-out motion-reduce:transition-none ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
