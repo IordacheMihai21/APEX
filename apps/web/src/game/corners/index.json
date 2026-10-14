@@ -1,0 +1,122 @@
+[
+ {
+  "id": "spa-0",
+  "trackId": "spa",
+  "name": "La Source"
+ },
+ {
+  "id": "zandvoort-0",
+  "trackId": "zandvoort",
+  "name": "Tarzan"
+ },
+ {
+  "id": "austin-0",
+  "trackId": "austin",
+  "name": "Austin's Turn 1"
+ },
+ {
+  "id": "hungaroring-0",
+  "trackId": "hungaroring",
+  "name": "Hungaroring's Turn 1"
+ },
+ {
+  "id": "austin-5",
+  "trackId": "austin",
+  "name": "Austin Turn 11"
+ },
+ {
+  "id": "austin-6",
+  "trackId": "austin",
+  "name": "Austin Turn 12"
+ },
+ {
+  "id": "austin-11",
+  "trackId": "austin",
+  "name": "Austin Turn 20"
+ },
+ {
+  "id": "austin-12",
+  "trackId": "austin",
+  "name": "Austin Turn 21"
+ },
+ {
+  "id": "barcelona-2",
+  "trackId": "barcelona",
+  "name": "Barcelona Turn 6"
+ },
+ {
+  "id": "barcelona-3",
+  "trackId": "barcelona",
+  "name": "Barcelona Turns 8–9"
+ },
+ {
+  "id": "barcelona-5",
+  "trackId": "barcelona",
+  "name": "Barcelona Turns 11–12"
+ },
+ {
+  "id": "hungaroring-6",
+  "trackId": "hungaroring",
+  "name": "Hungaroring Turns 11–12"
+ },
+ {
+  "id": "hungaroring-9",
+  "trackId": "hungaroring",
+  "name": "Hungaroring Turn 16"
+ },
+ {
+  "id": "hungaroring-10",
+  "trackId": "hungaroring",
+  "name": "Hungaroring Turn 17"
+ },
+ {
+  "id": "imola-2",
+  "trackId": "imola",
+  "name": "Imola Turns 6–7"
+ },
+ {
+  "id": "interlagos-1",
+  "trackId": "interlagos",
+  "name": "Interlagos Turn 4"
+ },
+ {
+  "id": "monaco-2",
+  "trackId": "monaco",
+  "name": "Monaco Turns 9–11"
+ },
+ {
+  "id": "monaco-3",
+  "trackId": "monaco",
+  "name": "Monaco Turns 12–14"
+ },
+ {
+  "id": "monaco-7",
+  "trackId": "monaco",
+  "name": "Monaco Turns 22–24"
+ },
+ {
+  "id": "monza-3",
+  "trackId": "monza",
+  "name": "Monza Turn 9"
+ },
+ {
+  "id": "monza-4",
+  "trackId": "monza",
+  "name": "Monza Turns 10–12"
+ },
+ {
+  "id": "red-bull-ring-0",
+  "trackId": "red-bull-ring",
+  "name": "Spielberg Turns 1–2"
+ },
+ {
+  "id": "red-bull-ring-1",
+  "trackId": "red-bull-ring",
+  "name": "Spielberg Turn 4"
+ },
+ {
+  "id": "zandvoort-5",
+  "trackId": "zandvoort",
+  "name": "Zandvoort Turns 11–12"
+ }
+]
