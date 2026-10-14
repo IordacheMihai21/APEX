@@ -1,14 +1,20 @@
 import { NAMED_CORNERS } from "../content/quiz";
+import FACTS from "../game/lineup.json";
 import { CIRCUITS, type CircuitFacts, circuit, load, save, seeded } from "./circuits";
 import { dailyNumber, dateKey } from "./daily";
 
 /**
- * Line-up: sixteen tiles, four groups of four. The groups come from the same
- * sourced facts as the other games (circuits by first Grand Prix, lap length,
- * race laps or corner count) and from the circuits' best-known corner names.
- * A day is generated from the date, the same for everyone, and only accepted
- * if every tile fits exactly one of the day's four groups, so the answer is
- * never in doubt. Four mistakes allowed; three right of four is "one away".
+ * Line-up: sixteen tiles, four groups of four, one group of each difficulty
+ * (yellow, green, blue, purple). The tiles are drivers, teams, title-winning
+ * cars, circuits and famous corners; the groups come from F1DB
+ * (game/lineup.json, built by npm run build:lineup, CC BY 4.0) and from the
+ * circuits' best-known corner names. A day is generated from the date, the
+ * same for everyone, and only accepted if every tile fits exactly one of the
+ * day's four groups, so the answer is never in doubt. Four mistakes allowed;
+ * three right of four is "one away".
+ *
+ * Days before LINEUP_V2 keep the first edition (circuit facts and corners
+ * only), so the guesses saved for them still match their puzzle.
  */
 export const GROUPS = 4;
 export const GROUP_SIZE = 4;
@@ -23,9 +29,15 @@ export interface Category {
   title: string;
   /** 1 (easiest) to 4 (hardest): sets the colour */
   level: number;
-  kind: "circuit" | "corner";
+  kind: "circuit" | "corner" | "fact";
+  /** groups of one kind ("drove for X and Y") share a family; a day draws the family first */
+  family?: string;
   members: string[];
 }
+
+/** The first day of the second edition (drivers, teams and cars from F1DB). */
+export const LINEUP_V2 = "2026-10-16";
+export const LINEUP_SOURCE = FACTS.source;
 
 /** Tiles are small: Spa-Francorchamps goes by the name everyone uses. */
 const SHORT: Record<string, string> = { spa: "Spa" };
@@ -55,7 +67,17 @@ export const CATEGORIES: Category[] = [
     .map(([track, names]) => ({ id: `corners-${track}`, title: `Corners of ${circuit(track).name}`, level: 1, kind: "corner" as const, members: names.map((n) => `k:${n}`) })),
 ].filter((c) => c.members.length >= GROUP_SIZE);
 
-const ITEMS = new Map<string, Item>([...CIRCUITS.map((c) => [`c:${c.id}`, circuitItem(c)] as const), ...Object.values(NAMED_CORNERS).flat().map((n) => [`k:${n}`, cornerItem(n)] as const)]);
+/** The second edition: the F1DB groups, plus the corner groups as yellow. */
+export const CATEGORIES_V2: Category[] = [
+  ...FACTS.groups.map((g) => ({ ...g, kind: "fact" as const })),
+  ...CATEGORIES.filter((c) => c.kind === "corner").map((c) => ({ ...c, family: "corners" })),
+];
+
+const ITEMS = new Map<string, Item>([
+  ...CIRCUITS.map((c) => [`c:${c.id}`, circuitItem(c)] as const),
+  ...Object.values(NAMED_CORNERS).flat().map((n) => [`k:${n}`, cornerItem(n)] as const),
+  ...FACTS.items.map((i) => [i.id, { id: i.id, label: i.label }] as const),
+]);
 export const item = (id: string) => ITEMS.get(id)!;
 
 export interface Puzzle {
@@ -79,28 +101,107 @@ export function unambiguous(groups: { category: Category; items: string[] }[]): 
   return groups.every((g) => g.items.every((id) => groups.filter((h) => h.category.members.includes(id)).length === 1));
 }
 
-/** The day's puzzle: four groups (one or two of corner names, the rest of circuits), checked for a single answer. */
+/** The day's puzzle: the first edition before LINEUP_V2, the second from then on. */
 export function dailyLineup(key = dateKey()): Puzzle {
+  return key < LINEUP_V2 ? dailyLineupV1(key) : lineupV2(key);
+}
+
+/**
+ * Second-edition days are built in order from LINEUP_V2 (and remembered), so a
+ * day can steer clear of the groups of the two days before it.
+ */
+const V2_DAYS = new Map<string, Puzzle>();
+const nextDay = (key: string) => dateKey(new Date(Date.parse(`${key}T12:00:00`) + 86_400_000));
+function lineupV2(key: string): Puzzle {
+  const hit = V2_DAYS.get(key);
+  if (hit) return hit;
+  let day = LINEUP_V2;
+  const recent: string[][] = [];
+  for (;;) {
+    const p = V2_DAYS.get(day) ?? dailyLineupV2(day, new Set(recent.flat()));
+    V2_DAYS.set(day, p);
+    if (day >= key) return p;
+    recent.push(p.groups.map((g) => g.category.id));
+    if (recent.length > 2) recent.shift();
+    day = nextDay(day);
+  }
+}
+
+/** First edition: four groups (one or two of corner names, the rest of circuits), checked for a single answer. */
+function dailyLineupV1(key: string): Puzzle {
   const rand = seeded(dailyNumber(key) * 31_337 + 7);
   for (let attempt = 0; attempt < 5000; attempt++) {
     const corners = 1 + Math.floor(rand() * 2);
     const cats = [...shuffle(CATEGORIES.filter((c) => c.kind === "corner"), rand).slice(0, corners), ...shuffle(CATEGORIES.filter((c) => c.kind === "circuit"), rand).slice(0, GROUPS - corners)];
-    const used = new Set<string>();
-    const groups: { category: Category; items: string[] }[] = [];
-    for (const category of cats) {
-      const free = shuffle(
-        category.members.filter((m) => !used.has(m)),
-        rand,
-      ).slice(0, GROUP_SIZE);
-      if (free.length < GROUP_SIZE) break;
-      free.forEach((m) => used.add(m));
-      groups.push({ category, items: free });
-    }
-    if (groups.length < GROUPS || !unambiguous(groups)) continue;
+    const groups = fill(cats, rand);
+    if (!groups || !unambiguous(groups)) continue;
     groups.sort((a, b) => a.category.level - b.category.level);
     return { groups, board: shuffle(groups.flatMap((g) => g.items), rand) };
   }
   throw new Error(`line-up: no puzzle for ${key}`);
+}
+
+/**
+ * Second edition: one group of each level. Each level's families take turns
+ * (a shuffled order per cycle, like the Daily Quali's circuits), so no kind of
+ * group comes back until the others have had a day; a group of the family is
+ * drawn, then four tiles that fit it and none of the day's other groups.
+ */
+function dailyLineupV2(key: string, avoid: Set<string>): Puzzle {
+  const day = Math.max(0, dailyNumber(key) - dailyNumber(LINEUP_V2));
+  const rand = seeded(dailyNumber(key) * 48_271 + 11);
+  const pick = <T,>(xs: T[]) => xs[Math.floor(rand() * xs.length)];
+  const families = [1, 2, 3, 4].map((level) => [...new Set(CATEGORIES_V2.filter((c) => c.level === level).map((c) => c.family ?? c.id))].sort());
+  /** the n-th family in a level's rotation (a fresh shuffled order every cycle) */
+  const familyAt = (l: number, n: number) => {
+    const fs = families[l];
+    return shuffle(fs, seeded(Math.floor(n / fs.length) * 7_919 + l * 104_729 + 3))[n % fs.length];
+  };
+  for (let attempt = 0; attempt < 5000; attempt++) {
+    // today's turn first; if those four don't fit together, the next turns, each level stepping at its own pace
+    const step = Math.floor(attempt / 200);
+    const cats = [1, 2, 3, 4].map((level, l) => {
+      const family = familyAt(l, day + step * [1, 2, 3, 5][l]);
+      return pick(CATEGORIES_V2.filter((c) => c.level === level && (c.family ?? c.id) === family));
+    });
+    if (new Set(cats.map((c) => c.id)).size < GROUPS) continue;
+    // not a group from the last two days (unless nothing else fits)
+    if (attempt < 4000 && cats.some((c) => avoid.has(c.id))) continue;
+    const groups = fillApart(cats, rand);
+    if (!groups || !unambiguous(groups)) continue;
+    const labels = groups.flatMap((g) => g.items.map((id) => item(id).label.toLowerCase()));
+    if (new Set(labels).size !== labels.length) continue;
+    return { groups, board: shuffle(groups.flatMap((g) => g.items), rand) };
+  }
+  throw new Error(`line-up: no puzzle for ${key}`);
+}
+
+/** Four tiles for each group that belong to none of the day's other groups, or null when a group has too few. */
+function fillApart(cats: Category[], rand: () => number): { category: Category; items: string[] }[] | null {
+  const groups: { category: Category; items: string[] }[] = [];
+  for (const category of cats) {
+    const own = category.members.filter((m) => cats.every((c) => c === category || !c.members.includes(m)));
+    const chosen = shuffle(own, rand).slice(0, GROUP_SIZE);
+    if (chosen.length < GROUP_SIZE) return null;
+    groups.push({ category, items: chosen });
+  }
+  return groups;
+}
+
+/** Four free tiles for each group in turn, or null when a group runs out. */
+function fill(cats: Category[], rand: () => number): { category: Category; items: string[] }[] | null {
+  const used = new Set<string>();
+  const groups: { category: Category; items: string[] }[] = [];
+  for (const category of cats) {
+    const free = shuffle(
+      category.members.filter((m) => !used.has(m)),
+      rand,
+    ).slice(0, GROUP_SIZE);
+    if (free.length < GROUP_SIZE) return null;
+    free.forEach((m) => used.add(m));
+    groups.push({ category, items: free });
+  }
+  return groups;
 }
 
 /** How a guess of four fares: the group it is, or how many of it share the best group ("one away" at three). */

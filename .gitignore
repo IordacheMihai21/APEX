@@ -19,3 +19,6 @@ supabase/.temp/
 # build-time renderer output (removed after each build)
 apps/web/dist-ssr/
 marketing/
+
+# F1DB download for build:lineup (~85 MB; the game ships apps/web/src/game/lineup.json)
+data/raw/f1db/

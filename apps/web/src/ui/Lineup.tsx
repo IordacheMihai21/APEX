@@ -5,7 +5,7 @@ import { FinishCard } from "./FinishCard";
 import { NextToday } from "./NextToday";
 import { gameFinished, gameStarted } from "../games/events";
 import { dailyNumber } from "../modes/daily";
-import { GROUP_SIZE, MISTAKES, dailyLineup, item, judge, lineupGuesses, lineupShare, lineupState, lineupStats, recordLineupGuess } from "../modes/lineup";
+import { GROUP_SIZE, LINEUP_SOURCE, MISTAKES, dailyLineup, item, judge, lineupGuesses, lineupShare, lineupState, lineupStats, recordLineupGuess } from "../modes/lineup";
 import { primaryBtn, secondaryBtn } from "./styles";
 import { shareLink } from "../shareLink";
 
@@ -92,7 +92,9 @@ export function Lineup() {
           <h1 className="wide text-[clamp(26px,6vw,52px)] leading-none text-paint">Line-up</h1>
           <HowToPlay game="line-up" />
         </div>
-        <p className="mt-1.5 text-[14px] text-steel md:mt-2 md:text-[15px]">Find four groups of four: circuits that share a fact, or corners of the same circuit.</p>
+        <p className="mt-1.5 text-[14px] text-steel md:mt-2 md:text-[15px]">
+          {puzzle.groups.some((g) => g.category.kind === "fact") ? "Find four groups of four: drivers, teams, cars and circuits that share something. Yellow is the easiest, purple the trickiest." : "Find four groups of four: circuits that share a fact, or corners of the same circuit."}
+        </p>
 
         <div className="mt-4 space-y-2">
           {shownGroups.map((g) => {
@@ -164,6 +166,14 @@ export function Lineup() {
           </div>
         )}
       </div>
+
+      <p className="mt-6 text-center text-[12px] text-steel">
+        Facts:{" "}
+        <a className="underline decoration-line underline-offset-4 hover:text-paint" href={LINEUP_SOURCE.url} target="_blank" rel="noreferrer">
+          {LINEUP_SOURCE.name}
+        </a>{" "}
+        ({LINEUP_SOURCE.license})
+      </p>
 
       <AdBelow />
 

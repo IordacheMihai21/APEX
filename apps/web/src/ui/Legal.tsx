@@ -108,6 +108,13 @@ export function Legal() {
             data, © OpenStreetMap contributors, available under the Open Database License (ODbL). The extracted surroundings data used by the game is itself available under the ODbL; ask us for a copy.
           </p>
           <p>Circuit facts (lengths, corners, first Grand Prix, race laps, 2025 pole times) are public facts, checked against official race pages and public references.</p>
+          <p>
+            Line-up's drivers, teams, cars and records come from{" "}
+            <a className="underline decoration-line underline-offset-4 hover:decoration-paint" href="https://github.com/f1db/f1db" target="_blank" rel="noreferrer">
+              F1DB
+            </a>
+            , the open Formula 1 database, under the Creative Commons Attribution 4.0 licence (CC BY 4.0).
+          </p>
         </Section>
 
         <Section title="Software">

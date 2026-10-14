@@ -21,7 +21,8 @@
     "build:web": "npm run build -w @apex/web",
     "build:conditions": "tsx tools/track-builder/src/build-conditions.ts",
     "build:functions": "tsx tools/functions/build.ts",
-    "deploy:functions": "npm run build:functions && npx -y supabase@2 functions deploy submit-lap --project-ref acglshyvgeikyrvjfjue --no-verify-jwt --use-api"
+    "deploy:functions": "npm run build:functions && npx -y supabase@2 functions deploy submit-lap --project-ref acglshyvgeikyrvjfjue --no-verify-jwt --use-api",
+    "build:lineup": "tsx tools/track-builder/src/build-lineup.ts"
   },
   "devDependencies": {
     "tsx": "^4.23.15",

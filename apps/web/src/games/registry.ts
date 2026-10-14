@@ -313,24 +313,24 @@ export const GAMES: GameDef[] = [
     cadence: "daily",
     inDailySet: false,
     tagline: "Sixteen tiles, four groups of four",
-    blurb: "Circuits that share a fact, corners of the same circuit: find the four groups of four. Four mistakes allowed.",
-    title: "Line-up: find four groups of four circuits and corners | Lapdle",
+    blurb: "Drivers, teams, cars and circuits: find the four groups of four, from easy yellow to tricky purple. Four mistakes allowed.",
+    title: "Line-up: find four groups of four drivers, teams, cars and circuits | Lapdle",
     howTo: {
       steps: [
-        "Sixteen tiles: circuits and famous corners. They make four groups of four.",
+        "Sixteen tiles: drivers, teams, title-winning cars, circuits and famous corners. They make four groups of four.",
         "Pick four that belong together and submit. A right group locks in with its name; three right out of four says \"one away\".",
         "Find all four groups before you make four mistakes.",
       ],
-      tip: "Groups are circuits that share a fact (first Grand Prix, lap length, race laps, corners) or corners of the same circuit. A new line-up every day.",
+      tip: "One group of each colour: yellow is the easiest, purple the trickiest. A new line-up every day, the same for everyone.",
     },
     guide: {
-      intro: "Line-up is a daily grouping puzzle: sixteen circuits and corners, four groups of four.",
+      intro: "Line-up is a daily grouping puzzle: sixteen drivers, teams, cars, circuits and corners, four groups of four.",
       scoring:
-        "Each group is either circuits that share a fact (the year of their first Grand Prix, how long a lap is, how many race laps, how many corners) or corners of the same circuit. Every tile fits exactly one of the day's groups. Submit four at a time: a right group locks in, a wrong one is a mistake, and three right out of four tells you you're one away. Four mistakes end the day. The groups are coloured from the easiest (yellow) to the hardest (purple).",
+        "Each group shares one fact: world champions with a team, drivers who raced for two teams, cars that won the title, circuits named after a driver, corners of the same circuit and many more. Every tile fits exactly one of the day's groups. Submit four at a time: a right group locks in, a wrong one is a mistake, and three right out of four tells you you're one away. Four mistakes end the day. There is one group of each colour, from the easiest (yellow) to the trickiest (purple). The facts come from F1DB, the open Formula 1 database (CC BY 4.0).",
       tips: [
-        "Start with the corner names: they belong to one circuit each.",
-        "Some circuits fit more than one fact. Leave them for last, once the other groups have narrowed it down.",
-        "The circuit guides have every fact used here.",
+        "Start with yellow: the group any fan would spot.",
+        "Some tiles look like they fit two groups. Leave them for last, once the other groups have narrowed it down.",
+        "Purple is the hidden link: a family, a founder, a name with a story behind it.",
       ],
     },
     today(day = dateKey()) {
