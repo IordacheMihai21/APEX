@@ -5,8 +5,8 @@ import type { HubAction } from "./Hub";
 import { Chequered, Close, GameMarks } from "./icons";
 
 /**
- * The menu behind the hub's ☰: every game and page in one list, today's set
- * first with where you stand, like the menu on the football dailies.
+ * The menu behind the hub's ☰: every game in one list, today's daily set first
+ * with where you stand, then the rest under More Games.
  * Slides in from the left; Escape, the backdrop or picking an entry closes it.
  */
 export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () => void; onAction: (a: HubAction) => void }) {
@@ -27,28 +27,20 @@ export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () =
     onClose();
     onAction(a);
   };
-  const { items: today, done, total } = todayProgress();
-  const more = GAMES.filter((g) => g.cadence === "daily" && !g.inDailySet && g.route);
+  const { items: today } = todayProgress();
+  // every other game: the other dailies, then the ones you can play any time
   const run = loadSeason().run;
   const underWay = !!run && !seasonDone(run);
-  const anytime: [string, HubAction | string][] = [
-    ...GAMES.filter((g) => g.cadence === "endless" && g.route).map((g): [string, HubAction] => [g.name, { kind: "mini", game: g.route!.slice(1) as GamePage }]),
+  const more: [string, HubAction | string][] = [
+    ...GAMES.filter((g) => !g.inDailySet && g.route).map((g): [string, HubAction] => [g.name, { kind: "mini", game: g.route!.slice(1) as GamePage }]),
     ["Free Practice", { kind: "practice" }],
     ["Corner of the week", { kind: "corner" }],
     ["Perfect Season", { kind: "season", fresh: !underWay }],
     ["Circuit trivia", "/trivia"],
   ];
-  const lapdle: [string, HubAction | string][] = [
-    ["How to play", "/how-to-play"],
-    ["Circuit guides", "/circuits"],
-    ["Lap records", "/records"],
-    ["Past dailies", { kind: "mini", game: "archive" }],
-    ["Your record", { kind: "stats" }],
-    ["About", "/about"],
-  ];
 
   const row = "flex w-full items-center gap-3 px-5 py-3 text-left text-[15px] text-paint transition-colors hover:bg-graphite focus-visible:bg-graphite";
-  const heading = "caption px-5 pt-5 pb-1 text-steel";
+  const heading = "caption mt-2 border-t border-line px-5 pt-5 pb-1 text-steel";
   const entry = ([name, to]: [string, HubAction | string]) => (
     <li key={name}>
       {typeof to === "string" ? (
@@ -80,9 +72,6 @@ export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () =
           </button>
         </div>
         <nav aria-label="All games" className="min-h-0 flex-1 overflow-y-auto pb-[calc(env(safe-area-inset-bottom)+16px)]">
-          <p className={heading}>
-            Today <span className="num text-paint">{done}/{total}</span>
-          </p>
           <ul>
             {today.map(({ game: g, status }) => {
               const Mark = (GameMarks as Record<string, ((p: { className?: string }) => React.ReactElement) | undefined>)[g.id];
@@ -100,12 +89,8 @@ export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () =
               );
             })}
           </ul>
-          <p className={heading}>More daily games</p>
-          <ul>{more.map((g) => entry([g.name, { kind: "mini", game: g.route!.slice(1) as GamePage }]))}</ul>
-          <p className={heading}>Play anytime</p>
-          <ul>{anytime.map(entry)}</ul>
-          <p className={heading}>Lapdle</p>
-          <ul>{lapdle.map(entry)}</ul>
+          <p className={heading}>More Games</p>
+          <ul>{more.map(entry)}</ul>
         </nav>
       </div>
     </div>
