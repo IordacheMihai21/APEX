@@ -40,7 +40,11 @@ buckets worked out on the device from what it already stores (see
 | `Challenge beaten` | the first lap that beats it | `circuit`, `player` |
 
 `game` is one of `quali`, `mystery`, `pit-stop`, `higher-lower`,
-`braking-point`, `reaction`, `trivia`.
+`braking-point`, `make-the-corner`, `corner-order`, `speed-trap`, `line-up`,
+`aerial`, `reaction`, `trivia`. Make the corner's daily finish carries `score`
+(the best of three runs, bucketed: `0`, `1-399`, `400-699`, `700-899`,
+`900-1000`) and `condition`; a practice run carries `outcome` (`done`, `off`,
+`stopped`) and `condition`.
 
 ## One-time setup in Plausible
 

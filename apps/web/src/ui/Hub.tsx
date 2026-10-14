@@ -223,6 +223,7 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
   const hlToday = game("higher-lower").today();
   const bpToday = game("braking-point").today();
   const orderToday = game("corner-order").today();
+  const mcToday = game("make-the-corner").today();
   const trapToday = game("speed-trap").today();
   const lineupToday = game("line-up").today();
   const aerialToday = game("aerial").today();
@@ -292,6 +293,21 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
             </span>
           ))}
         </span>
+      ),
+    },
+    {
+      game: "make-the-corner" as const,
+      title: game("make-the-corner").name,
+      blurb: game("make-the-corner").blurb,
+      status: mcToday.state === "done" ? `Today ${mcToday.label}. Back tomorrow.` : mcToday.state === "playing" ? mcToday.label : "New today",
+      cta: mcToday.state === "done" ? "Practice corners" : mcToday.state === "playing" ? "Finish today's runs" : "Take the corner",
+      art: (
+        <svg viewBox="0 0 120 80" className="h-[72px] w-auto" aria-hidden="true">
+          <path d="M14 76 L14 40 Q14 12 44 12 L112 12" fill="none" stroke="#3a3f48" strokeWidth={18} />
+          <path d="M14 76 L14 40 Q14 12 44 12 L112 12" fill="none" stroke="var(--color-ink)" strokeWidth={3} strokeDasharray="7 6" />
+          <path d="M23 40 Q23 21 44 21" fill="none" stroke="#c8241c" strokeWidth={4} strokeDasharray="5 5" />
+          <circle cx={21} cy={58} r={5} fill="var(--color-paint)" />
+        </svg>
       ),
     },
     {

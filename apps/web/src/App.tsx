@@ -50,6 +50,7 @@ const HowToPlayIndex = lazy(() => fresh(() => import("./content/Guides")).then((
 const HowToPlayGuide = lazy(() => fresh(() => import("./content/Guides")).then((m) => ({ default: m.HowToPlayGuide })));
 const CircuitsIndex = lazy(() => fresh(() => import("./content/Circuits")).then((m) => ({ default: m.CircuitsIndex })));
 const CircuitGuide = lazy(() => fresh(() => import("./content/Circuits")).then((m) => ({ default: m.CircuitGuide })));
+const MakeCorner = lazy(() => fresh(() => import("./ui/MakeCorner")).then((m) => ({ default: m.MakeCorner })));
 const BrakingPoint = lazy(() => fresh(() => import("./ui/BrakingPoint")).then((m) => ({ default: m.BrakingPoint })));
 const TriviaIndex = lazy(() => fresh(() => import("./content/Trivia")).then((m) => ({ default: m.TriviaIndex })));
 const TriviaQuiz = lazy(() => fresh(() => import("./content/Trivia")).then((m) => ({ default: m.TriviaQuiz })));
@@ -62,7 +63,7 @@ const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) 
 
 /** A screen with its own address: a game's page or an info page (both declared in games/registry). */
 type Mini = GamePage | InfoPage;
-type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "braking-point" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "aerial" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "braking-point" } | { kind: "make-the-corner" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "aerial" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 /** A practice link (?play=practice&track=…&cond=…), as the circuit guides use. */
 function practiceFromQuery(search: string): Screen | null {
@@ -336,6 +337,8 @@ export function App() {
           <OrderCorners />
         ) : screen.kind === "braking-point" ? (
           <BrakingPoint />
+        ) : screen.kind === "make-the-corner" ? (
+          <MakeCorner />
         ) : screen.kind === "higher-lower" ? (
           <HigherLower onPlayDaily={() => act({ kind: "daily" })} />
         ) : (

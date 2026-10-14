@@ -301,7 +301,7 @@ export class CornerScene {
     this.camera.aspect = width / Math.max(1, height);
     // keep at least ~78° across, so a phone held upright still sees the corner coming
     const across = 2 * Math.atan(Math.tan((78 * Math.PI) / 360) / this.camera.aspect);
-    this.camera.fov = Math.min(100, Math.max(58, (across * 180) / Math.PI));
+    this.camera.fov = Math.min(88, Math.max(58, (across * 180) / Math.PI));
     this.camera.updateProjectionMatrix();
   }
 
@@ -318,8 +318,10 @@ export class CornerScene {
     (this.rainLight.material as THREE.MeshStandardMaterial).emissiveIntensity = braking ? 6 : 0.4;
 
     // chase camera: behind and above, looking down the road, eased so it swings smoothly through the corner
-    const wantPos = p.clone().addScaledVector(dir, -7.2).add(new THREE.Vector3(0, 2.3, 0));
-    const wantLook = p.clone().addScaledVector(dir, 14).add(new THREE.Vector3(0, 0.6, 0));
+    // upright phones: a little higher and tilted down, so the road fills the view rather than the sky
+    const tall = this.camera.aspect < 1;
+    const wantPos = p.clone().addScaledVector(dir, tall ? -6.4 : -7.2).add(new THREE.Vector3(0, tall ? 3.1 : 2.3, 0));
+    const wantLook = p.clone().addScaledVector(dir, tall ? 11 : 14).add(new THREE.Vector3(0, tall ? -0.4 : 0.6, 0));
     const ease = this.camReady ? 1 - Math.exp(-dt * 6) : 1;
     this.camPos.lerp(wantPos, ease);
     this.camLook.lerp(wantLook, ease);

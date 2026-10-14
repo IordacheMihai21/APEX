@@ -18,9 +18,10 @@ import { CIRCUITS, circuitSlug } from "../modes/circuits";
 import { ROUNDS as TRAP_ROUNDS, trapDone, trapDoneDays, trapRounds, trapScore } from "../modes/speedtrap";
 import { MISTAKES as LINEUP_MISTAKES, dailyLineup, lineupDoneDays, lineupGuesses, lineupState } from "../modes/lineup";
 import { AERIAL_TRIES, aerialDoneDays, aerialGuesses, aerialOver, aerialSolved } from "../modes/aerial";
+import { MAX_POINTS as CORNER_MAX, RUNS_PER_DAY, cornerDoneDays, cornerDone, cornerScore, dayRuns } from "../modes/makeCornerDay";
 import { ORDER_TRIES, orderDoneDays, orderOver, orderSolved, orderTries } from "../modes/order";
 
-export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "corner-order" | "speed-trap" | "line-up" | "aerial" | "reaction";
+export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "make-the-corner" | "corner-order" | "speed-trap" | "line-up" | "aerial" | "reaction";
 
 /** Where a game stands today, for the "Today" bar and the hub. */
 export interface TodayStatus {
@@ -233,6 +234,44 @@ export const GAMES: GameDef[] = [
       return stops.length ? { state: "playing", label: `${STOPS_PER_DAY - stops.length} stops left` } : { state: "new", label: "Not started" };
     },
     doneDays: brakingDoneDays,
+  },
+  {
+    id: "make-the-corner",
+    name: "Make the corner",
+    short: "Corner",
+    route: "/make-the-corner",
+    cadence: "daily",
+    // a daily extra while it's new; it takes Braking point's place in the set later
+    inDailySet: false,
+    tagline: "One famous corner in 3D: brake, carry the speed, power out",
+    blurb: "A famous corner a day in 3D. Brake at the right board, carry the right speed, get on the power at the right moment.",
+    title: "Make the corner: brake, turn, power out | Lapdle",
+    howTo: {
+      steps: [
+        "The car comes down the straight flat out, towards a famous corner. Hold the screen (or Space) to brake.",
+        "Let go when the car is slow enough for the corner: the speed you let go at is the speed you carry through it.",
+        "Press again for full throttle out of the corner. Too fast anywhere and you're off; hold the brakes until the car stops and the run is over.",
+      ],
+      tip: "Three runs a day at the same corner, the same for everyone. Your best run counts, out of 1000.",
+    },
+    guide: {
+      intro:
+        "Make the corner is a daily driving game: one famous corner of a real circuit, in 3D, and three calls to make. Where you brake, how much speed you carry, and when you get back on the power.",
+      scoring:
+        "The car is the physics engine's car on the perfect racing line, with its grip, braking, downforce and power. A run through the corner scores 1000 for the perfect lap's time, minus 450 points for every second slower. Run wide or go off and the run scores zero; so does holding the brakes until the car stops. Each call gets a colour: purple for a perfect call, then green, yellow and red. You get three runs a day; the best one counts. Some days are wet, or run with low downforce, and the corner changes with them.",
+      tips: [
+        "Brake late, but not so late that the car is still too fast at the corner: there is no margin past the perfect point.",
+        "Let go of the brakes the moment the speed reaches the corner's speed. Any slower costs time; any faster and you're off.",
+        "Wait for the apex before the throttle. Too early and the car runs wide at the exit.",
+        "In the wet everything comes earlier: the brakes, the lower corner speed, and a gentler exit.",
+      ],
+    },
+    today(day = dateKey()) {
+      const runs = dayRuns(day);
+      if (cornerDone(runs)) return { state: "done", label: `${cornerScore(runs)}/${CORNER_MAX}` };
+      return runs.length ? { state: "playing", label: `${RUNS_PER_DAY - runs.length} runs left` } : { state: "new", label: "Not started" };
+    },
+    doneDays: cornerDoneDays,
   },
   {
     id: "corner-order",

@@ -1,4 +1,7 @@
 import { CONDITION_CARS, type Condition, carConstants, cornerSpeedLimit, gripAt } from "@apex/engine";
+import { MAX_POINTS } from "./makeCornerDay";
+
+export { MAX_POINTS };
 
 /**
  * Make the corner: one famous corner, driven on the perfect line with three
@@ -42,8 +45,6 @@ export type Outcome = "done" | "off" | "stopped";
 export const DT = 1 / 240;
 /** Below this the car has stopped (m/s, about 15 km/h): the run is over, zero points. */
 export const STOP_SPEED = 4.2;
-/** A run's points: the maximum for the perfect calls, nothing for a car that ran wide or stopped. */
-export const MAX_POINTS = 1000;
 /** How far over the curve's speed (m/s, about 2 km/h) the tyres still hold, braking or rolling. */
 const GRIP_MARGIN = 0.5;
 /** On the throttle, too early: once the car has had to give back this much speed in all (m/s) it runs wide. */

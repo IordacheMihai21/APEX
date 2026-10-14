@@ -36,8 +36,8 @@ function launchFiles(env: Record<string, string>): Plugin {
 /**
  * The service worker's precache: every file of the app's code (scripts, styles,
  * the Latin fonts, the small circuit maps) is fetched when the app installs, so
- * every game opens offline. Circuit data (tracks and scenery, ~1.5 MB) stays
- * cached on first use. The list and a build id are written into dist/sw.js, so
+ * every game opens offline. Circuit data (tracks and scenery, ~1.5 MB) and
+ * Make the corner's 3D library stay cached on first use. The list and a build id are written into dist/sw.js, so
  * each deploy is a new service worker that refreshes the code.
  */
 function precache(): Plugin {
@@ -53,7 +53,8 @@ function precache(): Plugin {
     },
     generateBundle(_, bundle) {
       if (ssr) return;
-      const heavy = (ids: string[]) => ids.some((id) => /\/data\/(tracks|scenery)\//.test(id));
+      // and the 3D library of Make the corner (~560 KB): cached when the game is first opened
+      const heavy = (ids: string[]) => ids.some((id) => /\/data\/(tracks|scenery)\/|\/node_modules\/three\//.test(id));
       files = Object.values(bundle)
         .filter((f) => (f.type === "chunk" ? !heavy(f.moduleIds) : /\.(css|js)$|latin-(ext-)?wdth.*\.woff2$/.test(f.fileName)))
         .map((f) => `/${f.fileName}`)
