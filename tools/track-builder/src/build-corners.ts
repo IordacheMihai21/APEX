@@ -134,6 +134,8 @@ for (const wc of candidates) {
     complex: wc.complex,
     name: wc.name,
     direction: complex.direction,
+    /** where the stretch sits on the circuit (track metres): the dry apex, for placing the real surroundings */
+    origin: [r2(ox), r2(oy)],
     /** metres along the line, the line itself and both edges, relative to the dry apex */
     s: sAt.map(r2),
     x: idx.map((i) => r2(dry.x[i] - ox)),

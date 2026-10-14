@@ -102,39 +102,43 @@ export function MakeCorner() {
       sim.current.run = new CornerRun(c, condition);
       setData(c);
       setPhase("approach");
-      setScreen("ready");
     });
     return () => {
       live = false;
     };
   }, [corner.id, condition]);
 
-  // the 3D scene for that corner, sized to its box
+  // the 3D scene for that corner (the circuit and its surroundings load with it), sized to its box
   useEffect(() => {
     const c = canvas.current;
     const box = view.current;
     if (!c || !box || !data) return;
-    let s: CornerScene;
-    try {
-      s = new CornerScene(c, data, condition);
-    } catch {
-      setNoGl(true);
-      return;
-    }
-    scene.current = s;
-    const fit = () => {
-      s.resize(box.clientWidth, box.clientHeight);
-      const run = sim.current.run;
-      if (run && sim.current.raf === 0) s.render(run.pose(), run.v, run.phase === "braking", sim.current.slide, 0);
-    };
-    fit();
-    const ro = new ResizeObserver(fit);
-    ro.observe(box);
+    let live = true;
+    let s: CornerScene | null = null;
+    let ro: ResizeObserver | null = null;
+    CornerScene.create(c, data, condition).then(
+      (made) => {
+        if (!live) return made.dispose();
+        s = made;
+        scene.current = made;
+        const fit = () => {
+          made.resize(box.clientWidth, box.clientHeight);
+          const run = sim.current.run;
+          if (run && sim.current.raf === 0) made.render(run.pose(), run.v, run.phase === "braking", sim.current.slide, 0);
+        };
+        fit();
+        ro = new ResizeObserver(fit);
+        ro.observe(box);
+        setScreen("ready");
+      },
+      () => live && setNoGl(true),
+    );
     return () => {
-      ro.disconnect();
+      live = false;
+      ro?.disconnect();
       cancelAnimationFrame(sim.current.raf);
       sim.current.raf = 0;
-      s.dispose();
+      s?.dispose();
       scene.current = null;
     };
   }, [data, condition]);
@@ -479,7 +483,11 @@ export function MakeCorner() {
         <a className="underline decoration-line underline-offset-4 hover:text-paint" href={CAR_CREDIT.url} target="_blank" rel="noreferrer">
           {CAR_CREDIT.title}
         </a>{" "}
-        by {CAR_CREDIT.author} ({CAR_CREDIT.license}), simplified and repainted
+        by {CAR_CREDIT.author} ({CAR_CREDIT.license}), simplified and repainted. Surroundings: ©{" "}
+        <a className="underline decoration-line underline-offset-4 hover:text-paint" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
+          OpenStreetMap
+        </a>{" "}
+        contributors (ODbL)
       </p>
 
       <AdBelow />

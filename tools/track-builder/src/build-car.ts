@@ -34,8 +34,8 @@ const RIM_R = 236;
 const INNER_Y = { front: 580, rear: 520 };
 /** the origin: the middle of the wheelbase */
 const MID_X = (FRONT_X + REAR_X) / 2;
-/** about 1 in 12 triangles kept: plenty for a car seen from a few metres */
-const KEEP = { body: 0.07, carbon: 0.08, tyre: 0.1, rim: 0.12 };
+/** about 1 in 25 triangles kept: plenty for a car seen from a few metres, light enough to draw twice (shadows) on a phone */
+const KEEP = { body: 0.035, carbon: 0.04, tyre: 0.06, rim: 0.06 };
 
 await MeshoptEncoder.ready;
 await MeshoptSimplifier.ready;
@@ -140,7 +140,7 @@ for (const [p, g] of groups) console.log(`  ${p}: ${g.length / 9} triangles`);
 await doc.transform(weld({}));
 for (const m of doc.getRoot().listMeshes()) {
   const kind = m.getName().split("-")[0] as keyof typeof KEEP;
-  for (const prim of m.listPrimitives()) simplifyPrimitive(prim, { simplifier: MeshoptSimplifier, ratio: KEEP[kind], error: 0.0004 });
+  for (const prim of m.listPrimitives()) simplifyPrimitive(prim, { simplifier: MeshoptSimplifier, ratio: KEEP[kind], error: 0.002 });
 }
 await doc.transform(dedup(), prune(), meshopt({ encoder: MeshoptEncoder, level: "medium" }));
 

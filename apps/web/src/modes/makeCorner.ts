@@ -26,6 +26,8 @@ export interface CornerData {
   complex: number;
   name: string;
   direction: "left" | "right" | "mixed";
+  /** the dry apex on the circuit (track metres): the stretch's coordinates are relative to it */
+  origin: [number, number];
   /** metres along the line from the start of the run-up, one per point */
   s: number[];
   /** the line and both track edges, metres, origin at the dry apex */
