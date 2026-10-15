@@ -5,7 +5,7 @@ import { type CornerData, CornerRun, DT, idealCalls } from "../modes/makeCorner"
 const files = import.meta.glob<CornerData>(["../game/corners/*.json", "!../game/corners/index.json"], { eager: true, import: "default" });
 
 describe("engine sound", () => {
-  it("revs within the V10's range and shifts one gear at a time through every corner", () => {
+  it("revs within the V8's range and shifts one gear at a time through every corner", () => {
     for (const c of Object.values(files)) {
       const run = new CornerRun(c, "dry");
       const ideal = idealCalls(c, "dry");
@@ -20,7 +20,7 @@ describe("engine sound", () => {
         }
         const rpm = box.step(run.v);
         expect(rpm).toBeGreaterThanOrEqual(4500);
-        expect(rpm).toBeLessThanOrEqual(18800);
+        expect(rpm).toBeLessThanOrEqual(18000);
         // the loop is never played absurdly slow or fast
         expect(loopRate(rpm)).toBeGreaterThan(0.25);
         expect(loopRate(rpm)).toBeLessThan(1.2);

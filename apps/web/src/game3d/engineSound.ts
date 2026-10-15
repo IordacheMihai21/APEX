@@ -1,17 +1,18 @@
-import loopUrl from "./assets/v10-loop.wav?url";
+import loopUrl from "./assets/v8-loop.wav?url";
 
 /**
- * The engine: a 2000s-style V10 scream (a seamless 1.5 s loop cut from a Veo-generated onboard recording, our own),
+ * The engine: a 2010s-style 2.4-litre V8 howl (a seamless 1.5 s loop cut from a Veo-generated onboard recording, our
+ * own; picked from several takes for the closest match, by spectrum, to a TV onboard of that era),
  * pitched by a seven-speed gearbox model so it climbs through the gears, cracks on each upshift and blips on every
  * downshift under braking. Full throttle is loud and bright; off the throttle it drops back and goes duller.
  * Web Audio only starts after a tap or a key (the start press), as browsers require.
  */
 
-/** Top speed in each gear (m/s): a 2004-style ratio spread, 7th good for about 330 km/h. */
+/** Top speed in each gear (m/s): a 2010s-style ratio spread, 7th good for about 330 km/h. */
 const GEAR_TOP = [110, 150, 185, 220, 255, 290, 330].map((k) => k / 3.6);
-const RPM_MAX = 18800;
-const UPSHIFT = 18300;
-const DOWNSHIFT = 12000;
+const RPM_MAX = 18000;
+const UPSHIFT = 17500;
+const DOWNSHIFT = 11500;
 /** The loop's own pitch, as an engine speed: playing it at 1x sounds like this many rpm. */
 const LOOP_RPM = 16500;
 const MUTE_KEY = "lapdle.sound";
