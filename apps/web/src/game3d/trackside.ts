@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { CornerData } from "../modes/makeCorner";
 import { idealCalls } from "../modes/makeCorner";
 import { type Station, smooth, strip, toWorld, wall } from "./geometry";
-import { bandAlpha, boardTextures, distanceBoard, fenceAlpha, kerbTexture, surfaceTextures } from "./textures";
+import { type Surfaces, bandAlpha, boardTextures, distanceBoard, fenceAlpha, kerbTexture, surfaceTextures } from "./textures";
 
 /**
  * Everything between the grass and the road for one corner: the asphalt from
@@ -20,6 +20,8 @@ export interface TracksideOptions {
   others: number[];
   /** half the circuit's width (m) */
   halfWidth: number;
+  /** the photographed road, grass and gravel */
+  photo: Surfaces;
 }
 
 interface Side {
@@ -48,9 +50,19 @@ export function buildTrackside(c: CornerData, o: TracksideOptions) {
   const wetRough = (r: number) => (o.wet ? r * 0.45 : r);
 
   // ---- materials
-  const asphaltMat = keep(new THREE.MeshStandardMaterial({ map: tex.asphalt, roughness: wetRough(0.92), envMapIntensity: o.wet ? 0.55 : 0.35, color: o.wet ? "#8c9096" : "#ffffff" }));
+  // the photographed track asphalt is very dark (the photo, not the light): lifted to a mid grey in the dry, darker and glossy in the wet
+  const asphaltMat = keep(
+    new THREE.MeshStandardMaterial({
+      map: o.photo.asphalt.map,
+      normalMap: o.photo.asphalt.normal,
+      normalScale: new THREE.Vector2(o.wet ? 0.35 : 0.8, o.wet ? 0.35 : 0.8),
+      roughness: o.wet ? 0.32 : 0.86,
+      envMapIntensity: o.wet ? 0.9 : 0.4,
+      color: new THREE.Color().setScalar(o.wet ? 2.6 : 7),
+    }),
+  );
   const runoffMat = keep(new THREE.MeshStandardMaterial({ map: tex.runoff, roughness: wetRough(0.9), envMapIntensity: 0.3 }));
-  const gravelMat = keep(new THREE.MeshStandardMaterial({ map: tex.gravel, roughness: 1 }));
+  const gravelMat = keep(new THREE.MeshStandardMaterial({ map: o.photo.gravel.map, normalMap: o.photo.gravel.normal, roughness: 1, color: o.wet ? "#a99a7c" : "#d6c4a0" }));
   const paintMat = keep(new THREE.MeshStandardMaterial({ color: "#efefea", roughness: wetRough(0.6), polygonOffset: true, polygonOffsetFactor: -2 }));
   const kerbTex = keep(kerbTexture());
   kerbTex.repeat.set(1 / 5, 1);

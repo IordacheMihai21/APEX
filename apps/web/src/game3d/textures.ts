@@ -1,5 +1,11 @@
 import * as THREE from "three";
 import { asphalt, concrete, grass, gravel } from "../game/materials";
+import asphaltColor from "./assets/asphalt-color.webp?url";
+import asphaltNormal from "./assets/asphalt-normal.webp?url";
+import grassColor from "./assets/grass-color.webp?url";
+import grassNormal from "./assets/grass-normal.webp?url";
+import gravelColor from "./assets/gravel-color.webp?url";
+import gravelNormal from "./assets/gravel-normal.webp?url";
 
 /**
  * Textures for the 3D corner. The surfaces reuse the satellite view's
@@ -207,4 +213,48 @@ export function leavesTexture(hue: "broad" | "conifer" | "palm", wet: boolean): 
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
+}
+
+/** A photographed surface: colour and relief (normal map), tiling every `metres`. */
+export interface Photo {
+  map: THREE.Texture;
+  normal: THREE.Texture;
+}
+export interface Surfaces {
+  asphalt: Photo;
+  grass: Photo;
+  gravel: Photo;
+  dispose(): void;
+}
+
+/**
+ * The photographed surfaces (CC0: asphalt_track from Poly Haven, Grass005 and Gravel023 from ambientCG), 1K and
+ * WebP, about 1 MB in all: the road, the grass and the gravel traps. Geometry UVs are in metres.
+ */
+export async function loadSurfaces(): Promise<Surfaces> {
+  const loader = new THREE.TextureLoader();
+  const load = async (url: string, metres: number, colour: boolean) => {
+    const t = await loader.loadAsync(url);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(1 / metres, 1 / metres);
+    if (colour) t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    return t;
+  };
+  const [ac, an, gc, gn, vc, vn] = await Promise.all([
+    load(asphaltColor, 2.5, true),
+    load(asphaltNormal, 2.5, false),
+    load(grassColor, 3, true),
+    load(grassNormal, 3, false),
+    load(gravelColor, 2, true),
+    load(gravelNormal, 2, false),
+  ]);
+  return {
+    asphalt: { map: ac, normal: an },
+    grass: { map: gc, normal: gn },
+    gravel: { map: vc, normal: vn },
+    dispose() {
+      for (const t of [ac, an, gc, gn, vc, vn]) t.dispose();
+    },
+  };
 }

@@ -47,14 +47,16 @@ export function buildCar() {
         o.geometry.dispose();
         o.geometry = g;
         geos.push(g);
-        // the sky is bright: let the paint and carbon reflect it softly, so they keep their colour in the sun
-        const m = o.material as THREE.MeshStandardMaterial;
-        m.envMapIntensity = m.name === "rim" ? 0.8 : 0.35;
+        let m = o.material as THREE.MeshStandardMaterial;
         if (m.name === "paint") {
-          m.metalness = 0.1;
-          m.roughness = 0.55;
+          // racing paint: a satin orange base under a glossy clear coat, so the sky slides over it like on a real car
+          const paint = new THREE.MeshPhysicalMaterial({ name: "paint", color: m.color, metalness: 0.05, roughness: 0.5, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.55 });
+          m.dispose();
+          o.material = m = paint;
+        } else {
+          m.envMapIntensity = m.name === "rim" ? 0.9 : 0.4;
+          if (m.name === "carbon") m.roughness = 0.55;
         }
-        if (m.name === "carbon") m.roughness = 0.65;
         mats.add(m);
         o.castShadow = true;
         o.receiveShadow = true;

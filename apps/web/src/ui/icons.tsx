@@ -20,6 +20,8 @@ import {
   Minus as PhMinus,
   Plus as PhPlus,
   ShareNetwork,
+  SpeakerHigh,
+  SpeakerSlash,
   SteeringWheel,
   Wind,
   Wrench,
@@ -52,6 +54,8 @@ export const Chequered = make(FlagCheckered);
 export const MenuIcon = make(List);
 export const Close = make(PhX);
 export const Rain = make(CloudRain);
+export const SoundOn = make(SpeakerHigh);
+export const SoundOff = make(SpeakerSlash);
 export const LowDownforce = make(Wind);
 
 /** One mark per daily game, for the Today bar before the game is played. */

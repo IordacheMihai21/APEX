@@ -7,6 +7,10 @@ import { buildCar } from "./car";
 import { toWorld } from "./geometry";
 import { buildTrackside } from "./trackside";
 import { buildWorld } from "./world";
+import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js";
+import { type Surfaces, loadSurfaces } from "./textures";
+import skyDry from "./assets/sky-rural_asphalt_road.hdr?url";
+import skyWet from "./assets/sky-belfast_open_field.hdr?url";
 
 /**
  * The 3D corner for Make the corner. A sky with a real sun (and the same sky
@@ -45,13 +49,26 @@ export class CornerScene {
 
   /** Load the circuit and its surroundings, then build the corner. */
   static async create(canvas: HTMLCanvasElement, c: CornerData, condition: Condition): Promise<CornerScene> {
-    const [track, osm] = await Promise.all([loadTrack(c.trackId), loadScenery(c.trackId)]);
-    const scene = new CornerScene(canvas, c, condition, track, osm);
+    const [track, osm, photo, hdr] = await Promise.all([
+      loadTrack(c.trackId),
+      loadScenery(c.trackId),
+      loadSurfaces(),
+      new HDRLoader().loadAsync(condition === "wet" ? skyWet : skyDry),
+    ]);
+    const scene = new CornerScene(canvas, c, condition, track, osm, photo, hdr);
     await scene.carReady;
     return scene;
   }
 
-  private constructor(canvas: HTMLCanvasElement, c: CornerData, condition: Condition, track: Awaited<ReturnType<typeof loadTrack>>, osm: Awaited<ReturnType<typeof loadScenery>>) {
+  private constructor(
+    canvas: HTMLCanvasElement,
+    c: CornerData,
+    condition: Condition,
+    track: Awaited<ReturnType<typeof loadTrack>>,
+    osm: Awaited<ReturnType<typeof loadScenery>>,
+    photo: Surfaces,
+    hdr: THREE.DataTexture,
+  ) {
     const wet = condition === "wet";
     const look = wet ? SKY.wet : SKY.dry;
     const street = CATALOG.find((t) => t.id === c.trackId)?.style === "street";
@@ -90,18 +107,15 @@ export class CornerScene {
     const sky = makeSky(4000);
     this.scene.add(sky);
     {
+      // what everything reflects and is lit by: a real photographed sky (CC0, Poly Haven): a sunny rural road, or
+      // an overcast field on a wet day; the sky drawn behind stays the procedural one, with the sun where the shadows say
       const pmrem = new THREE.PMREMGenerator(this.renderer);
-      const envScene = new THREE.Scene();
-      const envSky = makeSky(1000);
-      // the light everything reflects is the sky without the sun's disc: the disc is so bright that a car with the
-      // sun behind the camera reflected it as a washed-out, almost white body
-      const envUniforms = (envSky.material as THREE.ShaderMaterial).uniforms;
-      if (envUniforms.showSunDisc) envUniforms.showSunDisc.value = 0;
-      envScene.add(envSky);
-      const env = pmrem.fromScene(envScene, 0, 0.1, 2000);
+      hdr.mapping = THREE.EquirectangularReflectionMapping;
+      const env = pmrem.fromEquirectangular(hdr);
       this.scene.environment = env.texture;
-      this.scene.environmentIntensity = wet ? 0.9 : 0.7;
-      this.track(env, pmrem, envSky.geometry, envSky.material as THREE.Material, sky.geometry, sky.material as THREE.Material);
+      this.scene.environmentIntensity = wet ? 0.85 : 1.25;
+      hdr.dispose();
+      this.track(env, pmrem, sky.geometry, sky.material as THREE.Material, photo);
     }
     this.scene.fog = new THREE.Fog(look.fog, look.near, look.far);
 
@@ -119,8 +133,8 @@ export class CornerScene {
     this.scene.add(this.sun, this.sun.target);
 
     // ---- the world, then the corner (its barriers keep clear of the rest of the circuit)
-    const world = buildWorld(c, track, osm, wet, street);
-    const side = buildTrackside(c, { street, wet, others: world.others, halfWidth: world.halfWidth });
+    const world = buildWorld(c, track, osm, wet, street, photo);
+    const side = buildTrackside(c, { street, wet, others: world.others, halfWidth: world.halfWidth, photo });
     this.scene.add(world.group, side.group);
     this.track(world, side);
 

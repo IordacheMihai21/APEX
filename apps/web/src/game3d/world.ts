@@ -5,7 +5,7 @@ import type { CornerData } from "../modes/makeCorner";
 import type { SceneryData } from "../game/surroundings";
 import { FLORA_BY_TRACK, pickSpecies, type Species } from "../game/trees";
 import { extrude, inside, polygon, strip, toWorld } from "./geometry";
-import { crowdTexture, leavesTexture, surfaceTextures, windowsTexture } from "./textures";
+import { type Surfaces, crowdTexture, leavesTexture, surfaceTextures, windowsTexture } from "./textures";
 
 /**
  * The world around the corner, in the corner's coordinates (metres from the
@@ -26,7 +26,7 @@ export interface World {
   dispose(): void;
 }
 
-export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | null, wet: boolean, street: boolean): World {
+export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | null, wet: boolean, street: boolean, photo: Surfaces): World {
   const group = new THREE.Group();
   const disposables: { dispose(): void }[] = [];
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
@@ -41,7 +41,7 @@ export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | n
   const guv = ground.getAttribute("uv");
   const gpos = ground.getAttribute("position");
   for (let i = 0; i < guv.count; i++) guv.setXY(i, gpos.getX(i), -gpos.getZ(i));
-  const grassMat = keep(new THREE.MeshStandardMaterial({ map: tex.grass, roughness: 1, color: wet ? "#c9d4c4" : "#ffffff" }));
+  const grassMat = keep(new THREE.MeshStandardMaterial({ map: photo.grass.map, normalMap: photo.grass.normal, roughness: 1, color: wet ? "#9fae98" : "#d9e2cf" }));
   const groundMesh = new THREE.Mesh(keep(ground), grassMat);
   groundMesh.receiveShadow = true;
   group.add(groundMesh);
@@ -103,7 +103,15 @@ export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | n
     shoulders[0].push(show ? { a: [lx, ly, 0.018], b: [lx - ux * 4, ly - uy * 4, 0.018], v } : null);
     shoulders[1].push(show ? { a: [rx, ry, 0.018], b: [rx + ux * 4, ry + uy * 4, 0.018], v } : null);
   }
-  const roadMat = keep(new THREE.MeshStandardMaterial({ map: tex.asphalt, roughness: wet ? 0.42 : 0.92, envMapIntensity: wet ? 0.55 : 0.35, color: wet ? "#8c9096" : "#ffffff" }));
+  const roadMat = keep(
+    new THREE.MeshStandardMaterial({
+      map: photo.asphalt.map,
+      normalMap: photo.asphalt.normal,
+      roughness: wet ? 0.36 : 0.88,
+      envMapIntensity: wet ? 0.9 : 0.4,
+      color: new THREE.Color().setScalar(wet ? 2.6 : 7),
+    }),
+  );
   const runoffMat = keep(new THREE.MeshStandardMaterial({ map: tex.runoff, roughness: wet ? 0.45 : 0.9, envMapIntensity: 0.3 }));
   const lineMat = keep(new THREE.MeshStandardMaterial({ color: "#efefea", roughness: 0.6 }));
   const mesh = (g: THREE.BufferGeometry, m: THREE.Material, cast = false) => {
@@ -153,7 +161,7 @@ export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | n
     const waterMat = keep(new THREE.MeshStandardMaterial({ color: wet ? "#2c3d47" : "#24506a", roughness: 0.08, metalness: 0.3, envMapIntensity: 1.1 }));
     const pavingMat = keep(new THREE.MeshStandardMaterial({ map: tex.paving, roughness: 0.9 }));
     const sandMat = keep(new THREE.MeshStandardMaterial({ color: "#c9b48c", roughness: 1 }));
-    const farmMat = keep(new THREE.MeshStandardMaterial({ map: tex.grass, color: "#d8d39a", roughness: 1 }));
+    const farmMat = keep(new THREE.MeshStandardMaterial({ map: photo.grass.map, color: "#e2d58e", roughness: 1 }));
     const layer: [keyof SceneryData["areas"], THREE.Material, number][] = [
       ["farm", farmMat, 0.004],
       ["urban", pavingMat, 0.006],
@@ -224,7 +232,7 @@ export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | n
       }
       return strip(st);
     };
-    const streetMat = keep(new THREE.MeshStandardMaterial({ map: tex.asphalt, color: "#d0d0d0", roughness: 0.9 }));
+    const streetMat = keep(new THREE.MeshStandardMaterial({ map: photo.asphalt.map, color: new THREE.Color().setScalar(7.5), roughness: 0.9 }));
     for (const r of osm.roads) mesh(ribbon(r.p, r.w, 0.012), streetMat);
     for (const r of osm.raceway) if (r.pit) mesh(ribbon(r.p, 12, 0.016), roadMat);
     for (const w of osm.waterways) if (w.w >= 6) mesh(ribbon(w.p, w.w, 0.04), waterMat);

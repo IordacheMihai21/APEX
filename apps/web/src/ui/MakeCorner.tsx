@@ -27,6 +27,8 @@ import {
 } from "../modes/makeCornerDay";
 import { CornerScene } from "../game3d/cornerScene";
 import { CAR_CREDIT } from "../game3d/car";
+import { EngineSound, soundMuted } from "../game3d/engineSound";
+import { SoundOff, SoundOn } from "./icons";
 import { primaryBtn, secondaryBtn } from "./styles";
 import { shareLink } from "../shareLink";
 
@@ -82,6 +84,8 @@ export function MakeCorner() {
   const [result, setResult] = useState<{ score: RunScore; phase: Phase } | null>(null);
   const [finish, setFinish] = useState(false);
   const [noGl, setNoGl] = useState(false);
+  const [muted, setMuted] = useState(soundMuted);
+  const engine = useRef<EngineSound | null>(null);
 
   const canvas = useRef<HTMLCanvasElement>(null);
   const view = useRef<HTMLDivElement>(null);
@@ -200,10 +204,12 @@ export function MakeCorner() {
       if (run.outcome && !st.endAt) st.endAt = now + (st.off ? offDuration(st.off) * 1000 + 250 : 300);
       const off = st.off ? offRoadPose(st.off, (now - st.off.at) / 1000) : null;
       s.render(off ?? run.pose(), off ? off.v : run.v, off ? true : run.phase === "braking" && !run.outcome, dt);
+      engine.current?.update(off ? off.v : run.v, run.outcome === "off" || run.outcome === "stopped" ? run.outcome : run.phase);
       if (speedEl.current) speedEl.current.textContent = String(kmh(run.outcome === "stopped" ? 0 : off ? off.v : run.v));
       setPhase(run.phase);
       if (st.endAt && now >= st.endAt) {
         st.raf = 0;
+        engine.current?.fade();
         end(run);
         return;
       }
@@ -226,6 +232,10 @@ export function MakeCorner() {
     setResult(null);
     setPhase("approach");
     setScreen("run");
+    // the engine: sound may only start from a tap or a key, which is what started the run
+    const eng = (engine.current ??= new EngineSound());
+    const v0 = st.run.v;
+    void eng.unlock().then(() => eng.start(v0));
     view.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     cancelAnimationFrame(st.raf);
     st.raf = requestAnimationFrame(loop);
@@ -259,7 +269,13 @@ export function MakeCorner() {
       window.removeEventListener("keyup", k);
     };
   });
-  useEffect(() => () => cancelAnimationFrame(sim.current.raf), []);
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(sim.current.raf);
+      engine.current?.dispose();
+    },
+    [],
+  );
 
   /** Back to the start of the corner for another run. */
   const again = () => {
@@ -353,7 +369,7 @@ export function MakeCorner() {
           ref={view}
           className="relative mt-3 aspect-[4/5] touch-none overflow-hidden border border-line bg-night select-none sm:aspect-[16/9]"
           onPointerDown={(e) => {
-            if ((e.target as HTMLElement).closest("button") && screen !== "run") return;
+            if ((e.target as HTMLElement).closest("[data-ui]")) return; // the sound switch is not the pedal
             e.preventDefault();
             press(true);
           }}
@@ -380,6 +396,20 @@ export function MakeCorner() {
             </p>
           )}
           {screen === "loading" && <p className="absolute inset-0 grid place-items-center text-[14px] text-steel">Loading the corner…</p>}
+          <button
+            type="button"
+            data-ui
+            onClick={() => {
+              const next = !muted;
+              setMuted(next);
+              (engine.current ??= new EngineSound()).setMuted(next);
+            }}
+            aria-label={muted ? "Turn the engine sound on" : "Turn the engine sound off"}
+            aria-pressed={!muted}
+            className="absolute bottom-3 left-3 grid h-10 w-10 place-items-center bg-night/75 text-paint"
+          >
+            {muted ? <SoundOff className="h-5 w-5" /> : <SoundOn className="h-5 w-5" />}
+          </button>
           {(screen === "ready" || screen === "run") && (
             <span
               className={`launch-btn brake-pedal pointer-events-none absolute right-2 bottom-2 sm:right-4 sm:bottom-4 ${screen === "run" ? "launch-armed" : ""}`}
