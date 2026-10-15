@@ -222,7 +222,7 @@ export class CornerRun {
    * segment zigzags by half a degree; the heading here is taken over 10 m of line and blended between points,
    * so the car turns smoothly.
    */
-  pose(): { x: number; y: number; heading: number; kappa: number } {
+  pose(): { x: number; y: number; heading: number; kappa: number; s: number } {
     const { s: S, x, y } = this.c;
     const n = S.length;
     let i = 0;
@@ -236,7 +236,7 @@ export class CornerRun {
     const h0 = headingAt(i);
     const dh = Math.atan2(Math.sin(headingAt(i + 1) - h0), Math.cos(headingAt(i + 1) - h0));
     const kappa = this.kappa[i] + (this.kappa[i + 1] - this.kappa[i]) * f;
-    return { x: x[i] + (x[i + 1] - x[i]) * f, y: y[i] + (y[i + 1] - y[i]) * f, heading: h0 + dh * f, kappa };
+    return { x: x[i] + (x[i + 1] - x[i]) * f, y: y[i] + (y[i + 1] - y[i]) * f, heading: h0 + dh * f, kappa, s: this.s };
   }
 }
 

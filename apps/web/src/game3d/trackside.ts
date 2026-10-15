@@ -158,6 +158,8 @@ export function buildTrackside(c: CornerData, o: TracksideOptions) {
   };
 
   const tecproAt: { x: number; y: number; a: number; colour: number }[] = [];
+  /** each side's barrier line (track metres), for stopping a car that runs off */
+  const barriers: [number, number][][] = [];
   const posts: { x: number; y: number; h: number }[] = [];
   const boardSlots: [number, number][][] = [];
   const red = new THREE.Color("#c8312b");
@@ -217,6 +219,7 @@ export function buildTrackside(c: CornerData, o: TracksideOptions) {
 
     // the barrier line, and what stands on it
     const line = Array.from({ length: n }, (_, i) => at(sd, i, barrier[i]));
+    barriers.push(line);
     const isTec = (i: number) => outside(i);
     if (o.street) {
       add(wall(line, 0, 1.05, true), wallMat, { cast: true });
@@ -341,6 +344,7 @@ export function buildTrackside(c: CornerData, o: TracksideOptions) {
 
   return {
     group,
+    barriers,
     dispose() {
       for (const d of disposables) d.dispose();
     },

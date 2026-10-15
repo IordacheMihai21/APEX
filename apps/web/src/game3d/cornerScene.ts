@@ -6,6 +6,7 @@ import { CATALOG, loadScenery, loadTrack } from "../game/catalog";
 import { buildCar } from "./car";
 import { toWorld } from "./geometry";
 import { buildTrackside } from "./trackside";
+import { Particles } from "./particles";
 import { buildWorld } from "./world";
 import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js";
 import { type Surfaces, loadSurfaces } from "./textures";
@@ -27,6 +28,9 @@ const SKY = {
   wet: { turbidity: 0, rayleigh: 0, mie: 0, g: 0, elevation: 50, azimuth: 205, fog: "#959da3", near: 90, far: 850, sun: 0.55, hemi: 1.6, exposure: 0.85 },
 };
 
+const DUST = new THREE.Color("#9c8562");
+const SPRAY = new THREE.Color("#dde3e8");
+
 export class CornerScene {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
@@ -38,6 +42,18 @@ export class CornerScene {
   private readonly sun: THREE.DirectionalLight;
   private readonly sunDir: THREE.Vector3;
   private readonly rain: THREE.LineSegments | null = null;
+  /** dust and gravel off the road, spray in the wet */
+  private readonly particles = new Particles(900);
+  private readonly wet: boolean;
+  /** where the kerbs are: per point of the line, the two edges (track metres) and whether the corner bites there */
+  private readonly edges: { s: number[]; lx: number[]; ly: number[]; rx: number[]; ry: number[]; kerb: boolean[] };
+  private baseFov = 58;
+  private lastSpeed = 0;
+  private decel = 0;
+  private clock = 0;
+  /** the barrier lines, and where a car that ran off stopped against them (with the moment, for the jolt) */
+  private barriers: [number, number][][] = [];
+  private hit: { x: number; y: number; heading: number; at: number } | null = null;
   private readonly camPos = new THREE.Vector3();
   private readonly camLook = new THREE.Vector3();
   private readonly camDir = new THREE.Vector3(0, 0, -1);
@@ -136,6 +152,7 @@ export class CornerScene {
     const world = buildWorld(c, track, osm, wet, street, photo);
     const side = buildTrackside(c, { street, wet, others: world.others, halfWidth: world.halfWidth, photo });
     this.scene.add(world.group, side.group);
+    this.barriers = side.barriers;
     this.track(world, side);
 
     // ---- rain: streaks falling through a box around the camera
@@ -166,6 +183,12 @@ export class CornerScene {
     this.carReady = built.ready;
     this.scene.add(this.car);
     this.track(built);
+
+    this.wet = wet;
+    this.scene.add(this.particles.points);
+    this.track(this.particles);
+    const k = c.conditions.dry.kappa;
+    this.edges = { s: c.s, lx: c.lx, ly: c.ly, rx: c.rx, ry: c.ry, kerb: k.map((_, i) => k.slice(Math.max(0, i - 5), i + 6).some((x) => Math.abs(x) > 1 / 320)) };
   }
 
   private track(...things: { dispose(): void }[]) {
@@ -177,12 +200,55 @@ export class CornerScene {
     this.camera.aspect = width / Math.max(1, height);
     // keep at least ~78° across, so a phone held upright still sees the corner coming
     const across = 2 * Math.atan(Math.tan((78 * Math.PI) / 360) / this.camera.aspect);
-    this.camera.fov = Math.min(78, Math.max(58, (across * 180) / Math.PI));
+    this.baseFov = Math.min(78, Math.max(58, (across * 180) / Math.PI));
+    this.camera.fov = this.baseFov;
     this.camera.updateProjectionMatrix();
+    this.particles.setScale(height, this.baseFov);
   }
 
   /** Put the car where the run is and draw: pose (on the line, or off it), speed (m/s) and braking (rain light). */
-  render(pose: { x: number; y: number; heading: number; kappa: number }, speed: number, braking: boolean, dt = 1 / 60) {
+  /** The car's distance inside the nearer track edge at a point of the line (m; negative: over it), and whether a kerb is there. */
+  private edgeGap(x: number, y: number, s: number): { gap: number; kerb: boolean } {
+    const e = this.edges;
+    let i = 0;
+    while (i < e.s.length - 2 && e.s[i + 1] <= s) i++;
+    const toL = Math.hypot(e.lx[i] - x, e.ly[i] - y);
+    const toR = Math.hypot(e.rx[i] - x, e.ry[i] - y);
+    const width = Math.hypot(e.lx[i] - e.rx[i], e.ly[i] - e.ry[i]);
+    // over an edge, the far edge is further than the road is wide
+    const gap = Math.max(toL, toR) > width ? -Math.min(toL, toR) : Math.min(toL, toR);
+    return { gap, kerb: e.kerb[i] };
+  }
+
+  /**
+   * Put the car where the run is and draw: pose (on the line with `s`, or off the road without), speed (m/s) and
+   * braking (rain light). The camera feels it: a wider view with speed, a fine buzz from the engine and the road, a
+   * nod forward under braking, a lean against the corner, a hammering over the kerbs and a rough ride off the road.
+   */
+  /** True once a car that ran off has stopped against a barrier. */
+  get crashed(): boolean {
+    return this.hit !== null;
+  }
+
+  /** How close a point is to a barrier (m). */
+  private barrierGap(x: number, y: number): number {
+    let best = Infinity;
+    for (const line of this.barriers)
+      for (let i = 0; i < line.length; i += 2) {
+        const d = (line[i][0] - x) ** 2 + (line[i][1] - y) ** 2;
+        if (d < best) best = d;
+      }
+    return Math.sqrt(best);
+  }
+
+  render(pose: { x: number; y: number; heading: number; kappa: number; s?: number }, speed: number, braking: boolean, dt = 1 / 60) {
+    // off the road, the car stops where it meets the barrier (instead of driving through it)
+    if (pose.s !== undefined) this.hit = null;
+    else if (!this.hit && this.barrierGap(pose.x, pose.y) < 2.6) this.hit = { x: pose.x, y: pose.y, heading: pose.heading, at: this.clock };
+    if (this.hit) {
+      pose = { ...pose, x: this.hit.x, y: this.hit.y, heading: this.hit.heading };
+      speed = 0;
+    }
     const dir = new THREE.Vector3(Math.cos(pose.heading), 0, -Math.sin(pose.heading));
     const p = toWorld(pose.x, pose.y);
     this.car.position.copy(p);
@@ -202,10 +268,72 @@ export class CornerScene {
     const ease = this.camReady ? 1 - Math.exp(-dt * 5) : 1;
     this.camDir.lerp(dir, ease).normalize();
     this.camReady = true;
-    this.camPos.copy(p).addScaledVector(this.camDir, tall ? -4.8 : -5.4).add(new THREE.Vector3(0, tall ? 2.05 : 1.75, 0));
-    this.camLook.copy(p).addScaledVector(this.camDir, tall ? 10 : 12).add(new THREE.Vector3(0, tall ? 0.1 : 0.55, 0));
+    // what the car is feeling: braking (smoothed deceleration), cornering (lateral g), kerbs, the gravel
+    this.clock += dt;
+    if (dt > 0) this.decel += (Math.max(0, (this.lastSpeed - speed) / dt) - this.decel) * Math.min(1, dt * 6);
+    this.lastSpeed = speed;
+    const offRoad = pose.s === undefined;
+    const edge = offRoad ? null : this.edgeGap(pose.x, pose.y, pose.s!);
+    const onKerb = !!edge && edge.kerb && edge.gap < 1.0 && speed > 5;
+    const fast = Math.min(1, speed / 90);
+    const brake = Math.min(1, this.decel / 40);
+    const lean = Math.max(-1, Math.min(1, (speed * speed * pose.kappa) / 45));
+    // the buzz: a few unrelated frequencies, so it never looks like a regular wobble
+    const t = this.clock;
+    // the moment it meets the barrier: a hard jolt that dies away in half a second
+    const crash = this.hit ? Math.max(0, 1 - (t - this.hit.at) / 0.5) : 0;
+    const buzz = (0.003 + 0.01 * fast) * (onKerb ? 4 : 1) + (offRoad && speed > 1 ? 0.05 * Math.min(1, speed / 30) : 0) + 0.18 * crash * crash;
+    const jx = buzz * (Math.sin(t * 71) + 0.6 * Math.sin(t * 113 + 1.7));
+    const jy = buzz * (Math.sin(t * 89 + 0.4) + 0.7 * Math.sin(t * 131 + 2.3)) + (onKerb ? 0.03 * Math.sin((pose.s! / 1.25) * Math.PI * 2) : 0);
+    const right = new THREE.Vector3(-this.camDir.z, 0, this.camDir.x);
+    this.camPos
+      .copy(p)
+      .addScaledVector(this.camDir, (tall ? -4.8 : -5.4) + brake * 0.7)
+      .add(new THREE.Vector3(0, (tall ? 2.05 : 1.75) - brake * 0.25 + jy, 0))
+      .addScaledVector(right, jx - lean * 0.25);
+    this.camLook
+      .copy(p)
+      .addScaledVector(this.camDir, tall ? 10 : 12)
+      .add(new THREE.Vector3(0, (tall ? 0.1 : 0.55) - brake * 0.9, 0));
     this.camera.position.copy(this.camPos);
+    // lean into the corner: tilt the camera's up a little against the turn
+    this.camera.up.set(0, 1, 0).addScaledVector(right, lean * 0.05).normalize();
     this.camera.lookAt(this.camLook);
+    const fov = this.baseFov + 7 * fast * fast;
+    if (Math.abs(fov - this.camera.fov) > 0.05) {
+      this.camera.fov = fov;
+      this.camera.updateProjectionMatrix();
+    }
+    // the car bounces over the kerbs and the gravel
+    this.car.position.y = onKerb ? 0.025 * Math.abs(Math.sin((pose.s! / 1.25) * Math.PI * 2)) : offRoad && speed > 1 ? 0.02 * Math.abs(Math.sin(t * 37)) : 0;
+    this.car.rotation.z = onKerb ? 0.012 * Math.sin((pose.s! / 1.25) * Math.PI * 2) : 0;
+
+    // particles from the rear wheels: dust and stones off the road, spray in the wet
+    if (dt > 0) {
+      const back = dir.clone().multiplyScalar(-1);
+      for (const sx of [-0.83, 0.83]) {
+        const wheel = this.car.localToWorld(new THREE.Vector3(sx, 0.25, 1.6));
+        if (offRoad && speed > 2) {
+          for (let n = 0; n < 4; n++) {
+            const v = back.clone().multiplyScalar(speed * (0.15 + Math.random() * 0.15)).add(new THREE.Vector3((Math.random() - 0.5) * 4, 2 + Math.random() * 3, (Math.random() - 0.5) * 4));
+            this.particles.emit(wheel, v, 0.6 + Math.random() * 0.8, 2.8, 1.2 + Math.random() * 0.7, DUST, 0.75);
+          }
+        } else if (crash > 0.9) {
+          // the impact throws up a cloud
+          for (let n = 0; n < 10; n++) {
+            const v = dir.clone().multiplyScalar(2 + Math.random() * 4).add(new THREE.Vector3((Math.random() - 0.5) * 5, 1.5 + Math.random() * 3, (Math.random() - 0.5) * 5));
+            this.particles.emit(wheel, v, 0.7 + Math.random() * 0.6, 1.6, 1.2 + Math.random() * 0.8, DUST, 0.5);
+          }
+        } else if (this.wet && speed > 15) {
+          // a rooster tail of spray off each rear tyre, thicker the faster the car goes
+          for (let n = 0; n < 3; n++) {
+            const v = back.clone().multiplyScalar(speed * (0.3 + Math.random() * 0.25)).add(new THREE.Vector3((Math.random() - 0.5) * 3, 1.5 + Math.random() * 2, (Math.random() - 0.5) * 3));
+            this.particles.emit(wheel, v, 0.7 + Math.random() * 0.6, 4.5, 0.55 + Math.random() * 0.35, SPRAY, 0.42 * Math.min(1, speed / 50));
+          }
+        }
+      }
+      this.particles.update(dt);
+    }
     // the sun's shadow box follows the car
     this.sun.position.copy(p).addScaledVector(this.sunDir, 150);
     this.sun.target.position.copy(p);

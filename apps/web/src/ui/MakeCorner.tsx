@@ -204,8 +204,10 @@ export function MakeCorner() {
       if (run.outcome && !st.endAt) st.endAt = now + (st.off ? offDuration(st.off) * 1000 + 250 : 300);
       const off = st.off ? offRoadPose(st.off, (now - st.off.at) / 1000) : null;
       s.render(off ?? run.pose(), off ? off.v : run.v, off ? true : run.phase === "braking" && !run.outcome, dt);
-      engine.current?.update(off ? off.v : run.v, run.outcome === "off" || run.outcome === "stopped" ? run.outcome : run.phase);
-      if (speedEl.current) speedEl.current.textContent = String(kmh(run.outcome === "stopped" ? 0 : off ? off.v : run.v));
+      engine.current?.update(s.crashed ? 0 : off ? off.v : run.v, run.outcome === "off" || run.outcome === "stopped" ? run.outcome : run.phase);
+      // into the barrier: the speed drops to nothing and the result comes sooner
+      if (s.crashed && st.endAt > now + 700) st.endAt = now + 700;
+      if (speedEl.current) speedEl.current.textContent = String(kmh(run.outcome === "stopped" || s.crashed ? 0 : off ? off.v : run.v));
       setPhase(run.phase);
       if (st.endAt && now >= st.endAt) {
         st.raf = 0;
