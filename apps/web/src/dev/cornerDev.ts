@@ -1,6 +1,6 @@
 import type { Condition } from "@apex/engine";
 import { CornerScene } from "../game3d/cornerScene";
-import { CornerRun, type CornerData, idealCalls, perfectRun, scoreRun } from "../modes/makeCorner";
+import { CornerRun, type CornerData, DT, idealCalls, perfectRun, scoreRun } from "../modes/makeCorner";
 import index from "../game/corners/index.json";
 
 /**
@@ -23,6 +23,7 @@ let scene: CornerScene | null = null;
 let run: CornerRun | null = null;
 let data: CornerData | null = null;
 let auto = false;
+let recording = false;
 let last = 0;
 
 async function load() {
@@ -55,6 +56,7 @@ document.getElementById("auto")!.onclick = () => {
 };
 
 function frame(now: number) {
+  if (recording) return;
   requestAnimationFrame(frame);
   if (!scene || !run || !data) return;
   const dt = Math.min(0.1, (now - last) / 1000);
@@ -77,3 +79,45 @@ function frame(now: number) {
 }
 void load();
 requestAnimationFrame(frame);
+
+/**
+ * For recording clips frame by frame (marketing/trailer-src): load a corner, then step the run by exactly one
+ * video frame with the perfect calls and draw it; nothing runs on the real clock.
+ */
+(window as unknown as { dev: unknown }).dev = {
+  async load(id: string, condition: Condition) {
+    pick.value = id;
+    cond.value = condition;
+    await load();
+    recording = true; // the live loop stops
+    return true;
+  },
+  /** jump the car to s metres (driven there with the perfect calls, not drawn) */
+  skipTo(s: number) {
+    while (run && !run.outcome && run.s < s) step(DT);
+  },
+  /** one frame: the run advances `seconds` with the perfect calls, then the scene draws */
+  frame(seconds: number) {
+    if (!run || !scene) return null;
+    step(seconds);
+    scene.render(run.pose(), run.v, run.phase === "braking", 0, seconds);
+    return { s: run.s, v: run.v, phase: run.phase, outcome: run.outcome };
+  },
+  score() {
+    return run && data ? scoreRun(run, perfectRun(data, run.condition)) : null;
+  },
+  ideal() {
+    return data ? { ...idealCalls(data, cond.value as Condition), apexS: data.s[data.conditions[cond.value as Condition].apex] } : null;
+  },
+};
+
+function step(seconds: number) {
+  if (!run || !data) return;
+  const ideal = idealCalls(data, run.condition);
+  for (let t = 0; t < seconds - 1e-9 && !run.outcome; t += DT) {
+    if (run.phase === "approach" && run.s >= ideal.brakeS) run.press(true);
+    else if (run.phase === "braking" && run.v <= ideal.minSpeed + 0.02) run.press(false);
+    else if (run.phase === "rolling" && run.s >= ideal.throttleS) run.press(true);
+    run.advance(DT);
+  }
+}

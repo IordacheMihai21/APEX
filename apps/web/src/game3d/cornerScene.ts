@@ -36,6 +36,7 @@ export class CornerScene {
   private readonly rain: THREE.LineSegments | null = null;
   private readonly camPos = new THREE.Vector3();
   private readonly camLook = new THREE.Vector3();
+  private readonly camDir = new THREE.Vector3(0, 0, -1);
   private camReady = false;
   private wheelTurn = 0;
   private steer = 0;
@@ -180,15 +181,15 @@ export class CornerScene {
     for (const w of this.frontWheels) w.rotation.y = this.steer;
     (this.rainLight.material as THREE.MeshStandardMaterial).emissiveIntensity = braking ? 6 : 0.4;
 
-    // chase camera: behind and above, looking down the road, eased so it swings smoothly through the corner
+    // chase camera: a fixed distance behind and above the car, its direction eased so it swings smoothly through
+    // the corner (easing the position itself would leave it metres behind at 300 km/h)
     // upright phones: a little higher and tilted down, so the road fills the view rather than the sky
     const tall = this.camera.aspect < 1;
-    const wantPos = p.clone().addScaledVector(dir, tall ? -6.4 : -7.2).add(new THREE.Vector3(0, tall ? 3.1 : 2.3, 0));
-    const wantLook = p.clone().addScaledVector(dir, tall ? 11 : 14).add(new THREE.Vector3(0, tall ? -0.4 : 0.6, 0));
-    const ease = this.camReady ? 1 - Math.exp(-dt * 6) : 1;
-    this.camPos.lerp(wantPos, ease);
-    this.camLook.lerp(wantLook, ease);
+    const ease = this.camReady ? 1 - Math.exp(-dt * 5) : 1;
+    this.camDir.lerp(dir, ease).normalize();
     this.camReady = true;
+    this.camPos.copy(p).addScaledVector(this.camDir, tall ? -6.4 : -7.2).add(new THREE.Vector3(0, tall ? 3.1 : 2.3, 0));
+    this.camLook.copy(p).addScaledVector(this.camDir, tall ? 11 : 14).add(new THREE.Vector3(0, tall ? -0.4 : 0.6, 0));
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
     // the sun's shadow box follows the car
