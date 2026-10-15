@@ -6,7 +6,7 @@ import { FinishCard } from "./FinishCard";
 import { NextToday } from "./NextToday";
 import { gameFinished, gameStarted } from "../games/events";
 import { CONDITION_NAME, dailyNumber } from "../modes/daily";
-import { CornerRun, type CornerData, DT, MAX_POINTS, type Phase, type RunScore, idealCalls, perfectRun, scoreRun } from "../modes/makeCorner";
+import { CornerRun, type CornerData, DT, MAX_POINTS, type OffStart, type Phase, type RunScore, idealCalls, offDuration, offRoadPose, perfectRun, scoreRun } from "../modes/makeCorner";
 import {
   CORNERS,
   type CallGrade,
@@ -89,7 +89,7 @@ export function MakeCorner() {
   const resultBox = useRef<HTMLDivElement>(null);
   const scene = useRef<CornerScene | null>(null);
   const perfect = useRef<CornerRun | null>(null);
-  const sim = useRef({ run: null as CornerRun | null, last: 0, acc: 0, raf: 0, needsUp: false, endAt: 0, slide: 0, slideV: 0 });
+  const sim = useRef({ run: null as CornerRun | null, last: 0, acc: 0, raf: 0, needsUp: false, endAt: 0, off: null as (OffStart & { at: number }) | null, lastV: 0 });
 
   // the day's (or practice) corner: its data, and the perfect run to score against
   useEffect(() => {
@@ -124,7 +124,7 @@ export function MakeCorner() {
         const fit = () => {
           made.resize(box.clientWidth, box.clientHeight);
           const run = sim.current.run;
-          if (run && sim.current.raf === 0) made.render(run.pose(), run.v, run.phase === "braking", sim.current.slide, 0);
+          if (run && sim.current.raf === 0) made.render(run.pose(), run.v, run.phase === "braking", 0);
         };
         fit();
         ro = new ResizeObserver(fit);
@@ -190,16 +190,17 @@ export function MakeCorner() {
       if (!run || !s || !data) return;
       const dt = Math.min(0.1, Math.max(0, (now - st.last) / 1000));
       sync(now);
-      if (run.outcome && !st.endAt) st.endAt = now + (run.outcome === "off" ? 900 : 300);
-      if (run.outcome === "off") {
-        // off the road: the car slides out of the corner, wide of the line
-        const k = data.conditions[condition].kappa[Math.max(0, data.s.findIndex((x) => x >= run.s))] ?? 0;
-        st.slideV = Math.max(st.slideV, 6);
-        st.slide += (k >= 0 ? -1 : 1) * st.slideV * dt;
-        st.slideV *= 0.97;
+      if (run.outcome === "off" && !st.off) {
+        // off the road: the car carries on the way it was going and slows on the grass or gravel
+        const p = run.pose();
+        // the speed it had on the road (the run's own speed is cut to the corner's limit as it gives up)
+        st.off = { x: p.x, y: p.y, heading: p.heading, kappa: p.kappa, v: Math.max(run.v, st.lastV), at: now };
       }
-      s.render(run.pose(), run.outcome === "off" ? st.slideV : run.v, run.phase === "braking" && !run.outcome, st.slide, dt);
-      if (speedEl.current) speedEl.current.textContent = String(kmh(run.outcome === "stopped" ? 0 : run.v));
+      if (!run.outcome) st.lastV = run.v;
+      if (run.outcome && !st.endAt) st.endAt = now + (st.off ? offDuration(st.off) * 1000 + 250 : 300);
+      const off = st.off ? offRoadPose(st.off, (now - st.off.at) / 1000) : null;
+      s.render(off ?? run.pose(), off ? off.v : run.v, off ? true : run.phase === "braking" && !run.outcome, dt);
+      if (speedEl.current) speedEl.current.textContent = String(kmh(run.outcome === "stopped" ? 0 : off ? off.v : run.v));
       setPhase(run.phase);
       if (st.endAt && now >= st.endAt) {
         st.raf = 0;
@@ -221,8 +222,7 @@ export function MakeCorner() {
     st.last = performance.now();
     st.needsUp = true; // the start press is not the brake: it counts from the next press
     st.endAt = 0;
-    st.slide = 0;
-    st.slideV = 0;
+    st.off = null;
     setResult(null);
     setPhase("approach");
     setScreen("run");
@@ -266,13 +266,12 @@ export function MakeCorner() {
     const st = sim.current;
     if (!data) return;
     st.run = new CornerRun(data, condition);
-    st.slide = 0;
-    st.slideV = 0;
+    st.off = null;
     setResult(null);
     setPhase("approach");
     setScreen("ready");
     const s = scene.current;
-    if (s) s.render(st.run.pose(), st.run.v, false, 0, 0);
+    if (s) s.render(st.run.pose(), st.run.v, false, 0);
   };
 
   const practiceNew = () => {

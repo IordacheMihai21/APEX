@@ -19,7 +19,7 @@ import { buildWorld } from "./world";
  */
 
 const SKY = {
-  dry: { turbidity: 3.2, rayleigh: 1.3, mie: 0.004, g: 0.8, elevation: 36, azimuth: 205, fog: "#bccfe0", near: 260, far: 2300, sun: 3.2, hemi: 1.15, exposure: 0.62 },
+  dry: { turbidity: 3.2, rayleigh: 1.3, mie: 0.004, g: 0.8, elevation: 36, azimuth: 205, fog: "#bccfe0", near: 260, far: 2300, sun: 2.3, hemi: 1.2, exposure: 0.6 },
   wet: { turbidity: 0, rayleigh: 0, mie: 0, g: 0, elevation: 50, azimuth: 205, fog: "#959da3", near: 90, far: 850, sun: 0.55, hemi: 1.6, exposure: 0.85 },
 };
 
@@ -41,11 +41,14 @@ export class CornerScene {
   private wheelTurn = 0;
   private steer = 0;
   private readonly disposables: { dispose(): void }[] = [];
+  private readonly carReady: Promise<void>;
 
   /** Load the circuit and its surroundings, then build the corner. */
   static async create(canvas: HTMLCanvasElement, c: CornerData, condition: Condition): Promise<CornerScene> {
     const [track, osm] = await Promise.all([loadTrack(c.trackId), loadScenery(c.trackId)]);
-    return new CornerScene(canvas, c, condition, track, osm);
+    const scene = new CornerScene(canvas, c, condition, track, osm);
+    await scene.carReady;
+    return scene;
   }
 
   private constructor(canvas: HTMLCanvasElement, c: CornerData, condition: Condition, track: Awaited<ReturnType<typeof loadTrack>>, osm: Awaited<ReturnType<typeof loadScenery>>) {
@@ -55,8 +58,8 @@ export class CornerScene {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance", logarithmicDepthBuffer: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.toneMapping = THREE.NeutralToneMapping; // keeps the orange paint orange in full sun (ACES bleached it to peach)
     this.renderer.toneMappingExposure = look.exposure;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
@@ -90,6 +93,10 @@ export class CornerScene {
       const pmrem = new THREE.PMREMGenerator(this.renderer);
       const envScene = new THREE.Scene();
       const envSky = makeSky(1000);
+      // the light everything reflects is the sky without the sun's disc: the disc is so bright that a car with the
+      // sun behind the camera reflected it as a washed-out, almost white body
+      const envUniforms = (envSky.material as THREE.ShaderMaterial).uniforms;
+      if (envUniforms.showSunDisc) envUniforms.showSunDisc.value = 0;
       envScene.add(envSky);
       const env = pmrem.fromScene(envScene, 0, 0.1, 2000);
       this.scene.environment = env.texture;
@@ -142,6 +149,7 @@ export class CornerScene {
     this.wheels = built.wheels;
     this.frontWheels = built.front;
     this.rainLight = built.rainLight;
+    this.carReady = built.ready;
     this.scene.add(this.car);
     this.track(built);
   }
@@ -155,17 +163,16 @@ export class CornerScene {
     this.camera.aspect = width / Math.max(1, height);
     // keep at least ~78° across, so a phone held upright still sees the corner coming
     const across = 2 * Math.atan(Math.tan((78 * Math.PI) / 360) / this.camera.aspect);
-    this.camera.fov = Math.min(88, Math.max(58, (across * 180) / Math.PI));
+    this.camera.fov = Math.min(78, Math.max(58, (across * 180) / Math.PI));
     this.camera.updateProjectionMatrix();
   }
 
-  /** Put the car where the run is and draw: pose on the line, speed (m/s), braking (rain light), and how far it has slid off (m). */
-  render(pose: { x: number; y: number; heading: number; kappa: number }, speed: number, braking: boolean, slide = 0, dt = 1 / 60) {
+  /** Put the car where the run is and draw: pose (on the line, or off it), speed (m/s) and braking (rain light). */
+  render(pose: { x: number; y: number; heading: number; kappa: number }, speed: number, braking: boolean, dt = 1 / 60) {
     const dir = new THREE.Vector3(Math.cos(pose.heading), 0, -Math.sin(pose.heading));
-    const sideways = new THREE.Vector3(dir.z, 0, -dir.x);
-    const p = toWorld(pose.x, pose.y).addScaledVector(sideways, slide);
+    const p = toWorld(pose.x, pose.y);
     this.car.position.copy(p);
-    this.car.rotation.y = Math.atan2(-dir.x, -dir.z) + slide * 0.02;
+    this.car.rotation.y = Math.atan2(-dir.x, -dir.z);
     // wheels roll with the speed (radius 0.36 m); the fronts steer with the line's curvature (wheelbase 3.4 m)
     this.wheelTurn -= (speed * dt) / 0.36;
     // the front wheels steer with the line's curvature (wheelbase 3.4 m: tan(angle) = wheelbase x curvature), eased
@@ -181,8 +188,8 @@ export class CornerScene {
     const ease = this.camReady ? 1 - Math.exp(-dt * 5) : 1;
     this.camDir.lerp(dir, ease).normalize();
     this.camReady = true;
-    this.camPos.copy(p).addScaledVector(this.camDir, tall ? -6.4 : -7.2).add(new THREE.Vector3(0, tall ? 3.1 : 2.3, 0));
-    this.camLook.copy(p).addScaledVector(this.camDir, tall ? 11 : 14).add(new THREE.Vector3(0, tall ? -0.4 : 0.6, 0));
+    this.camPos.copy(p).addScaledVector(this.camDir, tall ? -4.8 : -5.4).add(new THREE.Vector3(0, tall ? 2.05 : 1.75, 0));
+    this.camLook.copy(p).addScaledVector(this.camDir, tall ? 10 : 12).add(new THREE.Vector3(0, tall ? 0.1 : 0.55, 0));
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
     // the sun's shadow box follows the car

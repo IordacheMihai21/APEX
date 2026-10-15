@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import INDEX from "../game/corners/index.json";
 import { CONDITIONS } from "@apex/engine";
-import { type CornerData, CornerRun, DT, MAX_POINTS, driveCalls, idealCalls, perfectRun, scoreRun } from "./makeCorner";
+import { type CornerData, CornerRun, DT, MAX_POINTS, driveCalls, idealCalls, offDuration, offRoadPose, perfectRun, scoreRun } from "./makeCorner";
 
 const files = import.meta.glob<CornerData>(["../game/corners/*.json", "!../game/corners/index.json"], { eager: true, import: "default" });
 const corners = Object.values(files);
@@ -82,6 +82,27 @@ describe("make the corner", () => {
       }
       expect(reversals, c.name).toBeLessThanOrEqual(3);
     }
+  });
+
+  it("runs off the road straight on, slowing to a stop, never sideways", () => {
+    const start = { x: 10, y: -5, heading: 0.6, v: 40, kappa: -0.02 };
+    let last = offRoadPose(start, 0);
+    expect(last).toMatchObject({ x: 10, y: -5, heading: 0.6 });
+    for (let t = 0.05; t <= offDuration(start); t += 0.05) {
+      const p = offRoadPose(start, t);
+      // it moves forward along the heading it left the road with, not across it
+      const dx = p.x - last.x;
+      const dy = p.y - last.y;
+      expect(Math.abs(-Math.sin(start.heading) * dx + Math.cos(start.heading) * dy)).toBeLessThan(1e-9);
+      expect(Math.cos(start.heading) * dx + Math.sin(start.heading) * dy).toBeGreaterThanOrEqual(0);
+      expect(p.v).toBeLessThanOrEqual(last.v);
+      // the nose turns a little into the corner it missed (a right-hander here), no more
+      expect(p.heading).toBeLessThanOrEqual(start.heading);
+      expect(start.heading - p.heading).toBeLessThanOrEqual(0.2 + 1e-9);
+      last = p;
+    }
+    expect(offRoadPose(start, 10).v).toBe(0);
+    expect(offDuration(start)).toBeLessThanOrEqual(1.6);
   });
 
   it("is the same run on every device: steps are fixed, whatever the frame rate", () => {

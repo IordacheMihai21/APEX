@@ -69,7 +69,7 @@ function frame(now: number) {
     else if (run.phase === "rolling" && run.s >= ideal.throttleS) run.press(true);
   }
   run.advance(dt);
-  scene.render(run.pose(), run.v, run.phase === "braking", 0, dt);
+  scene.render(run.pose(), run.v, run.phase === "braking", dt);
   speedEl.textContent = `${Math.round(run.v * 3.6)} km/h`;
   if (run.outcome && !statusEl.dataset.done) {
     statusEl.dataset.done = "1";
@@ -100,7 +100,7 @@ requestAnimationFrame(frame);
   frame(seconds: number) {
     if (!run || !scene) return null;
     step(seconds);
-    scene.render(run.pose(), run.v, run.phase === "braking", 0, seconds);
+    scene.render(run.pose(), run.v, run.phase === "braking", seconds);
     return { s: run.s, v: run.v, phase: run.phase, outcome: run.outcome };
   },
   score() {

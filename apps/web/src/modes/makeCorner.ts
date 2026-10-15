@@ -240,6 +240,31 @@ export class CornerRun {
   }
 }
 
+/** How a car leaves the road, for drawing: where it was going, how fast, and which way the corner turned. */
+export interface OffStart {
+  x: number;
+  y: number;
+  heading: number;
+  v: number;
+  /** the corner's curvature where it went off (+ = left) */
+  kappa: number;
+}
+/** Grass and gravel stop a car at about 1 g. */
+const OFF_DECEL = 10;
+/** How long the car is shown off the road (s): until it stops, at most this. */
+export const offDuration = (o: OffStart) => Math.min(1.6, o.v / OFF_DECEL + 0.25);
+
+/**
+ * The car `t` seconds after leaving the road: it carries on the way it was going (the road curves away from it),
+ * slowing on the grass or gravel, its nose turning a little into the corner it missed.
+ */
+export function offRoadPose(o: OffStart, t: number): { x: number; y: number; heading: number; kappa: number; v: number } {
+  const tt = Math.min(t, o.v / OFF_DECEL);
+  const d = o.v * tt - (OFF_DECEL * tt * tt) / 2;
+  const turn = Math.sign(o.kappa) * Math.min(0.2, 0.25 * t);
+  return { x: o.x + Math.cos(o.heading) * d, y: o.y + Math.sin(o.heading) * d, heading: o.heading + turn, kappa: 0, v: Math.max(0, o.v - OFF_DECEL * t) };
+}
+
 /** Drive a whole run with calls made at these distances (null: never made). */
 export function driveCalls(c: CornerData, condition: Condition, calls: { brakeS: number | null; releaseS: number | null; throttleS: number | null }): CornerRun {
   const run = new CornerRun(c, condition);

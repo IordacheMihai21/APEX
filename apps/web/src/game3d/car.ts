@@ -9,8 +9,8 @@ import carUrl from "./car.glb?url";
  * (credited on the Legal page and under the game), an original design with no
  * team or sponsor, painted in Lapdle's colours and cut down for phones by
  * tools/track-builder/src/build-car.ts. Nose along local -z, ground at y = 0,
- * four wheels about their hubs. It loads after the scene; until then the
- * group is empty.
+ * four wheels about their hubs. The model loads separately; `ready` says when
+ * it is in.
  */
 export const CAR_CREDIT = {
   title: "F1 2026 concept (polygon model)",
@@ -38,7 +38,7 @@ export function buildCar() {
 
   let disposed = false;
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-  loader.load(carUrl, (gltf) => {
+  const ready = loader.loadAsync(carUrl).then((gltf) => {
     if (disposed) return;
     gltf.scene.traverse((o) => {
       if (o instanceof THREE.Mesh) {
@@ -47,7 +47,15 @@ export function buildCar() {
         o.geometry.dispose();
         o.geometry = g;
         geos.push(g);
-        mats.add(o.material);
+        // the sky is bright: let the paint and carbon reflect it softly, so they keep their colour in the sun
+        const m = o.material as THREE.MeshStandardMaterial;
+        m.envMapIntensity = m.name === "rim" ? 0.8 : 0.35;
+        if (m.name === "paint") {
+          m.metalness = 0.1;
+          m.roughness = 0.55;
+        }
+        if (m.name === "carbon") m.roughness = 0.65;
+        mats.add(m);
         o.castShadow = true;
         o.receiveShadow = true;
       }
@@ -66,6 +74,8 @@ export function buildCar() {
     wheels,
     front,
     rainLight,
+    /** resolves once the model is in (the scene waits for it, so a run never starts without the car) */
+    ready,
     dispose() {
       disposed = true;
       for (const g of geos) g.dispose();
