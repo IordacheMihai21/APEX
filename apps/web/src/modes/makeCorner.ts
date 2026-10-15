@@ -216,13 +216,27 @@ export class CornerRun {
     else if (this.s >= this.length) this.outcome = "done";
   }
 
-  /** Where the car is: position (m) and heading (radians), on the line. */
-  pose(): { x: number; y: number; heading: number } {
+  /**
+   * Where the car is, for drawing: position (m) on the line, heading (radians) and the line's curvature (1/m,
+   * + = left). The line's points are 2.5 m apart and rounded to the centimetre, so the heading of each little
+   * segment zigzags by half a degree; the heading here is taken over 10 m of line and blended between points,
+   * so the car turns smoothly.
+   */
+  pose(): { x: number; y: number; heading: number; kappa: number } {
     const { s: S, x, y } = this.c;
+    const n = S.length;
     let i = 0;
-    while (i < S.length - 2 && S[i + 1] <= this.s) i++;
+    while (i < n - 2 && S[i + 1] <= this.s) i++;
     const f = Math.min(1, Math.max(0, (this.s - S[i]) / (S[i + 1] - S[i] || 1)));
-    return { x: x[i] + (x[i + 1] - x[i]) * f, y: y[i] + (y[i + 1] - y[i]) * f, heading: Math.atan2(y[i + 1] - y[i], x[i + 1] - x[i]) };
+    const headingAt = (k: number) => {
+      const a = Math.max(0, k - 2);
+      const b = Math.min(n - 1, k + 2);
+      return Math.atan2(y[b] - y[a], x[b] - x[a]);
+    };
+    const h0 = headingAt(i);
+    const dh = Math.atan2(Math.sin(headingAt(i + 1) - h0), Math.cos(headingAt(i + 1) - h0));
+    const kappa = this.kappa[i] + (this.kappa[i + 1] - this.kappa[i]) * f;
+    return { x: x[i] + (x[i + 1] - x[i]) * f, y: y[i] + (y[i + 1] - y[i]) * f, heading: h0 + dh * f, kappa };
   }
 }
 

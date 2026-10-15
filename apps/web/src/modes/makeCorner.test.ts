@@ -52,6 +52,38 @@ describe("make the corner", () => {
     }
   });
 
+  it("turns the car smoothly: no zigzag from one point of the line to the next", () => {
+    // the line's points are 2.5 m apart and rounded to the centimetre; drawn segment by segment, the car's heading
+    // flicked left and right a hundred times a lap. Frame by frame at 30 fps, the turn rate now only changes gently,
+    // and changes direction only where the road does (an S-bend on the way in)
+    for (const c of corners) {
+      const run = new CornerRun(c, "dry");
+      const ideal = idealCalls(c, "dry");
+      let prev: number | null = null;
+      let prevTurn: number | null = null;
+      let reversals = 0;
+      while (!run.outcome) {
+        for (let t = 0; t < 1 / 30 - 1e-9 && !run.outcome; t += DT) {
+          if (run.phase === "approach" && run.s >= ideal.brakeS) run.press(true);
+          else if (run.phase === "braking" && run.v <= ideal.minSpeed + 0.02) run.press(false);
+          else if (run.phase === "rolling" && run.s >= ideal.throttleS) run.press(true);
+          run.advance(DT);
+        }
+        const h = run.pose().heading;
+        if (prev !== null) {
+          const turn = (Math.atan2(Math.sin(h - prev), Math.cos(h - prev)) * 180) / Math.PI;
+          if (prevTurn !== null) {
+            expect(Math.abs(turn - prevTurn), c.name).toBeLessThan(1);
+            if (Math.sign(turn) !== Math.sign(prevTurn) && Math.abs(turn - prevTurn) > 0.25) reversals++;
+          }
+          prevTurn = turn;
+        }
+        prev = h;
+      }
+      expect(reversals, c.name).toBeLessThanOrEqual(3);
+    }
+  });
+
   it("is the same run on every device: steps are fixed, whatever the frame rate", () => {
     const c = corners[0];
     const a = perfectRun(c, "dry");

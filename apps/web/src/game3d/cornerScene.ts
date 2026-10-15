@@ -40,7 +40,6 @@ export class CornerScene {
   private camReady = false;
   private wheelTurn = 0;
   private steer = 0;
-  private lastPose: { x: number; y: number; heading: number } | null = null;
   private readonly disposables: { dispose(): void }[] = [];
 
   /** Load the circuit and its surroundings, then build the corner. */
@@ -161,7 +160,7 @@ export class CornerScene {
   }
 
   /** Put the car where the run is and draw: pose on the line, speed (m/s), braking (rain light), and how far it has slid off (m). */
-  render(pose: { x: number; y: number; heading: number }, speed: number, braking: boolean, slide = 0, dt = 1 / 60) {
+  render(pose: { x: number; y: number; heading: number; kappa: number }, speed: number, braking: boolean, slide = 0, dt = 1 / 60) {
     const dir = new THREE.Vector3(Math.cos(pose.heading), 0, -Math.sin(pose.heading));
     const sideways = new THREE.Vector3(dir.z, 0, -dir.x);
     const p = toWorld(pose.x, pose.y).addScaledVector(sideways, slide);
@@ -169,14 +168,8 @@ export class CornerScene {
     this.car.rotation.y = Math.atan2(-dir.x, -dir.z) + slide * 0.02;
     // wheels roll with the speed (radius 0.36 m); the fronts steer with the line's curvature (wheelbase 3.4 m)
     this.wheelTurn -= (speed * dt) / 0.36;
-    const last = this.lastPose;
-    if (last) {
-      const ds = Math.hypot(pose.x - last.x, pose.y - last.y);
-      let dh = pose.heading - last.heading;
-      dh = Math.atan2(Math.sin(dh), Math.cos(dh));
-      if (ds > 0.05) this.steer += (Math.atan(3.4 * (dh / ds)) - this.steer) * Math.min(1, dt * 10);
-    }
-    this.lastPose = pose;
+    // the front wheels steer with the line's curvature (wheelbase 3.4 m: tan(angle) = wheelbase x curvature), eased
+    this.steer += (Math.atan(3.4 * pose.kappa) - this.steer) * Math.min(1, dt * 12);
     for (const w of this.wheels) w.rotation.x = this.wheelTurn;
     for (const w of this.frontWheels) w.rotation.y = this.steer;
     (this.rainLight.material as THREE.MeshStandardMaterial).emissiveIntensity = braking ? 6 : 0.4;
