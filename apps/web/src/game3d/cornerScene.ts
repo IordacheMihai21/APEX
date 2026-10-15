@@ -7,6 +7,21 @@ import { buildCar } from "./car";
 import { toWorld } from "./geometry";
 import { buildTrackside } from "./trackside";
 import { Particles } from "./particles";
+import { EffectComposer, EffectPass, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
+import { N8AOPostPass } from "n8ao";
+
+/**
+ * How much post-processing a device gets. High (computers): contact shadows (N8AO ambient occlusion), SMAA and a
+ * vignette. Medium (phones): the same without the ambient occlusion, the costly part. Low: the plain render. A
+ * device that can't keep up steps down by itself. (No bloom: the sky is far brighter than the rain light, so a bloom
+ * caught the whole sky and washed a violet haze over the trees.)
+ */
+export type Quality = "high" | "medium" | "low";
+const startQuality = (): Quality => {
+  if (typeof matchMedia !== "function") return "medium";
+  const phone = matchMedia("(pointer: coarse)").matches || Math.min(screen.width, screen.height) < 700;
+  return phone ? "medium" : "high";
+};
 import { buildWorld } from "./world";
 import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js";
 import { type Surfaces, loadSurfaces } from "./textures";
@@ -54,6 +69,13 @@ export class CornerScene {
   /** the barrier lines, and where a car that ran off stopped against them (with the moment, for the jolt) */
   private barriers: [number, number][][] = [];
   private hit: { x: number; y: number; heading: number; at: number } | null = null;
+  private quality: Quality = startQuality();
+  private composer: EffectComposer | null = null;
+  private ao: N8AOPostPass | null = null;
+  private size = { w: 1, h: 1 };
+  /** frame times, for stepping the quality down on a device that can't keep up */
+  private slowFrames = 0;
+  private readonly exposure: number;
   private readonly camPos = new THREE.Vector3();
   private readonly camLook = new THREE.Vector3();
   private readonly camDir = new THREE.Vector3(0, 0, -1);
@@ -94,6 +116,7 @@ export class CornerScene {
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.NeutralToneMapping; // keeps the orange paint orange in full sun (ACES bleached it to peach)
     this.renderer.toneMappingExposure = look.exposure;
+    this.exposure = look.exposure;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     // ---- the sky, and the same sky as the light everything reflects: a clear sky with a real sun, or low cloud on a wet day
@@ -195,8 +218,56 @@ export class CornerScene {
     this.disposables.push(...things);
   }
 
+  /** Build (or drop) the post-processing for the current quality. */
+  private setupPost() {
+    this.composer?.dispose();
+    this.composer = null;
+    this.ao = null;
+    if (this.quality === "low") {
+      this.renderer.toneMapping = THREE.NeutralToneMapping;
+      return;
+    }
+    // tone mapping moves to the end of the chain, in high precision
+    this.renderer.toneMapping = THREE.NoToneMapping;
+    this.renderer.toneMappingExposure = this.exposure;
+    const composer = new EffectComposer(this.renderer, { frameBufferType: THREE.HalfFloatType, stencilBuffer: this.quality === "high", depthBuffer: true });
+    const render = new RenderPass(this.scene, this.camera);
+    if (this.quality === "high") render.clearPass.setClearFlags(true, true, true);
+    composer.addPass(render);
+    if (this.quality === "high") {
+      const ao = new N8AOPostPass(this.scene, this.camera, this.size.w, this.size.h);
+      ao.setQualityMode("Low");
+      ao.configuration.aoRadius = 1.6;
+      ao.configuration.distanceFalloff = 1.0;
+      ao.configuration.intensity = 2.2;
+      ao.configuration.halfRes = true;
+      composer.addPass(ao);
+      this.ao = ao;
+    }
+    const tone = new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL });
+    const vignette = new VignetteEffect({ offset: 0.3, darkness: 0.42 });
+    composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: SMAAPreset.MEDIUM })));
+    composer.addPass(new EffectPass(this.camera, tone, vignette));
+    composer.setSize(this.size.w, this.size.h, false);
+    this.composer = composer;
+  }
+
+  /** The quality in use (it can step down by itself). */
+  get currentQuality(): Quality {
+    return this.quality;
+  }
+
+  setQuality(q: Quality) {
+    if (q === this.quality && (this.composer || q === "low")) return;
+    this.quality = q;
+    this.setupPost();
+  }
+
   resize(width: number, height: number) {
     this.renderer.setSize(width, height, false);
+    this.size = { w: width, h: height };
+    if (this.composer) this.composer.setSize(width, height, false);
+    else if (this.quality !== "low") this.setupPost();
     this.camera.aspect = width / Math.max(1, height);
     // keep at least ~78° across, so a phone held upright still sees the corner coming
     const across = 2 * Math.atan(Math.tan((78 * Math.PI) / 360) / this.camera.aspect);
@@ -353,10 +424,19 @@ export class CornerScene {
       }
       a.needsUpdate = true;
     }
-    this.renderer.render(this.scene, this.camera);
+    // a device that keeps taking longer than ~40 ms a frame steps down a quality
+    if (dt > 0.04) this.slowFrames++;
+    else this.slowFrames = Math.max(0, this.slowFrames - 1);
+    if (this.slowFrames > 45 && this.quality !== "low") {
+      this.slowFrames = 0;
+      this.setQuality(this.quality === "high" ? "medium" : "low");
+    }
+    if (this.composer) this.composer.render(dt);
+    else this.renderer.render(this.scene, this.camera);
   }
 
   dispose() {
+    this.composer?.dispose();
     for (const d of this.disposables) d.dispose();
     this.renderer.dispose();
   }
