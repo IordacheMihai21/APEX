@@ -6,6 +6,12 @@ import grassColor from "./assets/grass-color.webp?url";
 import grassNormal from "./assets/grass-normal.webp?url";
 import gravelColor from "./assets/gravel-color.webp?url";
 import gravelNormal from "./assets/gravel-normal.webp?url";
+import broadA from "./assets/trees/broad-a.webp?url";
+import broadB from "./assets/trees/broad-b.webp?url";
+import broadC from "./assets/trees/broad-c.webp?url";
+import coniferA from "./assets/trees/conifer-a.webp?url";
+import palmA from "./assets/trees/palm-a.webp?url";
+import palmB from "./assets/trees/palm-b.webp?url";
 
 /**
  * Textures for the 3D corner. The surfaces reuse the satellite view's
@@ -220,16 +226,25 @@ export interface Photo {
   map: THREE.Texture;
   normal: THREE.Texture;
 }
+/** A tree as a picture with see-through background (width / height of the picture, for the quads). */
+export interface TreePicture {
+  map: THREE.Texture;
+  aspect: number;
+}
 export interface Surfaces {
   asphalt: Photo;
   grass: Photo;
   gravel: Photo;
+  /** photographs of whole trees, cut out (generated for us), by kind */
+  trees: Record<"broad" | "conifer" | "palm", TreePicture[]>;
   dispose(): void;
 }
 
 /**
  * The photographed surfaces (CC0: asphalt_track from Poly Haven, Grass005 and Gravel023 from ambientCG), 1K and
- * WebP, about 1 MB in all: the road, the grass and the gravel traps. Geometry UVs are in metres.
+ * WebP, about 1 MB in all: the road, the grass and the gravel traps. Geometry UVs are in metres. And the trees:
+ * photographs of whole trees on white (generated with Gemini on our Google Cloud project), cut out to see-through
+ * WebP, about 440 KB.
  */
 export async function loadSurfaces(): Promise<Surfaces> {
   const loader = new THREE.TextureLoader();
@@ -249,12 +264,21 @@ export async function loadSurfaces(): Promise<Surfaces> {
     load(gravelColor, 2, true),
     load(gravelNormal, 2, false),
   ]);
+  const tree = async (url: string): Promise<TreePicture> => {
+    const t = await loader.loadAsync(url);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    const img = t.image as { width: number; height: number };
+    return { map: t, aspect: img.width / img.height };
+  };
+  const [ba, bb, bc, ca, pa, pb] = await Promise.all([broadA, broadB, broadC, coniferA, palmA, palmB].map(tree));
   return {
     asphalt: { map: ac, normal: an },
     grass: { map: gc, normal: gn },
     gravel: { map: vc, normal: vn },
+    trees: { broad: [ba, bb, bc], conifer: [ca], palm: [pa, pb] },
     dispose() {
-      for (const t of [ac, an, gc, gn, vc, vn]) t.dispose();
+      for (const t of [ac, an, gc, gn, vc, vn, ba.map, bb.map, bc.map, ca.map, pa.map, pb.map]) t.dispose();
     },
   };
 }

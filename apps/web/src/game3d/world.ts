@@ -5,7 +5,7 @@ import type { CornerData } from "../modes/makeCorner";
 import type { SceneryData } from "../game/surroundings";
 import { FLORA_BY_TRACK, pickSpecies, type Species } from "../game/trees";
 import { extrude, inside, polygon, strip, toWorld } from "./geometry";
-import { type Surfaces, crowdTexture, leavesTexture, surfaceTextures, windowsTexture } from "./textures";
+import { type Surfaces, crowdTexture, surfaceTextures, windowsTexture } from "./textures";
 
 /**
  * The world around the corner, in the corner's coordinates (metres from the
@@ -331,49 +331,40 @@ export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | n
   // the nearest trees first, up to what a phone draws easily
   trees.sort((a, b) => a.x * a.x + a.y * a.y - (b.x * b.x + b.y * b.y));
   trees.length = Math.min(trees.length, 3200);
-  const trunkGeo = keep(new THREE.CylinderGeometry(0.12, 0.2, 1, 6).translate(0, 0.5, 0));
-  const crowns: Record<Species, THREE.BufferGeometry> = {
-    broad: keep(new THREE.IcosahedronGeometry(0.5, 1).translate(0, 0.5, 0)),
-    conifer: keep(
-      mergeGeometries([
-        new THREE.ConeGeometry(0.5, 0.55, 8).translate(0, 0.28, 0),
-        new THREE.ConeGeometry(0.4, 0.45, 8).translate(0, 0.55, 0),
-        new THREE.ConeGeometry(0.28, 0.35, 8).translate(0, 0.8, 0),
-      ])!,
-    ),
-    palm: keep(new THREE.IcosahedronGeometry(0.5, 0).scale(1, 0.45, 1).translate(0, 0.25, 0)),
+  // each tree is a photograph on two crossed upright quads (an "impostor"): from the chase camera it reads as a real
+  // tree for four triangles. Lit from above, so both quads take the light alike; turned and mirrored at random.
+  const quad = (aspect: number) => {
+    const a = new THREE.PlaneGeometry(aspect, 1).translate(0, 0.5, 0);
+    const b = a.clone().rotateY(Math.PI / 2);
+    const g = mergeGeometries([a, b])!;
+    a.dispose();
+    b.dispose();
+    const n = g.getAttribute("normal");
+    for (let i = 0; i < n.count; i++) n.setXYZ(i, 0, 1, 0);
+    return keep(g);
   };
-  const trunkMat = keep(new THREE.MeshStandardMaterial({ color: "#4a3a2c", roughness: 1 }));
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const col = new THREE.Color();
-  // the nearest trees get full crowns, the rest simpler ones (a few hundred metres off, nobody counts the facets)
-  const far: Record<Species, THREE.BufferGeometry> = {
-    broad: keep(new THREE.IcosahedronGeometry(0.5, 0).translate(0, 0.5, 0)),
-    conifer: keep(new THREE.ConeGeometry(0.5, 1, 6).translate(0, 0.5, 0)),
-    palm: crowns.palm,
-  };
-  const NEAR_TREES = 600;
-  for (const [s, near_] of (["broad", "conifer", "palm"] as Species[]).flatMap((x) => [[x, true] as const, [x, false] as const])) {
-    const mine = trees.filter((t, i) => t.s === s && i < NEAR_TREES === near_);
-    if (!mine.length) continue;
-    const leaves = keep(new THREE.MeshStandardMaterial({ map: keep(leavesTexture(s, wet)), roughness: 0.95 }));
-    const crown = new THREE.InstancedMesh(near_ ? crowns[s] : far[s], leaves, mine.length);
-    const trunk = new THREE.InstancedMesh(trunkGeo, trunkMat, mine.length);
-    mine.forEach((t, k) => {
-      const crownBase = s === "palm" ? t.h * 0.9 : s === "conifer" ? t.h * 0.12 : t.h * 0.35;
-      const crownH = s === "palm" ? t.h * 0.3 : t.h - crownBase;
-      q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), t.tint * 6.28);
-      m.compose(toWorld(t.x, t.y, crownBase), q, new THREE.Vector3(t.w, crownH, t.w));
-      crown.setMatrixAt(k, m);
-      col.setHSL(0.24 + (t.tint - 0.5) * 0.06, 0.25 + t.tint * 0.2, 0.75 + t.tint * 0.3);
-      crown.setColorAt(k, col);
-      m.compose(toWorld(t.x, t.y, 0), q, new THREE.Vector3(s === "palm" ? 0.9 : 1.2, crownBase + crownH * 0.3, s === "palm" ? 0.9 : 1.2));
-      trunk.setMatrixAt(k, m);
+  for (const s of ["broad", "conifer", "palm"] as Species[]) {
+    const pictures = photo.trees[s];
+    pictures.forEach((pic, v) => {
+      const mine = trees.filter((t, i) => t.s === s && i % pictures.length === v);
+      if (!mine.length) return;
+      const mat = keep(new THREE.MeshStandardMaterial({ map: pic.map, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 1, color: wet ? "#c6cfc6" : "#ffffff" }));
+      const mesh = new THREE.InstancedMesh(quad(pic.aspect), mat, mine.length);
+      mine.forEach((t, k) => {
+        q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), t.tint * 6.28);
+        const flip = t.tint > 0.5 ? -1 : 1;
+        m.compose(toWorld(t.x, t.y, 0), q, new THREE.Vector3(t.h * flip, t.h, t.h));
+        mesh.setMatrixAt(k, m);
+        // a little variety in the greens
+        col.setHSL(0.25, 0.1, 0.88 + t.tint * 0.24);
+        mesh.setColorAt(k, col);
+      });
+      mesh.receiveShadow = true;
+      group.add(mesh);
     });
-    // trees take the sun but cast no shadow map: one instanced mesh spans the whole world, so it would all be drawn twice
-    crown.receiveShadow = true;
-    group.add(crown, trunk);
   }
 
   // a treeline on the horizon, softened by the haze
