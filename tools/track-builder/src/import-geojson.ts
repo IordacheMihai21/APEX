@@ -93,6 +93,8 @@ export function circuitFrame(feature: Feature, c: RealCircuit) {
   const lats = coords.map((p) => p[1]);
   return {
     toTrack: (lon: number, lat: number): Vec2 => [(lon - lon0) * kx * scale, (lat - lat0) * ky * scale],
+    /** the inverse: track metres to [lon, lat] */
+    toLonLat: (x: number, y: number): Vec2 => [lon0 + x / (kx * scale), lat0 + y / (ky * scale)],
     /** south, west, north, east of the traced circuit */
     bbox: [Math.min(...lats), Math.min(...lons), Math.max(...lats), Math.max(...lons)] as [number, number, number, number],
   };

@@ -4,7 +4,8 @@ import type { Condition } from "@apex/engine";
 import type { CornerData } from "../modes/makeCorner";
 import { CATALOG, loadScenery, loadTrack } from "../game/catalog";
 import { buildCar } from "./car";
-import { toWorld } from "./geometry";
+import { groundAt, setGround, toWorld } from "./geometry";
+import { type Terrain, groundOf, loadTerrain } from "./terrain";
 import { buildTrackside } from "./trackside";
 import { Particles } from "./particles";
 import { EffectComposer, EffectPass, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
@@ -87,13 +88,14 @@ export class CornerScene {
 
   /** Load the circuit and its surroundings, then build the corner. */
   static async create(canvas: HTMLCanvasElement, c: CornerData, condition: Condition): Promise<CornerScene> {
-    const [track, osm, photo, hdr] = await Promise.all([
+    const [track, osm, photo, hdr, terrain] = await Promise.all([
       loadTrack(c.trackId),
       loadScenery(c.trackId),
       loadSurfaces(),
       new HDRLoader().loadAsync(condition === "wet" ? skyWet : skyDry),
+      loadTerrain(c.id),
     ]);
-    const scene = new CornerScene(canvas, c, condition, track, osm, photo, hdr);
+    const scene = new CornerScene(canvas, c, condition, track, osm, photo, hdr, terrain);
     await scene.carReady;
     return scene;
   }
@@ -106,7 +108,12 @@ export class CornerScene {
     osm: Awaited<ReturnType<typeof loadScenery>>,
     photo: Surfaces,
     hdr: THREE.DataTexture,
+    terrain: Terrain | null,
   ) {
+    // everything this scene builds stands on this corner's ground
+    const [ox, oy] = c.origin;
+    const streetCircuit = CATALOG.find((t) => t.id === c.trackId)?.style === "street";
+    setGround(terrain ? groundOf(terrain, track.centerline.map(([x, y]) => [x - ox, y - oy] as [number, number]), streetCircuit) : () => 0);
     const wet = condition === "wet";
     const look = wet ? SKY.wet : SKY.dry;
     const street = CATALOG.find((t) => t.id === c.trackId)?.style === "street";
@@ -172,7 +179,7 @@ export class CornerScene {
     this.scene.add(this.sun, this.sun.target);
 
     // ---- the world, then the corner (its barriers keep clear of the rest of the circuit)
-    const world = buildWorld(c, track, osm, wet, street, photo);
+    const world = buildWorld(c, track, osm, wet, street, photo, terrain);
     const side = buildTrackside(c, { street, wet, others: world.others, halfWidth: world.halfWidth, photo });
     this.scene.add(world.group, side.group);
     this.barriers = side.barriers;
@@ -323,7 +330,14 @@ export class CornerScene {
     const dir = new THREE.Vector3(Math.cos(pose.heading), 0, -Math.sin(pose.heading));
     const p = toWorld(pose.x, pose.y);
     this.car.position.copy(p);
-    this.car.rotation.y = Math.atan2(-dir.x, -dir.z);
+    // on a slope: pitch along the car (wheelbase 3.4 m) and roll across it (track 1.6 m)
+    const ch = Math.cos(pose.heading);
+    const sh = Math.sin(pose.heading);
+    const pitch = Math.atan2(groundAt(pose.x + ch * 1.7, pose.y + sh * 1.7) - groundAt(pose.x - ch * 1.7, pose.y - sh * 1.7), 3.4);
+    const roll = Math.atan2(groundAt(pose.x + sh * 0.8, pose.y - ch * 0.8) - groundAt(pose.x - sh * 0.8, pose.y + ch * 0.8), 1.6);
+    this.car.rotation.order = "YXZ";
+    this.car.rotation.set(pitch, Math.atan2(-dir.x, -dir.z), roll);
+    const groundY = p.y;
     // wheels roll with the speed (radius 0.36 m); the fronts steer with the line's curvature (wheelbase 3.4 m)
     this.wheelTurn -= (speed * dt) / 0.36;
     // the front wheels steer with the line's curvature (wheelbase 3.4 m: tan(angle) = wheelbase x curvature), eased
@@ -366,6 +380,8 @@ export class CornerScene {
       .copy(p)
       .addScaledVector(this.camDir, tall ? 10 : 12)
       .add(new THREE.Vector3(0, (tall ? 0.1 : 0.55) - brake * 0.9, 0));
+    // over a crest the camera behind could end up in the hillside: keep it above the ground under it
+    this.camPos.y = Math.max(this.camPos.y, groundAt(this.camPos.x, -this.camPos.z) + 1.2);
     this.camera.position.copy(this.camPos);
     // lean into the corner: tilt the camera's up a little against the turn
     this.camera.up.set(0, 1, 0).addScaledVector(right, lean * 0.05).normalize();
@@ -376,8 +392,8 @@ export class CornerScene {
       this.camera.updateProjectionMatrix();
     }
     // the car bounces over the kerbs and the gravel
-    this.car.position.y = onKerb ? 0.025 * Math.abs(Math.sin((pose.s! / 1.25) * Math.PI * 2)) : offRoad && speed > 1 ? 0.02 * Math.abs(Math.sin(t * 37)) : 0;
-    this.car.rotation.z = onKerb ? 0.012 * Math.sin((pose.s! / 1.25) * Math.PI * 2) : 0;
+    this.car.position.y = groundY + (onKerb ? 0.025 * Math.abs(Math.sin((pose.s! / 1.25) * Math.PI * 2)) : offRoad && speed > 1 ? 0.02 * Math.abs(Math.sin(t * 37)) : 0);
+    this.car.rotation.z = roll + (onKerb ? 0.012 * Math.sin((pose.s! / 1.25) * Math.PI * 2) : 0);
 
     // particles from the rear wheels: dust and stones off the road, spray in the wet
     if (dt > 0) {
@@ -410,7 +426,7 @@ export class CornerScene {
     this.sun.target.position.copy(p);
     // the rain falls around the camera
     if (this.rain) {
-      this.rain.position.set(this.camPos.x, 0, this.camPos.z);
+      this.rain.position.set(this.camPos.x, this.camPos.y - 12, this.camPos.z);
       const a = this.rain.geometry.getAttribute("position") as THREE.BufferAttribute;
       const arr = a.array as Float32Array;
       const fall = 24 * dt;

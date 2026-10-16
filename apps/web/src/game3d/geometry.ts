@@ -5,7 +5,16 @@ import * as THREE from "three";
  * (x, -z), y up; every builder writes UVs in metres, so textures tile by
  * their own size (textures.ts).
  */
-export const toWorld = (x: number, y: number, h = 0) => new THREE.Vector3(x, h, -y);
+
+/** The ground's height at a point (track metres), set by the scene while it builds a corner; flat until then. */
+let ground: (x: number, y: number) => number = () => 0;
+export function setGround(fn: (x: number, y: number) => number) {
+  ground = fn;
+}
+export const groundAt = (x: number, y: number) => ground(x, y);
+
+/** A point `h` metres above the ground. */
+export const toWorld = (x: number, y: number, h = 0) => new THREE.Vector3(x, h + ground(x, y), -y);
 
 /** A pair of points across a strip at one station: (x, y, height) each, and how far along it is (m). */
 export interface Station {
@@ -30,7 +39,7 @@ export function strip(stations: (Station | null)[], uAcross = true): THREE.Buffe
     }
     const width = Math.hypot(st.b[0] - st.a[0], st.b[1] - st.a[1]);
     const base = pos.length / 3;
-    pos.push(st.a[0], st.a[2], -st.a[1], st.b[0], st.b[2], -st.b[1]);
+    pos.push(st.a[0], st.a[2] + ground(st.a[0], st.a[1]), -st.a[1], st.b[0], st.b[2] + ground(st.b[0], st.b[1]), -st.b[1]);
     if (uAcross) uv.push(0, st.v, width, st.v);
     else uv.push(st.v, 0, st.v, 1);
     if (prev >= 0) {
@@ -73,7 +82,8 @@ export function wall(line: ([number, number] | null)[], h0: number, h1: number, 
     if (last) u += Math.hypot(p[0] - last[0], p[1] - last[1]);
     last = p;
     const base = pos.length / 3;
-    pos.push(p[0], h0, -p[1], p[0], h1, -p[1]);
+    const g = ground(p[0], p[1]);
+    pos.push(p[0], h0 + g, -p[1], p[0], h1 + g, -p[1]);
     uv.push(u, vMetres ? h0 : 0, u, vMetres ? h1 : 1);
     if (prev >= 0) idx.push(prev, base, prev + 1, prev + 1, base, base + 1);
     prev = base;
@@ -86,8 +96,11 @@ export function wall(line: ([number, number] | null)[], h0: number, h1: number, 
   return g;
 }
 
-/** A flat polygon (x, y pairs) at height h, UVs in metres. */
-export function polygon(flat: number[], h: number): THREE.BufferGeometry | null {
+/**
+ * A polygon (x, y pairs) h metres above the ground, UVs in metres. `level` lays it flat at its lowest ground point
+ * instead of draping it over the slope (water).
+ */
+export function polygon(flat: number[], h: number, level = false): THREE.BufferGeometry | null {
   const pts: THREE.Vector2[] = [];
   for (let i = 0; i < flat.length; i += 2) pts.push(new THREE.Vector2(flat[i], flat[i + 1]));
   if (pts.length > 2 && pts[0].equals(pts[pts.length - 1])) pts.pop();
@@ -96,16 +109,31 @@ export function polygon(flat: number[], h: number): THREE.BufferGeometry | null 
   if (!tris.length) return null;
   const pos: number[] = [];
   const uv: number[] = [];
-  for (const p of pts) {
-    pos.push(p.x, h, -p.y);
-    uv.push(p.x, p.y);
-  }
   const idx: number[] = [];
-  for (const [a, b, c] of tris) {
+  const lowest = level ? Math.min(...pts.map((p) => ground(p.x, p.y))) : 0;
+  const vertex = (x: number, y: number) => {
+    pos.push(x, h + (level ? lowest : ground(x, y)), -y);
+    uv.push(x, y);
+    return pos.length / 3 - 1;
+  };
+  for (const [a0, b0, c0] of tris) {
     // face up: counter-clockwise seen from above
-    const cross = (pts[b].x - pts[a].x) * (pts[c].y - pts[a].y) - (pts[b].y - pts[a].y) * (pts[c].x - pts[a].x);
-    if (cross >= 0) idx.push(a, b, c);
-    else idx.push(a, c, b);
+    const cross = (pts[b0].x - pts[a0].x) * (pts[c0].y - pts[a0].y) - (pts[b0].y - pts[a0].y) * (pts[c0].x - pts[a0].x);
+    const [a, b, c] = cross >= 0 ? [pts[a0], pts[b0], pts[c0]] : [pts[a0], pts[c0], pts[b0]];
+    // draped on the ground, a big area is cut into triangles of about 8 m so it follows a slope instead of spanning
+    // it as one flat slab
+    const longest = Math.max(a.distanceTo(b), b.distanceTo(c), c.distanceTo(a));
+    const n = level ? 1 : Math.min(40, Math.max(1, Math.ceil(longest / 8)));
+    const row: number[][] = [];
+    for (let i = 0; i <= n; i++) {
+      row.push([]);
+      for (let j = 0; j <= n - i; j++) row[i].push(vertex(a.x + ((b.x - a.x) * i + (c.x - a.x) * j) / n, a.y + ((b.y - a.y) * i + (c.y - a.y) * j) / n));
+    }
+    for (let i = 0; i < n; i++)
+      for (let j = 0; j < n - i; j++) {
+        idx.push(row[i][j], row[i + 1][j], row[i][j + 1]);
+        if (j < n - i - 1) idx.push(row[i + 1][j], row[i + 1][j + 1], row[i][j + 1]);
+      }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
@@ -118,7 +146,8 @@ export function polygon(flat: number[], h: number): THREE.BufferGeometry | null 
 /**
  * A building: walls up from the ground and a roof, from its footprint. The
  * roof height can vary per corner (`heightAt`), which makes a grandstand's
- * raked seating. Returns the walls and the roof separately (two materials).
+ * raked seating. Returns the walls and the roof separately (two materials). On a slope it stands on its lowest
+ * ground point, the walls going a metre below it so no gap shows.
  */
 export function extrude(flat: number[], heightAt: (x: number, y: number) => number): { walls: THREE.BufferGeometry; roof: THREE.BufferGeometry } | null {
   const pts: [number, number][] = [];
@@ -128,8 +157,9 @@ export function extrude(flat: number[], heightAt: (x: number, y: number) => numb
   const roofFlat = pts.flat();
   const roof = polygon(roofFlat, 0);
   if (!roof) return null;
+  const base = Math.min(...pts.map(([x, y]) => ground(x, y)));
   const rp = roof.getAttribute("position");
-  for (let i = 0; i < rp.count; i++) rp.setY(i, heightAt(rp.getX(i), -rp.getZ(i)));
+  for (let i = 0; i < rp.count; i++) rp.setY(i, base + heightAt(rp.getX(i), -rp.getZ(i)));
   roof.computeVertexNormals();
   // walls: one quad per footprint edge, from the ground to the roof's edge
   const pos: number[] = [];
@@ -142,10 +172,10 @@ export function extrude(flat: number[], heightAt: (x: number, y: number) => numb
     const ha = heightAt(ax, ay);
     const hb = heightAt(bx, by);
     const quad = [
-      [ax, 0, ay, u, 0],
-      [bx, 0, by, u + len, 0],
-      [bx, hb, by, u + len, hb],
-      [ax, ha, ay, u, ha],
+      [ax, base - 1, ay, u, 0],
+      [bx, base - 1, by, u + len, 0],
+      [bx, base + hb, by, u + len, hb + 1],
+      [ax, base + ha, ay, u, ha + 1],
     ];
     for (const k of [0, 1, 2, 0, 2, 3]) {
       const [x, h, y, uu, vv] = quad[k];

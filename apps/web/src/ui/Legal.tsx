@@ -108,6 +108,13 @@ export function Legal() {
             </a>{" "}
             data, © OpenStreetMap contributors, available under the Open Database License (ODbL). The extracted surroundings data used by the game is itself available under the ODbL; ask us for a copy.
           </p>
+          <p>
+            Make the corner's ground is real elevation from{" "}
+            <a className={link} href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noreferrer">
+              Terrain Tiles
+            </a>{" "}
+            (Mapzen, hosted on AWS Open Data), built from SRTM and USGS 3DEP data and from EU-DEM, produced using Copernicus data and information funded by the European Union, among other sources listed there.
+          </p>
           <p>Circuit facts (lengths, corners, first Grand Prix, race laps, 2025 pole times) are public facts, checked against official race pages and public references.</p>
           <p>
             Line-up's drivers, teams, cars and records come from{" "}

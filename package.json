@@ -24,7 +24,8 @@
     "deploy:functions": "npm run build:functions && npx -y supabase@2 functions deploy submit-lap --project-ref acglshyvgeikyrvjfjue --no-verify-jwt --use-api",
     "build:lineup": "tsx tools/track-builder/src/build-lineup.ts",
     "build:corners": "tsx tools/track-builder/src/build-corners.ts",
-    "build:car": "tsx tools/track-builder/src/build-car.ts"
+    "build:car": "tsx tools/track-builder/src/build-car.ts",
+    "build:terrain": "tsx tools/track-builder/src/build-terrain.ts"
   },
   "devDependencies": {
     "tsx": "^4.23.15",

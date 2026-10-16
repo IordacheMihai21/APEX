@@ -4,7 +4,8 @@ import type { GameTrack } from "@apex/engine";
 import type { CornerData } from "../modes/makeCorner";
 import type { SceneryData } from "../game/surroundings";
 import { FLORA_BY_TRACK, pickSpecies, type Species } from "../game/trees";
-import { extrude, inside, polygon, strip, toWorld } from "./geometry";
+import { extrude, groundAt, inside, polygon, strip, toWorld } from "./geometry";
+import { TERRAIN_N, TERRAIN_STEP, type Terrain } from "./terrain";
 import { type Surfaces, crowdTexture, surfaceTextures, windowsTexture } from "./textures";
 
 /**
@@ -26,7 +27,7 @@ export interface World {
   dispose(): void;
 }
 
-export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | null, wet: boolean, street: boolean, photo: Surfaces): World {
+export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | null, wet: boolean, street: boolean, photo: Surfaces, terrain: Terrain | null): World {
   const group = new THREE.Group();
   const disposables: { dispose(): void }[] = [];
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
@@ -35,16 +36,56 @@ export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | n
   const tex = surfaceTextures(wet);
   for (const t of Object.values(tex)) keep(t);
 
-  // ---- the ground, to the horizon
-  const ground = new THREE.PlaneGeometry(8000, 8000);
-  ground.rotateX(-Math.PI / 2);
-  const guv = ground.getAttribute("uv");
-  const gpos = ground.getAttribute("position");
-  for (let i = 0; i < guv.count; i++) guv.setXY(i, gpos.getX(i), -gpos.getZ(i));
+  // ---- the ground: the real terrain round the corner (2.6 km across), and a plain beyond it to the horizon
   const grassMat = keep(new THREE.MeshStandardMaterial({ map: photo.grass.map, normalMap: photo.grass.normal, roughness: 1, color: wet ? "#9fae98" : "#d9e2cf" }));
-  const groundMesh = new THREE.Mesh(keep(ground), grassMat);
-  groundMesh.receiveShadow = true;
-  group.add(groundMesh);
+  const beyond = terrain ? terrain.edgeMean() - 1.5 : 0;
+  // the plain has a hole where the terrain is, or it would cover every valley lower than the terrain's edge
+  const outline = new THREE.Shape([new THREE.Vector2(-4000, -4000), new THREE.Vector2(4000, -4000), new THREE.Vector2(4000, 4000), new THREE.Vector2(-4000, 4000)]);
+  if (terrain) {
+    const r = ((TERRAIN_N - 1) * TERRAIN_STEP) / 2 - 2;
+    outline.holes.push(new THREE.Path([new THREE.Vector2(-r, -r), new THREE.Vector2(-r, r), new THREE.Vector2(r, r), new THREE.Vector2(r, -r)]));
+  }
+  const plain = new THREE.ShapeGeometry(outline);
+  plain.rotateX(-Math.PI / 2);
+  plain.translate(0, beyond, 0);
+  const puv = plain.getAttribute("uv");
+  const ppos = plain.getAttribute("position");
+  for (let i = 0; i < puv.count; i++) puv.setXY(i, ppos.getX(i), -ppos.getZ(i));
+  const plainMesh = new THREE.Mesh(keep(plain), grassMat);
+  plainMesh.receiveShadow = true;
+  group.add(plainMesh);
+  if (terrain) {
+    // two meshes: 5 m detail within 700 m of the apex, where the road is laid flat and the hills start close to it,
+    // and 20 m out to the edge (sunk under the detailed one where they overlap)
+    const FINE = 700;
+    const edgeR = ((TERRAIN_N - 1) * TERRAIN_STEP) / 2;
+    const land = (size: number, step: number, fine: boolean) => {
+      const n = Math.round(size / step);
+      const g = new THREE.PlaneGeometry(size, size, n, n);
+      g.rotateX(-Math.PI / 2);
+      const lp = g.getAttribute("position");
+      const luv = g.getAttribute("uv");
+      for (let i = 0; i < lp.count; i++) {
+        const x = lp.getX(i);
+        const y = -lp.getZ(i);
+        // a few centimetres under everything laid on it; the outer mesh's last 200 m ease to the plain beyond
+        let h = groundAt(x, y) - 0.12;
+        if (!fine) {
+          const t = Math.min(1, Math.max(0, (edgeR - Math.max(Math.abs(x), Math.abs(y))) / 200));
+          h = h * t + beyond * (1 - t);
+          if (Math.abs(x) < FINE - step && Math.abs(y) < FINE - step) h -= 6;
+        }
+        lp.setY(i, h);
+        luv.setXY(i, x, y);
+      }
+      g.computeVertexNormals();
+      const mesh = new THREE.Mesh(keep(g), grassMat);
+      mesh.receiveShadow = true;
+      group.add(mesh);
+    };
+    land(edgeR * 2, TERRAIN_STEP, false);
+    land(FINE * 2, 5, true);
+  }
 
   // ---- the rest of the circuit: where this stretch is on the lap, and the road either side of it
   const cl = track.centerline;
@@ -174,7 +215,7 @@ export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | n
       for (const area of osm.areas[kind] ?? []) {
         const flat = rel(area);
         if (!touches(flat)) continue;
-        const g = polygon(flat, h);
+        const g = polygon(flat, h, kind === "water");
         if (g) mesh(g, mat);
         if (kind !== "farm") blockers.push(flat);
       }
@@ -387,7 +428,7 @@ export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | n
     t.wrapS = THREE.RepeatWrapping;
     t.repeat.set(8, 1);
     t.colorSpace = THREE.SRGBColorSpace;
-    const ring = new THREE.CylinderGeometry(1500, 1500, 60, 64, 1, true).translate(0, 30, 0);
+    const ring = new THREE.CylinderGeometry(1500, 1500, 60, 64, 1, true).translate(0, 30 + beyond, 0);
     const mat = keep(new THREE.MeshBasicMaterial({ map: t, transparent: true, alphaTest: 0.5, side: THREE.BackSide, fog: true }));
     group.add(new THREE.Mesh(keep(ring), mat));
   }

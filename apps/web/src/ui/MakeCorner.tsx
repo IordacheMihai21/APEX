@@ -518,7 +518,11 @@ export function MakeCorner() {
         <a className="underline decoration-line underline-offset-4 hover:text-paint" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
           OpenStreetMap
         </a>{" "}
-        contributors (ODbL)
+        contributors (ODbL). Terrain:{" "}
+        <a className="underline decoration-line underline-offset-4 hover:text-paint" href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noreferrer">
+          Terrain Tiles
+        </a>{" "}
+        (SRTM, USGS 3DEP, Copernicus EU-DEM and others)
       </p>
 
       <AdBelow />
