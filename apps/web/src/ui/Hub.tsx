@@ -8,6 +8,7 @@ import { OUTLINES, type Outline, type OutlineDetail, loadOutlineDetail } from ".
 import { CONDITION_NOTE, DAILY_LAPS, CONDITION_NAME, bestMedal, conditionOf, dailyNumber, qualifyingDay, raceWeek, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
 import { type Grade, bestPerGroup } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
+import { raceWeekCorner } from "../modes/makeCornerDay";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
 import { CIRCUITS } from "../modes/circuits";
 import { cornerMedal, daysLeft, loadCornerWeek, weekNumber, weeklyCorner } from "../modes/corner";
@@ -641,11 +642,12 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
         <p className="border-b border-line bg-board px-4 py-2 text-center text-[13px] text-paint/90">
           {quali ? (
             <>
-              <span className="font-semibold text-ink">Qualifying day at {weekName}.</span> Today's Daily Quali is on the race-weekend circuit.
+              <span className="font-semibold text-ink">Qualifying day at {weekName}.</span> {raceWeekCorner(today) ? "Today's Daily Quali and Make the corner are on the race-weekend circuit." : "Today's Daily Quali is on the race-weekend circuit."}
             </>
           ) : (
             <>
-              <span className="font-semibold text-ink">Race week:</span> {weekName} hosts its Grand Prix this weekend. Saturday's Daily Quali is there.
+              <span className="font-semibold text-ink">Race week:</span> {weekName} hosts its Grand Prix this weekend.{" "}
+              {raceWeekCorner(today) ? "Make the corner runs its corners all week, and Saturday's Daily Quali is there." : "Saturday's Daily Quali is there."}
             </>
           )}
         </p>

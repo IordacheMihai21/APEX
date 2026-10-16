@@ -2,14 +2,15 @@ import type { Condition } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import INDEX from "../game/corners/index.json";
 import { load, save, seeded } from "./circuits";
-import { dailyNumber, dateKey } from "./daily";
+import { dailyNumber, dateKey, qualifyingDay, raceWeek } from "./daily";
 import type { Outcome, RunScore } from "./makeCorner";
 
 /**
  * Make the corner's day: one corner for everyone, in one condition, and three
  * runs at it; the best run is the day's score. The corners take turns: every
- * one of them once before any comes back, in a new order each round. Most days
- * are dry; about one in five is wet and one in ten runs with low downforce.
+ * one of them once before any comes back, in a new order each round. A Grand
+ * Prix's race week (Monday to Sunday) belongs to that circuit's corners instead.
+ * Most days are dry; about one in five is wet and one in ten runs with low downforce.
  */
 
 export interface CornerEntry {
@@ -53,9 +54,27 @@ export function conditionOfDay(n: number): Condition {
   return x < 0.2 ? "wet" : x < 0.3 ? "lowdf" : "dry";
 }
 
+/**
+ * The race-week corner, if `key` is in one: the Grand Prix circuit's corners in turn, its first (Turn 1) on qualifying
+ * day. A circuit with fewer than three corners in the game gets only qualifying day, so no corner comes back daily.
+ */
+export function raceWeekCorner(key = dateKey()): CornerEntry | null {
+  const week = raceWeek(key);
+  if (!week || key < RACE_WEEK_CORNERS_FROM) return null;
+  const own = CORNERS.filter((c) => c.trackId === week.trackId);
+  if (!own.length) return null;
+  if (own.length < 3) return qualifyingDay(key) ? own[0] : null;
+  const quali = Date.parse(`${week.from}T12:00:00`) + 86_400_000;
+  const d = Math.round((Date.parse(`${key}T12:00:00`) - quali) / 86_400_000);
+  return own[((d % own.length) + own.length) % own.length];
+}
+/** Race weeks before this kept the plain rotation (days already played stay as they were). */
+const RACE_WEEK_CORNERS_FROM = "2026-10-19";
+
 export function dailyCorner(key = dateKey()): { corner: CornerEntry; condition: Condition } {
   const n = dailyNumber(key);
-  return { corner: cornerOfDay(n), condition: conditionOfDay(n) };
+  // qualifying day is dry, like the Daily Quali on the same circuit
+  return { corner: raceWeekCorner(key) ?? cornerOfDay(n), condition: raceWeekCorner(key) && qualifyingDay(key) ? "dry" : conditionOfDay(n) };
 }
 
 export type CallGrade = "purple" | "green" | "yellow" | "red" | "none";

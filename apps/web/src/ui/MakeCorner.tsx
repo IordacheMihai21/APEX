@@ -21,6 +21,7 @@ import {
   cornerStats,
   cornerVerdict,
   dailyCorner,
+  raceWeekCorner,
   dayRuns,
   recordCornerPractice,
   recordRun,
@@ -316,7 +317,11 @@ export function MakeCorner() {
               <HowToPlay game="make-the-corner" />
             </div>
             <p className="mt-2 max-w-[48ch] text-[15px] text-steel">
-              {mode === "daily" ? "One famous corner a day, the same for everyone. Brake, carry the speed, get on the power." : "Practice: any corner, any conditions, as often as you like."}
+              {mode === "daily"
+                ? raceWeekCorner()
+                  ? `Race week: ${label.circuit}'s corners all week, before its Grand Prix. The same for everyone. Brake, carry the speed, get on the power.`
+                  : "One famous corner a day, the same for everyone. Brake, carry the speed, get on the power."
+                : "Practice: any corner, any conditions, as often as you like."}
             </p>
           </div>
           {mode === "daily" ? (

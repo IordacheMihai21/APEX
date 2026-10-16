@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { CORNERS, RUNS_PER_DAY, callGrades, conditionOfDay, cornerDone, cornerLabel, cornerOfDay, cornerScore, cornerShare, dayRuns, recordRun } from "./makeCornerDay";
+import { CORNERS, RUNS_PER_DAY, callGrades, dailyCorner, raceWeekCorner, conditionOfDay, cornerDone, cornerLabel, cornerOfDay, cornerScore, cornerShare, dayRuns, recordRun } from "./makeCornerDay";
 
 const store: Record<string, string> = {};
 beforeEach(() => {
@@ -54,5 +54,18 @@ describe("make the corner's day", () => {
     expect(cornerScore(dayRuns())).toBe(910);
     const share = cornerShare(dayRuns(), "https://lapdle.com/make-the-corner");
     expect(share).toMatch(/^Lapdle Make the corner #\d+\n.+\n🟪🟪🟪 910\/1000\nhttps:/);
+  });
+
+  it("gives a Grand Prix's race week to that circuit's corners, Turn 1 on qualifying day", () => {
+    const week = ["2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25"].map((d) => dailyCorner(d).corner);
+    expect(week.every((c) => c.trackId === "austin")).toBe(true);
+    expect(dailyCorner("2026-10-24").corner.id).toBe("austin-0");
+    expect(dailyCorner("2026-10-24").condition).toBe("dry");
+    for (let i = 1; i < week.length; i++) expect(week[i].id).not.toBe(week[i - 1].id);
+    expect(raceWeekCorner("2026-10-18")).toBeNull();
+    expect(raceWeekCorner("2026-10-26")).toBeNull();
+    // a circuit with a single corner in the game only gets qualifying day
+    expect(raceWeekCorner("2026-11-07")?.trackId).toBe("interlagos");
+    expect(raceWeekCorner("2026-11-06")).toBeNull();
   });
 });
