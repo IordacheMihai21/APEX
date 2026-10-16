@@ -42,6 +42,8 @@ export interface GameDef {
   cadence: "daily" | "endless";
   /** counts towards "x of y played today" */
   inDailySet: boolean;
+  /** a game that left the daily set on this day: the days it was finished before still count for the play streak */
+  dailyUntil?: string;
   /** one line, for "Play next" lists */
   tagline: string;
   /** two lines, for the hub card */
@@ -205,7 +207,9 @@ export const GAMES: GameDef[] = [
     short: "Braking",
     route: "/braking-point",
     cadence: "daily",
-    inDailySet: true,
+    // a daily extra since Make the corner took its place in the set
+    inDailySet: false,
+    dailyUntil: "2026-10-17",
     tagline: "Five big stops, brake as late as you dare",
     blurb: "Flat out down the straight, then hit the brakes for the corner. Five real stops a day; too late and you're off.",
     title: "Braking point: brake for the corner | Lapdle",
@@ -241,8 +245,7 @@ export const GAMES: GameDef[] = [
     short: "Corner",
     route: "/make-the-corner",
     cadence: "daily",
-    // a daily extra while it's new; it takes Braking point's place in the set later
-    inDailySet: false,
+    inDailySet: true,
     tagline: "One famous corner in 3D: brake, carry the speed, power out",
     blurb: "A famous corner a day in 3D. Brake at the right board, carry the right speed, get on the power at the right moment.",
     title: "Make the corner: brake, turn, power out | Lapdle",

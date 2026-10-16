@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Lapdle – Daily Racing Line Challenge",
   "short_name": "Lapdle",
-  "description": "Free daily racing games on real circuits: the Daily Quali, Mystery circuit, Pit stop, Higher or lower and Braking point. New every day.",
+  "description": "Free daily racing games on real circuits: the Daily Quali, Mystery circuit, Pit stop, Higher or lower and Make the corner. New every day.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -57,9 +57,9 @@
       ]
     },
     {
-      "name": "Braking point",
-      "short_name": "Braking",
-      "url": "/braking-point",
+      "name": "Make the corner",
+      "short_name": "Corner",
+      "url": "/make-the-corner",
       "icons": [
         {
           "src": "/icon-192.png",

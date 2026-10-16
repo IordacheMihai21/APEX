@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { recordDailyCall } from "../modes/higherLower";
 import { STOPS_PER_DAY, recordStop } from "../modes/braking";
+import { RUNS_PER_DAY, recordRun } from "../modes/makeCornerDay";
 import { loadMystery, mysteryAnswer, recordGuess } from "../modes/mystery";
 import { playStreak } from "./profile";
 import { todayProgress } from "./registry";
@@ -65,8 +66,16 @@ describe("play streak", () => {
     for (let i = 0; i < 10; i++) recordDailyCall(true, TODAY);
     expect(todayProgress(TODAY)).toMatchObject({ done: 4, total: 5 });
     expect(playStreak(TODAY).perfectDays).toBe(0);
-    for (let i = 0; i < STOPS_PER_DAY; i++) recordStop({ metres: -3, cornerV: 20, off: false, lost: 0.05, points: 90 }, TODAY);
+    for (let i = 0; i < RUNS_PER_DAY; i++) recordRun({ points: 800, outcome: "done", lost: 0.4, brakeM: -2, speedKmh: 1, throttleM: 3 }, TODAY);
     expect(todayProgress(TODAY)).toMatchObject({ done: 5, total: 5 });
     expect(playStreak(TODAY).perfectDays).toBe(1);
+  });
+
+  it("still counts Braking point days from before it left the daily set, but not after", () => {
+    for (let i = 0; i < STOPS_PER_DAY; i++) recordStop({ metres: -3, cornerV: 20, off: false, lost: 0.05, points: 90 }, "2026-10-15");
+    for (let i = 0; i < STOPS_PER_DAY; i++) recordStop({ metres: -3, cornerV: 20, off: false, lost: 0.05, points: 90 }, "2026-10-16");
+    expect(playStreak("2026-10-16")).toMatchObject({ current: 2, daysPlayed: 2 });
+    for (let i = 0; i < STOPS_PER_DAY; i++) recordStop({ metres: -3, cornerV: 20, off: false, lost: 0.05, points: 90 }, TODAY);
+    expect(playStreak(TODAY).playedToday).toBe(false);
   });
 });

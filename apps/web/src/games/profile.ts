@@ -6,7 +6,7 @@
  * finished; a "perfect day" is the whole set.
  */
 import { dateKey } from "../modes/daily";
-import { DAILY_SET, type GameId } from "./registry";
+import { DAILY_SET, GAMES, type GameId } from "./registry";
 
 export interface PlayStreak {
   /** days in a row with a daily game finished, up to today (or yesterday, until today is played) */
@@ -35,6 +35,15 @@ export function playedDays(): Map<string, GameId[]> {
       list.push(g.id);
       days.set(day, list);
     }
+  // a game that has left the set still counts on the days it was part of it
+  for (const g of GAMES)
+    if (g.dailyUntil && !g.inDailySet)
+      for (const day of g.doneDays?.() ?? []) {
+        if (day >= g.dailyUntil) continue;
+        const list = days.get(day) ?? [];
+        list.push(g.id);
+        days.set(day, list);
+      }
   return days;
 }
 
@@ -57,6 +66,6 @@ export function playStreak(today = dateKey()): PlayStreak {
     last = d;
   }
 
-  const perfectDays = [...days.values()].filter((ids) => ids.length === DAILY_SET.length).length;
+  const perfectDays = [...days.values()].filter((ids) => ids.length >= DAILY_SET.length).length;
   return { current, best: Math.max(best, current), playedToday, daysPlayed: days.size, perfectDays };
 }
