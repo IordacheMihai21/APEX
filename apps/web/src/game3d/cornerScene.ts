@@ -80,6 +80,8 @@ export class CornerScene {
   private readonly camPos = new THREE.Vector3();
   private readonly camLook = new THREE.Vector3();
   private readonly camDir = new THREE.Vector3(0, 0, -1);
+  private pitchS = 0;
+  private rollS = 0;
   private camReady = false;
   private wheelTurn = 0;
   private steer = 0;
@@ -333,8 +335,12 @@ export class CornerScene {
     // on a slope: pitch along the car (wheelbase 3.4 m) and roll across it (track 1.6 m)
     const ch = Math.cos(pose.heading);
     const sh = Math.sin(pose.heading);
-    const pitch = Math.atan2(groundAt(pose.x + ch * 1.7, pose.y + sh * 1.7) - groundAt(pose.x - ch * 1.7, pose.y - sh * 1.7), 3.4);
-    const roll = Math.atan2(groundAt(pose.x + sh * 0.8, pose.y - ch * 0.8) - groundAt(pose.x - sh * 0.8, pose.y + ch * 0.8), 1.6);
+    // eased like a car's suspension, so the body settles onto a change of slope instead of snapping to it
+    const settle = this.camReady ? 1 - Math.exp(-dt * 10) : 1;
+    this.pitchS += (Math.atan2(groundAt(pose.x + ch * 1.7, pose.y + sh * 1.7) - groundAt(pose.x - ch * 1.7, pose.y - sh * 1.7), 3.4) - this.pitchS) * settle;
+    this.rollS += (Math.atan2(groundAt(pose.x + sh * 0.8, pose.y - ch * 0.8) - groundAt(pose.x - sh * 0.8, pose.y + ch * 0.8), 1.6) - this.rollS) * settle;
+    const pitch = this.pitchS;
+    const roll = this.rollS;
     this.car.rotation.order = "YXZ";
     this.car.rotation.set(pitch, Math.atan2(-dir.x, -dir.z), roll);
     const groundY = p.y;
@@ -367,9 +373,10 @@ export class CornerScene {
     const t = this.clock;
     // the moment it meets the barrier: a hard jolt that dies away in half a second
     const crash = this.hit ? Math.max(0, 1 - (t - this.hit.at) / 0.5) : 0;
-    const buzz = (0.003 + 0.01 * fast) * (onKerb ? 4 : 1) + (offRoad && speed > 1 ? 0.05 * Math.min(1, speed / 30) : 0) + 0.18 * crash * crash;
+    // a TV chase camera barely moves: under a centimetre at speed, a little more over the kerbs
+    const buzz = (0.0008 + 0.0022 * fast) * (onKerb ? 2.5 : 1) + (offRoad && speed > 1 ? 0.05 * Math.min(1, speed / 30) : 0) + 0.18 * crash * crash;
     const jx = buzz * (Math.sin(t * 71) + 0.6 * Math.sin(t * 113 + 1.7));
-    const jy = buzz * (Math.sin(t * 89 + 0.4) + 0.7 * Math.sin(t * 131 + 2.3)) + (onKerb ? 0.03 * Math.sin((pose.s! / 1.25) * Math.PI * 2) : 0);
+    const jy = buzz * (Math.sin(t * 89 + 0.4) + 0.7 * Math.sin(t * 131 + 2.3)) + (onKerb ? 0.008 * Math.sin((pose.s! / 1.25) * Math.PI * 2) : 0);
     const right = new THREE.Vector3(-this.camDir.z, 0, this.camDir.x);
     this.camPos
       .copy(p)
@@ -392,8 +399,8 @@ export class CornerScene {
       this.camera.updateProjectionMatrix();
     }
     // the car bounces over the kerbs and the gravel
-    this.car.position.y = groundY + (onKerb ? 0.025 * Math.abs(Math.sin((pose.s! / 1.25) * Math.PI * 2)) : offRoad && speed > 1 ? 0.02 * Math.abs(Math.sin(t * 37)) : 0);
-    this.car.rotation.z = roll + (onKerb ? 0.012 * Math.sin((pose.s! / 1.25) * Math.PI * 2) : 0);
+    this.car.position.y = groundY + (onKerb ? 0.01 * Math.abs(Math.sin((pose.s! / 1.25) * Math.PI * 2)) : offRoad && speed > 1 ? 0.02 * Math.abs(Math.sin(t * 37)) : 0);
+    this.car.rotation.z = roll + (onKerb ? 0.004 * Math.sin((pose.s! / 1.25) * Math.PI * 2) : 0);
 
     // particles from the rear wheels: dust and stones off the road, spray in the wet
     if (dt > 0) {

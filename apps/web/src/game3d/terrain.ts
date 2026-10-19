@@ -103,8 +103,25 @@ export function groundOf(terrain: Terrain, line: [number, number][], street = fa
         }
     const t0 = terrain.at(x, y);
     if (best < 0) return t0;
-    const t = Math.min(1, Math.max(0, (FLAT_TO - Math.sqrt(bd)) / (FLAT_TO - FLAT_IN)));
+    // the height along the line between its points, not the nearest point's: a step at every point would shake the
+    // car (and the road) as it passes them
+    let h = profile[best];
+    let dist = Math.sqrt(bd);
+    for (const j of [(best - 1 + n) % n, (best + 1) % n]) {
+      const [ax, ay] = line[best];
+      const ex = line[j][0] - ax;
+      const ey = line[j][1] - ay;
+      const len2 = ex * ex + ey * ey;
+      if (!len2) continue;
+      const u = Math.max(0, Math.min(1, ((x - ax) * ex + (y - ay) * ey) / len2));
+      const d = Math.hypot(x - ax - ex * u, y - ay - ey * u);
+      if (u > 0 && d <= dist + 1e-6) {
+        dist = d;
+        h = profile[best] * (1 - u) + profile[j] * u;
+      }
+    }
+    const t = Math.min(1, Math.max(0, (FLAT_TO - dist) / (FLAT_TO - FLAT_IN)));
     const k = t * t * (3 - 2 * t);
-    return t0 * (1 - k) + profile[best] * k;
+    return t0 * (1 - k) + h * k;
   };
 }
