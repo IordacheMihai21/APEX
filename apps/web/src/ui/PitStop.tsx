@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
-import { gameFinished, gameStarted } from "../games/events";
+import { gameFinished, gameStarted, shared } from "../games/events";
 import { FRONT_AXLE, REAR_AXLE, TRACK_HALF, bareCar } from "../game/car";
 import { asphaltDataUrl } from "../game/scenery";
 import { dailyNumber, dateKey } from "../modes/daily";
@@ -230,6 +230,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   const share = async () => {
     if (!shown) return;
+    shared("pit-stop");
     const text = mode === "daily" ? pitShare(shown, shareLink("/pit-stop", "share-pit-stop")) : `Lapdle Pit stop: ${secs(shown.totalMs)} s. Beat it: ${shareLink("/pit-stop", "share-pit-stop")}`;
     try {
       if (navigator.share) await navigator.share({ text });

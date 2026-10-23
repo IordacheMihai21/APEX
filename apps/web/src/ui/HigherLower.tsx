@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
-import { gameFinished, gameStarted } from "../games/events";
+import { gameFinished, gameStarted, shared } from "../games/events";
 import type { CircuitFacts } from "../modes/circuits";
 import {
   DAILY_CALLS,
@@ -100,6 +100,7 @@ function Endless({ onPlayDaily, modeSwitch }: { onPlayDaily: () => void; modeSwi
 
   const { stat, left, right } = round;
   const share = async () => {
+    shared("higher-lower");
     const text = `Lapdle Higher or lower: ${streak} in a row on real circuit facts (best ${rec.best}). ${shareLink("/higher-lower", "share-higher-lower")}`;
     try {
       if (navigator.share) await navigator.share({ text });

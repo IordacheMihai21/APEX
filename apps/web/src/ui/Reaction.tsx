@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { FinishCard } from "./FinishCard";
-import { gameFinished, gameStarted } from "../games/events";
+import { gameFinished, gameStarted, shared } from "../games/events";
 import { LIGHT_MS, type ReactionRecord, average, loadReaction, randomHold, recordJump, recordReaction, verdict } from "../modes/reaction";
 import { Gantry } from "./Gantry";
 import { Segments } from "./Segments";
@@ -91,6 +91,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
 
   const avg = average(rec);
   const share = async () => {
+    shared("reaction");
     const text = `Lapdle lights out: ${secs(ms ?? rec.best ?? 0)}s${rec.best !== null ? ` (best ${secs(rec.best)}s)` : ""}. How fast off the line are you? ${shareLink("/reaction", "share-reaction")}`;
     try {
       if (navigator.share) await navigator.share({ text });

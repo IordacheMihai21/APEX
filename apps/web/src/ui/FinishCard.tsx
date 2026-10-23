@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { playStreak } from "../games/profile";
 import { GAMES, type GameId, todayProgress } from "../games/registry";
 import { msToNextDay } from "../modes/daily";
-import { track } from "../analytics";
+import { shared } from "../games/events";
 import { ChevronRight, Share } from "./icons";
 import { primaryBtn, secondaryBtn } from "./styles";
 
@@ -66,7 +66,7 @@ export function FinishCard({
   }, [onClose]);
 
   const share = async () => {
-    track("Share", { what: game });
+    shared(game);
     try {
       if (navigator.share) await navigator.share({ text: shareText });
       else {

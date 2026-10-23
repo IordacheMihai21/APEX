@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { HowToPlay } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
-import { gameFinished, gameStarted } from "../games/events";
+import { gameFinished, gameStarted, shared } from "../games/events";
 import { OUTLINES } from "../game/outlines";
 import { CIRCUITS, circuit } from "../modes/circuits";
 import { dailyNumber, msToNextDay } from "../modes/daily";
@@ -105,6 +105,7 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
   }, [over]);
 
   const share = async () => {
+    shared("mystery");
     const text = mysteryShare(day, shareLink("/mystery", "share-mystery"));
     try {
       if (navigator.share) await navigator.share({ text });

@@ -13,6 +13,7 @@
  *   Game started    game, mode, player
  *   Game finished   game, mode, player, today (daily set done, "3/5"), plus a result
  *   Daily set done  the whole set finished today: player
+ *   Share           a result shared or copied: what (the game, or "challenge"), player
  */
 import { track } from "../analytics";
 import { standalone } from "../install";
@@ -62,6 +63,11 @@ export function gameStarted(game: Tracked, mode: Mode) {
   if (started.has(key)) return;
   started.add(key);
   track("Game started", { game, mode, player: player() });
+}
+
+/** A result was shared or copied, from any game's share button. */
+export function shared(what: string) {
+  track("Share", { what, player: player() });
 }
 
 const challenge = { opened: false, raced: false, beaten: false };
