@@ -1,5 +1,53 @@
 # Planul de marketing Lapdle (10 oct – 8 nov 2026, cu privire până în ianuarie)
 
+> **Revizia din 22 octombrie** (secțiunea R de mai jos) înlocuiește calendarul din §9 de aici până pe 6 decembrie. Restul documentului rămâne ca istoric și referință.
+
+## R. Revizia din 22 octombrie: plan până la Abu Dhabi (22 oct – 6 dec)
+
+**Cifrele** (Plausible 7–22 oct fără Austria/Viena, plus conturile pe 21 oct) [V]:
+- 155 de vizitatori, 7 min 26 s pe vizită, bounce 1%. Din 17 oct ~7 vizitatori pe zi (ultimele 7 zile: 56, cele 7 dinainte: 89).
+- Surse: direct 103, Google 67 (61% termină un joc), Instagram 10, Facebook 3, **Hacker News, Reddit, TikTok, YouTube și directoare: 0**.
+- Clipurile: ~20.000 de vizualizări în total (YouTube ~6.400, Instagram ~10.000, TikTok ~3.000) și ~15 vizite directe. Efectul lor vine prin căutarea „lapdle” (36 din 55 de click-uri din Google).
+- Formatele de top: quiz-ul „Only real F1 fans get all 4” (~1.240 YouTube, ~1.220 Instagram) și curiozitățile (top pe TikTok). Cele mai slabe: „tag a friend” și „send it to the group” (115–275).
+- Jocuri: Mystery 56 de jucători, toți termină; Pit stop 46 de jucători și 225 de jocuri; **Daily Quali: 86 încep, 29 termină** (6 tururi). ~20 de jucători revin; 7 au dat share.
+
+**Diagnostic:** jocul ține oamenii, achiziția nu funcționează. Pariurile 1 (comunitățile) și directoarele din plan nu s-au executat.
+
+**Marketing:**
+1. Săptămâna 22–28 oct: story zilnic pe Instagram cu link-sticker (`?ref=ig-story`); TikTok trecut pe cont Business ca să aibă link în bio (de verificat în aplicație); `?ref=youtube` în descrieri; fiecare clip se termină cu „Search Lapdle”; listări pe Dle Hunt, Dailydle și Listdle (`?ref=<director>`).
+2. 29 oct – 4 nov: Reddit (r/WebGames, r/simracing, r/SideProject; r/formula1 doar dacă regulile permit) și o singură dată Show HN (marți–joi, dimineața în SUA).
+3. Din 4 nov: 10–15 mesaje către creatori mici de F1 și sim racing, fiecare cu un „beat my lap” pentru comunitatea lui.
+
+**Conținut:** quiz-ul ca serie săptămânală (Part 3, 4, 5…); curiozități în formatul „adevărat sau fals”; fizică pe ploaie față de uscat. 4–5 clipuri pe săptămână, același clip pe toate trei platformele, plus story zilnic. Renunțăm la clipurile „tag a friend”, la trailere și la clipurile cinematice făcute cu AI. Weekendurile: Mexic 30 oct–1 nov, Brazilia 6–8 nov, Las Vegas 19–21 nov, Qatar 27–29 nov, Abu Dhabi 4–6 dec.
+
+**Joc:**
+1. Daily Quali din 6 tururi în 3, sau terminat la cel mai bun timp după 3 tururi.
+2. Share mai vizibil în Mystery și Pit stop, cu grilă de emoji; evenimentul `Share` să trimită și numele jocului.
+3. `streak` vine gol la „Daily set done”: de verificat.
+4. Circuitele Las Vegas și Abu Dhabi, pentru weekendurile lor.
+5. Notificări web pentru cei care revin (decizia de pe 4 nov).
+6. Pagini de ghid pentru viraje celebre (ajută la Google și la AdSense).
+7. Play Store după 8 nov.
+
+| Săptămâna | Marketing | Conținut | Joc |
+|---|---|---|---|
+| 22–28 oct (Austin) | Linkuri, story, directoare | Quiz Part 3, adevărat sau fals despre COTA | Quali la 3 tururi, `streak` |
+| 29 oct – 4 nov (Mexic) | Reddit, Show HN | Quiz Part 4, ploaie față de uscat | Share mai vizibil și cu numele jocului |
+| 5–11 nov (Brazilia) | Creatori | Interlagos, curiozități | Notificări web |
+| 12–25 nov (Las Vegas) | Dublăm sursa cu cei mai mulți vizitatori | Seria quiz și Vegas | Circuitul Las Vegas |
+| 26 nov – 6 dec (Qatar, Abu Dhabi) | Încheierea sezonului | „Best of 2026” | Abu Dhabi, plan pentru pauza de iarnă |
+
+**Ținta:** de la 7 la 30 de jucători pe zi până pe 6 dec, cu cel puțin 40% dintre ei revenind.
+
+**Reguli de decizie:**
+- o sursă cu sub 5 vizite în 2 săptămâni se oprește;
+- un format sub 300 de vizualizări de 3 ori la rând se oprește;
+- dacă din Reddit sub jumătate încep un joc, se repară întâi prima pagină.
+
+Revizie în fiecare miercuri. Nu facem: reclame plătite, AdSense ca prioritate, X, video lung pe YouTube.
+
+---
+
 Scris pe 10 octombrie 2026, ziua 5 de la lansare. Folosește skill-urile
 marketing-plan (structura AARRR), social, referrals, analytics, seo-audit,
 community-marketing și launch. Înlocuiește vechiul plan social (șters din repo). Folosește ce e
