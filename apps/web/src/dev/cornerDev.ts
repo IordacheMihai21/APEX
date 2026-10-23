@@ -103,6 +103,14 @@ requestAnimationFrame(frame);
     scene.render(run.pose(), run.v, run.phase === "braking", seconds);
     return { s: run.s, v: run.v, phase: run.phase, outcome: run.outcome };
   },
+  /** one frame with the car put at s metres and v m/s, no physics: for replaying a real car's data */
+  place(s: number, v: number, braking: boolean, seconds: number) {
+    if (!run || !scene) return null;
+    run.s = s;
+    run.v = v;
+    scene.render(run.pose(), v, braking, seconds);
+    return { s, v };
+  },
   score() {
     return run && data ? scoreRun(run, perfectRun(data, run.condition)) : null;
   },
