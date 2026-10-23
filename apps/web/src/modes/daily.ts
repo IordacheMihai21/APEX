@@ -34,6 +34,8 @@ export interface DailyRecord {
   archive?: boolean;
   /** Track conditions for the day (records from before conditions existed are dry). */
   condition?: Condition;
+  /** The player ended the day before the laps ran out: the best lap so far stands. */
+  ended?: boolean;
 }
 
 /** Laps that must be driven before the coach's hints open in the daily. */
@@ -41,6 +43,14 @@ export const DAILY_HINT_AFTER_LAPS = 2;
 
 export function recordHint(rec: DailyRecord): DailyRecord {
   const next = { ...rec, hints: (rec.hints ?? 0) + 1 };
+  saveDaily(next);
+  return next;
+}
+
+/** Stop for the day before the laps run out: the best lap so far stands, and its medal counts for the streak. */
+export function endDay(rec: DailyRecord): DailyRecord {
+  if (rec.status !== "playing" || rec.laps.length === 0) return rec;
+  const next: DailyRecord = { ...rec, status: "lost", ended: true };
   saveDaily(next);
   return next;
 }

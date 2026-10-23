@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { LAUNCH, archiveDays, dailyCondition, dailyStats, dailyTrack, loadDaily, qualifyingDay, raceWeek, recordLap } from "./daily";
+import { LAUNCH, archiveDays, dailyCondition, dailyStats, dailyTrack, endDay, loadDaily, qualifyingDay, raceWeek, recordLap } from "./daily";
 import { medalFor, medalTimes, realPole } from "./medals";
 
 /** Day n of the game, counting launch day as 0. */
@@ -61,6 +61,22 @@ describe("archive", () => {
   });
 });
 
+
+describe("ending the day early", () => {
+  it("closes the day on the laps driven, and only once there is a lap", () => {
+    const day = dayAt(5);
+    const fresh = loadDaily(day);
+    expect(endDay(fresh)).toBe(fresh); // nothing driven yet: nothing to end
+    const after1 = recordLap(fresh, { lapTimeMs: 90_000, grades: ["green"] }, [0]);
+    const ended = endDay(after1);
+    expect(ended.status).toBe("lost");
+    expect(ended.ended).toBe(true);
+    expect(ended.laps).toHaveLength(1);
+    expect(loadDaily(day).ended).toBe(true); // saved
+    expect(recordLap(ended, { lapTimeMs: 80_000, grades: ["purple"] }, [0])).toBe(ended); // no more laps after
+    expect(endDay(ended)).toBe(ended);
+  });
+});
 
 describe("conditions", () => {
   it("move each circuit to a new condition every cycle", () => {

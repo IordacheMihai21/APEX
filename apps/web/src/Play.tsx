@@ -3,7 +3,7 @@ import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
 import { type Condition, LINE_STYLES, type LineStyle } from "@apex/engine";
 import { Game, type MapView, type Mode, type Snapshot } from "./game/game";
 import { challengeLap, challengeOpened, gameFinished, gameStarted } from "./games/events";
-import { DAILY_HINT_AFTER_LAPS, DAILY_LAPS, type DailyRecord, bestMedal, conditionOf, recordHint, loadDaily, recordLap } from "./modes/daily";
+import { DAILY_HINT_AFTER_LAPS, DAILY_LAPS, type DailyRecord, bestMedal, conditionOf, endDay, recordHint, loadDaily, recordLap } from "./modes/daily";
 import { type Grade, gradeFor } from "./modes/grading";
 import { type RoundOutcome, SEASON_LAPS, SEASON_ROUNDS, type SeasonStore, currentTrack, loadSeason, newSeason, recordSeasonLap, rivalMs, seasonDone } from "./modes/season";
 import { CornerTower } from "./ui/CornerTower";
@@ -124,7 +124,15 @@ export function Play({
   }, [mode, trackId, day, condition]);
 
   if (!game) return <Loading trackId={trackId} error={error} />;
-  return <GameView game={game} daily={daily} round={round} practiceLaps={practiceLaps} week={week} onNext={onNext} onHint={() => setDaily((d) => (d ? recordHint(d) : d))} />;
+  const onEndDay = () => {
+    if (!daily) return;
+    const next = endDay(daily);
+    if (next === daily) return;
+    gameFinished("quali", day ? "archive" : "daily", { medal: bestMedal(next) ?? "none", laps: next.laps.length, way: "ended" });
+    setDaily(next);
+    game.lock();
+  };
+  return <GameView game={game} daily={daily} round={round} practiceLaps={practiceLaps} week={week} onNext={onNext} onHint={() => setDaily((d) => (d ? recordHint(d) : d))} onEndDay={onEndDay} />;
 }
 
 type Round = { outcome: RoundOutcome; laps: Grade[][]; store: SeasonStore } | null;
@@ -137,6 +145,7 @@ function GameView({
   week,
   onNext,
   onHint,
+  onEndDay,
 }: {
   game: Game;
   daily: DailyRecord | null;
@@ -145,6 +154,7 @@ function GameView({
   week: CornerWeek | null;
   onNext: (trackId: string | null) => void;
   onHint: () => void;
+  onEndDay: () => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const tower = useRef<HTMLDivElement>(null);
@@ -252,7 +262,7 @@ function GameView({
       {s.phase === "setup" && s.locked && daily && <LockedNote daily={daily} game={game} onHub={() => onNext(null)} />}
       {racing && <RaceHud s={s} onSkip={() => game.skip()} />}
       {s.phase === "result" && s.result && s.mode === "corner" && <CornerResult game={game} week={week} onGrid={() => onNext(null)} />}
-      {s.phase === "result" && s.result && s.mode !== "corner" && <ResultSheet s={s} game={game} lapRows={lapRows} daily={daily} round={round} onNext={onNext} names={names} onHint={onHint} />}
+      {s.phase === "result" && s.result && s.mode !== "corner" && <ResultSheet s={s} game={game} lapRows={lapRows} daily={daily} round={round} onNext={onNext} names={names} onHint={onHint} onEndDay={onEndDay} />}
     </>
   );
 }
@@ -674,6 +684,7 @@ function ResultSheet({
   onNext,
   names,
   onHint,
+  onEndDay,
 }: {
   s: Snapshot;
   game: Game;
@@ -683,6 +694,7 @@ function ResultSheet({
   onNext: (trackId: string | null) => void;
   names: string[];
   onHint: () => void;
+  onEndDay: () => void;
 }) {
   const r = s.result!;
   // hints open after two laps in the daily, any time elsewhere; daily hints are counted for the share text
@@ -699,7 +711,7 @@ function ResultSheet({
   let actions: React.ReactNode;
   if (s.mode === "daily" && daily && daily.status !== "playing") {
     const dayMedal = bestMedal(daily);
-    headline = daily.status === "won" ? "Pole" : dayMedal ? `${MEDAL_NAME[dayMedal]}${daily.archive ? "" : " today"}` : "Out of laps";
+    headline = daily.status === "won" ? "Pole" : dayMedal ? `${MEDAL_NAME[dayMedal]}${daily.archive ? "" : " today"}` : daily.ended ? "Day over" : "Out of laps";
     body = daily.status === "won" ? `Every corner perfect on lap ${daily.laps.length} of ${DAILY_LAPS}.` : daily.archive ? "An archive replay: it doesn't count for your streak." : `New circuit in ${countdown}.`;
     actions = (
       <>
@@ -741,7 +753,15 @@ function ResultSheet({
     const left = (s.lapLimit ?? 0) - s.lapsUsed;
     const beat = s.challengeMs !== null && r.lapTimeMs < s.challengeMs;
     headline = r.allPurple ? "Pole" : beat ? "Challenge beaten" : s.mode === "practice" ? "Lap complete" : `${left} ${left === 1 ? "lap" : "laps"} left`;
-    body = r.allPurple ? "Every corner perfect." : s.mode === "season" ? `Beat ${lapTime(s.rivalMs ?? 0)} to take pole.` : "Tap a corner to fix it.";
+    // in the daily, the corner that cost the most is the next thing to do, not something to scroll down to
+    const top = s.mode === "daily" && !r.allPurple ? worst[0] : undefined;
+    body = r.allPurple
+      ? "Every corner perfect."
+      : s.mode === "season"
+        ? `Beat ${lapTime(s.rivalMs ?? 0)} to take pole.`
+        : top
+          ? `Biggest loss: ${top.name}, ${delta(top.deltaMs)}. Fix it, then drive lap ${s.lapsUsed + 1}.`
+          : "Tap a corner to fix it.";
     // someone who came in on a "beat my lap" link: today's Quali is what brings them back tomorrow
     const today = s.challengeMs !== null ? loadDaily() : null;
     const toDaily = today && today.status === "playing" ? CATALOG.find((t) => t.id === today.trackId) : undefined;
@@ -752,9 +772,15 @@ function ResultSheet({
             Play today's Quali {toDaily.flag}
           </button>
         )}
-        <button className={`${toDaily ? secondaryBtn : primaryBtn} flex-1`} onClick={() => game.adjust()} autoFocus={!toDaily}>
+        {top && (
+          <button className={`${primaryBtn} flex-1`} onClick={() => game.adjust(top.name)} autoFocus>
+            Fix {top.name}
+          </button>
+        )}
+        <button className={`${toDaily || top ? secondaryBtn : primaryBtn} flex-1`} onClick={() => game.adjust()} autoFocus={!toDaily && !top}>
           Improve line
         </button>
+        {s.mode === "daily" && daily && daily.status === "playing" && daily.laps.length > 0 && <EndDayButton onEnd={onEndDay} />}
         {s.mode === "practice" && (
           <ShareButton
             label="Challenge"
@@ -871,6 +897,7 @@ function ResultSheet({
                 </span>
               )}
             </div>
+            {s.mode === "daily" && <p className="mt-1.5 text-[14px] leading-snug text-paint/80">{body}</p>}
             <div className="mt-3 flex flex-wrap gap-2.5">{actions}</div>
           </>
         }
@@ -898,6 +925,21 @@ function ResultSheet({
         <div className="mt-3 flex flex-wrap gap-2">{actions}</div>
       </div>
     </div>
+  );
+}
+
+/** Ends the Daily Quali on the best lap so far; the first tap asks, a second within 3 s ends it. */
+function EndDayButton({ onEnd }: { onEnd: () => void }) {
+  const [sure, setSure] = useState(false);
+  useEffect(() => {
+    if (!sure) return;
+    const t = setTimeout(() => setSure(false), 3000);
+    return () => clearTimeout(t);
+  }, [sure]);
+  return (
+    <button className={secondaryBtn} onClick={() => (sure ? onEnd() : setSure(true))}>
+      {sure ? "Tap again to end the day" : "End the day"}
+    </button>
   );
 }
 

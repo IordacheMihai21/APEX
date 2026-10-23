@@ -699,7 +699,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
               {daily.status === "won"
                 ? `Pole on lap ${daily.laps.length}. Come back tomorrow.`
                 : daily.status === "lost"
-                  ? `Out of laps${medal ? ` with ${MEDAL_NAME[medal]}` : ""}. A new circuit at midnight.`
+                  ? `${daily.ended ? `Day ended after ${daily.laps.length} ${daily.laps.length === 1 ? "lap" : "laps"}` : "Out of laps"}${medal ? ` with ${MEDAL_NAME[medal]}` : ""}. A new circuit at midnight.`
                   : daily.laps.length
                     ? `${lapsLeft} ${lapsLeft === 1 ? "lap" : "laps"} left${next ? `. ${MEDAL_NAME[next.medal]} is next.` : "."}`
                     : "Six laps to earn a medal."}
