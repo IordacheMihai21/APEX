@@ -68,7 +68,7 @@ export const GAMES: GameDef[] = [
     inDailySet: true,
     tagline: "Today's circuit, six laps for a medal",
     blurb: "One real circuit a day. Set your line through every corner, drive it, and chase the perfect lap in six laps.",
-    title: "Lapdle – Daily Racing Line Challenge",
+    title: "Lapdle – Daily Racing Games: Racing Lines, Circuits, Pit Stops",
     howTo: {
       steps: [
         "Each day brings one real circuit, seen from above. Pick a line for each corner: early apex, classic or late apex, or fine-tune every point yourself.",

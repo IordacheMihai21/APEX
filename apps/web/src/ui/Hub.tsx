@@ -8,7 +8,8 @@ import { OUTLINES, type Outline, type OutlineDetail, loadOutlineDetail } from ".
 import { CONDITION_NOTE, DAILY_LAPS, CONDITION_NAME, bestMedal, conditionOf, dailyNumber, qualifyingDay, raceWeek, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
 import { type Grade, bestPerGroup } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
-import { raceWeekCorner } from "../modes/makeCornerDay";
+import { cornerLabel, dailyCorner, raceWeekCorner } from "../modes/makeCornerDay";
+import { fromClips } from "../analytics";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
 import { CIRCUITS } from "../modes/circuits";
 import { cornerMedal, daysLeft, loadCornerWeek, weekNumber, weeklyCorner } from "../modes/corner";
@@ -159,6 +160,37 @@ function CornerMap({ trackId, complex }: { trackId: string; complex: number }) {
       <path d={detail.ribbon} fill="none" stroke="#23262d" strokeWidth={w} strokeLinejoin="round" strokeLinecap="round" />
       <path d={detail.corners[complex]} fill="none" stroke="var(--color-ink)" strokeWidth={w * 0.55} strokeLinejoin="round" strokeLinecap="round" className="corner-glow" />
     </svg>
+  );
+}
+
+/**
+ * For a visit that came in from one of our short videos (a tagged bio or description link): the clips show Make the
+ * corner, so today's corner comes first, one tap away, instead of the Quali the page leads with. Dismissable.
+ */
+function ClipCard({ onAction }: { onAction: (a: HubAction) => void }) {
+  const [shown, setShown] = useState(fromClips);
+  if (!shown) return null;
+  const { corner, circuit } = cornerLabel(dailyCorner().corner);
+  const done = game("make-the-corner").today().state === "done";
+  return (
+    <section aria-label="Today's corner, from the clips" className="border-b border-line bg-board">
+      <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4 md:px-8">
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-semibold text-ink">From the clips?</p>
+          <p className="mt-0.5 text-[17px] font-semibold leading-snug text-paint">
+            {done ? `You've taken today's corner. Try it again, or play the rest of today's set.` : `Brake for ${corner} at ${circuit} yourself. Three runs, the same corner for everyone.`}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className={`${primaryBtn} min-w-[200px]`} onClick={() => onAction({ kind: "mini", game: "make-the-corner" })}>
+            {done ? "Practice corners" : "Take today's corner"}
+          </button>
+          <button className="px-2 py-1 text-[22px] leading-none text-steel hover:text-paint" aria-label="Hide" onClick={() => setShown(false)}>
+            ×
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -652,6 +684,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           )}
         </p>
       )}
+      <ClipCard onAction={onAction} />
       {/* today's circuit */}
       <section
         aria-labelledby="daily-h"
@@ -747,7 +780,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
       <GameCards onAction={onAction} group="extras" />
 
       {/* the corner of the week */}
-      <CornerBand onAction={onAction} />
+      {!week && <CornerBand onAction={onAction} />}
 
       {/* perfect season */}
       <section aria-labelledby="season-h" className="border-t border-line bg-board/60">

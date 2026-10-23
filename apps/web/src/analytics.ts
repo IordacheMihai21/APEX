@@ -68,6 +68,11 @@ export function sourceQuery(search: string): string {
 
 /** Read when the page loads, before the app rewrites its address, so a tagged link (?ref=tiktok) keeps its source. */
 let arrival = typeof location !== "undefined" ? sourceQuery(location.search) : "";
+/** The visit's own source (ref, else utm_source), lower case, kept for the whole page load: "" when untagged. */
+const ARRIVED_FROM = typeof location !== "undefined" ? (new URLSearchParams(location.search).get("ref") ?? new URLSearchParams(location.search).get("utm_source") ?? "").toLowerCase() : "";
+export const arrivedFrom = () => ARRIVED_FROM;
+/** Came in from one of our short videos (the bio links and descriptions are tagged per platform). */
+export const fromClips = () => /^(tiktok|instagram|ig|ig-story|youtube|yt|reels|shorts)/.test(ARRIVED_FROM);
 
 let lastPath = "";
 /** A page view for the current address (deduplicated, so re-renders don't count twice); the first carries the visit's source. */
