@@ -623,6 +623,7 @@ export const ES: Record<string, string> = {
   "Pole position": "Pole position",
   "Pole position, never a win": "Pole position, ninguna victoria",
   "poles": "poles",
+  "Power": "Gas",
   "Practice": "Práctica",
   "Practice braking": "Practicar frenadas",
   "Practice corners": "Practicar curvas",
