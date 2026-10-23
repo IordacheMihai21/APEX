@@ -47,7 +47,8 @@ const PROMPT: Record<Phase, string> = {
   rolling: "Press for the throttle",
   throttle: "Flat out",
 };
-const PEDAL: Record<Phase, string> = { approach: "Brake", braking: "Let go", rolling: "Throttle", throttle: "Flat out" };
+/** Short enough for the pedal's cap (78 px on a phone): "Throttle" was wider than the cap at any readable size. */
+const PEDAL: Record<Phase, string> = { approach: "Brake", braking: "Let go", rolling: "Power", throttle: "Flat out" };
 
 /** "3.2 m early", "Spot on" */
 function early(m: number | null, unit: "m" | "km/h", spot: number): string {
@@ -424,7 +425,10 @@ export function MakeCorner() {
               aria-hidden="true"
             >
               <span className="launch-cap">
-                <span className="wide text-[14px] tracking-[0.06em] sm:text-[16px]">{screen === "ready" ? "Go" : PEDAL[phase]}</span>
+                {/* two-word labels ("Flat out") wrap onto two centred lines inside the cap */}
+                <span className="wide block max-w-[72px] text-center text-[14px] leading-[1.05] tracking-[0.06em] sm:max-w-[88px] sm:text-[16px]">
+                  {screen === "ready" ? "Go" : PEDAL[phase]}
+                </span>
               </span>
             </span>
           )}
