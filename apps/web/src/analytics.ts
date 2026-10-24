@@ -73,8 +73,21 @@ const ARRIVED_FROM = typeof location !== "undefined" ? (new URLSearchParams(loca
 export const arrivedFrom = () => ARRIVED_FROM;
 /** Came in from one of our short videos (the bio links and descriptions are tagged per platform). */
 export const fromClips = () => /^(tiktok|instagram|ig|ig-story|youtube|yt|reels|shorts)/.test(ARRIVED_FROM);
-/** Came in from a paid ad (tagged <platform>-ads): they saw one clip, so they land in its game, not on the home page. */
-export const fromAds = () => /-ads$/.test(ARRIVED_FROM);
+/** The page that sent the visit, read once at load (the app's own navigation never changes it). */
+const REFERRER = typeof document !== "undefined" ? document.referrer : "";
+/**
+ * Came in from a paid ad: tagged <platform>-ads, or from TikTok with no tag at all. TikTok doesn't always keep the
+ * ad's query string, and an untagged TikTok visit is an ad click or a tap through the profile it led to (the bio link
+ * is tagged ?ref=tiktok). They saw one clip, so they land in its game, not on the home page.
+ */
+export const fromAds = () => /-ads$/.test(ARRIVED_FROM) || (ARRIVED_FROM === "" && /(^|\.)tiktok\.com$/.test(hostOf(REFERRER)));
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
 
 let lastPath = "";
 /** A page view for the current address (deduplicated, so re-renders don't count twice); the first carries the visit's source. */
