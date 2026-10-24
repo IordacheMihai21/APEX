@@ -16,7 +16,7 @@ import { decodeChallenge } from "./modes/challenge";
 import { ChevronLeft, ColourBlind, MenuIcon } from "./ui/icons";
 import { Menu } from "./ui/Menu";
 import { DailySummary, Loading, TrackPicker } from "./Dialogs";
-import { pageview } from "./analytics";
+import { fromAds, pageview } from "./analytics";
 import { weeklyCorner } from "./modes/corner";
 
 // The hub is all a first visit needs; the race (engine, renderer, scenery) and
@@ -82,6 +82,9 @@ function initialScreen(): Screen {
   if (practice) return practice;
   const fromPath = screenFromPath(location.pathname);
   if (fromPath && fromPath.kind !== "hub") return fromPath;
+  // an ad shows Make the corner and a click lands in the app's own browser, which waits on every extra screen:
+  // straight into today's corner, the home page one tap back
+  if (fromAds() && fromPath?.kind === "hub") return { kind: "make-the-corner" };
   const path = location.pathname.replace(/\/$/, "").slice(1) || q.get("play");
   if (path === "corner") return { kind: "play", mode: "corner", trackId: weeklyCorner().trackId };
   if (path && isMini(path)) return { kind: path };
