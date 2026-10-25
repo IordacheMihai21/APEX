@@ -1,4 +1,5 @@
 import { load, save, seeded } from "./circuits";
+import { t } from "../i18n";
 import { dailyNumber, dateKey } from "./daily";
 
 /**
@@ -156,10 +157,10 @@ export function grade(r: Pick<StopResult, "metres" | "off">): Grade {
 
 /** "3.4 m early", "1.2 m late", "Spot on" */
 export function describe(r: Pick<StopResult, "metres" | "off">): string {
-  if (r.metres === null) return "No brakes";
+  if (r.metres === null) return t("No brakes");
   const e = Math.abs(r.metres);
-  if (e < 0.5) return "Spot on";
-  return `${e.toFixed(1)} m ${r.metres < 0 ? "early" : "late"}`;
+  if (e < 0.5) return t("Spot on");
+  return t(r.metres < 0 ? "{m} m early" : "{m} m late", { m: e.toFixed(1) });
 }
 
 /** Today's stops: indexes into the zone list, each from a different circuit, the same for everyone. */
@@ -225,9 +226,9 @@ export function brakingStats() {
 
 const SQUARE: Record<Grade, string> = { purple: "🟪", green: "🟩", yellow: "🟨", red: "🟥" };
 export function brakingShare(stops: StopRecord[], link: string, key = dateKey()): string {
-  return `Lapdle Braking point #${dailyNumber(key)} ${brakingScore(stops)}/${STOPS_PER_DAY * 100}\n${stops.map((s) => SQUARE[grade(s)]).join("")}\n${link}`;
+  return `${t("Lapdle Braking point #{n}", { n: dailyNumber(key) })} ${brakingScore(stops)}/${STOPS_PER_DAY * 100}\n${stops.map((s) => SQUARE[grade(s)]).join("")}\n${link}`;
 }
 
 export function verdict(score: number): string {
-  return score >= 450 ? "Late-braking hero" : score >= 350 ? "Right on the boards" : score >= 200 ? "Solid stops" : "Brakes on fire";
+  return t(score >= 450 ? "Late-braking hero" : score >= 350 ? "Right on the boards" : score >= 200 ? "Solid stops" : "Brakes on fire");
 }

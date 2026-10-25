@@ -1,6 +1,7 @@
 import { NAMED_CORNERS } from "../content/quiz";
 import FACTS from "../game/lineup.json";
 import { CIRCUITS, type CircuitFacts, circuit, load, save, seeded } from "./circuits";
+import { t, tn } from "../i18n";
 import { dailyNumber, dateKey } from "./daily";
 
 /**
@@ -64,7 +65,7 @@ export const CATEGORIES: Category[] = [
   // corner names: the circuits with four well-known ones
   ...Object.entries(NAMED_CORNERS)
     .filter(([, names]) => names.length >= GROUP_SIZE)
-    .map(([track, names]) => ({ id: `corners-${track}`, title: `Corners of ${circuit(track).name}`, level: 1, kind: "corner" as const, members: names.map((n) => `k:${n}`) })),
+    .map(([track, names]) => ({ id: `corners-${track}`, title: t("Corners of {circuit}", { circuit: circuit(track).name }), level: 1, kind: "corner" as const, members: names.map((n) => `k:${n}`) })),
 ].filter((c) => c.members.length >= GROUP_SIZE);
 
 /** The second edition: the F1DB groups, plus the corner groups as yellow. */
@@ -264,5 +265,5 @@ const SQUARE = ["🟨", "🟩", "🟦", "🟪"];
 export function lineupShare(p: Puzzle, guesses: string[][], link: string, key = dateKey()): string {
   const rows = guesses.map((g) => g.map((id) => SQUARE[p.groups.findIndex((gr) => gr.items.includes(id))]).join(""));
   const s = lineupState(p, guesses);
-  return `Lapdle Line-up #${dailyNumber(key)} ${s.won ? `${s.mistakes} mistake${s.mistakes === 1 ? "" : "s"}` : "X"}\n${rows.join("\n")}\n${link}`;
+  return `${t("Lapdle Line-up #{n}", { n: dailyNumber(key) })} ${s.won ? tn(s.mistakes, "{n} mistake", "{n} mistakes") : "X"}\n${rows.join("\n")}\n${link}`;
 }

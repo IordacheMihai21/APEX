@@ -1,4 +1,5 @@
 import { load, save, seeded } from "./circuits";
+import { t } from "../i18n";
 import { dailyNumber, dateKey } from "./daily";
 
 /**
@@ -97,9 +98,9 @@ export function trapStats() {
 
 const SQUARE: Record<TrapGrade, string> = { purple: "🟪", green: "🟩", yellow: "🟨", red: "🟥" };
 export function trapShare(rounds: TrapRound[], link: string, key = dateKey()): string {
-  return `Lapdle Speed trap #${dailyNumber(key)} ${trapScore(rounds)}/${ROUNDS * 100}\n${rounds.map((r) => SQUARE[trapGrade(r.guess, r.actual)]).join("")}\n${link}`;
+  return `${t("Lapdle Speed trap #{n}", { n: dailyNumber(key) })} ${trapScore(rounds)}/${ROUNDS * 100}\n${rounds.map((r) => SQUARE[trapGrade(r.guess, r.actual)]).join("")}\n${link}`;
 }
 
 export function trapVerdict(score: number): string {
-  return score >= 450 ? "Radar gun" : score >= 350 ? "Sharp eye" : score >= 220 ? "In the ballpark" : "Back to the onboards";
+  return t(score >= 450 ? "Radar gun" : score >= 350 ? "Sharp eye" : score >= 220 ? "In the ballpark" : "Back to the onboards");
 }

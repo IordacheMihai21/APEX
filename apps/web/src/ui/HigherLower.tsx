@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { t, tn } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
@@ -35,7 +36,7 @@ function Card({ c, label, shown, tone, roll }: { c: CircuitFacts; label: string;
     <div className={`hl-card flex min-w-0 flex-col border bg-board/70 p-3 sm:p-5 ${tone === "right" ? "border-green" : tone === "wrong" ? "border-kerb" : "border-line"}`}>
       <CircuitOutline track={c.id} className="mx-auto aspect-square w-full max-w-[200px] text-paint/85" />
       <p className="wide mt-4 text-[17px] leading-tight text-paint [overflow-wrap:anywhere] sm:text-[22px]">{c.name}</p>
-      <p className="mt-1 text-[13px] text-steel">{c.country}</p>
+      <p className="mt-1 text-[13px] text-steel">{t(c.country)}</p>
       <p className="caption mt-5">{label}</p>
       <p className="wide mt-1 h-[38px] text-[22px] leading-none whitespace-nowrap text-paint sm:text-[32px]">{shown === null ? <span className="text-steel/50">?</span> : roll ? <Roll text={shown} /> : <span className="num">{shown}</span>}</p>
     </div>
@@ -99,9 +100,10 @@ function Endless({ onPlayDaily, modeSwitch }: { onPlayDaily: () => void; modeSwi
   });
 
   const { stat, left, right } = round;
+  const runShare = () => t("Lapdle Higher or lower: {n} in a row on real circuit facts (best {best}). {link}", { n: streak, best: rec.best, link: shareLink("/higher-lower", "share-higher-lower") });
   const share = async () => {
     shared("higher-lower");
-    const text = `Lapdle Higher or lower: ${streak} in a row on real circuit facts (best ${rec.best}). ${shareLink("/higher-lower", "share-higher-lower")}`;
+    const text = runShare();
     try {
       if (navigator.share) await navigator.share({ text });
       else {
@@ -121,21 +123,21 @@ function Endless({ onPlayDaily, modeSwitch }: { onPlayDaily: () => void; modeSwi
         <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="flex items-start justify-between gap-3">
-              <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">Higher or lower</h1>
+              <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">{t("Higher or lower")}</h1>
               <HowToPlay game="higher-lower" />
             </div>
-            <p className="mt-3 max-w-[46ch] text-[15px] text-steel">Real facts about the circuits. Call the next one right and keep going; one miss ends the run.</p>
+            <p className="mt-3 max-w-[46ch] text-[15px] text-steel">{t("Real facts about the circuits. Call the next one right and keep going; one miss ends the run.")}</p>
           </div>
           <dl className="flex gap-6 text-center">
             <div>
               <dd className="wide num text-[28px] leading-none text-paint">
                 <Roll text={String(streak)} />
               </dd>
-              <dt className="caption mt-1">Streak</dt>
+              <dt className="caption mt-1">{t("Streak")}</dt>
             </div>
             <div>
               <dd className="wide num text-[28px] leading-none text-steel">{Math.max(rec.best, streak)}</dd>
-              <dt className="caption mt-1">Best</dt>
+              <dt className="caption mt-1">{t("Best")}</dt>
             </div>
           </dl>
         </div>
@@ -144,9 +146,9 @@ function Endless({ onPlayDaily, modeSwitch }: { onPlayDaily: () => void; modeSwi
           {phase === "ask" ? (
             stat.ask(left.name, right.name)
           ) : phase === "right" ? (
-            <span className="text-green">Right.</span>
+            <span className="text-green">{t("Right.")}</span>
           ) : (
-            <span className="text-kerb">Wrong call.</span>
+            <span className="text-kerb">{t("Wrong call.")}</span>
           )}
         </p>
 
@@ -157,18 +159,18 @@ function Endless({ onPlayDaily, modeSwitch }: { onPlayDaily: () => void; modeSwi
 
         {phase === "wrong" ? (
           <div className="rise mt-8 flex flex-col items-center text-center">
-            <p className="wide text-[24px] text-paint">{newBest ? `New best: ${streak} in a row.` : `${streak} in a row.`}</p>
+            <p className="wide text-[24px] text-paint">{newBest ? t("New best: {n} in a row.", { n: streak }) : t("{n} in a row.", { n: streak })}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               {streak > 0 && (
                 <button className={secondaryBtn} onClick={share}>
-                  <Share className="h-4 w-4" /> {copied ? "Copied" : "Share"}
+                  <Share className="h-4 w-4" /> {copied ? t("Copied") : t("Share")}
                 </button>
               )}
               <button className={secondaryBtn} onClick={again}>
-                Go again
+                {t("Go again")}
               </button>
               <button className={primaryBtn} onClick={onPlayDaily}>
-                Play the Daily Quali
+                {t("Play the Daily Quali")}
               </button>
             </div>
           </div>
@@ -182,24 +184,27 @@ function Endless({ onPlayDaily, modeSwitch }: { onPlayDaily: () => void; modeSwi
             </button>
           </div>
         )}
-        <p className="caption mt-6 text-center">Pole laps are the real 2025 qualifying times.<span className="hidden [@media(hover:hover)]:inline"> Arrow keys work too.</span></p>
+        <p className="caption mt-6 text-center">
+          {t("Pole laps are the real 2025 qualifying times.")}
+          <span className="hidden [@media(hover:hover)]:inline"> {t("Arrow keys work too.")}</span>
+        </p>
       </div>
       {finish && phase === "wrong" && (
         <FinishCard
           game="higher-lower"
-          eyebrow="Higher or lower"
-          title={newBest ? "New best run!" : "Run over"}
+          eyebrow={t("Higher or lower")}
+          title={newBest ? t("New best run!") : t("Run over")}
           tone={newBest ? "win" : "loss"}
           value={String(streak)}
-          valueLabel={streak === 1 ? "right call" : "right calls in a row"}
-          message={newBest ? "Your longest run yet." : streak === 0 ? "Missed the first one. The next run starts fresh." : `Your best run is ${rec.best}.`}
+          valueLabel={streak === 1 ? t("right call") : t("right calls in a row")}
+          message={newBest ? t("Your longest run yet.") : streak === 0 ? t("Missed the first one. The next run starts fresh.") : t("Your best run is {n}.", { n: rec.best })}
           stats={[
-            ["This run", String(streak)],
-            ["Best", String(rec.best)],
-            ["Runs", String(rec.runs)],
+            [t("This run"), String(streak)],
+            [t("Best"), String(rec.best)],
+            [t("Runs"), String(rec.runs)],
           ]}
-          shareText={`Lapdle Higher or lower: ${streak} in a row on real circuit facts (best ${rec.best}). ${shareLink("/higher-lower", "share-higher-lower")}`}
-          again={{ label: "Play again", onClick: again }}
+          shareText={runShare()}
+          again={{ label: t("Play again"), onClick: again }}
           onClose={() => setFinish(false)}
         />
       )}
@@ -218,7 +223,7 @@ type Mode = "daily" | "endless";
 export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
   const [mode, setMode] = useState<Mode>(() => (dailyDone(dailyCalls()) ? "endless" : "daily"));
   const modeSwitch = (
-    <div role="radiogroup" aria-label="Mode" className="inline-flex border border-line">
+    <div role="radiogroup" aria-label={t("Mode")} className="inline-flex border border-line">
       {(["daily", "endless"] as const).map((m) => (
         <button
           key={m}
@@ -227,7 +232,7 @@ export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
           onClick={() => setMode(m)}
           className={`px-4 py-2 text-[13px] font-semibold transition-colors ${mode === m ? "bg-paint text-night" : "text-steel hover:text-paint"}`}
         >
-          {m === "daily" ? `Daily #${dailyNumber()}` : "Endless"}
+          {m === "daily" ? t("Daily #{n}", { n: dailyNumber() }) : t("Endless")}
         </button>
       ))}
     </div>
@@ -239,7 +244,7 @@ export function HigherLower({ onPlayDaily }: { onPlayDaily: () => void }) {
   );
 }
 
-const verdict = (score: number) => (score === DAILY_CALLS ? "Perfect ten!" : score >= 8 ? "Sharp calls" : score >= 5 ? "Solid day" : "Tough set");
+const verdict = (score: number) => t(score === DAILY_CALLS ? "Perfect ten!" : score >= 8 ? "Sharp calls" : score >= 5 ? "Solid day" : "Tough set");
 
 /** Today's ten: every call is played, a miss costs a point. */
 function Daily({ modeSwitch, onEndless }: { modeSwitch: React.ReactNode; onEndless: () => void }) {
@@ -283,7 +288,7 @@ function Daily({ modeSwitch, onEndless }: { modeSwitch: React.ReactNode; onEndle
 
   const st = dailyStats();
   const squares = (
-    <ol className="flex gap-1" aria-label={`${calls.length} of ${DAILY_CALLS} calls made, ${score} right`}>
+    <ol className="flex gap-1" aria-label={t("{n} of {total} calls made, {score} right", { n: calls.length, total: DAILY_CALLS, score })}>
       {Array.from({ length: DAILY_CALLS }, (_, i) => (
         <li
           key={i}
@@ -300,10 +305,10 @@ function Daily({ modeSwitch, onEndless }: { modeSwitch: React.ReactNode; onEndle
         <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="flex items-start justify-between gap-3">
-              <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">Higher or lower</h1>
+              <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">{t("Higher or lower")}</h1>
               <HowToPlay game="higher-lower" />
             </div>
-            <p className="mt-3 max-w-[46ch] text-[15px] text-steel">Today's ten calls on real circuit facts, the same for everyone. A miss costs a point, not the round.</p>
+            <p className="mt-3 max-w-[46ch] text-[15px] text-steel">{t("Today's ten calls on real circuit facts, the same for everyone. A miss costs a point, not the round.")}</p>
           </div>
           <dl className="flex gap-6 text-center">
             <div>
@@ -311,11 +316,11 @@ function Daily({ modeSwitch, onEndless }: { modeSwitch: React.ReactNode; onEndle
                 <Roll text={String(score)} />
                 <span className="text-steel">/{DAILY_CALLS}</span>
               </dd>
-              <dt className="caption mt-1">Score</dt>
+              <dt className="caption mt-1">{t("Score")}</dt>
             </div>
             <div>
               <dd className="wide num text-[28px] leading-none text-steel">{Math.min(calls.length + (done ? 0 : 1), DAILY_CALLS)}</dd>
-              <dt className="caption mt-1">Call</dt>
+              <dt className="caption mt-1">{t("Call")}</dt>
             </div>
           </dl>
         </div>
@@ -327,13 +332,13 @@ function Daily({ modeSwitch, onEndless }: { modeSwitch: React.ReactNode; onEndle
             <p className="wide text-[clamp(40px,10vw,64px)] leading-none text-paint">
               {score}/{DAILY_CALLS}
             </p>
-            <p className="mt-3 text-[16px] text-paint/85">{verdict(score)}. New calls tomorrow.</p>
+            <p className="mt-3 text-[16px] text-paint/85">{verdict(score)}. {t("New calls tomorrow.")}</p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               <button className={secondaryBtn} onClick={() => setFinish(true)}>
-                See result
+                {t("See result")}
               </button>
               <button className={primaryBtn} onClick={onEndless}>
-                Play endless
+                {t("Play endless")}
               </button>
             </div>
           </div>
@@ -343,9 +348,9 @@ function Daily({ modeSwitch, onEndless }: { modeSwitch: React.ReactNode; onEndle
               {phase === "ask" ? (
                 round.stat.ask(round.left.name, round.right.name)
               ) : phase === "right" ? (
-                <span className="text-green">Right.</span>
+                <span className="text-green">{t("Right.")}</span>
               ) : (
-                <span className="text-kerb">Wrong call.</span>
+                <span className="text-kerb">{t("Wrong call.")}</span>
               )}
             </p>
             <div key={`${shownIndex}`} className="hl-deal mt-5 grid grid-cols-2 gap-3 sm:gap-5">
@@ -368,24 +373,27 @@ function Daily({ modeSwitch, onEndless }: { modeSwitch: React.ReactNode; onEndle
             </div>
           </>
         )}
-        <p className="caption mt-6 text-center">Pole laps are the real 2025 qualifying times.<span className="hidden [@media(hover:hover)]:inline"> Arrow keys work too.</span></p>
+        <p className="caption mt-6 text-center">
+          {t("Pole laps are the real 2025 qualifying times.")}
+          <span className="hidden [@media(hover:hover)]:inline"> {t("Arrow keys work too.")}</span>
+        </p>
       </div>
       {finish && done && (
         <FinishCard
           game="higher-lower"
-          eyebrow={`Higher or lower #${dailyNumber()}`}
+          eyebrow={t("Higher or lower #{n}", { n: dailyNumber() })}
           title={verdict(score)}
           tone={score >= 8 ? "win" : score >= 5 ? "neutral" : "loss"}
           value={`${score}/${DAILY_CALLS}`}
-          valueLabel="right calls"
-          message={score === DAILY_CALLS ? "Every call right." : `${DAILY_CALLS - score} ${DAILY_CALLS - score === 1 ? "miss" : "misses"} today.`}
+          valueLabel={t("right calls")}
+          message={score === DAILY_CALLS ? t("Every call right.") : tn(DAILY_CALLS - score, "{n} miss today.", "{n} misses today.")}
           stats={[
-            ["Played", String(st.played)],
-            ["Average", st.average !== null ? st.average.toFixed(1) : "-"],
-            ["Best", st.best !== null ? `${st.best}/${DAILY_CALLS}` : "-"],
+            [t("Played"), String(st.played)],
+            [t("Average"), st.average !== null ? st.average.toFixed(1) : "-"],
+            [t("Best"), st.best !== null ? `${st.best}/${DAILY_CALLS}` : "-"],
           ]}
           shareText={dailyShare(calls, shareLink("/higher-lower", "share-higher-lower"))}
-          again={{ label: "Play endless", onClick: onEndless }}
+          again={{ label: t("Play endless"), onClick: onEndless }}
           daily="daily ten"
           onClose={() => setFinish(false)}
         />

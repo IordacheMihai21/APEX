@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { t, tn } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
@@ -46,7 +47,7 @@ export function Lineup() {
   const submit = () => {
     if (picked.length !== GROUP_SIZE || state.over || modalOpen()) return;
     const key = [...picked].sort().join();
-    if (guesses.some((g) => g.join() === key)) return say("Already tried those four");
+    if (guesses.some((g) => g.join() === key)) return say(t("Already tried those four"));
     gameStarted("line-up", "daily");
     const next = recordLineupGuess(puzzle, picked);
     setGuesses(next);
@@ -55,7 +56,7 @@ export function Lineup() {
     else {
       setShake(true);
       window.setTimeout(() => setShake(false), 450);
-      if (r.best === GROUP_SIZE - 1) say("One away…");
+      if (r.best === GROUP_SIZE - 1) say(t("One away…"));
     }
     const s = lineupState(puzzle, next);
     if (s.over) {
@@ -89,11 +90,11 @@ export function Lineup() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-[720px] px-4 pt-4 pb-12 md:px-8 md:pt-6 lg:pt-10">
         <div className="flex items-center gap-3">
-          <h1 className="wide text-[clamp(26px,6vw,52px)] leading-none text-paint">Line-up</h1>
+          <h1 className="wide text-[clamp(26px,6vw,52px)] leading-none text-paint">{t("Line-up")}</h1>
           <HowToPlay game="line-up" />
         </div>
         <p className="mt-1.5 text-[14px] text-steel md:mt-2 md:text-[15px]">
-          {puzzle.groups.some((g) => g.category.kind === "fact") ? "Find four groups of four: drivers, teams, cars and circuits that share something. Yellow is the easiest, purple the trickiest." : "Find four groups of four: circuits that share a fact, or corners of the same circuit."}
+          {puzzle.groups.some((g) => g.category.kind === "fact") ? t("Find four groups of four: drivers, teams, cars and circuits that share something. Yellow is the easiest, purple the trickiest.") : t("Find four groups of four: circuits that share a fact, or corners of the same circuit.")}
         </p>
 
         <div className="mt-4 space-y-2">
@@ -101,7 +102,7 @@ export function Lineup() {
             const group = puzzle.groups[g];
             return (
               <div key={group.category.id} className="rise px-3 py-2.5 text-center text-night" style={{ background: COLOURS[g] }}>
-                <p className="wide text-[14px] leading-tight uppercase md:text-[15px]">{group.category.title}</p>
+                <p className="wide text-[14px] leading-tight uppercase md:text-[15px]">{t(group.category.title)}</p>
                 <p className="mt-0.5 text-[13px] leading-snug md:text-[14px]">{group.items.map((id) => item(id).label).join(", ")}</p>
               </div>
             );
@@ -132,8 +133,8 @@ export function Lineup() {
 
         {!state.over ? (
           <>
-            <div className="mt-4 flex items-center justify-center gap-2 text-[14px] text-steel" aria-label={`${left_} mistakes left`}>
-              Mistakes left
+            <div className="mt-4 flex items-center justify-center gap-2 text-[14px] text-steel" aria-label={tn(left_, "{n} mistake left", "{n} mistakes left")}>
+              {t("Mistakes left")}
               {Array.from({ length: MISTAKES }, (_, i) => (
                 <span key={i} className={`h-3 w-3 rounded-full ${i < left_ ? "bg-paint/80" : "bg-asphalt"}`} />
               ))}
@@ -143,23 +144,23 @@ export function Lineup() {
             </p>
             <div className="mt-2 flex flex-wrap justify-center gap-2">
               <button className={secondaryBtn} onClick={shuffle}>
-                Shuffle
+                {t("Shuffle")}
               </button>
               <button className={secondaryBtn} disabled={picked.length === 0} onClick={() => setPicked([])}>
-                Deselect
+                {t("Deselect")}
               </button>
               <button className={primaryBtn} disabled={picked.length !== GROUP_SIZE} onClick={submit}>
-                Submit
+                {t("Submit")}
               </button>
             </div>
           </>
         ) : (
           <div className="rise mt-6 text-center">
-            <p className="wide text-[clamp(24px,5vw,36px)] leading-none text-paint">{state.won ? (state.mistakes === 0 ? "Perfect line-up" : "Line-up complete") : "Out of mistakes"}</p>
-            <p className="mt-2 text-[15px] text-paint/85">{state.won ? `${state.mistakes} mistake${state.mistakes === 1 ? "" : "s"}. ` : "The groups are above. "}A new line-up tomorrow.</p>
+            <p className="wide text-[clamp(24px,5vw,36px)] leading-none text-paint">{state.won ? (state.mistakes === 0 ? t("Perfect line-up") : t("Line-up complete")) : t("Out of mistakes")}</p>
+            <p className="mt-2 text-[15px] text-paint/85">{state.won ? tn(state.mistakes, "{n} mistake.", "{n} mistakes.") : t("The groups are above.")} {t("A new line-up tomorrow.")}</p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               <button className={primaryBtn} onClick={() => setFinish(true)}>
-                See result
+                {t("See result")}
               </button>
               <NextToday />
             </div>
@@ -168,7 +169,7 @@ export function Lineup() {
       </div>
 
       <p className="mt-6 text-center text-[12px] text-steel">
-        Facts:{" "}
+        {t("Facts:")}{" "}
         <a className="underline decoration-line underline-offset-4 hover:text-paint" href={LINEUP_SOURCE.url} target="_blank" rel="noreferrer">
           {LINEUP_SOURCE.name}
         </a>{" "}
@@ -180,16 +181,16 @@ export function Lineup() {
       {finish && state.over && (
         <FinishCard
           game="line-up"
-          eyebrow={`Line-up #${dailyNumber()}`}
-          title={state.won ? (state.mistakes === 0 ? "Perfect line-up" : "Line-up complete") : "Out of mistakes"}
+          eyebrow={t("Line-up #{n}", { n: dailyNumber() })}
+          title={state.won ? (state.mistakes === 0 ? t("Perfect line-up") : t("Line-up complete")) : t("Out of mistakes")}
           tone={state.won ? "win" : "loss"}
           value={`${state.found.length}/4`}
-          valueLabel="groups found"
-          message={state.won ? `${state.mistakes} mistake${state.mistakes === 1 ? "" : "s"}.` : "Four mistakes."}
+          valueLabel={t("groups found")}
+          message={state.won ? tn(state.mistakes, "{n} mistake.", "{n} mistakes.") : t("Four mistakes.")}
           stats={[
-            ["Played", String(st.played)],
-            ["Won", String(st.won)],
-            ["Perfect", String(st.perfect)],
+            [t("Played"), String(st.played)],
+            [t("Won"), String(st.won)],
+            [t("Perfect"), String(st.perfect)],
           ]}
           shareText={lineupShare(puzzle, guesses, shareLink("/line-up", "share-line-up"))}
           daily="line-up"

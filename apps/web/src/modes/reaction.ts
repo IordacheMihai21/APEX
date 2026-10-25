@@ -3,6 +3,8 @@
  * random 0.2–3 s, then go out together; the time from lights out to the tap is
  * the reaction. A tap before they go out is a jump start.
  */
+import { t } from "../i18n";
+
 export const LIGHT_MS = 1000;
 export const HOLD_MIN_MS = 200;
 export const HOLD_MAX_MS = 3000;
@@ -53,12 +55,12 @@ export function average(r: ReactionRecord): number | null {
 
 /** A plain verdict against real reference points: F1 drivers about 0.2 s, people on average about 0.27 s. */
 export function verdict(ms: number): string {
-  if (ms < 100) return "Under 0.1 s: that's anticipation, not reaction.";
-  if (ms < 180) return "Quicker than a typical racing driver's start.";
-  if (ms < 220) return "Racing driver territory.";
-  if (ms < 270) return "Quicker than the average person.";
-  if (ms < 350) return "About average. The field is past you.";
-  return "Still on the grid while the rest are in turn 1.";
+  if (ms < 100) return t("Under 0.1 s: that's anticipation, not reaction.");
+  if (ms < 180) return t("Quicker than a typical racing driver's start.");
+  if (ms < 220) return t("Racing driver territory.");
+  if (ms < 270) return t("Quicker than the average person.");
+  if (ms < 350) return t("About average. The field is past you.");
+  return t("Still on the grid while the rest are in turn 1.");
 }
 
 export function randomHold(rand = Math.random): number {

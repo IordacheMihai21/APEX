@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { t } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
@@ -37,13 +38,13 @@ import { shareLink } from "../shareLink";
 
 const zones = ZONES as Zone[];
 const kmh = (v: number) => Math.round(v * 3.6);
-const circuitName = (id: string) => CATALOG.find((t) => t.id === id)?.name ?? id;
+const circuitName = (id: string) => CATALOG.find((c) => c.id === id)?.name ?? id;
 
 /** A stop's name: the corner's own name where the Corner of the week knows it, otherwise its number in the lap. */
 function stopName(z: Zone): string {
   const sameGroup = zones.filter((x) => x.track === z.track && x.complex === z.complex).length;
   const famous = sameGroup === 1 ? WEEKLY_CORNERS.find((w) => w.trackId === z.track && w.complex === z.complex) : undefined;
-  return famous ? famous.name.replace(/^.*'s /, "") : `Stop ${z.order}`;
+  return famous ? famous.name.replace(/^.*'s /, "") : t("Stop {n}", { n: z.order });
 }
 
 const GRADE_BG = { purple: "bg-purple", green: "bg-green", yellow: "bg-yellow", red: "bg-kerb" } as const;
@@ -83,14 +84,14 @@ export function BrakingPoint() {
   const sim = useRef({ s: 0, v: 0, brakeAt: null as number | null, t0: 0, last: 0, raf: 0 });
 
   const paint = useCallback(
-    (s: number, v: number, braking: boolean, t: number) => {
+    (s: number, v: number, braking: boolean, time: number) => {
       const c = canvas.current;
       if (!c) return;
       const ctx = c.getContext("2d");
       if (!ctx) return;
       const dpr = c.width / Math.max(1, c.clientWidth);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drawRun(ctx, c.clientWidth, c.clientHeight, z, { s, v, braking, t });
+      drawRun(ctx, c.clientWidth, c.clientHeight, z, { s, v, braking, t: time });
     },
     [z],
   );
@@ -222,11 +223,11 @@ export function BrakingPoint() {
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div>
             <div className="flex items-start gap-3">
-              <h1 className="wide text-[clamp(28px,6vw,52px)] leading-none text-paint">Braking point</h1>
+              <h1 className="wide text-[clamp(28px,6vw,52px)] leading-none text-paint">{t("Braking point")}</h1>
               <HowToPlay game="braking-point" />
             </div>
             <p className="mt-2 max-w-[48ch] text-[15px] text-steel">
-              {mode === "daily" ? "Five big stops on real circuits, the same for everyone. Brake as late as you dare." : "Practice: any stop on any circuit, as often as you like."}
+              {mode === "daily" ? t("Five big stops on real circuits, the same for everyone. Brake as late as you dare.") : t("Practice: any stop on any circuit, as often as you like.")}
             </p>
           </div>
           {mode === "daily" ? (
@@ -236,26 +237,26 @@ export function BrakingPoint() {
                   {score}
                   <span className="text-steel">/{STOPS_PER_DAY * 100}</span>
                 </dd>
-                <dt className="caption mt-1">Score</dt>
+                <dt className="caption mt-1">{t("Score")}</dt>
               </div>
               <div>
                 <dd className="wide num text-[26px] leading-none text-steel">
                   {stopNo}/{STOPS_PER_DAY}
                 </dd>
-                <dt className="caption mt-1">Stop</dt>
+                <dt className="caption mt-1">{t("Stop")}</dt>
               </div>
             </dl>
           ) : (
             done && (
               <button className={secondaryBtn} onClick={() => setFinish(true)}>
-                Today's result
+                {t("Today's result")}
               </button>
             )
           )}
         </div>
 
         {mode === "daily" && (
-          <ol className="mt-4 flex gap-1" aria-label={`${stops.length} of ${STOPS_PER_DAY} stops made, ${score} points`}>
+          <ol className="mt-4 flex gap-1" aria-label={t("{n} of {total} stops made, {score} points", { n: stops.length, total: STOPS_PER_DAY, score })}>
             {Array.from({ length: STOPS_PER_DAY }, (_, i) => (
               <li key={i} className={`h-2.5 flex-1 ${i < stops.length ? GRADE_BG[grade(stops[i])] : i === stops.length ? "bg-paint/40" : "bg-asphalt"}`} />
             ))}
@@ -274,7 +275,7 @@ export function BrakingPoint() {
           <div className="min-w-0 flex-1">
             <p className="wide truncate text-[16px] leading-tight text-paint">{circuitName(z.track)}</p>
             <p className="truncate text-[13px] text-steel">
-              {stopName(z)}, a {z.direction} turn
+              {t(z.direction === "left" ? "{name}, a left turn" : "{name}, a right turn", { name: stopName(z) })}
             </p>
           </div>
           <p className="num shrink-0 text-right text-[14px] leading-tight text-paint">
@@ -285,12 +286,12 @@ export function BrakingPoint() {
 
         {/* the onboard view */}
         <div className="relative mt-3 overflow-hidden border border-line bg-night">
-          <canvas ref={canvas} className="block aspect-[4/3] w-full sm:aspect-[16/9]" aria-label={`Onboard, approaching ${stopName(z)} at ${circuitName(z.track)}`} />
+          <canvas ref={canvas} className="block aspect-[4/3] w-full sm:aspect-[16/9]" aria-label={t("Onboard, approaching {corner} at {circuit}", { corner: stopName(z), circuit: circuitName(z.track) })} />
           <Speed s={phase} getV={() => (phase === "run" ? sim.current.v : phase === "result" && result ? result.cornerV : speedAt(z, z.from, null))} />
-          {braking && <span className="caption absolute top-3 left-3 bg-lamp px-2 py-1 text-night">Braking</span>}
+          {braking && <span className="caption absolute top-3 left-3 bg-lamp px-2 py-1 text-night">{t("Braking")}</span>}
           {phase === "ready" && (
             <p className="absolute top-3 left-3 max-w-[55%] bg-night/80 px-2.5 py-1.5 text-[12px] leading-snug text-paint/90 sm:text-[13px]">
-              Boards at {BOARDS.filter((m) => -m >= z.from + 6).join(", ")} m before the corner
+              {t("Boards at {list} m before the corner", { list: BOARDS.filter((m) => -m >= z.from + 6).join(", ") })}
             </p>
           )}
           {phase !== "result" && (
@@ -305,10 +306,10 @@ export function BrakingPoint() {
                 if (e.key === "Enter" || e.key === " ") e.preventDefault(); // the window handles the keys, once
               }}
               className={`launch-btn brake-pedal absolute right-2 bottom-2 sm:right-4 sm:bottom-4 ${phase === "run" ? "launch-armed" : ""}`}
-              aria-label={phase === "ready" ? "Go" : "Brake"}
+              aria-label={phase === "ready" ? t("Go") : t("Brake")}
             >
               <span className="launch-cap">
-                <span className="wide text-[15px] tracking-[0.06em] sm:text-[17px]">{phase === "ready" ? "Go" : "Brake"}</span>
+                <span className="wide text-[15px] tracking-[0.06em] sm:text-[17px]">{phase === "ready" ? t("Go") : t("Brake")}</span>
               </span>
             </button>
           )}
@@ -319,12 +320,13 @@ export function BrakingPoint() {
           <p className="mt-3 text-center text-[14px] text-steel">
             {phase === "ready" ? (
               <>
-                Press Go, then Brake for the corner<span className="hidden [@media(hover:hover)]:inline"> (Space works too)</span>.
+                {t("Press Go, then Brake for the corner")}
+                <span className="hidden [@media(hover:hover)]:inline"> {t("(Space works too)")}</span>.
               </>
             ) : brakeAt === null ? (
-              "Brake!"
+              t("Brake!")
             ) : (
-              "Braking. Hold your nerve."
+              t("Braking. Hold your nerve.")
             )}
           </p>
         ) : (
@@ -332,34 +334,34 @@ export function BrakingPoint() {
           g && (
             <div ref={resultBox} className="rise mt-5 scroll-mb-4">
               <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-                <p className={`wide text-[clamp(26px,6vw,40px)] leading-none ${GRADE_TEXT[g]}`}>{result.off ? (result.metres === null ? "No brakes" : "Off the road") : describe(result)}</p>
+                <p className={`wide text-[clamp(26px,6vw,40px)] leading-none ${GRADE_TEXT[g]}`}>{result.off ? (result.metres === null ? t("No brakes") : t("Off the road")) : describe(result)}</p>
                 <p className="wide num text-[22px] text-paint">
-                  +{result.points} <span className="text-[14px] text-steel">pts</span>
+                  +{result.points} <span className="text-[14px] text-steel">{t("pts")}</span>
                 </p>
               </div>
               <p className="mt-2 text-[15px] text-paint/85">
                 {result.metres === null
-                  ? "The car never braked and went straight on."
+                  ? t("The car never braked and went straight on.")
                   : result.off
-                    ? `${describe(result)}: ${kmh(result.cornerV)} km/h into a ${kmh(cornerSpeed(z))} km/h corner.`
+                    ? t("{miss}: {v} km/h into a {limit} km/h corner.", { miss: describe(result), v: kmh(result.cornerV), limit: kmh(cornerSpeed(z)) })
                     : result.metres < 0
-                      ? `Safe, but ${result.lost.toFixed(2)} s slower than the perfect stop.`
-                      : `${kmh(result.cornerV)} km/h at the corner, ${kmh(result.cornerV) - kmh(cornerSpeed(z))} km/h over its limit: you'll run wide.`}
+                      ? t("Safe, but {s} s slower than the perfect stop.", { s: result.lost.toFixed(2) })
+                      : t("{v} km/h at the corner, {over} km/h over its limit: you'll run wide.", { v: kmh(result.cornerV), over: kmh(result.cornerV) - kmh(cornerSpeed(z)) })}
               </p>
               <BrakeStrip z={z} brakeAt={brakeAt} />
               <div className="mt-5 flex flex-wrap gap-2">
                 {mode === "daily" && done ? (
                   <>
                     <button className={primaryBtn} onClick={() => setFinish(true)}>
-                      See result
+                      {t("See result")}
                     </button>
                     <button className={secondaryBtn} onClick={practice}>
-                      Practice stops
+                      {t("Practice braking")}
                     </button>
                   </>
                 ) : (
                   <button className={primaryBtn} onClick={next}>
-                    {mode === "daily" ? `Stop ${stops.length + 1} of ${STOPS_PER_DAY}` : "Another stop"}
+                    {mode === "daily" ? t("Stop {n} of {total}", { n: stops.length + 1, total: STOPS_PER_DAY }) : t("Another stop")}
                   </button>
                 )}
               </div>
@@ -379,19 +381,19 @@ export function BrakingPoint() {
       {finish && done && (
         <FinishCard
           game="braking-point"
-          eyebrow={`Braking point #${dailyNumber()}`}
+          eyebrow={t("Braking point #{n}", { n: dailyNumber() })}
           title={verdict(score)}
           tone={score >= 350 ? "win" : score >= 200 ? "neutral" : "loss"}
           value={`${score}`}
-          valueLabel={`of ${STOPS_PER_DAY * 100} points`}
-          message={stops.map((s) => (s.off ? (s.metres === null ? "no brakes" : "off") : describe(s).toLowerCase())).join(", ")}
+          valueLabel={t("of {n} points", { n: STOPS_PER_DAY * 100 })}
+          message={stops.map((s) => (s.off ? (s.metres === null ? t("no brakes") : t("off")) : describe(s).toLowerCase())).join(", ")}
           stats={[
-            ["Played", String(st.played)],
-            ["Average", st.average !== null ? String(Math.round(st.average)) : "-"],
-            ["Best", st.best !== null ? String(st.best) : "-"],
+            [t("Played"), String(st.played)],
+            [t("Average"), st.average !== null ? String(Math.round(st.average)) : "-"],
+            [t("Best"), st.best !== null ? String(st.best) : "-"],
           ]}
           shareText={brakingShare(stops, shareLink("/braking-point", "share-braking-point"))}
-          again={{ label: "Practice stops", onClick: practice }}
+          again={{ label: t("Practice braking"), onClick: practice }}
           daily="set of stops"
           onClose={() => setFinish(false)}
         />
@@ -436,19 +438,19 @@ function BrakeStrip({ z, brakeAt }: { z: Zone; brakeAt: number | null }) {
             <span className="num absolute top-1 left-1 text-[11px] text-steel">{m}</span>
           </span>
         ))}
-        <span className="absolute top-0 h-full w-0.5 bg-purple" style={{ left: x(ideal) }} title="Perfect braking point" />
-        {brakeAt !== null && <span className="absolute top-0 h-full w-1 -translate-x-1/2 bg-ink" style={{ left: x(brakeAt) }} title="You braked here" />}
-        <span className="caption absolute top-1/2 right-1 -translate-y-1/2 text-paint">Corner</span>
+        <span className="absolute top-0 h-full w-0.5 bg-purple" style={{ left: x(ideal) }} title={t("Perfect braking point")} />
+        {brakeAt !== null && <span className="absolute top-0 h-full w-1 -translate-x-1/2 bg-ink" style={{ left: x(brakeAt) }} title={t("You braked here")} />}
+        <span className="caption absolute top-1/2 right-1 -translate-y-1/2 text-paint">{t("Corner")}</span>
       </div>
       <p className="mt-2 flex flex-wrap gap-x-5 text-[13px] text-steel">
         <span>
           <span className="mr-1.5 inline-block h-2.5 w-2.5 bg-purple align-middle" />
-          Perfect: brake {Math.round(-ideal)} m before
+          {t("Perfect: brake {m} m before", { m: Math.round(-ideal) })}
         </span>
         {brakeAt !== null && (
           <span>
             <span className="mr-1.5 inline-block h-2.5 w-2.5 bg-ink align-middle" />
-            You: {Math.round(-brakeAt)} m before
+            {t("You: {m} m before", { m: Math.round(-brakeAt) })}
           </span>
         )}
       </p>

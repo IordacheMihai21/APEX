@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { t } from "../i18n";
 
 /**
  * Google AdSense display slots, placed the way daily-game sites do it
@@ -68,7 +69,7 @@ export function AdSlot({ kind, className = "" }: { kind: Kind; className?: strin
   const size = kind === "rail" ? "h-[600px] w-full" : kind === "anchor" ? "h-[50px] w-[320px] max-w-full" : "h-[250px] w-[300px] max-w-full";
   return (
     <div className={`flex flex-col items-center gap-1 ${className}`}>
-      <span className="text-[11px] text-steel/70">Advertisement</span>
+      <span className="text-[11px] text-steel/70">{t("Advertisement")}</span>
       {live ? (
         <ins
           ref={ref}
@@ -92,7 +93,7 @@ export function AdSlot({ kind, className = "" }: { kind: Kind; className?: strin
 export function AdBelow() {
   if (!adShows("inline")) return null;
   return (
-    <aside aria-label="Advertisement" className="flex justify-center border-t border-line px-4 py-10">
+    <aside aria-label={t("Advertisement")} className="flex justify-center border-t border-line px-4 py-10">
       <AdSlot kind="inline" />
     </aside>
   );

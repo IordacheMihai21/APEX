@@ -1,4 +1,5 @@
 import { CIRCUITS, type CircuitFacts, load, save, seeded } from "./circuits";
+import { t } from "../i18n";
 import { dailyNumber, dateKey } from "./daily";
 
 /**
@@ -24,11 +25,11 @@ const poleTime = (ms: number) => {
 };
 
 export const STATS: Stat[] = [
-  { key: "lengthKm", label: "Lap length", up: "Longer", down: "Shorter", format: (v) => `${v.toFixed(3)} km`, ask: (a, b) => `Is ${b} longer or shorter than ${a}?` },
-  { key: "turns", label: "Corners", up: "More", down: "Fewer", format: (v) => `${v}`, ask: (a, b) => `Does ${b} have more or fewer corners than ${a}?` },
-  { key: "firstGp", label: "First Grand Prix", up: "Later", down: "Earlier", format: (v) => `${v}`, ask: (a, b) => `Did ${b} hold its first Grand Prix later or earlier than ${a}?` },
-  { key: "laps", label: "Race laps", up: "More", down: "Fewer", format: (v) => `${v}`, ask: (a, b) => `Is the race at ${b} more or fewer laps than at ${a}?` },
-  { key: "poleMs", label: "2025 pole lap", up: "Slower", down: "Quicker", format: poleTime, ask: (a, b) => `Was the 2025 pole at ${b} slower or quicker than at ${a}?` },
+  { key: "lengthKm", label: t("Lap length"), up: t("Longer"), down: t("Shorter"), format: (v) => `${v.toFixed(3)} km`, ask: (a, b) => t("Is {b} longer or shorter than {a}?", { a, b }) },
+  { key: "turns", label: t("Corners"), up: t("More"), down: t("Fewer"), format: (v) => `${v}`, ask: (a, b) => t("Does {b} have more or fewer corners than {a}?", { a, b }) },
+  { key: "firstGp", label: t("First Grand Prix"), up: t("Later"), down: t("Earlier"), format: (v) => `${v}`, ask: (a, b) => t("Did {b} hold its first Grand Prix later or earlier than {a}?", { a, b }) },
+  { key: "laps", label: t("Race laps"), up: t("More"), down: t("Fewer"), format: (v) => `${v}`, ask: (a, b) => t("Is the race at {b} more or fewer laps than at {a}?", { a, b }) },
+  { key: "poleMs", label: t("2025 pole lap"), up: t("Slower"), down: t("Quicker"), format: poleTime, ask: (a, b) => t("Was the 2025 pole at {b} slower or quicker than at {a}?", { a, b }) },
 ];
 
 export const value = (c: CircuitFacts, s: StatKey) => c[s] as number | null;
@@ -132,5 +133,5 @@ export function dailyStats() {
 }
 
 export function dailyShare(calls: boolean[], link: string, key = dateKey()): string {
-  return `Lapdle Higher or lower #${dailyNumber(key)} ${dailyScore(calls)}/${DAILY_CALLS}\n${calls.map((c) => (c ? "🟩" : "🟥")).join("")}\n${link}`;
+  return `${t("Lapdle Higher or lower #{n}", { n: dailyNumber(key) })} ${dailyScore(calls)}/${DAILY_CALLS}\n${calls.map((c) => (c ? "🟩" : "🟥")).join("")}\n${link}`;
 }

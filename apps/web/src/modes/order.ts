@@ -1,6 +1,7 @@
 import { CIRCUITS, load, save, seeded } from "./circuits";
 import { dailyNumber, dailyTrack, dateKey } from "./daily";
 import { mysteryAnswer } from "./mystery";
+import { t } from "../i18n";
 
 /**
  * Order the corners: one circuit a day, its map with the start line and the
@@ -129,5 +130,5 @@ export function orderStats() {
 
 export function orderShare(tries: number[][], link: string, key = dateKey()): string {
   const result = orderSolved(tries) ? `${tries.length}/${ORDER_TRIES}` : `X/${ORDER_TRIES}`;
-  return `Lapdle Order the corners #${dailyNumber(key)} ${result}\n${tries.map((t) => marks(t).map((m) => (m ? "🟩" : "⬛")).join("")).join("\n")}\n${link}`;
+  return `${t("Lapdle Order the corners #{n}", { n: dailyNumber(key) })} ${result}\n${tries.map((tr) => marks(tr).map((m) => (m ? "🟩" : "⬛")).join("")).join("\n")}\n${link}`;
 }

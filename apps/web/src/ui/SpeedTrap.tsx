@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { t } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
@@ -39,7 +40,7 @@ const clamp = (v: number) => Math.max(MIN_KMH, Math.min(MAX_KMH, Math.round(v)))
 function TrapMap({ p }: { p: TrapPoint }) {
   const o = OUTLINES[p.track];
   return (
-    <svg viewBox="0 0 1000 1000" className="aspect-square w-full" role="img" aria-label={`${circuit(p.track).name} from above, with the speed trap marked`}>
+    <svg viewBox="0 0 1000 1000" className="aspect-square w-full" role="img" aria-label={t("{circuit} from above, with the speed trap marked", { circuit: circuit(p.track).name })}>
       <path d={o.outline} fill="none" stroke="#2b2f37" strokeWidth={44} strokeLinejoin="round" />
       <path d={o.outline} fill="none" stroke="#9aa1ab" strokeWidth={14} strokeLinejoin="round" />
       <g transform={`translate(${p.map[0]} ${p.map[1]})`}>
@@ -73,7 +74,7 @@ function Gauge({ actual, guess }: { actual: number; guess: number }) {
     return <line x1={100} y1={100} x2={x} y2={y} stroke={color} strokeWidth={w} strokeLinecap="round" />;
   };
   return (
-    <svg viewBox="0 0 200 172" className="mx-auto w-full max-w-[210px] md:max-w-[300px]" role="img" aria-label={`Real speed ${actual} km/h, your guess ${guess} km/h`}>
+    <svg viewBox="0 0 200 172" className="mx-auto w-full max-w-[210px] md:max-w-[300px]" role="img" aria-label={t("Real speed {actual} km/h, your guess {guess} km/h", { actual, guess })}>
       <path d={arc(-120, 120, 86)} fill="none" stroke="#2b2f37" strokeWidth={10} strokeLinecap="round" />
       {/* the gap between the guess and the real speed */}
       <path d={arc(Math.min(angle(actual), angle(guess)), Math.max(angle(actual), angle(guess)) + 0.01, 86)} fill="none" stroke="#ff6a13" strokeOpacity={0.45} strokeWidth={10} />
@@ -102,7 +103,7 @@ function Gauge({ actual, guess }: { actual: number; guess: number }) {
         {actual}
       </text>
       <text x={100} y={162} textAnchor="middle" fontSize={9} fill="#9aa1ab">
-        km/h on the perfect lap
+        {t("km/h on the perfect lap")}
       </text>
     </svg>
   );
@@ -163,11 +164,12 @@ export function SpeedTrap() {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <h1 className="wide text-[clamp(26px,6vw,52px)] leading-none text-paint">Speed trap</h1>
+              <h1 className="wide text-[clamp(26px,6vw,52px)] leading-none text-paint">{t("Speed trap")}</h1>
               <HowToPlay game="speed-trap" />
             </div>
             <p className="mt-1.5 text-[14px] text-steel md:mt-2 md:text-[15px]">
-              How fast is the car at the dot?<span className="hidden md:inline"> Five spots on five circuits, on the perfect lap.</span>
+              {t("How fast is the car at the dot?")}
+              <span className="hidden md:inline"> {t("Five spots on five circuits, on the perfect lap.")}</span>
             </p>
           </div>
           <p className="shrink-0 text-right">
@@ -175,11 +177,11 @@ export function SpeedTrap() {
               {score}
               <span className="text-steel">/{ROUNDS * 100}</span>
             </span>
-            <span className="caption mt-1 block">Round {Math.min(index + 1, ROUNDS)}/{ROUNDS}</span>
+            <span className="caption mt-1 block">{t("Round {n}/{total}", { n: Math.min(index + 1, ROUNDS), total: ROUNDS })}</span>
           </p>
         </div>
 
-        <ol className="mt-3 flex gap-1" aria-label={`${rounds.length} of ${ROUNDS} rounds played`}>
+        <ol className="mt-3 flex gap-1" aria-label={t("{n} of {total} rounds played", { n: rounds.length, total: ROUNDS })}>
           {Array.from({ length: ROUNDS }, (_, i) => (
             <li key={i} className={`h-2 flex-1 ${i < rounds.length ? GRADE_BG[trapGrade(rounds[i].guess, rounds[i].actual)] : i === rounds.length ? "bg-paint/40" : "bg-asphalt"}`} />
           ))}
@@ -195,7 +197,7 @@ export function SpeedTrap() {
           </figure>
 
           <div>
-            <p className="caption">{KIND_LABEL[p.kind]}</p>
+            <p className="caption">{t(KIND_LABEL[p.kind])}</p>
             {!last ? (
               <>
                 <p className="mt-2 text-center">
@@ -203,7 +205,7 @@ export function SpeedTrap() {
                   <span className="ml-2 text-[16px] text-steel">km/h</span>
                 </p>
                 <div className="mt-3 flex items-center gap-3">
-                  <button className={`${secondaryBtn} h-11 w-11 shrink-0 px-0 text-[20px]`} aria-label="1 km/h slower" onClick={() => setGuess((g) => clamp(g - 1))}>
+                  <button className={`${secondaryBtn} h-11 w-11 shrink-0 px-0 text-[20px]`} aria-label={t("1 km/h slower")} onClick={() => setGuess((g) => clamp(g - 1))}>
                     −
                   </button>
                   <input
@@ -213,10 +215,10 @@ export function SpeedTrap() {
                     step={1}
                     value={guess}
                     onChange={(e) => setGuess(clamp(Number(e.target.value)))}
-                    aria-label="Your guess, km/h"
+                    aria-label={t("Your guess, km/h")}
                     className="trap-range h-11 min-w-0 flex-1"
                   />
-                  <button className={`${secondaryBtn} h-11 w-11 shrink-0 px-0 text-[20px]`} aria-label="1 km/h faster" onClick={() => setGuess((g) => clamp(g + 1))}>
+                  <button className={`${secondaryBtn} h-11 w-11 shrink-0 px-0 text-[20px]`} aria-label={t("1 km/h faster")} onClick={() => setGuess((g) => clamp(g + 1))}>
                     +
                   </button>
                 </div>
@@ -225,7 +227,7 @@ export function SpeedTrap() {
                   <span>{MAX_KMH}</span>
                 </div>
                 <button className={`${primaryBtn} mt-4 w-full`} onClick={lock}>
-                  Lock it in
+                  {t("Lock it in")}
                 </button>
               </>
             ) : (
@@ -233,23 +235,23 @@ export function SpeedTrap() {
                 <Gauge actual={last.actual} guess={last.guess} />
                 <div className="mt-2 flex items-baseline justify-between gap-4">
                   <p className={`wide text-[22px] leading-tight ${GRADE_TEXT[trapGrade(last.guess, last.actual)]}`}>
-                    {last.guess === last.actual ? "Spot on" : `${Math.abs(last.guess - last.actual)} km/h ${last.guess > last.actual ? "over" : "under"}`}
+                    {last.guess === last.actual ? t("Spot on") : t(last.guess > last.actual ? "{v} km/h over" : "{v} km/h under", { v: Math.abs(last.guess - last.actual) })}
                   </p>
                   <p className="wide num text-[20px] text-paint">
-                    +{roundPoints(last.guess, last.actual)} <span className="text-[13px] text-steel">pts</span>
+                    +{roundPoints(last.guess, last.actual)} <span className="text-[13px] text-steel">{t("pts")}</span>
                   </p>
                 </div>
-                <p className="mt-1 text-[14px] text-steel">You said {last.guess} km/h.</p>
+                <p className="mt-1 text-[14px] text-steel">{t("You said {v} km/h.", { v: last.guess })}</p>
                 {done ? (
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button className={primaryBtn} onClick={() => setFinish(true)}>
-                      See result
+                      {t("See result")}
                     </button>
                     <NextToday />
                   </div>
                 ) : (
                   <button className={`${primaryBtn} mt-4 w-full`} onClick={next}>
-                    Round {rounds.length + 1} of {ROUNDS}
+                    {t("Round {n} of {total}", { n: rounds.length + 1, total: ROUNDS })}
                   </button>
                 )}
               </div>
@@ -263,16 +265,16 @@ export function SpeedTrap() {
       {finish && done && (
         <FinishCard
           game="speed-trap"
-          eyebrow={`Speed trap #${dailyNumber()}`}
+          eyebrow={t("Speed trap #{n}", { n: dailyNumber() })}
           title={trapVerdict(score)}
           tone={score >= 350 ? "win" : score >= 220 ? "neutral" : "loss"}
           value={String(score)}
-          valueLabel={`of ${ROUNDS * 100} points`}
-          message={rounds.map((r) => `${Math.abs(r.guess - r.actual)} km/h off`).join(", ")}
+          valueLabel={t("of {n} points", { n: ROUNDS * 100 })}
+          message={rounds.map((r) => t("{v} km/h off", { v: Math.abs(r.guess - r.actual) })).join(", ")}
           stats={[
-            ["Played", String(st.played)],
-            ["Average", st.average !== null ? String(Math.round(st.average)) : "-"],
-            ["Best", st.best !== null ? String(st.best) : "-"],
+            [t("Played"), String(st.played)],
+            [t("Average"), st.average !== null ? String(Math.round(st.average)) : "-"],
+            [t("Best"), st.best !== null ? String(st.best) : "-"],
           ]}
           shareText={trapShare(rounds, shareLink("/speed-trap", "share-speed-trap"))}
           daily="set of speed traps"

@@ -1,3 +1,5 @@
+import { t } from "../i18n";
+
 /**
  * The five-light start gantry. Each pod carries two red lamps; unlit lamps stay
  * visible as dark glass. `lit` = number of pods on (0–5). `sequence` snaps
@@ -7,7 +9,7 @@ export function Gantry({ lit, size = "md", label, sequence = false }: { lit: num
   const lamp = size === "lg" ? "h-9 w-9" : size === "md" ? "h-6 w-6" : "h-4 w-4";
   const gap = size === "lg" ? "gap-3" : "gap-2";
   return (
-    <div className={`flex justify-center ${gap}`} role="img" aria-label={label ?? `${lit} of 5 start lights on`}>
+    <div className={`flex justify-center ${gap}`} role="img" aria-label={label ?? t("{n} of 5 start lights on", { n: lit })}>
       {[0, 1, 2, 3, 4].map((i) => (
         <div key={i} className="flex flex-col gap-1.5 border border-line bg-[#060607] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_6px_14px_rgba(0,0,0,0.5)]">
           {[0, 1].map((j) => (

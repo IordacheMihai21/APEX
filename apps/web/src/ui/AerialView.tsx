@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GameTrack } from "@apex/engine";
+import { t } from "../i18n";
 import { HowToPlay } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
@@ -57,10 +58,10 @@ export function AerialView() {
   useEffect(() => {
     let live = true;
     Promise.all([loadTrack(id), loadScenery(id)])
-      .then(([t, osm]: [GameTrack, Awaited<ReturnType<typeof loadScenery>>]) => {
+      .then(([track, osm]: [GameTrack, Awaited<ReturnType<typeof loadScenery>>]) => {
         if (!live) return;
         if (!osm) return setFailed(true);
-        const centerline = t.centerline as [number, number][];
+        const centerline = track.centerline as [number, number][];
         const world = new Surroundings(osm, id, centerline.filter((_, i) => i % 10 === 0));
         world.showRaceway = false;
         const { at, offset } = aerialSpot();
@@ -177,11 +178,12 @@ export function AerialView() {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <h1 className="wide text-[clamp(26px,6vw,52px)] leading-none text-paint">Aerial view</h1>
+              <h1 className="wide text-[clamp(26px,6vw,52px)] leading-none text-paint">{t("Aerial view")}</h1>
               <HowToPlay game="aerial" />
             </div>
             <p className="mt-1.5 text-[14px] text-steel md:mt-2 md:text-[15px]">
-              Which circuit is down there?<span className="hidden md:inline"> Every wrong guess pulls the view further out.</span>
+              {t("Which circuit is down there?")}
+              <span className="hidden md:inline"> {t("Every wrong guess pulls the view further out.")}</span>
             </p>
           </div>
           <p className="shrink-0 text-right">
@@ -189,45 +191,45 @@ export function AerialView() {
               {Math.min(guesses.length + (over ? 0 : 1), AERIAL_TRIES)}
               <span className="text-steel">/{AERIAL_TRIES}</span>
             </span>
-            <span className="caption mt-1 block">Guess</span>
+            <span className="caption mt-1 block">{t("Guess")}</span>
           </p>
         </div>
 
         <div className="mt-4 grid items-start gap-4 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:gap-8">
           {/* phones: the view sized so the answers fit under it on one screen */}
           <figure className="relative mx-auto w-full max-w-[min(100%,44dvh)] md:max-w-none">
-            <canvas ref={canvas} className="block aspect-square w-full border border-line bg-board" aria-label={over ? `${answer.name} from above, with the circuit drawn in` : "The circuit's surroundings from above, without the track"} />
+            <canvas ref={canvas} className="block aspect-square w-full border border-line bg-board" aria-label={over ? t("{circuit} from above, with the circuit drawn in", { circuit: answer.name }) : t("The circuit's surroundings from above, without the track")} />
             {!scene && (
-              <p className="absolute inset-0 grid place-items-center text-[14px] text-steel">{failed ? "The map couldn't be loaded. Check your connection and open the page again." : "Loading the map…"}</p>
+              <p className="absolute inset-0 grid place-items-center text-[14px] text-steel">{failed ? t("The map couldn't be loaded. Check your connection and open the page again.") : t("Loading the map…")}</p>
             )}
             <figcaption className="mt-1.5 flex justify-between gap-2 text-[11px] text-steel md:text-[12px]">
-              <span>{shownWidth ? `About ${shownWidth >= 1000 ? `${(shownWidth / 1000).toFixed(1)} km` : `${shownWidth} m`} across, north up` : "The whole area, north up"}</span>
-              <span>Map data © OpenStreetMap contributors</span>
+              <span>{shownWidth ? t("About {width} across, north up", { width: shownWidth >= 1000 ? `${(shownWidth / 1000).toFixed(1)} km` : `${shownWidth} m` }) : t("The whole area, north up")}</span>
+              <span>{t("Map data © OpenStreetMap contributors")}</span>
             </figcaption>
           </figure>
 
           <div>
             {!over && (misses >= CONTINENT_AFTER || misses >= COUNTRY_AFTER) && (
               <p className="rise mb-3 border-l-2 border-ink bg-board/70 px-3 py-2 text-[14px] text-paint/90">
-                Hint: it's in {misses >= COUNTRY_AFTER ? `${answer.flag} ${answer.country}` : answer.continent}.
+                {t("Hint: it's in {place}.", { place: misses >= COUNTRY_AFTER ? `${answer.flag} ${t(answer.country)}` : t(answer.continent) })}
               </p>
             )}
             {over ? (
               <div className="rise">
-                <p className="wide text-[clamp(24px,5vw,36px)] leading-none text-paint">{solved ? (guesses.length === 1 ? "First look!" : `${answer.name} in ${guesses.length}`) : `It was ${answer.name}`}</p>
+                <p className="wide text-[clamp(24px,5vw,36px)] leading-none text-paint">{solved ? (guesses.length === 1 ? t("First look!") : t("{circuit} in {n}", { circuit: answer.name, n: guesses.length })) : t("It was {circuit}", { circuit: answer.name })}</p>
                 <p className="mt-2 text-[15px] text-paint/85">
-                  {answer.flag} {answer.country}. A new view tomorrow.
+                  {answer.flag} {t(answer.country)}. {t("A new view tomorrow.")}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button className={primaryBtn} onClick={() => setFinish(true)}>
-                    See result
+                    {t("See result")}
                   </button>
                   <NextToday />
                 </div>
               </div>
             ) : (
               <>
-                <h2 className="text-[15px] font-semibold text-paint">Your guess</h2>
+                <h2 className="text-[15px] font-semibold text-paint">{t("Your guess")}</h2>
                 <ul className="mt-2 grid grid-cols-3 gap-1.5 md:grid-cols-2">
                   {CIRCUITS.map((c) => {
                     const used = guesses.includes(c.id);
@@ -255,16 +257,16 @@ export function AerialView() {
       {finish && over && (
         <FinishCard
           game="aerial"
-          eyebrow={`Aerial view #${dailyNumber()}`}
-          title={solved ? (guesses.length === 1 ? "First look!" : "Spotted it") : "Not this time"}
+          eyebrow={t("Aerial view #{n}", { n: dailyNumber() })}
+          title={solved ? (guesses.length === 1 ? t("First look!") : t("Spotted it")) : t("Not this time")}
           tone={solved ? "win" : "loss"}
           value={`${solved ? guesses.length : "X"}/${AERIAL_TRIES}`}
-          valueLabel="guesses"
-          message={`It was ${answer.name}, ${answer.country}.`}
+          valueLabel={t("guesses")}
+          message={t("It was {circuit}, {country}.", { circuit: answer.name, country: t(answer.country) })}
           stats={[
-            ["Played", String(st.played)],
-            ["Solved", String(st.solved)],
-            ["Average", st.average !== null ? st.average.toFixed(1) : "-"],
+            [t("Played"), String(st.played)],
+            [t("Solved"), String(st.solved)],
+            [t("Average"), st.average !== null ? st.average.toFixed(1) : "-"],
           ]}
           shareText={aerialShare(guesses, shareLink("/aerial", "share-aerial"))}
           daily="aerial view"

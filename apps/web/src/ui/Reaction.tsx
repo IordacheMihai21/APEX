@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { t } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { FinishCard } from "./FinishCard";
 import { gameFinished, gameStarted, shared } from "../games/events";
@@ -29,7 +30,7 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
   const outAt = useRef(0);
 
   const clear = () => {
-    timers.current.forEach((t) => clearTimeout(t));
+    timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
   };
   useEffect(() => clear, []);
@@ -67,11 +68,11 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
       setRec((r) => recordJump(r));
       timers.current.push(window.setTimeout(() => setFinish(true), 700));
     } else if (phase === "go") {
-      const t = Math.round(performance.now() - outAt.current);
-      setMs(t);
+      const took = Math.round(performance.now() - outAt.current);
+      setMs(took);
       setPhase("done");
-      setRec((r) => recordReaction(r, t));
-      gameFinished("reaction", "endless", { band: t < 200 ? "under 0.2 s" : t < 250 ? "0.2-0.25 s" : t < 300 ? "0.25-0.3 s" : "0.3 s+" });
+      setRec((r) => recordReaction(r, took));
+      gameFinished("reaction", "endless", { band: took < 200 ? "under 0.2 s" : took < 250 ? "0.2-0.25 s" : took < 300 ? "0.25-0.3 s" : "0.3 s+" });
       // a beat to read the number on the stage, then the card
       timers.current.push(window.setTimeout(() => setFinish(true), 700));
     }
@@ -90,9 +91,13 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
   }, [tap, finish]);
 
   const avg = average(rec);
+  const shareText = () =>
+    rec.best !== null
+      ? t("Lapdle lights out: {s}s (best {best}s). How fast off the line are you? {link}", { s: secs(ms ?? rec.best), best: secs(rec.best), link: shareLink("/reaction", "share-reaction") })
+      : t("Lapdle lights out: {s}s. How fast off the line are you? {link}", { s: secs(ms ?? 0), link: shareLink("/reaction", "share-reaction") });
   const share = async () => {
     shared("reaction");
-    const text = `Lapdle lights out: ${secs(ms ?? rec.best ?? 0)}s${rec.best !== null ? ` (best ${secs(rec.best)}s)` : ""}. How fast off the line are you? ${shareLink("/reaction", "share-reaction")}`;
+    const text = shareText();
     try {
       if (navigator.share) await navigator.share({ text });
       else {
@@ -110,30 +115,30 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
   const display = phase === "done" && ms !== null ? secs(ms) : phase === "jump" ? "-.---" : "0.000";
   const prompt =
     phase === "idle"
-      ? "Press Start (or Space). Hit Launch the moment the lights go out."
+      ? t("Press Start (or Space). Hit Launch the moment the lights go out.")
       : phase === "lights" || phase === "hold"
-        ? "Wait for it."
+        ? t("Wait for it.")
         : phase === "go"
-          ? "Go!"
+          ? t("Go!")
           : phase === "jump"
-            ? "Jump start. You moved before the lights went out. Press Again to retry."
+            ? t("Jump start. You moved before the lights went out. Press Again to retry.")
             : verdict(ms!);
 
   return (
     <div className="flex h-full flex-col items-center overflow-y-auto px-4 pt-8 pb-10 lg:pt-14">
       <div className="flex w-full max-w-[520px] items-center justify-center gap-3">
-        <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">Lights out</h1>
+        <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">{t("Lights out")}</h1>
         <HowToPlay game="reaction" />
       </div>
-      <p className="mt-2 max-w-[42ch] text-center text-[15px] text-steel">How fast are you off the line? Racing drivers react in about 0.2 s; most people take about 0.27 s.</p>
+      <p className="mt-2 max-w-[42ch] text-center text-[15px] text-steel">{t("How fast are you off the line? Racing drivers react in about 0.2 s; most people take about 0.27 s.")}</p>
 
       <div className="mt-10">
-        <Gantry lit={lit} size="lg" label={phase === "go" ? "Lights out" : `${lit} of 5 start lights on`} />
+        <Gantry lit={lit} size="lg" label={phase === "go" ? t("Lights out") : t("{n} of 5 start lights on", { n: lit })} />
       </div>
 
       <div className={`mt-10 ${phase === "jump" ? "text-lamp" : phase === "done" ? "text-paint" : "text-steel/50"}`} aria-live="polite">
         <Segments text={display} className="h-16 lg:h-20" ghost={0.12} />
-        <span className="sr-only">{phase === "done" && ms !== null ? `${secs(ms)} seconds` : ""}</span>
+        <span className="sr-only">{phase === "done" && ms !== null ? t("{s} seconds", { s: secs(ms) }) : ""}</span>
       </div>
       <p className={`mt-4 min-h-[44px] max-w-[40ch] text-center text-[16px] ${phase === "jump" ? "text-lamp" : "text-paint/85"}`}>{prompt}</p>
 
@@ -148,18 +153,18 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
           if (e.key === "Enter") e.preventDefault(); // Enter is handled on the window, once
         }}
         className={`launch-btn mt-6 ${armed ? "launch-armed" : ""}`}
-        aria-label={armed ? "Launch" : phase === "idle" ? "Start" : "Start again"}
+        aria-label={armed ? t("Launch") : phase === "idle" ? t("Start") : t("Start again")}
       >
         <span className="launch-cap">
-          <span className="wide text-[18px] tracking-[0.06em]">{armed ? "Launch" : phase === "idle" ? "Start" : "Again"}</span>
+          <span className="wide text-[18px] tracking-[0.06em]">{armed ? t("Launch") : phase === "idle" ? t("Start") : t("Again")}</span>
         </span>
       </button>
 
       <dl className="mt-6 flex gap-8 text-center">
         {[
-          ["Best", rec.best !== null ? secs(rec.best) : "-"],
-          ["Last 5 average", avg !== null ? secs(avg) : "-"],
-          ["Jump starts", String(rec.jumps)],
+          [t("Best"), rec.best !== null ? secs(rec.best) : "-"],
+          [t("Last 5 average"), avg !== null ? secs(avg) : "-"],
+          [t("Jump starts"), String(rec.jumps)],
         ].map(([k, v]) => (
           <div key={k}>
             <dd className="wide num text-[20px] text-paint">{v}</dd>
@@ -171,10 +176,10 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
       {phase === "done" && (
         <div className="rise mt-8 flex flex-wrap justify-center gap-2">
           <button className={secondaryBtn} onClick={share}>
-            <Share className="h-4 w-4" /> {copied ? "Copied" : "Share"}
+            <Share className="h-4 w-4" /> {copied ? t("Copied") : t("Share")}
           </button>
           <button className={primaryBtn} onClick={onPlayDaily}>
-            Now find the perfect lap
+            {t("Now find the perfect lap")}
           </button>
         </div>
       )}
@@ -182,19 +187,19 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
       {finish && (phase === "done" || phase === "jump") && (
         <FinishCard
           game="reaction"
-          eyebrow="Lights out"
-          title={phase === "jump" ? "Jump start" : verdict(ms!)}
+          eyebrow={t("Lights out")}
+          title={phase === "jump" ? t("Jump start") : verdict(ms!)}
           tone={phase === "jump" || (ms !== null && ms < 100) ? "loss" : rec.best !== null && ms !== null && ms <= rec.best ? "win" : "neutral"}
           value={phase === "jump" ? "-.---" : secs(ms!)}
-          valueLabel="seconds"
-          message={phase === "jump" ? "You moved before the lights went out." : "Racing drivers react in about 0.2 s; most people take about 0.27 s."}
+          valueLabel={t("seconds")}
+          message={phase === "jump" ? t("You moved before the lights went out.") : t("Racing drivers react in about 0.2 s; most people take about 0.27 s.")}
           stats={[
-            ["Best", rec.best !== null ? secs(rec.best) : "-"],
-            ["Average", avg !== null ? secs(avg) : "-"],
-            ["Jump starts", String(rec.jumps)],
+            [t("Best"), rec.best !== null ? secs(rec.best) : "-"],
+            [t("Average"), avg !== null ? secs(avg) : "-"],
+            [t("Jump starts"), String(rec.jumps)],
           ]}
-          shareText={`Lapdle lights out: ${secs(ms ?? rec.best ?? 0)}s${rec.best !== null ? ` (best ${secs(rec.best)}s)` : ""}. How fast off the line are you? ${shareLink("/reaction", "share-reaction")}`}
-          again={{ label: "Try again", onClick: () => (setFinish(false), start()) }}
+          shareText={shareText()}
+          again={{ label: t("Try again"), onClick: () => (setFinish(false), start()) }}
           onClose={() => setFinish(false)}
         />
       )}

@@ -2,6 +2,7 @@ import { CIRCUITS, load, save, seeded } from "./circuits";
 import { dailyNumber, dailyTrack, dateKey } from "./daily";
 import { mysteryAnswer } from "./mystery";
 import { orderCircuit } from "./order";
+import { t } from "../i18n";
 
 /**
  * Aerial view: the circuit's surroundings from above, drawn from map data
@@ -67,5 +68,5 @@ export function aerialStats() {
 export function aerialShare(guesses: string[], link: string, key = dateKey()): string {
   const solved = aerialSolved(guesses, key);
   const row = guesses.map((g) => (g === aerialCircuit(key) ? "🟩" : "🟥")).join("") + "⬛".repeat(Math.max(0, AERIAL_TRIES - guesses.length));
-  return `Lapdle Aerial view #${dailyNumber(key)} ${solved ? guesses.length : "X"}/${AERIAL_TRIES}\n🛰️ ${row}\n${link}`;
+  return `${t("Lapdle Aerial view #{n}", { n: dailyNumber(key) })} ${solved ? guesses.length : "X"}/${AERIAL_TRIES}\n🛰️ ${row}\n${link}`;
 }

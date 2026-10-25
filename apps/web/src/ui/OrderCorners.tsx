@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { t } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
@@ -35,7 +36,7 @@ function MapView({ id, corners, shown }: { id: string; corners: Corner[]; shown:
   const o = OUTLINES[id];
   const [x, y, angle] = o.start;
   return (
-    <svg viewBox="0 0 1000 1000" className="aspect-square w-full" role="img" aria-label={`${circuit(id).name} from above, with the start line and the direction of travel`}>
+    <svg viewBox="0 0 1000 1000" className="aspect-square w-full" role="img" aria-label={t("{circuit} from above, with the start line and the direction of travel", { circuit: circuit(id).name })}>
       <path d={o.outline} fill="none" stroke="#2b2f37" strokeWidth={44} strokeLinejoin="round" />
       <path d={o.outline} fill="none" stroke="#9aa1ab" strokeWidth={14} strokeLinejoin="round" />
       <g transform={`translate(${x} ${y}) rotate(${angle})`}>
@@ -79,7 +80,7 @@ export function OrderCorners() {
   const over = orderOver(tries);
   const won = orderSolved(tries);
   // a slot is locked once a check found the right corner in it
-  const locked = useMemo(() => Array.from({ length: corners.length }, (_, i) => tries.some((t) => t[i] === i)), [tries, corners.length]);
+  const locked = useMemo(() => Array.from({ length: corners.length }, (_, i) => tries.some((tr) => tr[i] === i)), [tries, corners.length]);
   const fresh = () => locked.map((l, i) => (l ? i : null));
   const [slots, setSlots] = useState<(number | null)[]>([]);
   const [flash, setFlash] = useState<boolean[] | null>(null);
@@ -111,8 +112,8 @@ export function OrderCorners() {
     if (!full || over || flash || modalOpen()) return;
     const guess = slots as number[];
     // the same order twice would only waste a check
-    if (tries.some((t) => t.join() === guess.join())) {
-      setNotice("You've checked that order already. Swap a corner or two.");
+    if (tries.some((tr) => tr.join() === guess.join())) {
+      setNotice(t("You've checked that order already. Swap a corner or two."));
       timer.current = window.setTimeout(() => setNotice(null), 2200);
       return;
     }
@@ -128,7 +129,7 @@ export function OrderCorners() {
         setSlots(corners.map((_, i) => i));
         gameFinished("corner-order", "daily", { solved: orderSolved(next), checks: next.length });
         timer.current = window.setTimeout(() => setFinish(true), 900);
-      } else setSlots(m.map((ok, i) => (ok || next.some((t) => t[i] === i) ? i : null)));
+      } else setSlots(m.map((ok, i) => (ok || next.some((tr) => tr[i] === i) ? i : null)));
     }, 1100);
   };
 
@@ -155,11 +156,12 @@ export function OrderCorners() {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <h1 className="wide text-[clamp(24px,6vw,52px)] leading-none text-paint">Order the corners</h1>
+              <h1 className="wide text-[clamp(24px,6vw,52px)] leading-none text-paint">{t("Order the corners")}</h1>
               <HowToPlay game="corner-order" />
             </div>
             <p className="mt-1.5 text-[14px] text-steel md:mt-2 md:max-w-[52ch] md:text-[15px]">
-              Put the corners of {c.name} in lap order<span className="hidden md:inline">, from the start line round the lap. The dot on each tile is where the car comes in</span>.
+              {t("Put the corners of {circuit} in lap order", { circuit: c.name })}
+              <span className="hidden md:inline">{t(", from the start line round the lap. The dot on each tile is where the car comes in")}</span>.
             </p>
           </div>
           <p className="shrink-0 text-center">
@@ -167,7 +169,7 @@ export function OrderCorners() {
               {Math.min(tries.length + (over ? 0 : 1), ORDER_TRIES)}
               <span className="text-steel">/{ORDER_TRIES}</span>
             </span>
-            <span className="caption mt-1 block">Check</span>
+            <span className="caption mt-1 block">{t("Check")}</span>
           </p>
         </div>
 
@@ -178,13 +180,13 @@ export function OrderCorners() {
               <span className="wide truncate text-paint">{c.name}</span>
               <span className="shrink-0">
                 {c.flag}
-                <span className="hidden md:inline"> {c.country}</span>
+                <span className="hidden md:inline"> {t(c.country)}</span>
               </span>
             </figcaption>
           </figure>
 
           <div>
-            <p className="caption">Lap order</p>
+            <p className="caption">{t("Lap order")}</p>
             <ol className="mt-2 grid grid-cols-6 gap-1.5 md:gap-2">
               {Array.from({ length: CORNERS_PER_DAY }, (_, i) => {
                 const p = slots[i] ?? null;
@@ -195,7 +197,7 @@ export function OrderCorners() {
                       type="button"
                       onClick={() => unplace(i)}
                       disabled={p === null || locked[i] || over}
-                      aria-label={p === null ? `Slot ${i + 1}, empty` : `Slot ${i + 1}${locked[i] ? ", right" : ", tap to take back"}`}
+                      aria-label={t(p === null ? "Slot {n}, empty" : locked[i] ? "Slot {n}, right" : "Slot {n}, tap to take back", { n: i + 1 })}
                       className={`relative block w-full border p-1 ${
                         tone === "right" ? "border-green bg-green/10" : tone === "wrong" ? "border-kerb bg-kerb/10" : p === null ? "border-dashed border-line" : "border-line bg-board/70"
                       }`}
@@ -210,14 +212,14 @@ export function OrderCorners() {
 
             {!over && (
               <>
-                <p className="caption mt-4 md:mt-5">Corners</p>
+                <p className="caption mt-4 md:mt-5">{t("Corners")}</p>
                 <ul className="mt-2 grid min-h-[52px] grid-cols-6 gap-1.5 md:gap-2">
                   {tray.map((p, k) => (
                     <li key={p}>
                       <button
                         type="button"
                         onClick={() => place(p)}
-                        aria-label={`Corner ${k + 1}: place it next`}
+                        aria-label={t("Corner {n}: place it next", { n: k + 1 })}
                         className="block w-full border border-line bg-board/70 p-1 transition-colors hover:border-paint/40"
                       >
                         {corners[p] && <Tile c={corners[p]} />}
@@ -232,20 +234,20 @@ export function OrderCorners() {
                 )}
                 <div className="mt-3 flex flex-wrap gap-2 md:mt-4">
                   <button className={primaryBtn} disabled={!full || !!flash} onClick={check}>
-                    Check
+                    {t("Check")}
                   </button>
                   <button className={secondaryBtn} disabled={!!flash || slots.every((s, i) => s === null || locked[i])} onClick={() => setSlots(fresh())}>
-                    Clear
+                    {t("Clear")}
                   </button>
                 </div>
               </>
             )}
 
             {tries.length > 0 && (
-              <ol className="mt-5 space-y-1" aria-label="Your checks">
-                {tries.map((t, k) => (
-                  <li key={k} className="flex gap-1" aria-label={`Check ${k + 1}: ${marks(t).filter(Boolean).length} of ${CORNERS_PER_DAY} right`}>
-                    {marks(t).map((m, i) => (
+              <ol className="mt-5 space-y-1" aria-label={t("Your checks")}>
+                {tries.map((tr, k) => (
+                  <li key={k} className="flex gap-1" aria-label={t("Check {n}: {right} of {total} right", { n: k + 1, right: marks(tr).filter(Boolean).length, total: CORNERS_PER_DAY })}>
+                    {marks(tr).map((m, i) => (
                       <span key={i} className={`h-2.5 w-8 ${m ? "bg-green" : "bg-graphite"}`} />
                     ))}
                   </li>
@@ -255,11 +257,11 @@ export function OrderCorners() {
 
             {over && !flash && (
               <div className="rise mt-6">
-                <p className="wide text-[clamp(24px,5vw,36px)] leading-none text-paint">{won ? `Solved in ${tries.length}` : "Out of checks"}</p>
-                <p className="mt-2 text-[15px] text-paint/85">{won ? "Every corner in its place." : "The right order is shown above, numbered on the map."} A new circuit tomorrow.</p>
+                <p className="wide text-[clamp(24px,5vw,36px)] leading-none text-paint">{won ? t("Solved in {n}", { n: tries.length }) : t("Out of checks")}</p>
+                <p className="mt-2 text-[15px] text-paint/85">{won ? t("Every corner in its place.") : t("The right order is shown above, numbered on the map.")} {t("A new circuit tomorrow.")}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button className={primaryBtn} onClick={() => setFinish(true)}>
-                    See result
+                    {t("See result")}
                   </button>
                   <NextToday />
                 </div>
@@ -274,16 +276,16 @@ export function OrderCorners() {
       {finish && over && (
         <FinishCard
           game="corner-order"
-          eyebrow={`Order the corners #${dailyNumber()}`}
-          title={won ? (tries.length === 1 ? "First time!" : "Sorted") : "Out of checks"}
+          eyebrow={t("Order the corners #{n}", { n: dailyNumber() })}
+          title={won ? (tries.length === 1 ? t("First time!") : t("Sorted")) : t("Out of checks")}
           tone={won ? "win" : "loss"}
           value={`${won ? tries.length : "X"}/${ORDER_TRIES}`}
-          valueLabel="checks"
-          message={`${c.name}, ${CORNERS_PER_DAY} corners.`}
+          valueLabel={t("checks")}
+          message={t("{circuit}, {n} corners.", { circuit: c.name, n: CORNERS_PER_DAY })}
           stats={[
-            ["Played", String(st.played)],
-            ["Solved", String(st.solved)],
-            ["Average", st.average !== null ? st.average.toFixed(1) : "-"],
+            [t("Played"), String(st.played)],
+            [t("Solved"), String(st.solved)],
+            [t("Average"), st.average !== null ? st.average.toFixed(1) : "-"],
           ]}
           shareText={orderShare(tries, shareLink("/corner-order", "share-corner-order"))}
           daily="circuit"
