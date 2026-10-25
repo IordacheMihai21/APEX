@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { t } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
@@ -231,7 +232,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
   const share = async () => {
     if (!shown) return;
     shared("pit-stop");
-    const text = mode === "daily" ? pitShare(shown, shareLink("/pit-stop", "share-pit-stop")) : `Lapdle Pit stop: ${secs(shown.totalMs)} s. Beat it: ${shareLink("/pit-stop", "share-pit-stop")}`;
+    const text = mode === "daily" ? pitShare(shown, shareLink("/pit-stop", "share-pit-stop")) : t("Lapdle Pit stop: {s} s. Beat it: {link}", { s: secs(shown.totalMs), link: shareLink("/pit-stop", "share-pit-stop") });
     try {
       if (navigator.share) await navigator.share({ text });
       else {
@@ -249,7 +250,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
   const doneWheels = new Set(plan.order.slice(0, phase === "service" ? step : phase === "idle" || phase === "entering" ? 0 : 4));
   // a wheel's name appears only once it lights, so the order isn't given away
   const reached = phase === "service" ? step + 1 : phase === "idle" || phase === "entering" ? (locked ? 4 : 0) : 4;
-  const rows = [...plan.order.map((w, i) => (i < reached ? WHEEL_NAME[w] : "Wheel")), "Release"];
+  const rows = [...plan.order.map((w, i) => (i < reached ? t(WHEEL_NAME[w]) : t("Wheel"))), t("Release")];
   const rowSplits = shown && phase !== "service" && phase !== "hold" && phase !== "green" ? shown.splits : splits;
   const avg = rec.recent.length ? rec.recent.reduce((a, b) => a + b, 0) / rec.recent.length : null;
   const carState = phase === "idle" ? "below" : phase === "leaving" || phase === "done" ? "gone" : "in";
@@ -258,7 +259,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto grid max-w-[1120px] gap-x-12 gap-y-5 px-4 pt-5 pb-12 md:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-rows-[auto_1fr] lg:pt-12">
         <header className="lg:col-start-1 lg:row-start-1">
-          <div role="radiogroup" aria-label="Mode" className="inline-flex border border-line">
+          <div role="radiogroup" aria-label={t("Mode")} className="inline-flex border border-line">
             {(["daily", "practice"] as const).map((m) => (
               <button
                 key={m}
@@ -267,16 +268,16 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
                 onClick={() => switchMode(m)}
                 className={`px-4 py-2 text-[13px] font-semibold transition-colors ${mode === m ? "bg-paint text-night" : "text-steel hover:text-paint"}`}
               >
-                {m === "daily" ? `Daily #${dailyNumber()}` : "Practice"}
+                {m === "daily" ? t("Daily #{n}", { n: dailyNumber() }) : t("Practice")}
               </button>
             ))}
           </div>
           <div className="mt-4 flex items-start justify-between gap-3 lg:mt-5">
-            <h1 className="wide text-[clamp(32px,6vw,56px)] leading-none text-paint">Pit stop</h1>
+            <h1 className="wide text-[clamp(32px,6vw,56px)] leading-none text-paint">{t("Pit stop")}</h1>
             <HowToPlay game="pit-stop" />
           </div>
           <p className="mt-2.5 max-w-[44ch] text-[14px] text-steel lg:mt-3 lg:text-[15px]">
-            Each wheel lights up in turn: hit its key, or tap the lit tyre on a phone. Then release the car on green. The fastest stop on record is 1.80 s.
+            {t("Each wheel lights up in turn: hit its key, or tap the lit tyre on a phone. Then release the car on green. The fastest stop on record is 1.80 s.")}
           </p>
         </header>
 
@@ -288,13 +289,13 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
             {(penalty > 0 || (shown && penaltyMs(shown) > 0)) && (
               <span className="pb-1 text-right text-[13px] font-semibold text-kerb">
                 +{((shown && phase !== "service" && phase !== "hold" && phase !== "green" ? penaltyMs(shown) : penalty) / 1000).toFixed(1)} s
-                <span className="block font-normal text-steel">penalty</span>
+                <span className="block font-normal text-steel">{t("penalty")}</span>
               </span>
             )}
           </div>
 
           {/* the stop as a timing tower: one row per wheel in the order they lit, then the release */}
-          <ol className="mt-5" aria-label="Splits">
+          <ol className="mt-5" aria-label={t("Splits")}>
             {rows.map((label, i) => {
               const ms = rowSplits[i];
               const grade = ms !== undefined ? gradeStep(i, ms) : null;
@@ -312,23 +313,23 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
           {phase === "done" || locked ? (
             shown && (
               <div className="rise mt-6 border-t border-line pt-5">
-                <p className="wide text-[22px] leading-tight text-paint">{verdict(shown.totalMs)}</p>
-                {locked && <p className="mt-2 text-[14px] text-steel">That was today's daily stop. Practice as much as you like.</p>}
+                <p className="wide text-[22px] leading-tight text-paint">{t(verdict(shown.totalMs))}</p>
+                {locked && <p className="mt-2 text-[14px] text-steel">{t("That was today's daily stop. Practice as much as you like.")}</p>}
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button className={secondaryBtn} onClick={share}>
-                    <Share className="h-4 w-4" /> {copied ? "Copied" : "Share"}
+                    <Share className="h-4 w-4" /> {copied ? t("Copied") : t("Share")}
                   </button>
                   {locked ? (
                     <button className={primaryBtn} onClick={() => switchMode("practice")}>
-                      Practice stops
+                      {t("Practice stops")}
                     </button>
                   ) : (
                     <button className={primaryBtn} onClick={() => (mode === "daily" ? switchMode("practice") : start())}>
-                      {mode === "daily" ? "Practice stops" : "Go again"}
+                      {mode === "daily" ? t("Practice stops") : t("Go again")}
                     </button>
                   )}
                   <button className={secondaryBtn} onClick={onPlayDaily}>
-                    Daily Quali
+                    {t("Daily Quali")}
                   </button>
                 </div>
               </div>
@@ -337,9 +338,9 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
 
           <dl className="mt-auto grid grid-cols-3 gap-4 pt-8 text-center">
             {[
-              ["Best", rec.best !== null ? secs(rec.best) : "-"],
-              ["Last 5 average", avg !== null ? secs(avg) : "-"],
-              ["Stops", String(rec.stops)],
+              [t("Best"), rec.best !== null ? secs(rec.best) : "-"],
+              [t("Last 5 average"), avg !== null ? secs(avg) : "-"],
+              [t("Stops"), String(rec.stops)],
             ].map(([k, v]) => (
               <div key={k}>
                 <dd className="wide num text-[20px] text-paint">{v}</dd>
@@ -443,7 +444,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
               return (
                 <button
                   key={w}
-                  aria-label={`${WHEEL_NAME[w]} wheel${on ? `, now: press ${plan.keys[step]}` : ""}`}
+                  aria-label={on ? t("{wheel} wheel, now: press {key}", { wheel: t(WHEEL_NAME[w]), key: plan.keys[step] }) : t("{wheel} wheel", { wheel: t(WHEEL_NAME[w]) })}
                   onPointerDown={(e) => {
                     e.preventDefault();
                     hit({ wheel: w });
@@ -465,9 +466,9 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
 
           {/* what to do now */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-3" aria-live="polite">
-            {phase === "idle" && !locked && <span className="pit-prompt">{mode === "daily" ? "Today's stop. One attempt counts." : "Ready."} Press Space or tap to call the car in.</span>}
-            {phase === "hold" && <span className={`pit-prompt ${early ? "text-kerb" : ""}`}>{early ? "Early release: +1.0 s. Wait for green." : "Wait for green."}</span>}
-            {phase === "done" && mode === "practice" && <span className="pit-prompt">Space or tap for another stop.</span>}
+            {phase === "idle" && !locked && <span className="pit-prompt">{mode === "daily" ? t("Today's stop. One attempt counts.") : t("Ready.")} {t("Press Space or tap to call the car in.")}</span>}
+            {phase === "hold" && <span className={`pit-prompt ${early ? "text-kerb" : ""}`}>{early ? t("Early release: +1.0 s. Wait for green.") : t("Wait for green.")}</span>}
+            {phase === "done" && mode === "practice" && <span className="pit-prompt">{t("Space or tap for another stop.")}</span>}
           </div>
           {(phase === "hold" || phase === "green") && (
             <button
@@ -477,7 +478,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
                 release();
               }}
             >
-              {phase === "green" ? "Go" : "Hold"}
+              {phase === "green" ? t("Go") : t("Hold")}
             </button>
           )}
         </div>
@@ -485,28 +486,28 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
       {finish && shown && (
         <FinishCard
           game="pit-stop"
-          eyebrow={mode === "daily" ? `Pit stop #${dailyNumber()}` : "Pit stop, practice"}
-          title={verdict(shown.totalMs)}
+          eyebrow={mode === "daily" ? t("Pit stop #{n}", { n: dailyNumber() }) : t("Pit stop, practice")}
+          title={t(verdict(shown.totalMs))}
           tone={rec.best !== null && shown.totalMs <= rec.best ? "win" : "neutral"}
           value={secs(shown.totalMs)}
-          valueLabel="seconds"
+          valueLabel={t("seconds")}
           message={
             shown.wrongKeys || shown.earlyRelease
-              ? `Includes ${(penaltyMs(shown) / 1000).toFixed(1)} s of penalties${shown.earlyRelease ? " (released before green)" : ""}.`
+              ? t(shown.earlyRelease ? "Includes {s} s of penalties (released before green)." : "Includes {s} s of penalties.", { s: (penaltyMs(shown) / 1000).toFixed(1) })
               : mode === "daily"
-                ? "Today's stop is on the board. Practice as much as you like."
-                : "Clean stop: no penalties."
+                ? t("Today's stop is on the board. Practice as much as you like.")
+                : t("Clean stop: no penalties.")
           }
           stats={[
-            ["Best", rec.best !== null ? secs(rec.best) : "-"],
-            ["Last 5", avg !== null ? secs(avg) : "-"],
-            ["Stops", String(rec.stops)],
+            [t("Best"), rec.best !== null ? secs(rec.best) : "-"],
+            [t("Last 5"), avg !== null ? secs(avg) : "-"],
+            [t("Stops"), String(rec.stops)],
           ]}
-          shareText={mode === "daily" ? pitShare(shown, shareLink("/pit-stop", "share-pit-stop")) : `Lapdle Pit stop: ${secs(shown.totalMs)} s. Beat it: ${shareLink("/pit-stop", "share-pit-stop")}`}
+          shareText={mode === "daily" ? pitShare(shown, shareLink("/pit-stop", "share-pit-stop")) : t("Lapdle Pit stop: {s} s. Beat it: {link}", { s: secs(shown.totalMs), link: shareLink("/pit-stop", "share-pit-stop") })}
           again={
             mode === "daily"
-              ? { label: "Practice stops", onClick: () => (setFinish(false), switchMode("practice")) }
-              : { label: "Go again", onClick: () => (setFinish(false), start()) }
+              ? { label: t("Practice stops"), onClick: () => (setFinish(false), switchMode("practice")) }
+              : { label: t("Go again"), onClick: () => (setFinish(false), start()) }
           }
           daily={mode === "daily" ? "daily pit stop" : undefined}
           onClose={() => setFinish(false)}

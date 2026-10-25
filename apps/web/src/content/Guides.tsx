@@ -1,4 +1,5 @@
 import { GAMES, type GameDef, type GameId, game } from "../games/registry";
+import { t, withLang } from "../i18n";
 
 /**
  * The content pages: How to play (an index and one guide per game) and About.
@@ -28,30 +29,30 @@ export function Section({ title, children }: { title: string; children: React.Re
 }
 
 /** Where a game is played: its own page, or the hub for the Daily Quali. */
-const playHref = (g: GameDef) => g.route ?? "/";
+const playHref = (g: GameDef) => withLang(g.route ?? "/");
 
 export function HowToPlayIndex() {
   return (
     <Page>
       <header>
         <p className="caption">Lapdle</p>
-        <h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">How to play</h1>
+        <h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">{t("How to play")}</h1>
         <p className="mt-4 text-[16px] leading-relaxed text-paint/85">
-          Lapdle is a set of short racing games on real circuits, new every day. The Daily Quali is the main event; the others take a minute or two each. Pick a game for its rules, scoring and tips.
+          {t("Lapdle is a set of short racing games on real circuits, new every day. The Daily Quali is the main event; the others take a minute or two each. Pick a game for its rules, scoring and tips.")}
         </p>
       </header>
       <ul className="divide-y divide-line border-y border-line">
         {GAMES.map((g) => (
           <li key={g.id}>
-            <a href={`/how-to-play/${g.id}`} className="group flex items-start gap-4 py-4">
+            <a href={withLang(`/how-to-play/${g.id}`)} className="group flex items-start gap-4 py-4">
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
                   <span className="wide text-[20px] leading-tight text-paint">{g.name}</span>
-                  {g.inDailySet && <span className="bg-ink px-1.5 py-px text-[11px] font-bold tracking-[0.04em] text-night uppercase">Daily</span>}
+                  {g.inDailySet && <span className="bg-ink px-1.5 py-px text-[11px] font-bold tracking-[0.04em] text-night uppercase">{t("Daily")}</span>}
                 </span>
                 <span className="mt-1 block text-[15px] leading-snug text-steel">{g.guide.intro}</span>
               </span>
-              <span className="mt-1 shrink-0 text-[14px] font-semibold text-ink transition-transform group-hover:translate-x-0.5">Guide ›</span>
+              <span className="mt-1 shrink-0 text-[14px] font-semibold text-ink transition-transform group-hover:translate-x-0.5">{t("Guide")} ›</span>
             </a>
           </li>
         ))}
@@ -67,17 +68,17 @@ export function HowToPlayGuide({ id }: { id: GameId }) {
     <Page>
       <header>
         <p className="caption">
-          <a className={link} href="/how-to-play">
-            How to play
+          <a className={link} href={withLang("/how-to-play")}>
+            {t("How to play")}
           </a>
         </p>
         <h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">{g.name}</h1>
         <p className="mt-4 text-[17px] leading-relaxed text-paint/90">{g.guide.intro}</p>
-        <p className="mt-2 text-[15px] text-steel">{g.cadence === "daily" ? "A new round every day at midnight, the same for everyone." : "Play as often as you like."}</p>
+        <p className="mt-2 text-[15px] text-steel">{g.cadence === "daily" ? t("A new round every day at midnight, the same for everyone.") : t("Play as often as you like.")}</p>
       </header>
 
       {g.howTo && (
-        <Section title="How it works">
+        <Section title={t("How it works")}>
           <ol className="space-y-4">
             {g.howTo.steps.map((step, i) => (
               <li key={i} className="grid grid-cols-[28px_1fr] items-start gap-3">
@@ -89,30 +90,30 @@ export function HowToPlayGuide({ id }: { id: GameId }) {
         </Section>
       )}
 
-      <Section title="Scoring">
+      <Section title={t("Scoring")}>
         <p>{g.guide.scoring}</p>
         {g.howTo && <p className="text-steel">{g.howTo.tip}</p>}
       </Section>
 
-      <Section title="Tips">
+      <Section title={t("Tips")}>
         <ul className="list-disc space-y-2 pl-5 marker:text-ink">
-          {g.guide.tips.map((t) => (
-            <li key={t}>{t}</li>
+          {g.guide.tips.map((tip) => (
+            <li key={tip}>{tip}</li>
           ))}
         </ul>
       </Section>
 
       <div>
         <a href={playHref(g)} className="btn-go cut wide inline-flex items-center justify-center gap-2 bg-ink py-3 pr-10 pl-6 text-[15px] whitespace-nowrap text-night uppercase">
-          Play {g.name}
+          {t("Play {game}", { game: g.name })}
         </a>
       </div>
 
-      <Section title="More guides">
+      <Section title={t("More guides")}>
         <ul className="flex flex-wrap gap-x-5 gap-y-2">
           {others.map((o) => (
             <li key={o.id}>
-              <a className={link} href={`/how-to-play/${o.id}`}>
+              <a className={link} href={withLang(`/how-to-play/${o.id}`)}>
                 {o.name}
               </a>
             </li>

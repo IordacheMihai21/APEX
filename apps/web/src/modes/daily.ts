@@ -1,4 +1,5 @@
 import type { Condition } from "@apex/engine";
+import { t, tn } from "../i18n";
 import type { Grade } from "./grading";
 import { MEDAL_EMOJI, MEDAL_NAME, type Medal, better, medalFor, realPole } from "./medals";
 import { LAUNCH, dailyCondition, dailyNumber, dailyTrack, dateKey, dayIndex } from "./schedule";
@@ -207,11 +208,11 @@ export function shareText(rec: DailyRecord, trackName: string, flag: string, emo
   const best = Math.min(...rec.laps.map((l) => l.lapTimeMs));
   const m = Math.floor(best / 60000);
   const s = ((best - m * 60000) / 1000).toFixed(3).padStart(6, "0");
-  const head = medal ? `${MEDAL_EMOJI[medal]} ${MEDAL_NAME[medal]}` : "No medal";
-  const hints = rec.hints ? `, ${rec.hints} ${rec.hints === 1 ? "hint" : "hints"} used` : "";
-  const race = link ? `\nRace my best lap: ${link}` : "";
+  const head = medal ? `${MEDAL_EMOJI[medal]} ${t(MEDAL_NAME[medal])}` : t("No medal");
+  const hints = rec.hints ? `, ${tn(rec.hints, "{n} hint used", "{n} hints used")}` : "";
+  const race = link ? `\n${t("Race my best lap: {link}", { link })}` : "";
   const pole = realPole(rec.trackId, conditionOf(rec));
-  const fasterThanPole = pole && best < pole.ms ? `\nFaster than the real 2025 pole by ${((pole.ms - best) / 1000).toFixed(3)}s` : "";
+  const fasterThanPole = pole && best < pole.ms ? `\n${t("Faster than the real 2025 pole by {s}s", { s: ((pole.ms - best) / 1000).toFixed(3) })}` : "";
   const cond = conditionOf(rec);
-  return `Lapdle Quali #${n}${rec.archive ? " (archive)" : ""} ${flag} ${trackName}${cond === "dry" ? "" : `, ${CONDITION_NAME[cond].toLowerCase()}`}\n${head} ${m}:${s} in ${rec.laps.length}/${DAILY_LAPS} laps${hints}${fasterThanPole}\n${rows}${race}`;
+  return `Lapdle Quali #${n}${rec.archive ? ` ${t("(archive)")}` : ""} ${flag} ${trackName}${cond === "dry" ? "" : `, ${t(CONDITION_NAME[cond]).toLowerCase()}`}\n${head} ${t("{time} in {n}/{total} laps", { time: `${m}:${s}`, n: rec.laps.length, total: DAILY_LAPS })}${hints}${fasterThanPole}\n${rows}${race}`;
 }

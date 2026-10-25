@@ -1,4 +1,5 @@
 import { GAMES, type GameId, game } from "../games/registry";
+import { t } from "../i18n";
 import { CIRCUITS, circuit, circuitBySlug, circuitSlug } from "../modes/circuits";
 import { CIRCUIT_TEXT } from "./circuitText";
 import { quiz } from "./quiz";
@@ -64,9 +65,9 @@ export function contentMeta(c: ContentPage): { title: string; description: strin
   }
   if (!c.game)
     return {
-      title: "How to play Lapdle: rules, scoring and tips | Lapdle",
-      description: clip(`Rules, scoring and tips for every Lapdle game: ${GAMES.map((g) => g.name).join(", ")}.`),
+      title: t("How to play Lapdle: rules, scoring and tips | Lapdle"),
+      description: clip(t("Rules, scoring and tips for every Lapdle game: {games}.", { games: GAMES.map((g) => g.name).join(", ") })),
     };
   const g = game(c.game);
-  return { title: `How to play ${g.name}: rules, scoring and tips | Lapdle`, description: clip(`${g.guide.intro} ${g.guide.scoring}`) };
+  return { title: t("How to play {game}: rules, scoring and tips | Lapdle", { game: g.name }), description: clip(`${g.guide.intro} ${g.guide.scoring}`) };
 }

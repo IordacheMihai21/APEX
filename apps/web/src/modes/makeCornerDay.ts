@@ -1,4 +1,5 @@
 import type { Condition } from "@apex/engine";
+import { t, turnName } from "../i18n";
 import { CATALOG } from "../game/catalog";
 import INDEX from "../game/corners/index.json";
 import { load, save, seeded } from "./circuits";
@@ -27,7 +28,7 @@ export const MAX_POINTS = 1000;
 export function cornerLabel(e: CornerEntry): { corner: string; circuit: string } {
   const circuit = CATALOG.find((t) => t.id === e.trackId)?.name ?? e.trackId;
   const place = e.name.match(/^(.+?)(?:'s)? (Turns? .+)$/);
-  return { corner: place ? place[2] : e.name, circuit };
+  return { corner: turnName(place ? place[2] : e.name), circuit };
 }
 
 /** The corner a day number lands on: rounds of every corner once, shuffled per round, never the same corner two days running. */
@@ -148,7 +149,7 @@ export function cornerStats() {
 }
 
 const SQUARE: Record<CallGrade, string> = { purple: "🟪", green: "🟩", yellow: "🟨", red: "🟥", none: "⬛" };
-const CONDITION_WORD: Record<Condition, string> = { dry: "", wet: " 🌧️", lowdf: " (low downforce)" };
+const CONDITION_WORD: Record<Condition, string> = { dry: "", wet: " 🌧️", lowdf: ` ${t("(low downforce)")}` };
 
 /** "Lapdle Make the corner #12 · La Source, Spa-Francorchamps", the best run's three calls, the score. */
 export function cornerShare(runs: RunRecord[], link: string, key = dateKey()): string {

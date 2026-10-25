@@ -1,4 +1,5 @@
 import { DiscordLogo, EnvelopeSimple, type Icon, InstagramLogo, TiktokLogo, XLogo, YoutubeLogo } from "@phosphor-icons/react";
+import { t, withLang } from "../i18n";
 import { ADS_CONSENT, OPERATOR, SOCIAL, openConsent } from "../legal";
 import { GAMES, type GamePage } from "../games/registry";
 import { loadSeason, seasonDone } from "../modes/season";
@@ -20,16 +21,16 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
   const run = loadSeason().run;
   const underWay = !!run && !seasonDone(run);
   const play: [string, HubAction][] = [
-    ["Daily Quali", { kind: "daily" }],
-    ["Corner of the week", { kind: "corner" }],
-    ["Perfect Season", { kind: "season", fresh: !underWay }],
-    ["Free Practice", { kind: "practice" }],
-    ["Past dailies", { kind: "mini", game: "archive" }],
+    [t("Daily Quali"), { kind: "daily" }],
+    [t("Corner of the week"), { kind: "corner" }],
+    [t("Perfect Season"), { kind: "season", fresh: !underWay }],
+    [t("Free Practice"), { kind: "practice" }],
+    [t("Past dailies"), { kind: "mini", game: "archive" }],
   ];
   // every game with its own page, from the registry, then the record
   const minis: [string, HubAction][] = [
     ...GAMES.filter((g) => g.route).map((g): [string, HubAction] => [g.name, { kind: "mini", game: g.route!.slice(1) as GamePage }]),
-    ["Your record", { kind: "stats" }],
+    [t("Your record"), { kind: "stats" }],
   ];
   const year = new Date().getFullYear();
   return (
@@ -39,20 +40,20 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
           <span className="wide text-[26px] leading-none tracking-[0.02em] text-paint">
             LAPDLE
           </span>
-          <p className="mt-4 text-[15px] leading-relaxed text-paint/85">A daily racing-line puzzle on real circuits. Set your line through every corner, drive it, chase the perfect lap.</p>
+          <p className="mt-4 text-[15px] leading-relaxed text-paint/85">{t("A daily racing-line puzzle on real circuits. Set your line through every corner, drive it, chase the perfect lap.")}</p>
           <p className="mt-3 text-[13px] leading-relaxed text-steel">
-            An independent game, not affiliated with any racing series, governing body or team. Circuit names refer to the venues only. Map data © OpenStreetMap contributors.
+            {t("An independent game, not affiliated with any racing series, governing body or team. Circuit names refer to the venues only. Map data © OpenStreetMap contributors.")}
           </p>
           {ADS_CONSENT && (
             <button onClick={openConsent} className="mt-5 border border-paint/20 px-3 py-2 text-[13px] font-semibold text-paint/90 transition-colors hover:border-paint/50">
-              Cookie choices
+              {t("Cookie choices")}
             </button>
           )}
         </div>
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
-          <nav aria-label="Play">
-            <h2 className={heading}>Play</h2>
+          <nav aria-label={t("Play")}>
+            <h2 className={heading}>{t("Play")}</h2>
             <ul className="mt-3 space-y-2.5">
               {play.map(([name, a]) => (
                 <li key={name}>
@@ -63,8 +64,8 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
               ))}
             </ul>
           </nav>
-          <nav aria-label="Minigames">
-            <h2 className={heading}>Between laps</h2>
+          <nav aria-label={t("Minigames")}>
+            <h2 className={heading}>{t("Between laps")}</h2>
             <ul className="mt-3 space-y-2.5">
               {minis.map(([name, a]) => (
                 <li key={name}>
@@ -79,39 +80,39 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
             <h2 className={heading}>Lapdle</h2>
             <ul className="mt-3 space-y-2.5">
               <li>
-                <a className={link} href="/how-to-play">
-                  How to play
+                <a className={link} href={withLang("/how-to-play")}>
+                  {t("How to play")}
                 </a>
               </li>
               <li>
                 <a className={link} href="/circuits">
-                  Circuit guides
+                  {t("Circuit guides")}
                 </a>
               </li>
               <li>
-                <a className={link} href="/records">
-                  Lap records
+                <a className={link} href={withLang("/records")}>
+                  {t("Lap records")}
                 </a>
               </li>
               <li>
                 <a className={link} href="/trivia">
-                  Circuit trivia
+                  {t("Circuit trivia")}
                 </a>
               </li>
               <InstallLink className={link} />
               <li>
                 <a className={link} href="/about">
-                  About
+                  {t("About")}
                 </a>
               </li>
               <li>
                 <button className={link} onClick={() => onAction({ kind: "mini", game: "privacy" })}>
-                  Privacy
+                  {t("Privacy")}
                 </button>
               </li>
               <li>
                 <button className={link} onClick={() => onAction({ kind: "mini", game: "legal" })}>
-                  Legal and terms
+                  {t("Legal and terms")}
                 </button>
               </li>
               {OPERATOR.email && (
@@ -124,7 +125,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
               )}
             </ul>
             {SOCIAL.length > 0 && (
-              <ul className="mt-5 flex gap-1" aria-label="Lapdle on social media">
+              <ul className="mt-5 flex gap-1" aria-label={t("Lapdle on social media")}>
                 {SOCIAL.map((s) => {
                   const I = ICON[s.id];
                   return (
@@ -133,7 +134,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
                         href={s.url}
                         target="_blank"
                         rel="noreferrer me"
-                        aria-label={`Lapdle on ${s.name}`}
+                        aria-label={t("Lapdle on {site}", { site: s.name })}
                         className="grid h-10 w-10 place-items-center border border-line text-paint/80 transition-colors hover:border-paint/40 hover:text-paint"
                       >
                         <I weight="bold" className="h-[18px] w-[18px]" aria-hidden="true" />
@@ -151,7 +152,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
           <span>
             © {year} {OPERATOR.name || "Lapdle"}
           </span>
-          <span>Times and lines are simulated. Facts checked against official race pages.</span>
+          <span>{t("Times and lines are simulated. Facts checked against official race pages.")}</span>
         </p>
       </div>
     </footer>

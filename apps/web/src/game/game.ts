@@ -17,6 +17,7 @@ import {
   trackControls,
   usableHalfWidth,
 } from "@apex/engine";
+import { t } from "../i18n";
 import { MEDAL_COLOR, MEDAL_NAME, type Medal, medalFor, nextMedal } from "../modes/medals";
 import { Camera } from "./camera";
 import { CarSprites } from "./car";
@@ -721,7 +722,7 @@ export class Game {
     const pbMedal = this.pb ? medalFor(this.track.id, this.pb.lapTimeMs, [], this.condition) : null;
     const next = nextMedal(this.track.id, pbMedal, this.condition);
     if (!next || next.ms === null) return { label: "Perfect", medal: "perfect", scale: 1 };
-    return { label: MEDAL_NAME[next.medal], medal: next.medal, scale: next.ms / this.reference.lapTimeMs };
+    return { label: t(MEDAL_NAME[next.medal]), medal: next.medal, scale: next.ms / this.reference.lapTimeMs };
   }
 
   /** Where a car at the pace target would be now, on the player's own line (so it never shows the perfect line). */
@@ -952,7 +953,7 @@ export class Game {
     const minOf = (S: Float64Array, os: number[]) => Math.min(...os.map((o) => S[at(o)]));
     let why: string;
     if (Math.max(...phaseLoss) < 15) {
-      why = "Small losses all the way through";
+      why = t("Small losses all the way through");
     } else if (phase === 0) {
       // brake point: walk back from the slowest point near the apex while the speed keeps rising
       const os = range(cuts[0], cuts[2]);
@@ -963,11 +964,11 @@ export class Game {
       };
       const earlier = Math.round(((brakePoint(R) - brakePoint(P)) * this.pt.step) / 5) * 5;
       const dv = kmh(minOf(R, os)) - kmh(minOf(P, os));
-      why = earlier >= 10 ? `Braking ${earlier} m earlier than the perfect lap` : dv >= 3 ? `${dv} km/h slower at the turn-in` : "Losing time on the way in";
+      why = earlier >= 10 ? t("Braking {m} m earlier than the perfect lap", { m: earlier }) : dv >= 3 ? t("{v} km/h slower at the turn-in", { v: dv }) : t("Losing time on the way in");
     } else if (phase === 1) {
       const os = range(cuts[1], cuts[2]);
       const dv = kmh(minOf(R, os)) - kmh(minOf(P, os));
-      why = dv >= 2 ? `${dv} km/h slower at the apex` : "Losing time through the apex";
+      why = dv >= 2 ? t("{v} km/h slower at the apex", { v: dv }) : t("Losing time through the apex");
     } else {
       // braking for the next corner inside this one's exit: you slow while the perfect lap still accelerates
       const slowing = (S: Float64Array, o: number) => [0, 1, 2].every((k) => S[at(o + k + 1)] < S[at(o + k)] - BRAKE_STEP);
@@ -988,10 +989,10 @@ export class Game {
       const nextName = corners[(j + 1) % corners.length].name;
       why =
         early >= 10
-          ? `Braking ${early} m early for ${nextName}`
+          ? t("Braking {m} m early for {corner}", { m: early, corner: nextName })
           : dv >= 2
-            ? `${dv} km/h slower on average out of the corner`
-            : "Losing time on the exit";
+            ? t("{v} km/h slower on average out of the corner", { v: dv })
+            : t("Losing time on the exit");
     }
 
     const k = this.complexOfCorner.get(cornerName) ?? this.nearestComplex(cornerName);
@@ -1001,10 +1002,10 @@ export class Game {
       const err = opt[g.knot] - this.z[g.knot];
       if (!worst || Math.abs(err) > Math.abs(worst.err)) worst = { gate: g, err };
     }
-    let hint = "Every point here is within 15 cm of the perfect line.";
+    let hint = t("Every point here is within 15 cm of the perfect line.");
     if (worst && Math.abs(worst.err) >= 0.15) {
-      const name = worst.gate.label === "Apex" && worst.gate.corner ? `Apex ${worst.gate.corner}` : worst.gate.label;
-      hint = `${name}: move ${Math.abs(worst.err).toFixed(1)} m ${worst.err > 0 ? "left" : "right"}`;
+      const name = worst.gate.label === "Apex" && worst.gate.corner ? `${t("Apex")} ${worst.gate.corner}` : t(worst.gate.label);
+      hint = t(worst.err > 0 ? "{point}: move {m} m left" : "{point}: move {m} m right", { point: name, m: Math.abs(worst.err).toFixed(1) });
     }
     return { why, hint };
   }

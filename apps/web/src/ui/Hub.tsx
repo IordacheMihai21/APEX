@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { t, tn, withLang } from "../i18n";
 import { GAMES, type GamePage, type InfoPage, game, todayProgress } from "../games/registry";
 import { playStreak } from "../games/profile";
 import { InstallBand } from "./Install";
@@ -88,13 +89,13 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
       ),
   }));
   return (
-    <nav aria-label="Today's dailies" className="border-b border-line bg-board/60">
+    <nav aria-label={t("Today's dailies")} className="border-b border-line bg-board/60">
       <div className="mx-auto flex max-w-[1240px] items-stretch gap-x-3 px-4 sm:gap-x-6 md:px-8">
         <p className="flex shrink-0 items-center gap-3 py-2.5">
-          <span className="hidden text-[13px] text-steel sm:inline">Today</span>
+          <span className="hidden text-[13px] text-steel sm:inline">{t("Today")}</span>
           <span className="num text-[13px] font-semibold text-paint">
             {played}/{items.length}
-            <span className="sr-only"> daily games played today</span>
+            <span className="sr-only"> {t("daily games played today")}</span>
           </span>
           <span className="hidden gap-1 sm:flex" aria-hidden="true">
             {items.map((i) => (
@@ -128,13 +129,13 @@ function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; on
         </ul>
         <p
           className="flex shrink-0 items-center gap-1.5 border-l border-line py-2.5 pl-3 text-[12px] text-steel sm:gap-2 sm:pl-4"
-          title={`Days in a row with a daily game played. Best ${streak.best}.${streak.current && !streak.playedToday ? " Play one today to keep it." : ""}`}
+          title={t("Days in a row with a daily game played. Best {best}.", { best: streak.best }) + (streak.current && !streak.playedToday ? " " + t("Play one today to keep it.") : "")}
         >
           <span className={`wide num text-[18px] leading-none ${streak.current && !streak.playedToday ? "text-steel" : "text-paint"}`}>{streak.current}</span>
           <span className="leading-tight">
-            <span className="hidden sm:inline">day</span>
+            <span className="hidden sm:inline">{t("day")}</span>
             <br className="hidden sm:inline" />
-            streak
+            {t("streak")}
           </span>
         </p>
       </div>
@@ -156,7 +157,7 @@ function CornerMap({ trackId, complex }: { trackId: string; complex: number }) {
   if (!detail || !o) return <div className="aspect-square w-full" />;
   const w = Math.max(o.width * 2.2, 20);
   return (
-    <svg viewBox="0 0 1000 1000" className="aspect-square w-full overflow-visible" role="img" aria-label={`Map of ${CATALOG.find((t) => t.id === trackId)?.name} with the corner marked`}>
+    <svg viewBox="0 0 1000 1000" className="aspect-square w-full overflow-visible" role="img" aria-label={t("Map of {circuit} with the corner marked", { circuit: CATALOG.find((c) => c.id === trackId)?.name ?? "" })}>
       <path d={detail.ribbon} fill="none" stroke="#23262d" strokeWidth={w} strokeLinejoin="round" strokeLinecap="round" />
       <path d={detail.corners[complex]} fill="none" stroke="var(--color-ink)" strokeWidth={w * 0.55} strokeLinejoin="round" strokeLinecap="round" className="corner-glow" />
     </svg>
@@ -173,19 +174,19 @@ function ClipCard({ onAction }: { onAction: (a: HubAction) => void }) {
   const { corner, circuit } = cornerLabel(dailyCorner().corner);
   const done = game("make-the-corner").today().state === "done";
   return (
-    <section aria-label="Today's corner, from the clips" className="border-b border-line bg-board">
+    <section aria-label={t("Today's corner, from the clips")} className="border-b border-line bg-board">
       <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4 md:px-8">
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold text-ink">From the clips?</p>
+          <p className="text-[13px] font-semibold text-ink">{t("From the clips?")}</p>
           <p className="mt-0.5 text-[17px] font-semibold leading-snug text-paint">
-            {done ? `You've taken today's corner. Try it again, or play the rest of today's set.` : `Brake for ${corner} at ${circuit} yourself. Three runs, the same corner for everyone.`}
+            {done ? t("You've taken today's corner. Try it again, or play the rest of today's set.") : t("Brake for {corner} at {circuit} yourself. Three runs, the same corner for everyone.", { corner, circuit })}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button className={`${primaryBtn} min-w-[200px]`} onClick={() => onAction({ kind: "mini", game: "make-the-corner" })}>
-            {done ? "Practice corners" : "Take today's corner"}
+            {done ? t("Practice corners") : t("Take today's corner")}
           </button>
-          <button className="px-2 py-1 text-[22px] leading-none text-steel hover:text-paint" aria-label="Hide" onClick={() => setShown(false)}>
+          <button className="px-2 py-1 text-[22px] leading-none text-steel hover:text-paint" aria-label={t("Hide")} onClick={() => setShown(false)}>
             ×
           </button>
         </div>
@@ -212,7 +213,7 @@ function CornerBand({ onAction }: { onAction: (a: HubAction) => void }) {
         </div>
         <div className="min-w-0 lg:self-end">
           <p className="text-[14px] font-semibold text-ink">
-            Corner of the week #{weekNumber()}, {left === 1 ? "last day" : `${left} days left`}
+            {t("Corner of the week #{n}", { n: weekNumber() })}, {left === 1 ? t("last day") : tn(left, "{n} day left", "{n} days left")}
           </p>
           <h2 id="corner-h" className="wide mt-2 text-[clamp(26px,4vw,40px)] leading-[1.02] text-paint">
             {wc.name}
@@ -222,19 +223,19 @@ function CornerBand({ onAction }: { onAction: (a: HubAction) => void }) {
         </div>
         <div className="col-span-2 flex flex-wrap items-center gap-x-6 gap-y-3 lg:col-span-1 lg:col-start-2 lg:self-start">
           <button className={`${secondaryBtn} min-w-[200px]`} onClick={() => onAction({ kind: "corner" })}>
-            {week ? "Try again" : "Take the corner"}
+            {week ? t("Try again") : t("Take the corner")}
           </button>
           <span className="flex items-center gap-2 text-[14px]">
             {week ? (
               <>
                 {medal ? <MedalDisc medal={medal} size={14} /> : null}
-                <span className="text-paint">{medal ? MEDAL_NAME[medal] : "No medal yet"}</span>
+                <span className="text-paint">{medal ? t(MEDAL_NAME[medal]) : t("No medal yet")}</span>
                 <span className="num text-steel">
-                  {week.bestDeltaMs <= 0 ? "on the perfect line" : `+${(week.bestDeltaMs / 1000).toFixed(3)} s`}, {week.tries} {week.tries === 1 ? "try" : "tries"}
+                  {week.bestDeltaMs <= 0 ? t("on the perfect line") : `+${(week.bestDeltaMs / 1000).toFixed(3)} s`}, {tn(week.tries, "{n} try", "{n} tries")}
                 </span>
               </>
             ) : (
-              <span className="text-steel">Unlimited tries. Your best counts for the week.</span>
+              <span className="text-steel">{t("Unlimited tries. Your best counts for the week.")}</span>
             )}
           </span>
         </div>
@@ -265,18 +266,18 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
   const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
   const status = isOver(mystery)
     ? isSolved(mystery)
-      ? `Solved in ${mystery.guesses.length}. Back tomorrow.`
-      : "Missed today. Back tomorrow."
+      ? t("Solved in {n}. Back tomorrow.", { n: mystery.guesses.length })
+      : t("Missed today. Back tomorrow.")
     : mystery.guesses.length
-      ? `${MYSTERY_TRIES - mystery.guesses.length} guesses left`
-      : "New today";
+      ? tn(MYSTERY_TRIES - mystery.guesses.length, "{n} guess left", "{n} guesses left")
+      : t("New today");
   const games = [
     {
       game: "mystery" as const,
       title: game("mystery").name,
       blurb: game("mystery").blurb,
       status,
-      cta: isOver(mystery) ? "See today's answer" : "Guess the circuit",
+      cta: isOver(mystery) ? t("See today's answer") : t("Guess the circuit"),
       art: (
         <svg viewBox="0 0 1000 1000" className="h-full w-auto" aria-hidden="true">
           <path d={answer.outline} pathLength={1} fill="none" stroke="var(--color-ink)" strokeWidth={34} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${REVEAL[0]} 1`} strokeDashoffset={-revealOffset(mystery.key)} />
@@ -288,8 +289,8 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
       title: game("higher-lower").name,
       blurb: game("higher-lower").blurb,
       // today's ten first; once done, the endless run
-      status: hlToday.state === "done" ? `Today ${hlToday.label}. Endless next.` : hlToday.state === "playing" ? hlToday.label : hl.best ? `New today. Best run ${hl.best}` : "New today",
-      cta: hlToday.state === "done" ? "Start a run" : hlToday.state === "playing" ? "Finish today's ten" : "Today's ten calls",
+      status: hlToday.state === "done" ? t("Today {result}. Endless next.", { result: hlToday.label }) : hlToday.state === "playing" ? hlToday.label : hl.best ? t("New today. Best run {n}", { n: hl.best }) : t("New today"),
+      cta: hlToday.state === "done" ? t("Start a run") : hlToday.state === "playing" ? t("Finish today's ten") : t("Today's ten calls"),
       art: (
         <span className="wide flex items-center gap-3 text-[34px] leading-none text-paint">
           7.004 <span className="flex flex-col text-steel"><Up className="h-5 w-5" /><Down className="h-5 w-5" /></span> <span className="text-steel/50">?</span>
@@ -300,8 +301,8 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
       game: "pit-stop" as const,
       title: game("pit-stop").name,
       blurb: game("pit-stop").blurb,
-      status: pit.days[dateKey()] ? `Today ${secs(pit.days[dateKey()].totalMs)} s` : pit.best !== null ? `New today. Best ${secs(pit.best)} s` : "New today",
-      cta: pit.days[dateKey()] ? "Practice stops" : "Box, box",
+      status: pit.days[dateKey()] ? t("Today {time} s", { time: secs(pit.days[dateKey()].totalMs) }) : pit.best !== null ? t("New today. Best {time} s", { time: secs(pit.best) }) : t("New today"),
+      cta: pit.days[dateKey()] ? t("Practice stops") : t("Box, box"),
       art: (
         <span className="flex gap-1.5" aria-hidden="true">
           {["S", "K", "F", "J"].map((k, i) => (
@@ -316,8 +317,8 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
       game: "braking-point" as const,
       title: game("braking-point").name,
       blurb: game("braking-point").blurb,
-      status: bpToday.state === "done" ? `Today ${bpToday.label}. Back tomorrow.` : bpToday.state === "playing" ? bpToday.label : "New today",
-      cta: bpToday.state === "done" ? "Practice stops" : bpToday.state === "playing" ? "Finish today's stops" : "Hit the brakes",
+      status: bpToday.state === "done" ? t("Today {result}. Back tomorrow.", { result: bpToday.label }) : bpToday.state === "playing" ? bpToday.label : t("New today"),
+      cta: bpToday.state === "done" ? t("Practice stops") : bpToday.state === "playing" ? t("Finish today's stops") : t("Hit the brakes"),
       art: (
         <span className="flex items-end gap-1.5" aria-hidden="true">
           {[300, 200, 100].map((m, i) => (
@@ -332,8 +333,8 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
       game: "make-the-corner" as const,
       title: game("make-the-corner").name,
       blurb: game("make-the-corner").blurb,
-      status: mcToday.state === "done" ? `Today ${mcToday.label}. Back tomorrow.` : mcToday.state === "playing" ? mcToday.label : "New today",
-      cta: mcToday.state === "done" ? "Practice corners" : mcToday.state === "playing" ? "Finish today's runs" : "Take the corner",
+      status: mcToday.state === "done" ? t("Today {result}. Back tomorrow.", { result: mcToday.label }) : mcToday.state === "playing" ? mcToday.label : t("New today"),
+      cta: mcToday.state === "done" ? t("Practice corners") : mcToday.state === "playing" ? t("Finish today's runs") : t("Take the corner"),
       art: (
         <svg viewBox="0 0 120 80" className="h-[72px] w-auto" aria-hidden="true">
           <path d="M14 76 L14 40 Q14 12 44 12 L112 12" fill="none" stroke="#3a3f48" strokeWidth={18} />
@@ -347,8 +348,8 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
       game: "corner-order" as const,
       title: game("corner-order").name,
       blurb: game("corner-order").blurb,
-      status: orderToday.state === "done" ? `Today ${orderToday.label}. Back tomorrow.` : orderToday.state === "playing" ? orderToday.label : "New today",
-      cta: orderToday.state === "done" ? "See today's order" : "Sort the corners",
+      status: orderToday.state === "done" ? t("Today {result}. Back tomorrow.", { result: orderToday.label }) : orderToday.state === "playing" ? orderToday.label : t("New today"),
+      cta: orderToday.state === "done" ? t("See today's order") : t("Sort the corners"),
       art: (
         <span className="flex items-end gap-1.5" aria-hidden="true">
           {["M8 34 Q8 8 34 8", "M6 30 L20 10 L34 30", "M8 8 Q34 8 34 34"].map((d, i) => (
@@ -366,8 +367,8 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
       game: "speed-trap" as const,
       title: game("speed-trap").name,
       blurb: game("speed-trap").blurb,
-      status: trapToday.state === "done" ? `Today ${trapToday.label}. Back tomorrow.` : trapToday.state === "playing" ? trapToday.label : "New today",
-      cta: trapToday.state === "done" ? "See today's speeds" : "Clock the speed",
+      status: trapToday.state === "done" ? t("Today {result}. Back tomorrow.", { result: trapToday.label }) : trapToday.state === "playing" ? trapToday.label : t("New today"),
+      cta: trapToday.state === "done" ? t("See today's speeds") : t("Clock the speed"),
       art: (
         <span className="wide num flex items-baseline gap-2 text-[34px] leading-none text-paint" aria-hidden="true">
           2<span className="text-steel/50">??</span>
@@ -379,8 +380,8 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
       game: "line-up" as const,
       title: game("line-up").name,
       blurb: game("line-up").blurb,
-      status: lineupToday.state === "done" ? `Today ${lineupToday.label}. Back tomorrow.` : lineupToday.state === "playing" ? lineupToday.label : "New today",
-      cta: lineupToday.state === "done" ? "See today's groups" : "Find the groups",
+      status: lineupToday.state === "done" ? t("Today {result}. Back tomorrow.", { result: lineupToday.label }) : lineupToday.state === "playing" ? lineupToday.label : t("New today"),
+      cta: lineupToday.state === "done" ? t("See today's groups") : t("Find the groups"),
       art: (
         <span className="grid grid-cols-4 gap-1" aria-hidden="true">
           {["var(--color-yellow)", "var(--color-green)", "#5aa9ff", "var(--color-purple)"].flatMap((c, r) =>
@@ -393,8 +394,8 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
       game: "aerial" as const,
       title: game("aerial").name,
       blurb: game("aerial").blurb,
-      status: aerialToday.state === "done" ? `Today ${aerialToday.label}. Back tomorrow.` : aerialToday.state === "playing" ? aerialToday.label : "New today",
-      cta: aerialToday.state === "done" ? "See today's circuit" : "Look down",
+      status: aerialToday.state === "done" ? t("Today {result}. Back tomorrow.", { result: aerialToday.label }) : aerialToday.state === "playing" ? aerialToday.label : t("New today"),
+      cta: aerialToday.state === "done" ? t("See today's circuit") : t("Look down"),
       art: (
         <span className="relative block h-12 w-20 overflow-hidden border border-line" aria-hidden="true" style={{ background: "#466636" }}>
           <span className="absolute -top-2 -left-3 h-9 w-12 rounded-[40%]" style={{ background: "#284724" }} />
@@ -408,9 +409,9 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
       game: "reaction" as const,
       title: game("reaction").name,
       blurb: game("reaction").blurb,
-      status: reaction.best !== null ? `Best ${(reaction.best / 1000).toFixed(3)} s` : "Five lights, one tap",
-      cta: "Test your reaction",
-      art: <Gantry lit={0} size="sm" label="Start lights" />,
+      status: reaction.best !== null ? t("Best {time} s", { time: (reaction.best / 1000).toFixed(3) }) : t("Five lights, one tap"),
+      cta: t("Test your reaction"),
+      art: <Gantry lit={0} size="sm" label={t("Start lights")} />,
     },
   ];
   // in the registry's order, the same as the Today bar
@@ -424,25 +425,22 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
           <>
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
               <h2 id="games-daily-h" className="wide text-[34px] leading-none text-paint">
-                Today's set
+                {t("Today's set")}
               </h2>
               <p className="text-[14px] text-steel">
-                <span className="num font-semibold text-paint">
-                  {progress.done} of {progress.total}
-                </span>{" "}
-                played. A new set at midnight.
+                <span className="num font-semibold text-paint">{t("{done} of {total}", { done: progress.done, total: progress.total })}</span> {t("played. A new set at midnight.")}
               </p>
             </div>
             <p className="mt-3 text-[15px] text-steel">
-              {COUNT_WORD[shown.length] ?? shown.length} more {shown.length === 1 ? "daily" : "dailies"} beside the Quali. The same puzzles for everyone, a few minutes each.
+              {t(shown.length === 1 ? "{count} more daily beside the Quali. The same puzzles for everyone, a few minutes each." : "{count} more dailies beside the Quali. The same puzzles for everyone, a few minutes each.", { count: t(COUNT_WORD[shown.length] ?? String(shown.length)) })}
             </p>
           </>
         ) : (
           <>
             <h2 id="games-extras-h" className="wide text-[34px] leading-none text-paint">
-              More to play
+              {t("More to play")}
             </h2>
-            <p className="mt-3 text-[15px] text-steel">Any time, as often as you like.</p>
+            <p className="mt-3 text-[15px] text-steel">{t("Any time, as often as you like.")}</p>
           </>
         )}
         <ul className={`mt-6 grid gap-3 md:grid-cols-2 ${shown.length === 3 ? "lg:grid-cols-3" : shown.length >= 4 ? "xl:grid-cols-4" : ""}`}>
@@ -455,7 +453,7 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
                     {g.art}
                     {done && (
                       <span className="flex shrink-0 items-center gap-1.5 self-start text-[12px] font-semibold text-paint/80">
-                        <Chequered className="h-4 w-4" /> Done
+                        <Chequered className="h-4 w-4" /> {t("Done")}
                       </span>
                     )}
                   </span>
@@ -533,7 +531,7 @@ function HeroMap({ id, o, grades }: { id: string; o: Outline & OutlineDetail; gr
   const trail = (len: number) => points.map((p) => (len - p).toFixed(4)).join(";");
   const timing = { dur, begin: "1.3s", repeatCount: "indefinite", calcMode: "linear", keyTimes: o.keyTimes } as const;
   return (
-    <svg viewBox="0 0 1000 1000" className="hero-map h-full w-full overflow-visible" role="img" aria-label={`Map of ${CATALOG.find((t) => t.id === id)?.name}`}>
+    <svg viewBox="0 0 1000 1000" className="hero-map h-full w-full overflow-visible" role="img" aria-label={t("Map of {circuit}", { circuit: CATALOG.find((c) => c.id === id)?.name ?? "" })}>
       <path className="draw draw-1" pathLength={1} d={o.ribbon} fill="none" stroke="#23262d" strokeWidth={w} strokeLinejoin="round" strokeLinecap="round" />
       {grades &&
         o.groups.map((g, i) =>
@@ -595,14 +593,14 @@ function MapCaption({ o, bestMs, medal, perfectMs }: { o: Outline; bestMs: numbe
   return (
     <figcaption className="fade-in-late grid grid-cols-2 gap-4 border-t border-line pt-3">
       <div>
-        <div className="text-[13px] text-steel">{bestMs === null ? "No lap yet today" : "Your best today"}</div>
+        <div className="text-[13px] text-steel">{bestMs === null ? t("No lap yet today") : t("Your best today")}</div>
         <div className="mt-1 flex items-center gap-2">
           {medal && <MedalDisc medal={medal} size={14} />}
           <span className="wide num text-[15px] text-paint">{bestMs === null ? "-:--.---" : lapTime(bestMs)}</span>
         </div>
       </div>
       <div className="text-right">
-        <div className="text-[13px] text-steel">Perfect lap, driven live</div>
+        <div className="text-[13px] text-steel">{t("Perfect lap, driven live")}</div>
         <div className="wide num mt-1 text-[15px] text-paint">{lapTime(perfectMs)}</div>
       </div>
     </figcaption>
@@ -612,15 +610,15 @@ function MapCaption({ o, bestMs, medal, perfectMs }: { o: Outline; bestMs: numbe
 export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
   }, []);
   const today = dateKey(new Date(now));
   const daily = useMemo(() => loadDaily(today), [today]);
   const stats = useMemo(() => dailyStats(), []);
   const season = useMemo(() => loadSeason(), []);
 
-  const info = CATALOG.find((t) => t.id === daily.trackId)!;
+  const info = CATALOG.find((c) => c.id === daily.trackId)!;
   // the official figures, the same ones the minigames use (our corner groups can differ)
   const facts = CIRCUITS.find((c) => c.id === daily.trackId);
   const condition = conditionOf(daily);
@@ -636,9 +634,9 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
       import("../game/prewarm").then((m) => m.prewarm(daily.trackId, condition === "wet")).catch(() => {});
     };
     const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
-    const t = setTimeout(warm, 6000);
+    const timer = setTimeout(warm, 6000);
     const stop = () => {
-      clearTimeout(t);
+      clearTimeout(timer);
       for (const e of events) window.removeEventListener(e, warm, true);
     };
     for (const e of events) window.addEventListener(e, warm, { capture: true, passive: true, once: true });
@@ -657,7 +655,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   const lapsLeft = DAILY_LAPS - daily.laps.length;
   const week = raceWeek(today);
   const quali = qualifyingDay(today);
-  const weekName = week ? CATALOG.find((t) => t.id === week.trackId)?.name : null;
+  const weekName = week ? CATALOG.find((c) => c.id === week.trackId)?.name : null;
   const medal = bestMedal(daily);
   const next = nextMedal(daily.trackId, medal, conditionOf(daily));
   // today's fastest lap (its time goes in the caption)
@@ -674,12 +672,12 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
         <p className="border-b border-line bg-board px-4 py-2 text-center text-[13px] text-paint/90">
           {quali ? (
             <>
-              <span className="font-semibold text-ink">Qualifying day at {weekName}.</span> {raceWeekCorner(today) ? "Today's Daily Quali and Make the corner are on the race-weekend circuit." : "Today's Daily Quali is on the race-weekend circuit."}
+              <span className="font-semibold text-ink">{t("Qualifying day at {circuit}.", { circuit: weekName ?? "" })}</span> {raceWeekCorner(today) ? t("Today's Daily Quali and Make the corner are on the race-weekend circuit.") : t("Today's Daily Quali is on the race-weekend circuit.")}
             </>
           ) : (
             <>
-              <span className="font-semibold text-ink">Race week:</span> {weekName} hosts its Grand Prix this weekend.{" "}
-              {raceWeekCorner(today) ? "Make the corner runs its corners all week, and Saturday's Daily Quali is there." : "Saturday's Daily Quali is there."}
+              <span className="font-semibold text-ink">{t("Race week:")}</span> {t("{circuit} hosts its Grand Prix this weekend.", { circuit: weekName ?? "" })}{" "}
+              {raceWeekCorner(today) ? t("Make the corner runs its corners all week, and Saturday's Daily Quali is there.") : t("Saturday's Daily Quali is there.")}
             </>
           )}
         </p>
@@ -692,29 +690,29 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
       >
         <div className="@container relative z-[1] flex flex-col">
           <div className="rise flex items-center gap-4" style={d(0)}>
-            <Gantry lit={lit} size="sm" sequence label={`Next Daily Quali in ${hms(left)}`} />
+            <Gantry lit={lit} size="sm" sequence label={t("Next Daily Quali in {time}", { time: hms(left) })} />
             <div className="leading-tight">
-              <div className="text-[13px] text-steel">Next circuit in</div>
+              <div className="text-[13px] text-steel">{t("Next circuit in")}</div>
               <Segments text={hms(left)} className="mt-1 h-4" color="#ff2b1a" ghost={0.18} />
             </div>
           </div>
 
           <p className="rise mt-6 text-[15px] font-semibold text-ink lg:mt-12" style={d(60)}>
-            Daily Quali No. {dailyNumber()}
-            {quali ? ", race-weekend special" : ""}
+            {t("Daily Quali No. {n}", { n: dailyNumber() })}
+            {quali ? t(", race-weekend special") : ""}
           </p>
           <h1 id="daily-h" className="reveal-up wide mt-2 pb-1 text-[clamp(36px,12.5cqw,84px)] [overflow-wrap:anywhere] leading-[0.95] text-paint" style={d(100)}>
-            <span className="sr-only">Lapdle, the daily racing line challenge. Today's circuit: </span>
+            <span className="sr-only">{t("Lapdle, the daily racing line challenge. Today's circuit:")} </span>
             <span>{info.name}</span>
           </h1>
           <p className="rise mt-2 text-[15px] text-steel" style={d(200)}>
-            {info.country}, {(facts?.lengthKm ?? o.lengthM / 1000).toFixed(3)} km, {facts?.turns ?? o.cornerCount} corners
+            {t("{country}, {km} km, {n} corners", { country: t(info.country), km: (facts?.lengthKm ?? o.lengthM / 1000).toFixed(3), n: facts?.turns ?? o.cornerCount })}
           </p>
           {condition !== "dry" && (
             <p className="rise mt-3 flex items-start gap-2.5 text-[14px] leading-snug text-paint/85" style={d(230)}>
               <span className="grid h-7 w-7 shrink-0 place-items-center border border-line text-paint">{condition === "wet" ? <Rain className="h-4 w-4" /> : <LowDownforce className="h-4 w-4" />}</span>
               <span>
-                <span className="font-semibold text-paint">{CONDITION_NAME[condition]}.</span> {CONDITION_NOTE[condition]}
+                <span className="font-semibold text-paint">{t(CONDITION_NAME[condition])}.</span> {t(CONDITION_NOTE[condition])}
               </span>
             </p>
           )}
@@ -730,12 +728,17 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           <div className="rise mt-4 max-w-[440px] lg:mt-10" style={d(260)}>
             <p className="mb-2.5 text-[15px] leading-snug text-paint/85">
               {daily.status === "won"
-                ? `Pole on lap ${daily.laps.length}. Come back tomorrow.`
+                ? t("Pole on lap {n}. Come back tomorrow.", { n: daily.laps.length })
                 : daily.status === "lost"
-                  ? `${daily.ended ? `Day ended after ${daily.laps.length} ${daily.laps.length === 1 ? "lap" : "laps"}` : "Out of laps"}${medal ? ` with ${MEDAL_NAME[medal]}` : ""}. A new circuit at midnight.`
+                  ? t(medal ? "{end} with {medal}. A new circuit at midnight." : "{end}. A new circuit at midnight.", {
+                      end: daily.ended ? tn(daily.laps.length, "Day ended after {n} lap", "Day ended after {n} laps") : t("Out of laps"),
+                      medal: medal ? t(MEDAL_NAME[medal]) : "",
+                    })
                   : daily.laps.length
-                    ? `${lapsLeft} ${lapsLeft === 1 ? "lap" : "laps"} left${next ? `. ${MEDAL_NAME[next.medal]} is next.` : "."}`
-                    : "Six laps to earn a medal."}
+                    ? next
+                      ? t("{left}. {medal} is next.", { left: tn(lapsLeft, "{n} lap left", "{n} laps left"), medal: t(MEDAL_NAME[next.medal]) })
+                      : `${tn(lapsLeft, "{n} lap left", "{n} laps left")}.`
+                    : t("Six laps to earn a medal.")}
             </p>
             <LapGrid rows={daily.laps.map((l) => l.grades)} total={DAILY_LAPS} cols={cols} size="sm" />
             <div className="mt-4">
@@ -748,15 +751,15 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
                 // the day is done: the next thing to play is a past day
                 <span className="flex flex-wrap gap-2">
                   <button className={`${primaryBtn} flex-1 sm:flex-none sm:min-w-[220px]`} onClick={() => onAction({ kind: "mini", game: "archive" })}>
-                    Play past days
+                    {t("Play past days")}
                   </button>
                   <button className={`${secondaryBtn} flex-1 sm:flex-none`} onClick={() => onAction({ kind: "daily-summary" })}>
-                    Today's result
+                    {t("Today's result")}
                   </button>
                 </span>
               ) : (
                 <button className={`${primaryBtn} w-full sm:w-auto sm:min-w-[260px]`} onClick={() => onAction({ kind: "daily" })}>
-                  {daily.laps.length ? "Continue" : "Lights out"}
+                  {daily.laps.length ? t("Continue") : t("Lights out")}
                 </button>
               )}
             </div>
@@ -787,33 +790,33 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
         <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1fr)] gap-8 px-4 py-12 md:px-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:items-center lg:py-16">
           <div>
             <h2 id="season-h" className="wide text-[34px] leading-none text-paint">
-              Perfect Season
+              {t("Perfect Season")}
             </h2>
             <p className="mt-3 max-w-[38ch] text-[15px] leading-snug text-steel">
               {run
-                ? `Round ${run.results.length + 1} of ${SEASON_ROUNDS}: ${CATALOG.find((t) => t.id === currentTrack(run))?.name}. Beat the rival's pole in three laps.`
+                ? t("Round {n} of {total}: {circuit}. Beat the rival's pole in three laps.", { n: run.results.length + 1, total: SEASON_ROUNDS, circuit: CATALOG.find((c) => c.id === currentTrack(run))?.name ?? "" })
                 : season.best
-                  ? `Your best is ${season.best.wins}-${season.best.losses}. Twelve circuits, three laps each, one rival on pole.`
-                  : "Twelve circuits, three laps each, one rival on pole. Win all twelve."}
+                  ? t("Your best is {score}. Twelve circuits, three laps each, one rival on pole.", { score: `${season.best.wins}-${season.best.losses}` })
+                  : t("Twelve circuits, three laps each, one rival on pole. Win all twelve.")}
             </p>
             <div className="mt-6 flex items-center gap-4">
               <Roll text={run ? `${wins}-${losses}` : season.best ? `${season.best.wins}-${season.best.losses}` : "12-0"} className="wide text-[44px] text-paint" />
-              <span className="text-[13px] leading-tight text-steel">{run ? "this season" : season.best ? "best season" : "the target"}</span>
+              <span className="text-[13px] leading-tight text-steel">{run ? t("this season") : season.best ? t("best season") : t("the target")}</span>
             </div>
             <div className="mt-6 flex flex-wrap gap-2">
               <button className={run ? primaryBtn : secondaryBtn} onClick={() => onAction({ kind: "season", fresh: !run })}>
-                {run ? "Next race" : "Start a season"}
+                {run ? t("Next race") : t("Start a season")}
               </button>
               {run && (
                 <button className={secondaryBtn} onClick={() => onAction({ kind: "season", fresh: true })}>
-                  Restart
+                  {t("Restart")}
                 </button>
               )}
             </div>
           </div>
 
           {/* the calendar: twelve rounds, each its own circuit once a season is drawn */}
-          <ol className="grid grid-cols-4 gap-x-3 gap-y-5 sm:grid-cols-6" aria-label="Season calendar">
+          <ol className="grid grid-cols-4 gap-x-3 gap-y-5 sm:grid-cols-6" aria-label={t("Season calendar")}>
             {Array.from({ length: SEASON_ROUNDS }, (_, i) => {
               const id = run?.order[i] ?? POOL[i];
               const r = run?.results[i];
@@ -826,7 +829,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
                   </div>
                   <span className={`num mt-1.5 text-[12px] font-semibold ${current ? "text-ink" : "text-steel"}`}>
                     R{i + 1}
-                    {r ? ` ${r === "W" ? "Pole" : "P2"}` : ""}
+                    {r ? ` ${r === "W" ? t("Pole") : "P2"}` : ""}
                   </span>
                 </li>
               );
@@ -839,28 +842,28 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
       <section aria-labelledby="practice-h" className="border-t border-line">
         <div className="mx-auto max-w-[1240px] px-4 pt-12 md:px-8 lg:pt-16">
           <h2 id="practice-h" className="wide text-[34px] leading-none text-paint">
-            Free Practice
+            {t("Free Practice")}
           </h2>
           <p className="mt-3 text-[15px] text-steel">
-            Any circuit, unlimited laps, the perfect line on demand.{" "}
+            {t("Any circuit, unlimited laps, the perfect line on demand.")}{" "}
             <a href="/circuits" className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint">
-              Circuit guides
+              {t("Circuit guides")}
             </a>
           </p>
         </div>
         <ul className="mx-auto flex max-w-[1240px] snap-x snap-mandatory gap-3 overflow-x-auto px-4 pt-6 pb-12 [scrollbar-color:#2b2f37_transparent] [scrollbar-width:thin] md:px-8 lg:pb-16">
-          {CATALOG.filter((t) => OUTLINES[t.id] && t.id !== "kestrel").map((t, i) => {
-            const to = OUTLINES[t.id];
+          {CATALOG.filter((c) => OUTLINES[c.id] && c.id !== "kestrel").map((t2, i) => {
+            const to = OUTLINES[t2.id];
             return (
-              <li key={t.id} className="in-view shrink-0 snap-start" style={d(i * 35)}>
-                <button onClick={() => onAction({ kind: "practice-track", trackId: t.id })} className="track-tile flex w-[176px] flex-col border border-line bg-board/70 p-3 text-left">
+              <li key={t2.id} className="in-view shrink-0 snap-start" style={d(i * 35)}>
+                <button onClick={() => onAction({ kind: "practice-track", trackId: t2.id })} className="track-tile flex w-[176px] flex-col border border-line bg-board/70 p-3 text-left">
                   <svg viewBox="0 0 1000 1000" className="aspect-square w-full" aria-hidden="true">
                     <path d={to.outline} fill="none" stroke="#2b2f37" strokeWidth={46} strokeLinejoin="round" />
                     <path className="tile-lap" pathLength={1} d={to.outline} fill="none" stroke="#f2f2ee" strokeWidth={22} strokeLinejoin="round" />
                   </svg>
-                  <span className="wide mt-3 truncate text-[15px] leading-tight text-paint">{t.name}</span>
+                  <span className="wide mt-3 truncate text-[15px] leading-tight text-paint">{t2.name}</span>
                   <span className="mt-0.5 text-[13px] text-steel">
-                    {t.country}, {(to.lengthM / 1000).toFixed(1)} km
+                    {t(t2.country)}, {(to.lengthM / 1000).toFixed(1)} km
                   </span>
                 </button>
               </li>
@@ -871,35 +874,35 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
 
 
       {/* record */}
-      <section aria-label="Your record" className="border-t border-line">
+      <section aria-label={t("Your record")} className="border-t border-line">
         <p className="mx-auto flex max-w-[1240px] flex-wrap items-baseline gap-x-6 gap-y-2 px-4 py-6 text-[13px] text-steel md:px-8">
           {stats.played === 0 ? (
-            <span>Win a medal in the Daily Quali to start your record.</span>
+            <span>{t("Win a medal in the Daily Quali to start your record.")}</span>
           ) : (
             <>
               <span>
                 <Roll text={String(stats.played)} className="wide mr-1.5 text-[15px] text-paint" />
-                {stats.played === 1 ? "daily played" : "dailies played"}
+                {stats.played === 1 ? t("daily played") : t("dailies played")}
               </span>
               <span>
                 <Roll text={String(stats.medalDays)} className="wide mr-1.5 text-[15px] text-paint" />
-                {stats.medalDays === 1 ? "medal" : "medals"}
+                {stats.medalDays === 1 ? t("medal") : t("medals")}
               </span>
               <span>
                 <Roll text={String(stats.poles)} className="wide mr-1.5 text-[15px] text-purple" />
-                {stats.poles === 1 ? "pole" : "poles"}
+                {stats.poles === 1 ? t("pole") : t("poles")}
               </span>
               <span>
                 <Roll text={String(stats.streak)} className="wide mr-1.5 text-[15px] text-ink" />
-                day medal streak, best {stats.bestStreak}
+                {t("day medal streak, best {n}", { n: stats.bestStreak })}
               </span>
             </>
           )}
           <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "stats" })}>
-            See your record
+            {t("See your record")}
           </button>
           <button className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint" onClick={() => onAction({ kind: "mini", game: "archive" })}>
-            Past dailies
+            {t("Past dailies")}
           </button>
         </p>
       </section>
@@ -910,18 +913,16 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
       <section aria-labelledby="about-h" className="border-t border-line">
         <div className="mx-auto max-w-[1240px] px-4 py-12 md:px-8 lg:py-16">
           <h2 id="about-h" className="wide text-[clamp(24px,3.4vw,34px)] leading-none text-paint">
-            The daily racing line challenge
+            {t("The daily racing line challenge")}
           </h2>
           <div className="mt-4 grid max-w-[1000px] gap-4 text-[15px] leading-relaxed text-paint/80 md:grid-cols-2 md:gap-10">
             <p>
-              Lapdle is a free daily puzzle for anyone who loves a good racing line. Every day there is one real circuit to master. Choose how you take each corner (early apex, classic or late), then watch your car drive
-              that line with real physics and see, corner by corner, where the time went.
+              {t("Lapdle is a free daily puzzle for anyone who loves a good racing line. Every day there is one real circuit to master. Choose how you take each corner (early apex, classic or late), then watch your car drive that line with real physics and see, corner by corner, where the time went.")}
             </p>
             <p>
-              You have six laps to earn a medal and close in on the perfect lap, and a new circuit arrives every day. Between laps, name a circuit from a few corners, call higher or lower on circuit facts, run a pit stop
-              or test your start against the lights. It plays in your browser, with no account and no download.{" "}
-              <a href="/how-to-play" className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint">
-                How to play every game
+              {t("You have six laps to earn a medal and close in on the perfect lap, and a new circuit arrives every day. Between laps, name a circuit from a few corners, call higher or lower on circuit facts, run a pit stop or test your start against the lights. It plays in your browser, with no account and no download.")}{" "}
+              <a href={withLang("/how-to-play")} className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint">
+                {t("How to play every game")}
               </a>
               .
             </p>

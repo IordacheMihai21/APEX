@@ -1,4 +1,5 @@
 import { lapTime } from "./format";
+import { t } from "../i18n";
 import type { Condition } from "@apex/engine";
 import { MEDALS, MEDAL_COLOR, MEDAL_NAME, type Medal, medalTimes, nextMedal, realPole } from "../modes/medals";
 
@@ -24,20 +25,20 @@ export function MedalDisc({ medal, earned = true, size = 16, className = "" }: {
  * the ones already earned lit. It is the day's goal at a glance.
  */
 export function MedalLadder({ trackId, best, condition = "dry" }: { trackId: string; best: Medal | null; condition?: Condition }) {
-  const t = medalTimes(trackId, condition);
-  if (!t) return null;
+  const times = medalTimes(trackId, condition);
+  if (!times) return null;
   const reached = best ? MEDALS.indexOf(best) : -1;
   return (
-    <ol className="grid grid-cols-4 gap-2" aria-label="Medal targets">
+    <ol className="grid grid-cols-4 gap-2" aria-label={t("Medal targets")}>
       {MEDALS.map((m, i) => {
         const on = i <= reached;
         return (
           <li key={m} className={`flex flex-col gap-1.5 border-t-2 pt-2 ${on ? "" : "border-line"}`} style={on ? { borderColor: MEDAL_COLOR[m] } : undefined}>
             <span className="flex items-center gap-1.5">
               <MedalDisc medal={m} earned={on} size={14} />
-              <span className={`text-[13px] font-semibold ${on ? "text-paint" : "text-steel"}`}>{MEDAL_NAME[m]}</span>
+              <span className={`text-[13px] font-semibold ${on ? "text-paint" : "text-steel"}`}>{t(MEDAL_NAME[m])}</span>
             </span>
-            <span className={`num text-[13px] ${on ? "text-paint" : "text-steel"}`}>{m === "pole" ? "Every corner" : lapTime(t[m])}</span>
+            <span className={`num text-[13px] ${on ? "text-paint" : "text-steel"}`}>{m === "pole" ? t("Every corner") : lapTime(times[m])}</span>
           </li>
         );
       })}
@@ -59,19 +60,19 @@ export function MedalRow({ trackId, medal, lapTimeMs, stamp, condition = "dry" }
             <span className={stamp ? "medal-stamp" : ""}>
               <MedalDisc medal={medal} size={22} />
             </span>
-            <span className="wide text-[15px] text-paint">{MEDAL_NAME[medal]}</span>
+            <span className="wide text-[15px] text-paint">{t(MEDAL_NAME[medal])}</span>
           </>
         ) : (
-          <span className="caption">No medal yet</span>
+          <span className="caption">{t("No medal yet")}</span>
         )}
       </span>
       {next && (
         <span className="caption num text-right">
           {next.ms === null ? (
-            <>Pole needs every corner perfect</>
+            <>{t("Pole needs every corner perfect")}</>
           ) : (
             <>
-              {MEDAL_NAME[next.medal]} at {lapTime(next.ms)}, <span className="text-paint">{((lapTimeMs - next.ms) / 1000).toFixed(3)}s</span> to find
+              {t("{medal} at {time},", { medal: t(MEDAL_NAME[next.medal]), time: lapTime(next.ms) })} <span className="text-paint">{((lapTimeMs - next.ms) / 1000).toFixed(3)}s</span> {t("to find")}
             </>
           )}
         </span>
@@ -87,10 +88,10 @@ export function PoleTarget({ trackId, bestMs, condition = "dry" }: { trackId: st
   const beaten = bestMs !== null && bestMs < pole.ms;
   return (
     <p className="caption mt-3 flex items-baseline justify-between gap-3 border-t border-line pt-2">
-      <span>{beaten ? "Faster than the real 2025 pole" : "Beat the real 2025 pole"}</span>
+      <span>{beaten ? t("Faster than the real 2025 pole") : t("Beat the real 2025 pole")}</span>
       <span className={`num font-semibold ${beaten ? "text-ink" : "text-paint"}`}>
         {lapTime(pole.ms)}
-        {beaten && bestMs !== null ? ` by ${((pole.ms - bestMs) / 1000).toFixed(3)}s` : ""}
+        {beaten && bestMs !== null ? ` ${t("by {s}s", { s: ((pole.ms - bestMs) / 1000).toFixed(3) })}` : ""}
       </span>
     </p>
   );

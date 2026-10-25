@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { t } from "../i18n";
 import { playStreak } from "../games/profile";
 import { GAMES, type GameId, todayProgress } from "../games/registry";
 import { msToNextDay } from "../modes/daily";
@@ -56,11 +57,11 @@ export function FinishCard({
   const close = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     close.current?.focus();
-    const t = setInterval(() => setLeft(msToNextDay()), 1000);
+    const id = setInterval(() => setLeft(msToNextDay()), 1000);
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
     return () => {
-      clearInterval(t);
+      clearInterval(id);
       window.removeEventListener("keydown", k);
     };
   }, [onClose]);
@@ -108,7 +109,7 @@ export function FinishCard({
       >
         <div className="flex items-center justify-between">
           <span className="caption">{eyebrow}</span>
-          <button ref={close} onClick={onClose} aria-label="Close" className="-mr-2 grid h-9 w-9 place-items-center text-[22px] leading-none text-steel hover:text-paint">
+          <button ref={close} onClick={onClose} aria-label={t("Close")} className="-mr-2 grid h-9 w-9 place-items-center text-[22px] leading-none text-steel hover:text-paint">
             ×
           </button>
         </div>
@@ -132,7 +133,7 @@ export function FinishCard({
         <div className="mt-4 flex flex-wrap gap-2.5">
           <button className={`${primaryBtn} flex-1 basis-36`} onClick={share}>
             <Share className="h-4 w-4" />
-            {copied ? "Copied" : "Share"}
+            {copied ? t("Copied") : t("Share")}
           </button>
           {again && (
             <button className={`${secondaryBtn} flex-1 basis-28`} onClick={again.onClick}>
@@ -142,17 +143,17 @@ export function FinishCard({
         </div>
         {daily && (
           <p className="mt-3 text-[13px] text-steel">
-            Next {daily} in <span className="num font-semibold text-paint">{clock(left)}</span>
+            {t(`Next ${daily} in`)} <span className="num font-semibold text-paint">{clock(left)}</span>
           </p>
         )}
 
         {/* today's set: how much is done, the streak, then what's left first */}
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-line pt-4">
           <span className="flex items-center gap-2.5">
-            <span className="caption">Today</span>
+            <span className="caption">{t("Today")}</span>
             <span className="num text-[15px] font-semibold text-paint">
               {progress.done}/{progress.total}
-              <span className="sr-only"> daily games played</span>
+              <span className="sr-only"> {t("daily games played")}</span>
             </span>
             <span className="flex gap-1" aria-hidden="true">
               {progress.items.map((i) => (
@@ -161,11 +162,11 @@ export function FinishCard({
             </span>
           </span>
           <span className="text-[13px] text-steel">
-            <span className="wide num text-[16px] text-paint">{streak.current}</span> day streak
+            <span className="wide num text-[16px] text-paint">{streak.current}</span> {t("day streak")}
           </span>
         </div>
 
-        <h3 className="caption mt-4">{progress.done === progress.total ? "All of today's done. Play more" : "Play next"}</h3>
+        <h3 className="caption mt-4">{progress.done === progress.total ? t("All of today's done. Play more") : t("Play next")}</h3>
         <ul className="mt-2 divide-y divide-line border-y border-line">
           {next.map(({ g, left, done }) => (
             <li key={g.id}>
@@ -173,8 +174,8 @@ export function FinishCard({
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2 text-[15px] font-semibold text-paint">
                     {g.name}
-                    {left && <span className="bg-ink px-1.5 py-px text-[11px] font-bold tracking-[0.04em] text-night uppercase">Today</span>}
-                    {done && <span className="text-[12px] font-semibold text-steel">Done</span>}
+                    {left && <span className="bg-ink px-1.5 py-px text-[11px] font-bold tracking-[0.04em] text-night uppercase">{t("Today")}</span>}
+                    {done && <span className="text-[12px] font-semibold text-steel">{t("Done")}</span>}
                   </span>
                   <span className="block truncate text-[13px] text-steel">{g.tagline}</span>
                 </span>

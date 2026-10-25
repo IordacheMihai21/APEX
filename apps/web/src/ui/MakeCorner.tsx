@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { t } from "../i18n";
 import type { Condition } from "@apex/engine";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
@@ -42,27 +43,27 @@ const GRADE_TEXT: Record<CallGrade, string> = { purple: "text-purple", green: "t
 
 type Screen = "loading" | "ready" | "run" | "result";
 const PROMPT: Record<Phase, string> = {
-  approach: "Hold to brake",
-  braking: "Let go to carry the speed",
-  rolling: "Press for the throttle",
-  throttle: "Flat out",
+  approach: t("Hold to brake"),
+  braking: t("Let go to carry the speed"),
+  rolling: t("Press for the throttle"),
+  throttle: t("Flat out"),
 };
-const PEDAL: Record<Phase, string> = { approach: "Brake", braking: "Let go", rolling: "Throttle", throttle: "Flat out" };
+const PEDAL: Record<Phase, string> = { approach: t("Brake"), braking: t("Let go"), rolling: t("Throttle"), throttle: t("Flat out") };
 
 /** "3.2 m early", "Spot on" */
 function early(m: number | null, unit: "m" | "km/h", spot: number): string {
-  if (m === null) return "Not made";
-  if (Math.abs(m) < spot) return "Spot on";
+  if (m === null) return t("Not made");
+  if (Math.abs(m) < spot) return t("Spot on");
   const e = Math.abs(m).toFixed(1);
-  return unit === "m" ? `${e} m ${m < 0 ? "early" : "late"}` : `${e} km/h ${m < 0 ? "slow" : "fast"}`;
+  return unit === "m" ? t(m < 0 ? "{e} m early" : "{e} m late", { e }) : t(m < 0 ? "{e} km/h slow" : "{e} km/h fast", { e });
 }
 
 /** Why a run ended short of the exit, from the phase it ended in. */
 function offReason(r: RunScore, phase: Phase): { title: string; line: string } {
-  if (r.outcome === "stopped") return { title: "Stopped", line: "The brakes stayed on until the car stopped. Let go once you're down to the corner's speed." };
-  if (phase === "approach") return { title: "No brakes", line: "The car reached the corner flat out and went straight on." };
-  if (phase === "throttle") return { title: "Ran wide", line: "On the throttle too early: the tyres couldn't hold the line and the car ran off at the exit." };
-  return { title: "Off the road", line: r.brakeM !== null && r.brakeM > 0 && phase === "braking" ? "Braked too late: still too fast when the corner arrived." : "Let go of the brakes too soon: too fast for the corner." };
+  if (r.outcome === "stopped") return { title: t("Stopped"), line: t("The brakes stayed on until the car stopped. Let go once you're down to the corner's speed.") };
+  if (phase === "approach") return { title: t("No brakes"), line: t("The car reached the corner flat out and went straight on.") };
+  if (phase === "throttle") return { title: t("Ran wide"), line: t("On the throttle too early: the tyres couldn't hold the line and the car ran off at the exit.") };
+  return { title: t("Off the road"), line: r.brakeM !== null && r.brakeM > 0 && phase === "braking" ? t("Braked too late: still too fast when the corner arrived.") : t("Let go of the brakes too soon: too fast for the corner.") };
 }
 
 /**
@@ -319,9 +320,9 @@ export function MakeCorner() {
             <p className="mt-2 max-w-[48ch] text-[15px] text-steel">
               {mode === "daily"
                 ? raceWeekCorner()
-                  ? `Race week: ${label.circuit}'s corners all week, before its Grand Prix. The same for everyone. Brake, carry the speed, get on the power.`
-                  : "One famous corner a day, the same for everyone. Brake, carry the speed, get on the power."
-                : "Practice: any corner, any conditions, as often as you like."}
+                  ? t("Race week: {circuit}'s corners all week, before its Grand Prix. The same for everyone. Brake, carry the speed, get on the power.", { circuit: label.circuit })
+                  : t("One famous corner a day, the same for everyone. Brake, carry the speed, get on the power.")
+                : t("Practice: any corner, any conditions, as often as you like.")}
             </p>
           </div>
           {mode === "daily" ? (
@@ -331,19 +332,19 @@ export function MakeCorner() {
                   {score}
                   <span className="text-steel">/{MAX_POINTS}</span>
                 </dd>
-                <dt className="caption mt-1">Best</dt>
+                <dt className="caption mt-1">{t("Best")}</dt>
               </div>
               <div>
                 <dd className="wide num text-[26px] leading-none text-steel">
                   {runNo}/{RUNS_PER_DAY}
                 </dd>
-                <dt className="caption mt-1">Run</dt>
+                <dt className="caption mt-1">{t("Run")}</dt>
               </div>
             </dl>
           ) : (
             done && (
               <button className={secondaryBtn} onClick={() => setFinish(true)}>
-                Today's result
+                {t("Today's result")}
               </button>
             )
           )}
@@ -354,17 +355,17 @@ export function MakeCorner() {
           <div className="min-w-0 flex-1">
             <p className="wide truncate text-[16px] leading-tight text-paint">{label.corner}</p>
             <p className="truncate text-[13px] text-steel">
-              {label.circuit}, a {data?.direction === "mixed" ? "" : `${data?.direction ?? ""} `}turn
+              {t(data?.direction === "left" ? "{circuit}, a left turn" : data?.direction === "right" ? "{circuit}, a right turn" : "{circuit}, a turn", { circuit: label.circuit })}
             </p>
           </div>
           <p className="shrink-0 text-right text-[13px] leading-tight text-paint">
-            {CONDITION_NAME[condition]}
-            {ideal && <span className="block text-[12px] text-steel">perfect: {kmh(ideal.minSpeed)} km/h</span>}
+            {t(CONDITION_NAME[condition])}
+            {ideal && <span className="block text-[12px] text-steel">{t("perfect: {v} km/h", { v: kmh(ideal.minSpeed) })}</span>}
           </p>
         </div>
 
         {mode === "daily" && (
-          <ol className="mt-3 flex gap-1" aria-label={`${runs.length} of ${RUNS_PER_DAY} runs made, best ${score} points`}>
+          <ol className="mt-3 flex gap-1" aria-label={t("{n} of {total} runs made, best {score} points", { n: runs.length, total: RUNS_PER_DAY, score })}>
             {Array.from({ length: RUNS_PER_DAY }, (_, i) => (
               <li key={i} className={`h-2.5 flex-1 ${i < runs.length ? (runs[i].points > 0 ? "bg-green" : "bg-kerb") : i === runs.length ? "bg-paint/40" : "bg-asphalt"}`} />
             ))}
@@ -384,8 +385,8 @@ export function MakeCorner() {
           onPointerCancel={() => press(false)}
           onContextMenu={(e) => e.preventDefault()}
         >
-          <canvas ref={canvas} className="block h-full w-full" aria-label={`3D view of ${label.corner} at ${label.circuit}`} />
-          {noGl && <p className="absolute inset-0 grid place-items-center p-6 text-center text-[15px] text-paint">This game needs WebGL, which this browser has turned off.</p>}
+          <canvas ref={canvas} className="block h-full w-full" aria-label={t("3D view of {corner} at {circuit}", { corner: label.corner, circuit: label.circuit })} />
+          {noGl && <p className="absolute inset-0 grid place-items-center p-6 text-center text-[15px] text-paint">{t("This game needs WebGL, which this browser has turned off.")}</p>}
           <div className="pointer-events-none absolute top-3 right-3 bg-night/75 px-2.5 py-1.5 text-right">
             <span ref={speedEl} className="wide num block text-[clamp(22px,5vw,34px)] leading-none text-paint">
               {data ? kmh(data.conditions[condition].speed[0]) : "–"}
@@ -394,15 +395,15 @@ export function MakeCorner() {
           </div>
           {screen === "run" && phase !== "approach" && (
             <span className={`caption absolute top-3 left-3 px-2 py-1 text-night ${phase === "braking" ? "bg-lamp" : phase === "rolling" ? "bg-yellow" : "bg-green"}`}>
-              {phase === "braking" ? "Braking" : phase === "rolling" ? "Carrying speed" : "Throttle"}
+              {phase === "braking" ? t("Braking") : phase === "rolling" ? t("Carrying speed") : t("Throttle")}
             </span>
           )}
           {screen === "ready" && (
             <p className="absolute top-3 left-3 max-w-[60%] bg-night/80 px-2.5 py-1.5 text-[12px] leading-snug text-paint/90 sm:text-[13px]">
-              Boards at 300, 200, 100 and 50 m before the turn-in
+              {t("Boards at 300, 200, 100 and 50 m before the turn-in")}
             </p>
           )}
-          {screen === "loading" && <p className="absolute inset-0 grid place-items-center text-[14px] text-steel">Loading the corner…</p>}
+          {screen === "loading" && <p className="absolute inset-0 grid place-items-center text-[14px] text-steel">{t("Loading the corner…")}</p>}
           <button
             type="button"
             data-ui
@@ -411,7 +412,7 @@ export function MakeCorner() {
               setMuted(next);
               (engine.current ??= new EngineSound()).setMuted(next);
             }}
-            aria-label={muted ? "Turn the engine sound on" : "Turn the engine sound off"}
+            aria-label={muted ? t("Turn the engine sound on") : t("Turn the engine sound off")}
             aria-pressed={!muted}
             className="absolute bottom-3 left-3 grid h-10 w-10 place-items-center bg-night/75 text-paint"
           >
@@ -424,7 +425,7 @@ export function MakeCorner() {
               aria-hidden="true"
             >
               <span className="launch-cap">
-                <span className="wide text-[14px] tracking-[0.06em] sm:text-[16px]">{screen === "ready" ? "Go" : PEDAL[phase]}</span>
+                <span className="wide text-[14px] tracking-[0.06em] sm:text-[16px]">{screen === "ready" ? t("Go") : PEDAL[phase]}</span>
               </span>
             </span>
           )}
@@ -434,7 +435,7 @@ export function MakeCorner() {
           <p className="mt-3 text-center text-[14px] text-steel" role="status">
             {screen === "ready" ? (
               <>
-                Tap the view to start<span className="hidden [@media(hover:hover)]:inline"> (or press Space)</span>. Hold to brake, let go, then press for the throttle.
+                {t("Tap the view to start")}<span className="hidden [@media(hover:hover)]:inline"> {t("(or press Space)")}</span>. {t("Hold to brake, let go, then press for the throttle.")}
               </>
             ) : screen === "run" ? (
               PROMPT[phase]
@@ -447,25 +448,25 @@ export function MakeCorner() {
             <div ref={resultBox} className="rise mt-5 scroll-mb-4">
               <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
                 <p className={`wide text-[clamp(26px,6vw,40px)] leading-none ${result.score.outcome === "done" ? "text-paint" : "text-kerb"}`}>
-                  {result.score.outcome === "done" ? (result.score.points >= MAX_POINTS - 5 ? "Perfect corner" : `+${(result.score.lost ?? 0).toFixed(2)} s`) : offReason(result.score, result.phase).title}
+                  {result.score.outcome === "done" ? (result.score.points >= MAX_POINTS - 5 ? t("Perfect corner") : `+${(result.score.lost ?? 0).toFixed(2)} s`) : offReason(result.score, result.phase).title}
                 </p>
                 <p className="wide num text-[22px] text-paint">
-                  {result.score.points} <span className="text-[14px] text-steel">pts</span>
+                  {result.score.points} <span className="text-[14px] text-steel">{t("pts")}</span>
                 </p>
               </div>
               <p className="mt-2 text-[15px] text-paint/85">
                 {result.score.outcome === "done"
                   ? result.score.points >= MAX_POINTS - 5
-                    ? "As quick as the perfect lap through here."
-                    : `Through the corner, ${(result.score.lost ?? 0).toFixed(2)} s slower than the perfect lap.`
+                    ? t("As quick as the perfect lap through here.")
+                    : t("Through the corner, {s} s slower than the perfect lap.", { s: (result.score.lost ?? 0).toFixed(2) })
                   : offReason(result.score, result.phase).line}
               </p>
               <ul className="mt-4 grid gap-2 sm:grid-cols-3">
                 {(
                   [
-                    ["Brake", early(result.score.brakeM, "m", 0.5), `Perfect: ${Math.round(apexS - ideal.brakeS)} m before the apex`],
-                    ["Corner speed", early(result.score.speedKmh, "km/h", 0.5), `Perfect: ${kmh(ideal.minSpeed)} km/h`],
-                    ["Throttle", early(result.score.throttleM, "m", 0.5), Math.abs(ideal.throttleS - apexS) < 2 ? "Perfect: at the apex" : `Perfect: ${Math.round(ideal.throttleS - apexS)} m after the apex`],
+                    [t("Brake"), early(result.score.brakeM, "m", 0.5), t("Perfect: {m} m before the apex", { m: Math.round(apexS - ideal.brakeS) })],
+                    [t("Corner speed"), early(result.score.speedKmh, "km/h", 0.5), t("Perfect: {v} km/h", { v: kmh(ideal.minSpeed) })],
+                    [t("Throttle"), early(result.score.throttleM, "m", 0.5), Math.abs(ideal.throttleS - apexS) < 2 ? t("Perfect: at the apex") : t("Perfect: {m} m after the apex", { m: Math.round(ideal.throttleS - apexS) })],
                   ] as const
                 ).map(([name, what, perfectLine], i) => (
                   <li key={name} className="flex gap-3 border border-line bg-board/70 p-3">
@@ -482,23 +483,23 @@ export function MakeCorner() {
                 {mode === "daily" && done ? (
                   <>
                     <button className={primaryBtn} onClick={() => setFinish(true)}>
-                      See result
+                      {t("See result")}
                     </button>
                     <button className={secondaryBtn} onClick={practiceNew}>
-                      Practice corners
+                      {t("Practice corners")}
                     </button>
                   </>
                 ) : mode === "daily" ? (
                   <button className={primaryBtn} onClick={again}>
-                    Run {runs.length + 1} of {RUNS_PER_DAY}
+                    {t("Run {n} of {total}", { n: runs.length + 1, total: RUNS_PER_DAY })}
                   </button>
                 ) : (
                   <>
                     <button className={primaryBtn} onClick={again}>
-                      Again
+                      {t("Again")}
                     </button>
                     <button className={secondaryBtn} onClick={practiceNew}>
-                      Another corner
+                      {t("Another corner")}
                     </button>
                   </>
                 )}
@@ -515,19 +516,19 @@ export function MakeCorner() {
       </div>
 
       <p className="mt-6 px-4 text-center text-[12px] text-steel">
-        Car:{" "}
+        {t("Car:")}{" "}
         <a className="underline decoration-line underline-offset-4 hover:text-paint" href={CAR_CREDIT.url} target="_blank" rel="noreferrer">
           {CAR_CREDIT.title}
         </a>{" "}
-        by {CAR_CREDIT.author} ({CAR_CREDIT.license}), simplified and repainted. Surroundings: ©{" "}
+        {t("by {author} ({license}), simplified and repainted. Surroundings:", { author: CAR_CREDIT.author, license: CAR_CREDIT.license })} ©{" "}
         <a className="underline decoration-line underline-offset-4 hover:text-paint" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
           OpenStreetMap
         </a>{" "}
-        contributors (ODbL). Terrain:{" "}
+        {t("contributors (ODbL). Terrain:")}{" "}
         <a className="underline decoration-line underline-offset-4 hover:text-paint" href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noreferrer">
           Terrain Tiles
         </a>{" "}
-        (SRTM, USGS 3DEP, Copernicus EU-DEM and others)
+        {t("(SRTM, USGS 3DEP, Copernicus EU-DEM and others)")}
       </p>
 
       <AdBelow />
@@ -536,18 +537,18 @@ export function MakeCorner() {
         <FinishCard
           game="make-the-corner"
           eyebrow={`Make the corner #${dailyNumber()}`}
-          title={cornerVerdict(score)}
+          title={t(cornerVerdict(score))}
           tone={score >= 800 ? "win" : score > 0 ? "neutral" : "loss"}
           value={`${score}`}
-          valueLabel={`of ${MAX_POINTS} points`}
-          message={`${cornerLabel(today.corner).corner}, ${cornerLabel(today.corner).circuit}. Best of ${RUNS_PER_DAY} runs.`}
+          valueLabel={t("of {n} points", { n: MAX_POINTS })}
+          message={t("{corner}, {circuit}. Best of {n} runs.", { corner: cornerLabel(today.corner).corner, circuit: cornerLabel(today.corner).circuit, n: RUNS_PER_DAY })}
           stats={[
-            ["Played", String(st.played)],
-            ["Average", st.average !== null ? String(Math.round(st.average)) : "-"],
-            ["Best", st.best !== null ? String(st.best) : "-"],
+            [t("Played"), String(st.played)],
+            [t("Average"), st.average !== null ? String(Math.round(st.average)) : "-"],
+            [t("Best"), st.best !== null ? String(st.best) : "-"],
           ]}
           shareText={cornerShare(runs, shareLink("/make-the-corner", "share-make-the-corner"))}
-          again={{ label: "Practice corners", onClick: practiceNew }}
+          again={{ label: t("Practice corners"), onClick: practiceNew }}
           daily="corner"
           onClose={() => setFinish(false)}
         />

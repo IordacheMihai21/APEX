@@ -13,6 +13,9 @@ import { contentMeta, parseContent } from "../content/meta";
 import { ChevronLeft } from "../ui/icons";
 import { CONTENT_ROUTES } from "../games/registry";
 import { LANDING_ROUTES, landing } from "../content/Landing";
+import { t, withLang } from "../i18n";
+
+export { hasSpanish } from "../i18n";
 
 /** The app's frame around a page (the header as the app draws it, with a link back to the grid). */
 function Frame({ children }: { children: React.ReactNode }) {
@@ -20,11 +23,11 @@ function Frame({ children }: { children: React.ReactNode }) {
     <div className="grid h-dvh grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr_auto] overflow-hidden">
       <header className="flex h-[52px] items-stretch justify-between border-b border-line bg-night pt-[env(safe-area-inset-top)]">
         <div className="flex min-w-0 items-stretch">
-          <a href="/" className="back grid w-12 shrink-0 place-items-center border-r border-line text-paint" aria-label="Back to the grid">
+          <a href={withLang("/")} className="back grid w-12 shrink-0 place-items-center border-r border-line text-paint" aria-label={t("Back to the grid")}>
             <ChevronLeft />
           </a>
           <div className="flex min-w-0 items-center gap-3 px-3">
-            <a href="/" className="wide text-[17px] leading-none tracking-[0.02em] text-paint sm:text-[20px]">
+            <a href={withLang("/")} className="wide text-[17px] leading-none tracking-[0.02em] text-paint sm:text-[20px]">
               LAPDLE
             </a>
           </div>

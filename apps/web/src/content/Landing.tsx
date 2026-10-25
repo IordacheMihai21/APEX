@@ -1,4 +1,5 @@
 import { GAMES, type GameDef, type GameId, PAGES, type InfoPage, PUBLIC_ROUTES, game } from "../games/registry";
+import { t, withLang } from "../i18n";
 import { Page, Section, link } from "./Guides";
 
 /**
@@ -9,7 +10,7 @@ import { Page, Section, link } from "./Guides";
  * starts (src/main.tsx renders into #root); it is never shown in the app.
  */
 
-const playHref = (g: GameDef) => g.route ?? "/";
+const playHref = (g: GameDef) => withLang(g.route ?? "/");
 
 const INFO: Record<InfoPage, { h1: string; description: string; text: string }> = {
   archive: {
@@ -52,17 +53,17 @@ function GameList({ except }: { except?: GameId }) {
 function MoreLinks() {
   return (
     <p className="flex flex-wrap gap-x-5 gap-y-2">
-      <a className={link} href="/how-to-play">
-        How to play
+      <a className={link} href={withLang("/how-to-play")}>
+        {t("How to play")}
       </a>
       <a className={link} href="/circuits">
-        Circuit guides
+        {t("Circuit guides")}
       </a>
       <a className={link} href="/trivia">
-        Circuit trivia
+        {t("Circuit trivia")}
       </a>
       <a className={link} href="/about">
-        About Lapdle
+        {t("About Lapdle")}
       </a>
     </p>
   );
@@ -72,12 +73,12 @@ function Hub() {
   return (
     <Page>
       <header>
-        <p className="caption">Daily racing games</p>
-        <h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">Lapdle: the daily racing line challenge</h1>
+        <p className="caption">{t("Daily racing games")}</p>
+        <h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">{t("Lapdle: the daily racing line challenge")}</h1>
         <p className="mt-4 text-[17px] leading-relaxed text-paint/90">{game("quali").guide.intro}</p>
-        <p className="mt-2 text-[15px] text-steel">Free in the browser, no account, no download. A new set every day at midnight.</p>
+        <p className="mt-2 text-[15px] text-steel">{t("Free in the browser, no account, no download. A new set every day at midnight.")}</p>
       </header>
-      <Section title="Today's games">
+      <Section title={t("Today's games")}>
         <GameList />
       </Section>
       <MoreLinks />
@@ -91,29 +92,29 @@ function GamePage({ id }: { id: GameId }) {
     <Page>
       <header>
         <p className="caption">
-          <a className={link} href="/">
+          <a className={link} href={withLang("/")}>
             Lapdle
           </a>
         </p>
         <h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">{g.name}</h1>
         <p className="mt-4 text-[17px] leading-relaxed text-paint/90">{g.blurb}</p>
-        <p className="mt-2 text-[15px] text-steel">{g.cadence === "daily" ? "A new round every day at midnight, the same for everyone." : "Play as often as you like."}</p>
+        <p className="mt-2 text-[15px] text-steel">{g.cadence === "daily" ? t("A new round every day at midnight, the same for everyone.") : t("Play as often as you like.")}</p>
       </header>
       {g.howTo && (
-        <Section title="How it works">
+        <Section title={t("How it works")}>
           <ol className="list-decimal space-y-2 pl-5 marker:text-ink">
             {g.howTo.steps.map((step) => (
               <li key={step}>{step}</li>
             ))}
           </ol>
           <p>
-            <a className={link} href={`/how-to-play/${id}`}>
-              Rules, scoring and tips for {g.name}
+            <a className={link} href={withLang(`/how-to-play/${id}`)}>
+              {t("Rules, scoring and tips for {game}", { game: g.name })}
             </a>
           </p>
         </Section>
       )}
-      <Section title="More to play">
+      <Section title={t("More to play")}>
         <GameList except={id} />
       </Section>
       <MoreLinks />
@@ -126,16 +127,16 @@ function Corner() {
     <Page>
       <header>
         <p className="caption">
-          <a className={link} href="/">
+          <a className={link} href={withLang("/")}>
             Lapdle
           </a>
         </p>
-        <h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">Corner of the week</h1>
+        <h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">{t("Corner of the week")}</h1>
         <p className="mt-4 text-[17px] leading-relaxed text-paint/90">
-          One famous corner a week. Set your line through it as often as you like and get as close as you can to the perfect time through that corner.
+          {t("One famous corner a week. Set your line through it as often as you like and get as close as you can to the perfect time through that corner.")}
         </p>
       </header>
-      <Section title="More to play">
+      <Section title={t("More to play")}>
         <GameList />
       </Section>
       <MoreLinks />
@@ -149,12 +150,12 @@ function Info({ page }: { page: InfoPage }) {
     <Page>
       <header>
         <p className="caption">
-          <a className={link} href="/">
+          <a className={link} href={withLang("/")}>
             Lapdle
           </a>
         </p>
-        <h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">{p.h1}</h1>
-        <p className="mt-4 text-[17px] leading-relaxed text-paint/90">{p.text}</p>
+        <h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">{t(p.h1)}</h1>
+        <p className="mt-4 text-[17px] leading-relaxed text-paint/90">{t(p.text)}</p>
       </header>
       <MoreLinks />
     </Page>
@@ -171,15 +172,15 @@ export function landing(route: string): { node: React.ReactNode; title: string; 
   if (route === "/corner")
     return {
       node: <Corner />,
-      title: "Corner of the week: master one famous corner | Lapdle",
-      description: "One famous corner a week from a real circuit. Set your line through it as often as you like and chase the perfect time. Free, no sign-up.",
+      title: t("Corner of the week: master one famous corner | Lapdle"),
+      description: t("One famous corner a week from a real circuit. Set your line through it as often as you like and chase the perfect time. Free, no sign-up."),
     };
   const key = route.slice(1);
   if (key in PAGES) {
     const page = key as InfoPage;
-    return { node: <Info page={page} />, title: PAGES[page], description: INFO[page].description };
+    return { node: <Info page={page} />, title: t(PAGES[page]), description: t(INFO[page].description) };
   }
   const g = GAMES.find((x) => x.route === route);
   if (!g) throw new Error(`no static page for ${route}`);
-  return { node: <GamePage id={g.id} />, title: g.title, description: `${g.blurb} Free, no sign-up.` };
+  return { node: <GamePage id={g.id} />, title: g.title, description: `${g.blurb} ${t("Free, no sign-up.")}` };
 }

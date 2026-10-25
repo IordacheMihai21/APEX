@@ -8,6 +8,7 @@
  * is loaded lazily by the app; their logic lives in src/modes.
  */
 import { DAILY_LAPS, allDailies, bestMedal, dateKey, loadDaily } from "../modes/daily";
+import { t, tn } from "../i18n";
 import { type Medal, MEDAL_NAME } from "../modes/medals";
 import { MYSTERY_TRIES, isOver, isSolved, loadMystery, mysteryDoneDays } from "../modes/mystery";
 import { loadPitStop, secs, todaysStop } from "../modes/pitstop";
@@ -92,8 +93,8 @@ export const GAMES: GameDef[] = [
     today(day = dateKey()) {
       const d = loadDaily(day);
       const medal = bestMedal(d);
-      if (d.status !== "playing") return { state: "done", label: d.status === "won" ? "Pole" : medal ? MEDAL_NAME[medal] : "No medal", medal };
-      return d.laps.length ? { state: "playing", label: `${DAILY_LAPS - d.laps.length} laps left`, medal } : { state: "new", label: "Not started" };
+      if (d.status !== "playing") return { state: "done", label: d.status === "won" ? t("Pole") : medal ? t(MEDAL_NAME[medal]) : t("No medal"), medal };
+      return d.laps.length ? { state: "playing", label: tn(DAILY_LAPS - d.laps.length, "{n} lap left", "{n} laps left"), medal } : { state: "new", label: t("Not started") };
     },
     doneDays: () => allDailies().filter((d) => d.status !== "playing").map((d) => d.key),
   },
@@ -127,8 +128,8 @@ export const GAMES: GameDef[] = [
     },
     today(day = dateKey()) {
       const m = loadMystery(day);
-      if (isOver(m)) return { state: "done", label: isSolved(m) ? `Solved in ${m.guesses.length}` : "Missed" };
-      return m.guesses.length ? { state: "playing", label: `${MYSTERY_TRIES - m.guesses.length} guesses left` } : { state: "new", label: "Not started" };
+      if (isOver(m)) return { state: "done", label: isSolved(m) ? t("Solved in {n}", { n: m.guesses.length }) : t("Missed") };
+      return m.guesses.length ? { state: "playing", label: tn(MYSTERY_TRIES - m.guesses.length, "{n} guess left", "{n} guesses left") } : { state: "new", label: t("Not started") };
     },
     doneDays: mysteryDoneDays,
   },
@@ -162,7 +163,7 @@ export const GAMES: GameDef[] = [
     },
     today(day = dateKey()) {
       const stop = todaysStop(loadPitStop(), day);
-      return stop ? { state: "done", label: `${secs(stop.totalMs)} s` } : { state: "new", label: "Not started" };
+      return stop ? { state: "done", label: `${secs(stop.totalMs)} s` } : { state: "new", label: t("Not started") };
     },
     doneDays: () => Object.keys(loadPitStop().days),
   },
@@ -197,7 +198,7 @@ export const GAMES: GameDef[] = [
     today(day = dateKey()) {
       const calls = dailyCalls(day);
       if (dailyDone(calls)) return { state: "done", label: `${dailyScore(calls)}/${DAILY_CALLS}` };
-      return calls.length ? { state: "playing", label: `${DAILY_CALLS - calls.length} calls left` } : { state: "new", label: "Not started" };
+      return calls.length ? { state: "playing", label: tn(DAILY_CALLS - calls.length, "{n} call left", "{n} calls left") } : { state: "new", label: t("Not started") };
     },
     doneDays: dailyDoneDays,
   },
@@ -235,7 +236,7 @@ export const GAMES: GameDef[] = [
     today(day = dateKey()) {
       const stops = dayStops(day);
       if (brakingDone(stops)) return { state: "done", label: `${brakingScore(stops)}/${STOPS_PER_DAY * 100}` };
-      return stops.length ? { state: "playing", label: `${STOPS_PER_DAY - stops.length} stops left` } : { state: "new", label: "Not started" };
+      return stops.length ? { state: "playing", label: tn(STOPS_PER_DAY - stops.length, "{n} stop left", "{n} stops left") } : { state: "new", label: t("Not started") };
     },
     doneDays: brakingDoneDays,
   },
@@ -272,7 +273,7 @@ export const GAMES: GameDef[] = [
     today(day = dateKey()) {
       const runs = dayRuns(day);
       if (cornerDone(runs)) return { state: "done", label: `${cornerScore(runs)}/${CORNER_MAX}` };
-      return runs.length ? { state: "playing", label: `${RUNS_PER_DAY - runs.length} runs left` } : { state: "new", label: "Not started" };
+      return runs.length ? { state: "playing", label: tn(RUNS_PER_DAY - runs.length, "{n} run left", "{n} runs left") } : { state: "new", label: t("Not started") };
     },
     doneDays: cornerDoneDays,
   },
@@ -308,7 +309,7 @@ export const GAMES: GameDef[] = [
     today(day = dateKey()) {
       const tries = orderTries(day);
       if (orderOver(tries)) return { state: "done", label: orderSolved(tries) ? `${tries.length}/${ORDER_TRIES}` : `X/${ORDER_TRIES}` };
-      return tries.length ? { state: "playing", label: `${ORDER_TRIES - tries.length} checks left` } : { state: "new", label: "New today" };
+      return tries.length ? { state: "playing", label: tn(ORDER_TRIES - tries.length, "{n} check left", "{n} checks left") } : { state: "new", label: t("New today") };
     },
     doneDays: orderDoneDays,
   },
@@ -343,7 +344,7 @@ export const GAMES: GameDef[] = [
     today(day = dateKey()) {
       const r = trapRounds(day);
       if (trapDone(r)) return { state: "done", label: `${trapScore(r)}/${TRAP_ROUNDS * 100}` };
-      return r.length ? { state: "playing", label: `${TRAP_ROUNDS - r.length} rounds left` } : { state: "new", label: "New today" };
+      return r.length ? { state: "playing", label: tn(TRAP_ROUNDS - r.length, "{n} round left", "{n} rounds left") } : { state: "new", label: t("New today") };
     },
     doneDays: trapDoneDays,
   },
@@ -377,8 +378,8 @@ export const GAMES: GameDef[] = [
     },
     today(day = dateKey()) {
       const s = lineupState(dailyLineup(day), lineupGuesses(day));
-      if (s.over) return { state: "done", label: s.won ? `${s.mistakes} mistake${s.mistakes === 1 ? "" : "s"}` : "Missed" };
-      return s.found.length || s.mistakes ? { state: "playing", label: `${s.found.length}/4 groups` } : { state: "new", label: "New today" };
+      if (s.over) return { state: "done", label: s.won ? tn(s.mistakes, "{n} mistake", "{n} mistakes") : t("Missed") };
+      return s.found.length || s.mistakes ? { state: "playing", label: t("{n}/4 groups", { n: s.found.length }) } : { state: "new", label: t("New today") };
     },
     doneDays: lineupDoneDays,
   },
@@ -413,7 +414,7 @@ export const GAMES: GameDef[] = [
     today(day = dateKey()) {
       const g = aerialGuesses(day);
       if (aerialOver(g, day)) return { state: "done", label: aerialSolved(g, day) ? `${g.length}/${AERIAL_TRIES}` : `X/${AERIAL_TRIES}` };
-      return g.length ? { state: "playing", label: `${AERIAL_TRIES - g.length} guesses left` } : { state: "new", label: "New today" };
+      return g.length ? { state: "playing", label: tn(AERIAL_TRIES - g.length, "{n} guess left", "{n} guesses left") } : { state: "new", label: t("New today") };
     },
     doneDays: aerialDoneDays,
   },
@@ -447,10 +448,17 @@ export const GAMES: GameDef[] = [
     },
     today() {
       const r = loadReaction();
-      return { state: "new", label: r.best !== null ? `Best ${(r.best / 1000).toFixed(3)} s` : "Five lights, one tap" };
+      return { state: "new", label: r.best !== null ? t("Best {time} s", { time: (r.best / 1000).toFixed(3) }) : t("Five lights, one tap") };
     },
   },
 ];
+
+// the copy in the page's language (the English is the key; see i18n.ts)
+for (const g of GAMES) {
+  for (const k of ["name", "short", "tagline", "blurb", "title"] as const) g[k] = t(g[k]);
+  if (g.howTo) g.howTo = { steps: g.howTo.steps.map((s) => t(s)), tip: t(g.howTo.tip) };
+  g.guide = { intro: t(g.guide.intro), scoring: t(g.guide.scoring), tips: g.guide.tips.map((s) => t(s)) };
+}
 
 const BY_ID = new Map(GAMES.map((g) => [g.id, g]));
 export const game = (id: GameId): GameDef => BY_ID.get(id)!;

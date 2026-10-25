@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { t } from "../i18n";
 import { HowToPlay } from "./HowToPlay";
 import { AdBelow } from "./Ads";
 import { FinishCard } from "./FinishCard";
@@ -52,7 +53,7 @@ function Row({ f }: { f: Feedback }) {
         {c.name}
       </th>
       <Cell mark={f.country} delay={0}>
-        {c.country === "Great Britain" ? "GB" : c.country === "United States" ? "USA" : c.country}
+        {c.country === "Great Britain" ? "GB" : c.country === "United States" ? t("USA") : t(c.country)}
       </Cell>
       <Cell mark={f.length.mark} dir={f.length.dir} delay={90}>
         {c.lengthKm.toFixed(2)}
@@ -82,8 +83,8 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
   const [copied, setCopied] = useState(false);
   const [left, setLeft] = useState(msToNextDay);
   useEffect(() => {
-    const t = setInterval(() => setLeft(msToNextDay()), 1000);
-    return () => clearInterval(t);
+    const id = setInterval(() => setLeft(msToNextDay()), 1000);
+    return () => clearInterval(id);
   }, []);
 
   const answer = mysteryAnswer(day.key);
@@ -98,10 +99,10 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
   const wasOver = useRef(over);
   const [finish, setFinish] = useState(false);
   useEffect(() => {
-    let t = 0;
-    if (over && !wasOver.current) t = window.setTimeout(() => setFinish(true), 900);
+    let timer = 0;
+    if (over && !wasOver.current) timer = window.setTimeout(() => setFinish(true), 900);
     wasOver.current = over;
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [over]);
 
   const share = async () => {
@@ -125,18 +126,18 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
         {/* phones: this column dissolves so the outline can pin to the top while the guesses scroll under it */}
         <div className="max-lg:contents">
           <div>
-          <p className="caption">Mystery circuit #{dailyNumber(day.key)}</p>
+          <p className="caption">{t("Mystery circuit #{n}", { n: dailyNumber(day.key) })}</p>
           <div className="mt-2 flex items-start justify-between gap-3">
-            <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">Name the circuit</h1>
+            <h1 className="wide text-[clamp(30px,6vw,52px)] leading-none text-paint">{t("Name the circuit")}</h1>
             <HowToPlay game="mystery" />
           </div>
           <p className="mt-3 max-w-[42ch] text-[15px] text-steel">
-            {MYSTERY_TRIES} guesses. Every miss draws more of the lap, and the clues say how close you were.
+            {t("{n} guesses. Every miss draws more of the lap, and the clues say how close you were.", { n: MYSTERY_TRIES })}
           </p>
           </div>
 
           <figure className="relative mt-6 border border-line bg-board/70 p-6 max-lg:sticky max-lg:top-0 max-lg:z-10 max-lg:mt-0 max-lg:bg-board max-lg:p-3 max-lg:shadow-[0_10px_18px_rgb(10_11_13/0.85)]">
-            <svg viewBox="0 0 1000 1000" className="mx-auto aspect-square w-full max-w-[420px] max-lg:h-[min(34vh,300px)] max-lg:w-auto" role="img" aria-label={over ? `${a.name} circuit outline` : `${Math.round(shown * 100)} percent of the mystery circuit`}>
+            <svg viewBox="0 0 1000 1000" className="mx-auto aspect-square w-full max-w-[420px] max-lg:h-[min(34vh,300px)] max-lg:w-auto" role="img" aria-label={over ? t("{circuit} circuit outline", { circuit: a.name }) : t("{n} percent of the mystery circuit", { n: Math.round(shown * 100) })}>
               <path d={o.outline} fill="none" stroke="var(--color-asphalt)" strokeWidth={over ? 46 : 0} strokeLinejoin="round" />
               <path
                 d={o.outline}
@@ -157,14 +158,14 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
                 <>
                   <span className="wide text-[20px] text-paint">{a.name}</span>
                   <span>
-                    {a.country}, {a.lengthKm.toFixed(3)} km
+                    {t(a.country)}, {a.lengthKm.toFixed(3)} km
                   </span>
                 </>
               ) : (
                 <>
-                  <span>{Math.round(shown * 100)}% of the lap shown</span>
+                  <span>{t("{n}% of the lap shown", { n: Math.round(shown * 100) })}</span>
                   <span>
-                    Guess {day.guesses.length + 1} of {MYSTERY_TRIES}
+                    {t("Guess {n} of {total}", { n: day.guesses.length + 1, total: MYSTERY_TRIES })}
                   </span>
                 </>
               )}
@@ -183,11 +184,11 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
             </colgroup>
             <thead>
               <tr className="caption text-center">
-                <th className="pb-2 text-left font-normal">Circuit</th>
-                <th className="pb-2 font-normal">Country</th>
+                <th className="pb-2 text-left font-normal">{t("Circuit")}</th>
+                <th className="pb-2 font-normal">{t("Country")}</th>
                 <th className="pb-2 font-normal">Km</th>
-                <th className="pb-2 font-normal">Corners</th>
-                <th className="pb-2 font-normal">First GP</th>
+                <th className="pb-2 font-normal">{t("Corners")}</th>
+                <th className="pb-2 font-normal">{t("First GP")}</th>
               </tr>
             </thead>
             <tbody>
@@ -209,34 +210,34 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
             </tbody>
           </table>
           <p className="caption mt-3 flex flex-wrap gap-x-4 gap-y-1">
-            <span><span className="mr-1.5 inline-block h-2.5 w-2.5 bg-green align-middle" />Exact</span>
-            <span><span className="mr-1.5 inline-block h-2.5 w-2.5 bg-yellow align-middle" />Close: same continent, within 0.5 km, 2 corners or 10 years</span>
+            <span><span className="mr-1.5 inline-block h-2.5 w-2.5 bg-green align-middle" />{t("Exact")}</span>
+            <span><span className="mr-1.5 inline-block h-2.5 w-2.5 bg-yellow align-middle" />{t("Close: same continent, within 0.5 km, 2 corners or 10 years")}</span>
           </p>
 
           {over ? (
             <div className="rise mt-8 border-t border-line pt-6">
               <p className="wide text-[24px] leading-tight text-paint">
-                {solved ? `Got it in ${day.guesses.length}.` : `It was ${a.name}.`}
+                {solved ? t("Got it in {n}.", { n: day.guesses.length }) : t("It was {circuit}.", { circuit: a.name })}
               </p>
               <p className="mt-2 text-[15px] text-steel">
-                Next mystery in <span className="num text-paint">{hms(left)}</span>
+                {t("Next mystery in")} <span className="num text-paint">{hms(left)}</span>
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
                 <button className={secondaryBtn} onClick={share}>
-                  <Share className="h-4 w-4" /> {copied ? "Copied" : "Share"}
+                  <Share className="h-4 w-4" /> {copied ? t("Copied") : t("Share")}
                 </button>
                 <button className={secondaryBtn} onClick={() => setFinish(true)}>
-                  See result
+                  {t("See result")}
                 </button>
                 <button className={primaryBtn} onClick={onPlayDaily}>
-                  Play the Daily Quali
+                  {t("Play the Daily Quali")}
                 </button>
               </div>
             </div>
           ) : (
             // phones: the answers come straight under the pinned outline, before the clue table
             <div className="mt-8 max-lg:order-first max-lg:mt-0 max-lg:mb-6">
-              <h2 className="text-[15px] font-semibold text-paint">Your guess</h2>
+              <h2 className="text-[15px] font-semibold text-paint">{t("Your guess")}</h2>
               <ul className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                 {CIRCUITS.map((c) => {
                   const used = day.guesses.includes(c.id);
@@ -269,16 +270,16 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
         return (
           <FinishCard
             game="mystery"
-            eyebrow={`Mystery circuit #${dailyNumber(day.key)}`}
-            title={solved ? "Got it!" : "Out of guesses"}
+            eyebrow={t("Mystery circuit #{n}", { n: dailyNumber(day.key) })}
+            title={solved ? t("Got it!") : t("Out of guesses")}
             tone={solved ? "win" : "loss"}
             value={`${solved ? day.guesses.length : "X"}/${MYSTERY_TRIES}`}
-            valueLabel="guesses"
-            message={solved ? `It's ${a.name}.` : `It was ${a.name}.`}
+            valueLabel={t("guesses")}
+            message={solved ? t("It's {circuit}.", { circuit: a.name }) : t("It was {circuit}.", { circuit: a.name })}
             stats={[
-              ["Played", String(st.played)],
-              ["Solved", st.played ? `${Math.round((100 * st.solved) / st.played)}%` : "-"],
-              ["Solved in a row", String(st.streak)],
+              [t("Played"), String(st.played)],
+              [t("Solved"), st.played ? `${Math.round((100 * st.solved) / st.played)}%` : "-"],
+              [t("Solved in a row"), String(st.streak)],
             ]}
             shareText={mysteryShare(day, shareLink("/mystery", "share-mystery"))}
             daily="mystery circuit"

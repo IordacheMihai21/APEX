@@ -28,7 +28,7 @@ buckets worked out on the device from what it already stores (see
 | Event | When | Properties |
 | --- | --- | --- |
 | `pageview` | every screen (sent by hand, the app changes its address in place) | |
-| `Visit` | once per page load | `last_played`: never / yesterday / 2-7 days ago / 8+ days ago; `player`: new / 2-3 days / 4-7 days / 8-30 days / 31+ days |
+| `Visit` | once per page load | `last_played`: never / yesterday / 2-7 days ago / 8+ days ago; `player`: new / 2-3 days / 4-7 days / 8-30 days / 31+ days; `lang`: en / es (the language the page opened in) |
 | `Game started` | first move in a game | `game`, `mode` (daily, practice, endless, archive), `player` |
 | `Game finished` | a game's result is in | `game`, `mode`, `player`, `today` (daily set done, e.g. `3/5`), plus a result: Quali `medal`, `laps` and `way: ended` when the player ended the day early; Mystery `solved` and `guesses`; Higher or lower `score` or `streak`; Pit stop `penalty`; Braking point `score` band or `off`; Lights out `band`; trivia `circuit` and `score` |
 | `Daily set done` | the last game of today's set is finished | `player` |

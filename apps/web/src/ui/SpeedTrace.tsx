@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { t } from "../i18n";
 
 export interface TraceData {
   lengthM: number;
@@ -65,7 +66,7 @@ export function SpeedTrace({ data }: { data: TraceData }) {
   return (
     <figure className="mt-3 border-t border-line pt-2">
       <figcaption className="flex items-baseline justify-between gap-2">
-        <span className="caption">Speed against the perfect lap</span>
+        <span className="caption">{t("Speed against the perfect lap")}</span>
         <span className="caption num">
           {readout ? (
             <>
@@ -74,7 +75,7 @@ export function SpeedTrace({ data }: { data: TraceData }) {
             </>
           ) : (
             <>
-              <span className="text-ink">You</span> / <span className="text-purple">perfect</span>
+              <span className="text-ink">{t("You")}</span> / <span className="text-purple">{t("perfect")}</span>
             </>
           )}
         </span>

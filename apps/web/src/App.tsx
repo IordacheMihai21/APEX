@@ -17,6 +17,7 @@ import { ChevronLeft, ColourBlind, MenuIcon } from "./ui/icons";
 import { Menu } from "./ui/Menu";
 import { DailySummary, Loading, TrackPicker } from "./Dialogs";
 import { fromAds, pageview } from "./analytics";
+import { stripLang, t, withLang } from "./i18n";
 import { weeklyCorner } from "./modes/corner";
 
 // The hub is all a first visit needs; the race (engine, renderer, scenery) and
@@ -85,7 +86,7 @@ function initialScreen(): Screen {
   // an ad shows Make the corner and a click lands in the app's own browser, which waits on every extra screen:
   // straight into today's corner, the home page one tap back
   if (fromAds() && fromPath?.kind === "hub") return { kind: "make-the-corner" };
-  const path = location.pathname.replace(/\/$/, "").slice(1) || q.get("play");
+  const path = stripLang(location.pathname).replace(/\/$/, "").slice(1) || q.get("play");
   if (path === "corner") return { kind: "play", mode: "corner", trackId: weeklyCorner().trackId };
   if (path && isMini(path)) return { kind: path };
   // the installed app's "Daily Quali" shortcut
@@ -96,7 +97,7 @@ function initialScreen(): Screen {
 const isMini = (k: string): k is Mini => (GAME_PAGES as readonly string[]).includes(k) || k in PAGES;
 /** The screen an address leads to (pages with their own path; query-string links are read in initialScreen). */
 function screenFromPath(pathname: string): Screen | null {
-  const p = pathname.replace(/^\/+|\/+$/g, "");
+  const p = stripLang(pathname).replace(/^\/+|\/+$/g, "");
   if (p === "") return { kind: "hub" };
   if (p === "corner") return { kind: "play", mode: "corner", trackId: weeklyCorner().trackId };
   if (isMini(p)) return { kind: p };
@@ -113,9 +114,9 @@ function asContent(s: Screen): ContentPage | null {
 }
 
 /** The page title of a screen with its own address. */
-const miniTitle = (k: Mini) => (k in PAGES ? PAGES[k as InfoPage] : game(k as GamePage).title);
+const miniTitle = (k: Mini) => (k in PAGES ? t(PAGES[k as InfoPage]) : game(k as GamePage).title);
 
-const MODE_LABEL: Record<Mode, string> = { daily: "Daily quali", season: "Perfect season", practice: "Free practice", corner: "Corner of the week" };
+const MODE_LABEL: Record<Mode, string> = { daily: t("Daily Quali"), season: t("Perfect Season"), practice: t("Free Practice"), corner: t("Corner of the week") };
 
 export function App() {
   useEffect(() => {
@@ -153,8 +154,8 @@ export function App() {
     const mini = isMini(screen.kind) ? screen.kind : null;
     const corner = screen.kind === "play" && screen.mode === "corner";
     const content = asContent(screen);
-    url.pathname = mini ? `/${mini}` : corner ? "/corner" : content ? contentPath(content) : "/";
-    document.title = content ? contentMeta(content).title : mini ? miniTitle(mini) : corner ? `Corner of the week: ${weeklyCorner().name} | Lapdle` : game("quali").title;
+    url.pathname = withLang(mini ? `/${mini}` : corner ? "/corner" : content ? contentPath(content) : "/");
+    document.title = content ? contentMeta(content).title : mini ? miniTitle(mini) : corner ? t("Corner of the week: {corner} | Lapdle", { corner: weeklyCorner().name }) : game("quali").title;
     // each page is its own canonical address (practice and challenge links point back at the page they belong to)
     const canonical = `https://lapdle.com${url.pathname === "/" ? "/" : url.pathname}`;
     document.querySelector('link[rel="canonical"]')?.setAttribute("href", canonical);
@@ -173,7 +174,7 @@ export function App() {
       else history.replaceState({ lapdle: "hub" }, "", url);
     } else if (at === "screen") history.replaceState({ lapdle: "screen" }, "", url);
     else {
-      if (at !== "hub") history.replaceState({ lapdle: "hub" }, "", "/");
+      if (at !== "hub") history.replaceState({ lapdle: "hub" }, "", withLang("/"));
       history.pushState({ lapdle: "screen" }, "", url);
     }
     pageview();
@@ -253,25 +254,25 @@ export function App() {
       <header className="relative flex h-[52px] items-stretch justify-between border-b border-line bg-night pt-[env(safe-area-inset-top)]">
         <div className="flex min-w-0 items-stretch">
           {screen.kind === "hub" ? (
-            <button onClick={() => setMenu(true)} className="grid w-12 shrink-0 place-items-center border-r border-line text-paint transition-colors hover:bg-graphite active:bg-graphite" aria-label="Open the menu" aria-expanded={menu}>
+            <button onClick={() => setMenu(true)} className="grid w-12 shrink-0 place-items-center border-r border-line text-paint transition-colors hover:bg-graphite active:bg-graphite" aria-label={t("Open the menu")} aria-expanded={menu}>
               <MenuIcon />
             </button>
           ) : (
-            <button onClick={() => setScreen({ kind: "hub" })} className="back grid w-12 shrink-0 place-items-center border-r border-line text-paint transition-colors hover:bg-graphite active:bg-graphite" aria-label="Back to the grid">
+            <button onClick={() => setScreen({ kind: "hub" })} className="back grid w-12 shrink-0 place-items-center border-r border-line text-paint transition-colors hover:bg-graphite active:bg-graphite" aria-label={t("Back to the grid")}>
               <ChevronLeft />
             </button>
           )}
           {screen.kind !== "hub" && (
             <div className="flex min-w-0 items-center gap-3 px-3">
-              <button onClick={() => setScreen({ kind: "hub" })} className="wide text-[17px] leading-none tracking-[0.02em] text-paint sm:text-[20px]" aria-label="Lapdle home">
+              <button onClick={() => setScreen({ kind: "hub" })} className="wide text-[17px] leading-none tracking-[0.02em] text-paint sm:text-[20px]" aria-label={t("Lapdle home")}>
                 LAPDLE
               </button>
               {track && screen.kind === "play" && (
                 <div className="min-w-0 leading-tight">
                   <div className="caption truncate">
-                    {screen.day ? `Archive, quali No. ${dailyNumber(screen.day)}` : MODE_LABEL[screen.mode]}
-                    {screen.mode === "daily" && dailyCondition(screen.day) !== "dry" ? `, ${CONDITION_NAME[dailyCondition(screen.day)].toLowerCase()}` : ""}
-                    {screen.mode === "practice" && screen.condition && screen.condition !== "dry" ? `, ${CONDITION_NAME[screen.condition].toLowerCase()}` : ""}
+                    {screen.day ? t("Archive, quali No. {n}", { n: dailyNumber(screen.day) }) : MODE_LABEL[screen.mode]}
+                    {screen.mode === "daily" && dailyCondition(screen.day) !== "dry" ? `, ${t(CONDITION_NAME[dailyCondition(screen.day)]).toLowerCase()}` : ""}
+                    {screen.mode === "practice" && screen.condition && screen.condition !== "dry" ? `, ${t(CONDITION_NAME[screen.condition]).toLowerCase()}` : ""}
                   </div>
                   <div className="truncate text-[14px] font-bold text-paint">{track.name}</div>
                 </div>
@@ -281,7 +282,7 @@ export function App() {
         </div>
         {/* on the home screen the wordmark sits in the middle, right above the Today bar */}
         {screen.kind === "hub" && (
-          <button onClick={() => document.querySelector("main .hub")?.scrollTo({ top: 0, behavior: "smooth" })} className="wide absolute top-[env(safe-area-inset-top)] bottom-0 left-1/2 -translate-x-1/2 text-[19px] leading-none tracking-[0.02em] text-paint sm:text-[22px]" aria-label="Lapdle home">
+          <button onClick={() => document.querySelector("main .hub")?.scrollTo({ top: 0, behavior: "smooth" })} className="wide absolute top-[env(safe-area-inset-top)] bottom-0 left-1/2 -translate-x-1/2 text-[19px] leading-none tracking-[0.02em] text-paint sm:text-[22px]" aria-label={t("Lapdle home")}>
             LAPDLE
           </button>
         )}
@@ -289,8 +290,8 @@ export function App() {
         <button
           onClick={toggleColourBlind}
           aria-pressed={cb}
-          aria-label={cb ? "Colour-blind colours on. Turn off" : "Colour-blind colours off. Turn on"}
-          title={cb ? "Colour-blind colours: on" : "Colour-blind colours: off"}
+          aria-label={cb ? t("Colour-blind colours on. Turn off") : t("Colour-blind colours off. Turn on")}
+          title={cb ? t("Colour-blind colours: on") : t("Colour-blind colours: off")}
           className={`grid w-12 shrink-0 place-items-center border-l border-line hover:bg-graphite ${cb ? "text-ink" : "text-steel"}`}
         >
           <ColourBlind />
@@ -300,7 +301,7 @@ export function App() {
 
       <div className={`grid min-h-0 grid-cols-[minmax(0,1fr)] ${rails ? "xl:grid-cols-[176px_minmax(0,1fr)_176px] 2xl:grid-cols-[316px_minmax(0,1fr)_316px]" : ""}`}>
       {rails && (
-        <aside aria-label="Advertisement" className="hidden min-h-0 border-r border-line bg-night px-2 xl:flex xl:items-center">
+        <aside aria-label={t("Advertisement")} className="hidden min-h-0 border-r border-line bg-night px-2 xl:flex xl:items-center">
           <AdSlot kind="rail" className="w-full" />
         </aside>
       )}
@@ -359,7 +360,7 @@ export function App() {
         </Suspense>
       </main>
       {rails && (
-        <aside aria-label="Advertisement" className="hidden min-h-0 border-l border-line bg-night px-2 xl:flex xl:items-center">
+        <aside aria-label={t("Advertisement")} className="hidden min-h-0 border-l border-line bg-night px-2 xl:flex xl:items-center">
           <AdSlot kind="rail" className="w-full" />
         </aside>
       )}
@@ -367,7 +368,7 @@ export function App() {
 
       {/* phones: a small strip under the page (its own row, so it never covers anything); never while racing */}
       {screen.kind !== "play" && adShows("anchor") && (
-        <aside aria-label="Advertisement" className="flex justify-center border-t border-line bg-night pt-1 pb-[max(4px,env(safe-area-inset-bottom))] lg:hidden">
+        <aside aria-label={t("Advertisement")} className="flex justify-center border-t border-line bg-night pt-1 pb-[max(4px,env(safe-area-inset-bottom))] lg:hidden">
           <AdSlot kind="anchor" />
         </aside>
       )}

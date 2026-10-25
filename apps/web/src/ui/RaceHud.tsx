@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { t } from "../i18n";
 import { REV_LEDS } from "../game/drive";
 import type { SectorTime, SectorTone, Snapshot } from "../game/game";
 import type { Grade, GroupGrade } from "../modes/grading";
@@ -47,8 +48,8 @@ function useSplit(s: Snapshot) {
       seen.current = s.revealed;
       setSplit(g);
       if (g.grade === "purple" && !s.demo) buzz(35);
-      const t = setTimeout(() => setSplit((cur) => (cur === g ? null : cur)), 1600);
-      return () => clearTimeout(t);
+      const timer = setTimeout(() => setSplit((cur) => (cur === g ? null : cur)), 1600);
+      return () => clearTimeout(timer);
     }
   }, [s.phase, s.revealed, s.grades, s.demo]);
   return s.phase === "race" ? split : null;
@@ -91,9 +92,9 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
     if (prev.current === "lights" && s.phase === "race") {
       buzz(20);
       setLightsOut(true);
-      const t = setTimeout(() => setLightsOut(false), 900);
+      const timer = setTimeout(() => setLightsOut(false), 900);
       prev.current = s.phase;
-      return () => clearTimeout(t);
+      return () => clearTimeout(timer);
     }
     prev.current = s.phase;
   }, [s.phase]);
@@ -109,14 +110,14 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
         <div className="border border-line bg-night/88">
           <div className="label flex justify-between border-b border-line px-2 py-1 min-[720px]:py-1.5">
             <span className={s.demo ? "text-purple" : "text-paint"}>
-              {s.demo ? "Perfect lap" : `Lap ${s.lapsUsed + 1}${s.lapLimit !== null ? `/${s.lapLimit}` : ""}`}
+              {s.demo ? t("Perfect lap") : `${t("Lap")} ${s.lapsUsed + 1}${s.lapLimit !== null ? `/${s.lapLimit}` : ""}`}
             </span>
             <span>×4</span>
           </div>
           <div className="px-2 pt-1 pb-1.5 min-[720px]:pt-1.5 min-[720px]:pb-2">
             <div className="wide num text-[17px] leading-none text-paint min-[720px]:text-[26px]">{lapTime(s.raceTimeMs)}</div>
             <div className="mt-1 flex items-baseline justify-between min-[720px]:mt-1.5">
-              <span className="label">To {s.paceLabel}</span>
+              <span className="label">{t("To {target}", { target: t(s.paceLabel) })}</span>
               <span className={`num text-[12px] font-bold min-[720px]:text-[14px] ${d <= 0 ? "text-green" : "text-paint"}`}>
                 {d >= 0 ? "+" : "−"}
                 {(Math.abs(d) / 1000).toFixed(2)}
@@ -150,7 +151,7 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
           <span className="min-[720px]:hidden">
             <Gantry lit={s.phase === "lights" ? s.lights : 0} size="md" />
           </span>
-          {lightsOut && <p className="slam wide text-[26px] max-[719px]:text-[18px] uppercase tracking-[0.04em] text-paint [text-shadow:0_2px_14px_rgba(0,0,0,0.85)]">Lights out</p>}
+          {lightsOut && <p className="slam wide text-[26px] max-[719px]:text-[18px] uppercase tracking-[0.04em] text-paint [text-shadow:0_2px_14px_rgba(0,0,0,0.85)]">{t("Lights out")}</p>}
         </div>
       )}
 
@@ -161,7 +162,7 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
           <div className="mt-2 flex items-end justify-between">
             <div className="flex items-end gap-2.5">
               <span className="wide num w-8 text-[44px] leading-[0.85] text-paint">{racing ? s.drive.gear : "N"}</span>
-              <span className="label pb-0.5">Gear</span>
+              <span className="label pb-0.5">{t("Gear")}</span>
             </div>
             <div className="flex items-end gap-2">
               <Segments text={String(speed).padStart(3, " ")} className="h-8 text-paint" ghost={0.1} />
@@ -171,7 +172,7 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
         </div>
       </div>
       <button className={`${secondaryBtn} absolute right-2 bg-night/85 bottom-[max(12px,env(safe-area-inset-bottom))] max-[520px]:bottom-[112px]`} onClick={onSkip}>
-        Skip
+        {t("Skip")}
       </button>
     </>
   );

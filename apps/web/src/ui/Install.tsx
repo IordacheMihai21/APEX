@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { t } from "../i18n";
 import { playStreak } from "../games/profile";
 import { dismissInstall, installDismissed, promptInstall, useInstallWay } from "../install";
 import { track } from "../analytics";
@@ -18,12 +19,12 @@ export function InstallBand() {
   // only for players who came back for a game: a first visit is for playing, not installing
   if (!way || hidden || playStreak().daysPlayed < 1) return null;
   return (
-    <section aria-label="Get the app" className="border-t border-line">
+    <section aria-label={t("Get the app")} className="border-t border-line">
       <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-6 md:px-8">
         <AppIcon />
         <div className="min-w-0 flex-1 basis-[240px]">
-          <p className="wide text-[18px] leading-tight text-paint">Lapdle on your home screen</p>
-          <p className="mt-1 text-[14px] text-steel">Today's set one tap away, full screen, and it plays offline.</p>
+          <p className="wide text-[18px] leading-tight text-paint">{t("Lapdle on your home screen")}</p>
+          <p className="mt-1 text-[14px] text-steel">{t("Today's set one tap away, full screen, and it plays offline.")}</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -34,7 +35,7 @@ export function InstallBand() {
               else setIos(true);
             }}
           >
-            Install
+            {t("Install")}
           </button>
           <button
             className={secondaryBtn}
@@ -43,7 +44,7 @@ export function InstallBand() {
               setHidden(true);
             }}
           >
-            Not now
+            {t("Not now")}
           </button>
         </div>
       </div>
@@ -67,7 +68,7 @@ export function InstallLink({ className }: { className: string }) {
           else setIos(true);
         }}
       >
-        Install the app
+        {t("Install the app")}
       </button>
       {ios && <IosSteps onClose={() => setIos(false)} />}
     </li>
@@ -89,13 +90,13 @@ function IosSteps({ onClose }: { onClose: () => void }) {
   }, [onClose]);
   const steps: React.ReactNode[] = [
     <>
-      Tap <Export weight="bold" aria-hidden="true" className="mx-0.5 inline h-4 w-4 -translate-y-px text-paint" /> <strong className="text-paint">Share</strong> in the browser's toolbar.
+      {t("Tap")} <Export weight="bold" aria-hidden="true" className="mx-0.5 inline h-4 w-4 -translate-y-px text-paint" /> <strong className="text-paint">{t("Share")}</strong> {t("in the browser's toolbar.")}
     </>,
     <>
-      Scroll down and choose <strong className="text-paint">Add to Home Screen</strong>.
+      {t("Scroll down and choose")} <strong className="text-paint">{t("Add to Home Screen")}</strong>.
     </>,
     <>
-      Tap <strong className="text-paint">Add</strong>. Lapdle opens from your home screen, full screen.
+      {t("Tap")} <strong className="text-paint">{t("Add")}</strong>. {t("Lapdle opens from your home screen, full screen.")}
     </>,
   ];
   return (
@@ -107,13 +108,13 @@ function IosSteps({ onClose }: { onClose: () => void }) {
         className="finish-in relative w-full border-t border-line bg-board px-5 pt-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:max-w-[400px] sm:border"
         onClick={(e) => e.stopPropagation()}
       >
-        <button ref={close} onClick={onClose} aria-label="Close" className="absolute top-2 right-2 grid h-10 w-10 place-items-center text-[24px] leading-none text-steel hover:text-paint">
+        <button ref={close} onClick={onClose} aria-label={t("Close")} className="absolute top-2 right-2 grid h-10 w-10 place-items-center text-[24px] leading-none text-steel hover:text-paint">
           ×
         </button>
         <div className="flex items-center gap-3 pr-10">
           <AppIcon />
           <h2 id="install-ios-h" className="wide text-[22px] leading-tight text-paint">
-            Add Lapdle to your home screen
+            {t("Add Lapdle to your home screen")}
           </h2>
         </div>
         <ol className="mt-5 space-y-4">
@@ -125,7 +126,7 @@ function IosSteps({ onClose }: { onClose: () => void }) {
           ))}
         </ol>
         <button className={`${primaryBtn} mt-6 w-full`} onClick={onClose}>
-          Got it
+          {t("Got it")}
         </button>
       </div>
     </div>

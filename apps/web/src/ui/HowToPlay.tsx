@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { t, withLang } from "../i18n";
 import { type GameId, game as gameDef } from "../games/registry";
 import { primaryBtn } from "./styles";
 
@@ -56,8 +57,8 @@ export function HowToPlay({ game, onOpenChange }: { game: Game; onOpenChange?: (
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={`How to play ${g.name}`}
-        title="How to play"
+        aria-label={t("How to play {game}", { game: g.name })}
+        title={t("How to play")}
         className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line text-[16px] font-bold text-steel transition-colors hover:border-paint/40 hover:text-paint"
       >
         ?
@@ -78,10 +79,10 @@ export function HowToPlay({ game, onOpenChange }: { game: Game; onOpenChange?: (
             className="finish-in relative max-h-[92dvh] w-full overflow-y-auto border-t border-line bg-board px-5 pt-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:max-w-[420px] sm:border"
             onClick={(e) => e.stopPropagation()}
           >
-            <button ref={close} onClick={done} aria-label="Close" className="absolute top-2 right-2 grid h-10 w-10 place-items-center text-[24px] leading-none text-steel hover:text-paint">
+            <button ref={close} onClick={done} aria-label={t("Close")} className="absolute top-2 right-2 grid h-10 w-10 place-items-center text-[24px] leading-none text-steel hover:text-paint">
               ×
             </button>
-            <p className="caption">How to play</p>
+            <p className="caption">{t("How to play")}</p>
             <h2 id={`howto-${game}`} className="wide mt-1 pr-10 text-[28px] leading-none text-paint">
               {g.name}
             </h2>
@@ -95,12 +96,12 @@ export function HowToPlay({ game, onOpenChange }: { game: Game; onOpenChange?: (
             </ol>
             <p className="mt-5 border-t border-line pt-4 text-[14px] text-steel">
               {g.tip}{" "}
-              <a href={`/how-to-play/${game}`} onClick={done} className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint">
-                Full guide
+              <a href={withLang(`/how-to-play/${game}`)} onClick={done} className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint">
+                {t("Full guide")}
               </a>
             </p>
             <button className={`${primaryBtn} mt-5 w-full`} onClick={done}>
-              Play
+              {t("Play")}
             </button>
           </div>
         </div>

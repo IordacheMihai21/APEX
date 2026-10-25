@@ -3,10 +3,11 @@ import { GAMES, type GamePage, todayProgress } from "../games/registry";
 import { loadSeason, seasonDone } from "../modes/season";
 import type { HubAction } from "./Hub";
 import { Chequered, Close, GameMarks } from "./icons";
+import { LANG, type Lang, setLang, t } from "../i18n";
 
 /**
  * The menu behind the hub's ☰: every game in one list, today's daily set first
- * with where you stand, then the rest under More Games.
+ * with where you stand, then the rest under More Games, and the language at the foot.
  * Slides in from the left; Escape, the backdrop or picking an entry closes it.
  */
 export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () => void; onAction: (a: HubAction) => void }) {
@@ -33,10 +34,10 @@ export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () =
   const underWay = !!run && !seasonDone(run);
   const more: [string, HubAction | string][] = [
     ...GAMES.filter((g) => !g.inDailySet && g.route).map((g): [string, HubAction] => [g.name, { kind: "mini", game: g.route!.slice(1) as GamePage }]),
-    ["Free Practice", { kind: "practice" }],
-    ["Corner of the week", { kind: "corner" }],
-    ["Perfect Season", { kind: "season", fresh: !underWay }],
-    ["Circuit trivia", "/trivia"],
+    [t("Free Practice"), { kind: "practice" }],
+    [t("Corner of the week"), { kind: "corner" }],
+    [t("Perfect Season"), { kind: "season", fresh: !underWay }],
+    [t("Circuit trivia"), "/trivia"],
   ];
 
   const row = "flex w-full items-center gap-3 px-5 py-3 text-left text-[15px] text-paint transition-colors hover:bg-graphite focus-visible:bg-graphite";
@@ -63,16 +64,16 @@ export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () =
         // a dialog only while open: the games pause their keys while any aria-modal is on the page
         role={open ? "dialog" : undefined}
         aria-modal={open ? "true" : undefined}
-        aria-label="Menu"
+        aria-label={t("Menu")}
         className={`absolute inset-y-0 left-0 flex w-[min(86vw,340px)] flex-col border-r border-line bg-night pt-[env(safe-area-inset-top)] transition-transform duration-200 ease-out motion-reduce:transition-none ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-[52px] shrink-0 items-stretch justify-between border-b border-line">
           <span className="wide flex items-center px-5 text-[17px] leading-none tracking-[0.02em] text-paint">LAPDLE</span>
-          <button onClick={onClose} aria-label="Close the menu" className="grid w-12 place-items-center border-l border-line text-paint hover:bg-graphite">
+          <button onClick={onClose} aria-label={t("Close the menu")} className="grid w-12 place-items-center border-l border-line text-paint hover:bg-graphite">
             <Close />
           </button>
         </div>
-        <nav aria-label="All games" className="min-h-0 flex-1 overflow-y-auto pb-[calc(env(safe-area-inset-bottom)+16px)]">
+        <nav aria-label={t("All games")} className="min-h-0 flex-1 overflow-y-auto pb-[calc(env(safe-area-inset-bottom)+16px)]">
           <ul>
             {today.map(({ game: g, status }) => {
               const Mark = (GameMarks as Record<string, ((p: { className?: string }) => React.ReactElement) | undefined>)[g.id];
@@ -84,14 +85,30 @@ export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () =
                       {status.state === "done" ? <Chequered className="h-4 w-4" /> : Mark ? <Mark className="h-4 w-4" /> : null}
                     </span>
                     <span className="min-w-0 flex-1 truncate">{g.name}</span>
-                    <span className="shrink-0 text-[12px] text-steel">{status.state === "new" ? "New today" : status.label}</span>
+                    <span className="shrink-0 text-[12px] text-steel">{status.state === "new" ? t("New today") : status.label}</span>
                   </button>
                 </li>
               );
             })}
           </ul>
-          <p className={heading}>More Games</p>
+          <p className={heading}>{t("More Games")}</p>
           <ul>{more.map(entry)}</ul>
+          <p className={heading}>{t("Language")}</p>
+          <ul>
+            {(
+              [
+                ["en", "English"],
+                ["es", "Español"],
+              ] as [Lang, string][]
+            ).map(([lang, name]) => (
+              <li key={lang}>
+                <button className={row} aria-current={lang === LANG ? "true" : undefined} onClick={() => lang !== LANG && setLang(lang)}>
+                  <span className="min-w-0 flex-1">{name}</span>
+                  {lang === LANG && <span className="shrink-0 text-[12px] text-ink">✓</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
         </nav>
       </div>
     </div>

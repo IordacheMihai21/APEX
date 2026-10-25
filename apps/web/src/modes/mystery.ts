@@ -1,4 +1,5 @@
 import { CIRCUITS, type CircuitFacts, circuit, load, save } from "./circuits";
+import { t } from "../i18n";
 import { dailyNumber, dailyTrack, dateKey } from "./daily";
 
 /**
@@ -129,7 +130,7 @@ export function mysteryShare(day: MysteryDay, link: string): string {
     return [f.country, f.length.mark, f.turns.mark, f.firstGp.mark].map((m) => SQUARE[m]).join("");
   });
   const score = isSolved(day) ? `${day.guesses.length}/${MYSTERY_TRIES}` : `X/${MYSTERY_TRIES}`;
-  return `Lapdle Mystery circuit #${dailyNumber(day.key)} ${score}\n${rows.join("\n")}\n${link}`;
+  return `${t("Lapdle Mystery circuit #{n}", { n: dailyNumber(day.key) })} ${score}\n${rows.join("\n")}\n${link}`;
 }
 
 export type { CircuitFacts };

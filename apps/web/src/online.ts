@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { t } from "./i18n";
 import type { Condition } from "@apex/engine";
 
 /**
@@ -153,11 +154,11 @@ export function useStanding(b: Board | null): Standing | null {
 
 /** "Faster than 73% of today's 412 players", or the first-on-the-board line. */
 export function standingLine(s: Standing): string {
-  if (s.players <= 1) return "First on today's board. Check back as others drive.";
-  if (s.faster === 0) return `Fastest of today's ${s.players} players.`;
+  if (s.players <= 1) return t("First on today's board. Check back as others drive.");
+  if (s.faster === 0) return t("Fastest of today's {n} players.", { n: s.players });
   const beat = s.players - s.faster - 1;
   const pct = Math.round((100 * beat) / (s.players - 1));
-  return `Faster than ${pct}% of today's ${s.players} players.`;
+  return t("Faster than {pct}% of today's {n} players.", { pct, n: s.players });
 }
 
 export interface LapRecord {

@@ -1,4 +1,5 @@
 import { CATALOG } from "../game/catalog";
+import { t } from "../i18n";
 import { OUTLINES, loadOutlineDetail } from "../game/outlines";
 import { CIRCUITS } from "../modes/circuits";
 import { CONDITION_NAME, DAILY_LAPS, type DailyRecord, bestMedal, conditionOf, dailyNumber } from "../modes/daily";
@@ -37,7 +38,7 @@ function font(ctx: Ctx, weight: number, size: number, wide: boolean) {
 
 export async function dailyCard(daily: DailyRecord): Promise<Blob> {
   await document.fonts?.ready;
-  const info = CATALOG.find((t) => t.id === daily.trackId)!;
+  const info = CATALOG.find((c) => c.id === daily.trackId)!;
   const facts = CIRCUITS.find((c) => c.id === daily.trackId);
   const o = OUTLINES[daily.trackId];
   const detail = await loadOutlineDetail(daily.trackId);
@@ -70,7 +71,7 @@ export async function dailyCard(daily: DailyRecord): Promise<Blob> {
   ctx.fillText("LAPDLE", PAD, PAD + 34);
   font(ctx, 600, 30, false);
   ctx.textAlign = "right";
-  ctx.fillText(`Daily Quali #${dailyNumber(daily.key)}`, W - PAD, PAD + 32);
+  ctx.fillText(t("Daily Quali #{n}", { n: dailyNumber(daily.key) }), W - PAD, PAD + 32);
   ctx.textAlign = "left";
   ctx.fillStyle = C.line;
   ctx.fillRect(PAD, PAD + 66, W - PAD * 2, 2);
@@ -85,7 +86,7 @@ export async function dailyCard(daily: DailyRecord): Promise<Blob> {
   ctx.fillStyle = C.steel;
   const km = facts?.lengthKm ?? o.lengthM / 1000;
   const cond = conditionOf(daily);
-  ctx.fillText(`${info.country}, ${km.toFixed(3)} km, ${facts?.turns ?? o.cornerCount} corners${cond === "dry" ? "" : `, ${CONDITION_NAME[cond].toLowerCase()}`}`, PAD, 352);
+  ctx.fillText(`${t("{country}, {km} km, {n} corners", { country: t(info.country), km: km.toFixed(3), n: facts?.turns ?? o.cornerCount })}${cond === "dry" ? "" : `, ${t(CONDITION_NAME[cond]).toLowerCase()}`}`, PAD, 352);
 
   // the map: asphalt ribbon, each corner group in its best colour of the day
   // fitted to the circuit's own bounds, not the 1000-unit drawing box, so a
@@ -143,14 +144,14 @@ export async function dailyCard(daily: DailyRecord): Promise<Blob> {
   }
   font(ctx, 700, 34, false);
   ctx.fillStyle = C.paint;
-  const verdict = daily.status === "won" ? `Pole on lap ${daily.laps.length}` : medal ? MEDAL_NAME[medal] : "No medal";
+  const verdict = daily.status === "won" ? t("Pole on lap {n}", { n: daily.laps.length }) : medal ? t(MEDAL_NAME[medal]) : t("No medal");
   ctx.fillText(verdict, PAD + (medal ? 52 : 0), y0 + 42);
   font(ctx, 800, 120, true);
   ctx.fillStyle = C.paint;
   ctx.fillText(best !== null ? lapTime(best) : "-:--.---", PAD - 4, y0 + 176);
   font(ctx, 500, 28, false);
   ctx.fillStyle = C.steel;
-  ctx.fillText(`${daily.laps.length} of ${DAILY_LAPS} laps`, PAD, y0 + 226);
+  ctx.fillText(t("{n} of {total} laps", { n: daily.laps.length, total: DAILY_LAPS }), PAD, y0 + 226);
 
   const cols = daily.laps[0]?.grades.length ?? 8;
   const cell = Math.min(30, Math.floor(360 / cols) - 4);
@@ -175,7 +176,7 @@ export async function dailyCard(daily: DailyRecord): Promise<Blob> {
   font(ctx, 600, 28, false);
   ctx.fillStyle = C.ink;
   ctx.textAlign = "right";
-  ctx.fillText(`Find the perfect lap at ${location.host}`, W - PAD, H - PAD + 8);
+  ctx.fillText(t("Find the perfect lap at {site}", { site: location.host }), W - PAD, H - PAD + 8);
   ctx.textAlign = "left";
 
   return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("no image"))), "image/png"));

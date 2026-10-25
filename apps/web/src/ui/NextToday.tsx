@@ -1,4 +1,5 @@
 import { todayProgress } from "../games/registry";
+import { t } from "../i18n";
 import { go } from "./FinishCard";
 import { ChevronRight } from "./icons";
 import { secondaryBtn } from "./styles";
@@ -17,7 +18,7 @@ export function NextToday() {
       <span className="num text-steel">
         {done}/{total}
       </span>
-      Next: {next.game.name}
+      {t("Next: {game}", { game: next.game.name })}
       <ChevronRight className="h-4 w-4" />
     </button>
   );

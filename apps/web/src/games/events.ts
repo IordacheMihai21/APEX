@@ -9,7 +9,7 @@
  * this.
  *
  * Events:
- *   Visit           once per page load: last_played, player, app (opened as the installed app)
+ *   Visit           once per page load: last_played, player, app (opened as the installed app), lang
  *   Game started    game, mode, player
  *   Game finished   game, mode, player, today (daily set done, "3/5"), plus a result
  *   Daily set done  the whole set finished today: player
@@ -17,6 +17,7 @@
  */
 import { track } from "../analytics";
 import { standalone } from "../install";
+import { LANG } from "../i18n";
 import { dateKey } from "../modes/daily";
 import { playedDays } from "./profile";
 import { type GameId, todayProgress } from "./registry";
@@ -53,7 +54,7 @@ export function visit() {
   if (visited) return;
   visited = true;
   const days = playedDays();
-  track("Visit", { last_played: lastPlayedBucket(days.keys()), player: playerBucket(days.size), app: standalone() });
+  track("Visit", { last_played: lastPlayedBucket(days.keys()), player: playerBucket(days.size), app: standalone(), lang: LANG });
 }
 
 const started = new Set<string>();

@@ -55,4 +55,32 @@
   <url><loc>https://lapdle.com/about</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://lapdle.com/privacy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
   <url><loc>https://lapdle.com/legal</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://lapdle.com/es</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://lapdle.com/es/mystery</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lapdle.com/es/pit-stop</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lapdle.com/es/higher-lower</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/es/braking-point</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lapdle.com/es/make-the-corner</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lapdle.com/es/corner-order</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/es/speed-trap</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/es/line-up</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/es/aerial</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/es/reaction</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/es/corner</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/es/archive</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/records</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play/quali</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play/mystery</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play/pit-stop</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play/higher-lower</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play/braking-point</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play/make-the-corner</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play/corner-order</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play/speed-trap</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play/line-up</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play/aerial</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/how-to-play/reaction</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/es/privacy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://lapdle.com/es/legal</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
 </urlset>

@@ -1,4 +1,5 @@
 import { load, save, seeded } from "./circuits";
+import { t } from "../i18n";
 import { dailyNumber, dateKey } from "./daily";
 
 /**
@@ -113,5 +114,5 @@ export const secs = (ms: number) => (ms / 1000).toFixed(3);
 export function pitShare(result: PitResult, link: string, key = dateKey()): string {
   const squares = result.splits.map((ms, i) => SQUARE[gradeStep(i, ms)]).join("");
   const pen = penaltyMs(result);
-  return `Lapdle Pit stop #${dailyNumber(key)} ${secs(result.totalMs)} s\n${squares}${pen ? ` +${(pen / 1000).toFixed(1)} s penalty` : ""}\n${link}`;
+  return `${t("Lapdle Pit stop #{n}", { n: dailyNumber(key) })} ${secs(result.totalMs)} s\n${squares}${pen ? ` ${t("+{s} s penalty", { s: (pen / 1000).toFixed(1) })}` : ""}\n${link}`;
 }
