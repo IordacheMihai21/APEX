@@ -32,7 +32,7 @@ buckets worked out on the device from what it already stores (see
 | `Game started` | first move in a game | `game`, `mode` (daily, practice, endless, archive), `player` |
 | `Game finished` | a game's result is in | `game`, `mode`, `player`, `today` (daily set done, e.g. `3/5`), plus a result: Quali `medal`, `laps` and `way: ended` when the player ended the day early; Mystery `solved` and `guesses`; Higher or lower `score` or `streak`; Pit stop `penalty`; Braking point `score` band or `off`; Lights out `band`; trivia `circuit` and `score` |
 | `Daily set done` | the last game of today's set is finished | `player` |
-| `Share` | a result is shared or copied, from any game | `what` (the game, `daily` for the Quali, `challenge`), `player` |
+| `Share` | a result is shared or copied, from any game | `what` (the game, `daily` for the Quali, `challenge`, `day` for the whole daily set), `player` |
 | `Lap started` | a lap of the race game is started (Quali, practice, season, corner) | `mode`, `circuit`, `condition` |
 | `Lap finished` | that lap is over | `mode`, `circuit`, `attempt` |
 | `Challenge opened` | a "beat my lap" link is opened (once per page load) | `circuit`, `player` |

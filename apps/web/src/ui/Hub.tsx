@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { t, tn, withLang } from "../i18n";
+import { ShareDayButton } from "./ShareDay";
 import { GAMES, type GamePage, type InfoPage, game, todayProgress } from "../games/registry";
 import { playStreak } from "../games/profile";
 import { InstallBand } from "./Install";
@@ -427,9 +428,12 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
               <h2 id="games-daily-h" className="wide text-[34px] leading-none text-paint">
                 {t("Today's set")}
               </h2>
-              <p className="text-[14px] text-steel">
-                <span className="num font-semibold text-paint">{t("{done} of {total}", { done: progress.done, total: progress.total })}</span> {t("played. A new set at midnight.")}
-              </p>
+              <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <p className="text-[14px] text-steel">
+                  <span className="num font-semibold text-paint">{t("{done} of {total}", { done: progress.done, total: progress.total })}</span> {t("played. A new set at midnight.")}
+                </p>
+                <ShareDayButton />
+              </span>
             </div>
             <p className="mt-3 text-[15px] text-steel">
               {t(shown.length === 1 ? "{count} more daily beside the Quali. The same puzzles for everyone, a few minutes each." : "{count} more dailies beside the Quali. The same puzzles for everyone, a few minutes each.", { count: t(COUNT_WORD[shown.length] ?? String(shown.length)) })}

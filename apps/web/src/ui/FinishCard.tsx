@@ -5,6 +5,7 @@ import { GAMES, type GameId, todayProgress } from "../games/registry";
 import { msToNextDay } from "../modes/daily";
 import { shared } from "../games/events";
 import { ChevronRight, Share } from "./icons";
+import { ShareDayButton, shareOrCopy } from "./ShareDay";
 import { primaryBtn, secondaryBtn } from "./styles";
 
 /** Where a finished game can send the player next (App listens for this). */
@@ -68,17 +69,13 @@ export function FinishCard({
 
   const share = async () => {
     shared(game);
-    try {
-      if (navigator.share) await navigator.share({ text: shareText });
-      else {
-        await navigator.clipboard.writeText(shareText);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1800);
-      }
-    } catch {
-      /* share sheet dismissed */
+    if (await shareOrCopy(shareText)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
     }
   };
+  // what the share will say, shown before it is sent (the link line left out)
+  const preview = shareText.replace(/\n?https?:\/\/\S+\s*$/, "");
 
   // read when the card opens: the game that just finished has already saved its result
   const progress = todayProgress();
@@ -130,7 +127,10 @@ export function FinishCard({
           ))}
         </dl>
 
-        <div className="mt-4 flex flex-wrap gap-2.5">
+        <p className="mt-4 border border-line bg-night/60 px-3 py-2.5 text-[13px] leading-snug whitespace-pre-line text-paint/85" aria-label={t("Your result to share")}>
+          {preview}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2.5">
           <button className={`${primaryBtn} flex-1 basis-36`} onClick={share}>
             <Share className="h-4 w-4" />
             {copied ? t("Copied") : t("Share")}
@@ -164,6 +164,10 @@ export function FinishCard({
           <span className="text-[13px] text-steel">
             <span className="wide num text-[16px] text-paint">{streak.current}</span> {t("day streak")}
           </span>
+        </div>
+
+        <div className="mt-3 flex">
+          <ShareDayButton className={`${secondaryBtn} flex-1`} />
         </div>
 
         <h3 className="caption mt-4">{progress.done === progress.total ? t("All of today's done. Play more") : t("Play next")}</h3>

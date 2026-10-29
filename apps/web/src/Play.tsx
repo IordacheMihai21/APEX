@@ -10,6 +10,7 @@ import { type RoundOutcome, SEASON_LAPS, SEASON_ROUNDS, type SeasonStore, curren
 import { CornerTower } from "./ui/CornerTower";
 import { DragSheet } from "./ui/PhoneSheet";
 import { NextToday } from "./ui/NextToday";
+import { ShareDayButton } from "./ui/ShareDay";
 import { go } from "./ui/FinishCard";
 import { usePhone } from "./ui/usePhone";
 import { GateSlider } from "./ui/GateSlider";
@@ -717,6 +718,7 @@ function ResultSheet({
     actions = (
       <>
         <ShareButton {...dailyShare(daily)} />
+        {!daily.archive && <ShareDayButton />}
         {!daily.archive && <NextToday />}
         <button className={secondaryBtn} onClick={() => game.watchPerfect()}>
           {t("Watch perfect lap")}
