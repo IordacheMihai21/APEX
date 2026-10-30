@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { tomorrowQuali } from "../games/tomorrow";
 import { t, tn, withLang } from "../i18n";
 import { ShareDayButton } from "./ShareDay";
 import { GAMES, type GamePage, type InfoPage, game, todayProgress } from "../games/registry";
@@ -71,6 +72,32 @@ function useReducedMotion() {
 function TodayMark({ id }: { id: string }) {
   const Mark = (GameMarks as Record<string, ((p: { className?: string }) => React.ReactElement) | undefined>)[id];
   return Mark ? <Mark className="h-4 w-4" /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />;
+}
+
+/**
+ * The streak at stake: a player who kept a run going until yesterday and hasn't
+ * played today sees how long it is and the one tap that keeps it (the first game
+ * of today's set still to play). Gone once a daily is done today.
+ */
+function StreakRisk({ day, onAction }: { day: string; onAction: (a: HubAction) => void }) {
+  const streak = playStreak(day);
+  if (streak.current < 1 || streak.playedToday) return null;
+  const next = todayProgress(day).items.find((i) => i.status.state !== "done")?.game;
+  if (!next) return null;
+  const go = () => onAction(next.id === "quali" ? { kind: "daily" } : { kind: "mini", game: next.route!.slice(1) as GamePage });
+  return (
+    <div className="border-b border-line bg-ink/10">
+      <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-2.5 md:px-8">
+        <p className="text-[14px] text-paint">
+          <span className="font-semibold">{t("Your {n}-day streak ends at midnight.", { n: streak.current })}</span>{" "}
+          <span className="text-paint/80">{t("One daily keeps it going.")}</span>
+        </p>
+        <button className={`${primaryBtn} shrink-0`} onClick={go}>
+          {t("Keep it: {game}", { game: next.name })}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function TodayBar({ daily, onAction }: { daily: ReturnType<typeof loadDaily>; onAction: (a: HubAction) => void }) {
@@ -672,6 +699,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   return (
     <div className="hub relative h-full overflow-x-hidden overflow-y-auto">
       <TodayBar daily={daily} onAction={onAction} />
+      <StreakRisk day={today} onAction={onAction} />
       {week && (
         <p className="border-b border-line bg-board px-4 py-2 text-center text-[13px] text-paint/90">
           {quali ? (
@@ -732,11 +760,12 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
           <div className="rise mt-4 max-w-[440px] lg:mt-10" style={d(260)}>
             <p className="mb-2.5 text-[15px] leading-snug text-paint/85">
               {daily.status === "won"
-                ? t("Pole on lap {n}. Come back tomorrow.", { n: daily.laps.length })
+                ? t("Pole on lap {n}. Tomorrow: {circuit}.", { n: daily.laps.length, circuit: tomorrowQuali(today) })
                 : daily.status === "lost"
-                  ? t(medal ? "{end} with {medal}. A new circuit at midnight." : "{end}. A new circuit at midnight.", {
+                  ? t(medal ? "{end} with {medal}. Tomorrow: {circuit}." : "{end}. Tomorrow: {circuit}.", {
                       end: daily.ended ? tn(daily.laps.length, "Day ended after {n} lap", "Day ended after {n} laps") : t("Out of laps"),
                       medal: medal ? t(MEDAL_NAME[medal]) : "",
+                      circuit: tomorrowQuali(today),
                     })
                   : daily.laps.length
                     ? next

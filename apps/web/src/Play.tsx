@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { tomorrowQuali } from "./games/tomorrow";
 import { t, tn } from "./i18n";
 import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
 import { type Condition, LINE_STYLES, type LineStyle } from "@apex/engine";
@@ -714,7 +715,7 @@ function ResultSheet({
   if (s.mode === "daily" && daily && daily.status !== "playing") {
     const dayMedal = bestMedal(daily);
     headline = daily.status === "won" ? t("Pole") : dayMedal ? (daily.archive ? t(MEDAL_NAME[dayMedal]) : t("{medal} today", { medal: t(MEDAL_NAME[dayMedal]) })) : daily.ended ? t("Day over") : t("Out of laps");
-    body = daily.status === "won" ? t("Every corner perfect on lap {n} of {total}.", { n: daily.laps.length, total: DAILY_LAPS }) : daily.archive ? t("An archive replay: it doesn't count for your streak.") : t("New circuit in {time}.", { time: countdown });
+    body = daily.status === "won" ? t("Every corner perfect on lap {n} of {total}.", { n: daily.laps.length, total: DAILY_LAPS }) : daily.archive ? t("An archive replay: it doesn't count for your streak.") : t("Tomorrow: {circuit}, in {time}.", { circuit: tomorrowQuali(daily.key), time: countdown });
     actions = (
       <>
         <ShareButton {...dailyShare(daily)} />
@@ -969,7 +970,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
         head={
           <>
             <h2 className="wide text-[20px] leading-none text-paint">{dayHeadline(daily)}</h2>
-            <p className="mt-1.5 text-[14px] text-paint/75">{daily.archive ? t("An archive replay, unranked.") : t("New circuit in {time}.", { time: countdown })}</p>
+            <p className="mt-1.5 text-[14px] text-paint/75">{daily.archive ? t("An archive replay, unranked.") : t("Tomorrow: {circuit}, in {time}.", { circuit: tomorrowQuali(daily.key), time: countdown })}</p>
             <div className="mt-3 flex flex-wrap gap-2.5">{actions}</div>
           </>
         }
@@ -986,7 +987,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
         <h2 className="wide text-[20px] leading-none text-paint">{dayHeadline(daily)}</h2>
         <StandingLine daily={daily} className="mt-1.5" />
         <p className="mt-1.5 text-[14px] text-paint/75">
-          {daily.archive ? t("An archive replay, unranked.") : t("New circuit in {time}.", { time: countdown })}
+          {daily.archive ? t("An archive replay, unranked.") : t("Tomorrow: {circuit}, in {time}.", { circuit: tomorrowQuali(daily.key), time: countdown })}
           {game.getSnapshot().perfectShown ? ` ${t("The perfect line is now drawn under yours.")}` : ""}
         </p>
         <div className="mt-3">

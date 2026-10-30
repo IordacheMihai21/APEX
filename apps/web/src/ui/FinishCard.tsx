@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { tomorrowQuali } from "../games/tomorrow";
 import { t } from "../i18n";
 import { playStreak } from "../games/profile";
 import { GAMES, type GameId, todayProgress } from "../games/registry";
@@ -146,6 +147,11 @@ export function FinishCard({
             {t(`Next ${daily} in`)} <span className="num font-semibold text-paint">{clock(left)}</span>
           </p>
         )}
+        {/* a reason to come back: tomorrow's circuit is known, and so is the streak it keeps */}
+        <p className="mt-1.5 text-[13px] text-steel">
+          {t("Tomorrow's Daily Quali:")} <span className="font-semibold text-paint">{tomorrowQuali()}</span>.
+          {streak.current > 0 && ` ${t("Come back to make it a {n}-day streak.", { n: streak.current + 1 })}`}
+        </p>
 
         {/* today's set: how much is done, the streak, then what's left first */}
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-line pt-4">
