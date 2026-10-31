@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ClusterApi, CornerCluster } from "./CornerCluster";
 import { t } from "../i18n";
 import type { Condition } from "@apex/engine";
 import { HowToPlay, modalOpen } from "./HowToPlay";
@@ -91,7 +92,7 @@ export function MakeCorner() {
 
   const canvas = useRef<HTMLCanvasElement>(null);
   const view = useRef<HTMLDivElement>(null);
-  const speedEl = useRef<HTMLSpanElement>(null);
+  const cluster = useRef<ClusterApi>(null);
   const resultBox = useRef<HTMLDivElement>(null);
   const scene = useRef<CornerScene | null>(null);
   const perfect = useRef<CornerRun | null>(null);
@@ -209,7 +210,13 @@ export function MakeCorner() {
       engine.current?.update(s.crashed ? 0 : off ? off.v : run.v, run.outcome === "off" || run.outcome === "stopped" ? run.outcome : run.phase);
       // into the barrier: the speed drops to nothing and the result comes sooner
       if (s.crashed && st.endAt > now + 700) st.endAt = now + 700;
-      if (speedEl.current) speedEl.current.textContent = String(kmh(run.outcome === "stopped" || s.crashed ? 0 : off ? off.v : run.v));
+      // the dash: the speed, and the pedal the run is on (flat out on the run-up and the exit, the brake in between)
+      const live = !run.outcome && !off;
+      cluster.current?.set(
+        kmh(run.outcome === "stopped" || s.crashed ? 0 : off ? off.v : run.v),
+        live && (run.phase === "approach" || run.phase === "throttle") ? 1 : 0,
+        live && run.phase === "braking" ? 1 : 0,
+      );
       setPhase(run.phase);
       if (st.endAt && now >= st.endAt) {
         st.raf = 0;
@@ -387,19 +394,20 @@ export function MakeCorner() {
         >
           <canvas ref={canvas} className="block h-full w-full" aria-label={t("3D view of {corner} at {circuit}", { corner: label.corner, circuit: label.circuit })} />
           {noGl && <p className="absolute inset-0 grid place-items-center p-6 text-center text-[15px] text-paint">{t("This game needs WebGL, which this browser has turned off.")}</p>}
-          <div className="pointer-events-none absolute top-3 right-3 bg-night/75 px-2.5 py-1.5 text-right">
-            <span ref={speedEl} className="wide num block text-[clamp(22px,5vw,34px)] leading-none text-paint">
-              {data ? kmh(data.conditions[condition].speed[0]) : "–"}
-            </span>
-            <span className="caption">km/h</span>
-          </div>
+          {/* the dash, top right: the pedal is bottom right and the car bottom centre */}
+          <CornerCluster
+            key={`${corner.id}-${condition}`}
+            ref={cluster}
+            kmh={data ? kmh(data.conditions[condition].speed[0]) : 0}
+            className="absolute top-3 right-3 w-[184px] sm:w-[230px]"
+          />
           {screen === "run" && phase !== "approach" && (
             <span className={`caption absolute top-3 left-3 px-2 py-1 text-night ${phase === "braking" ? "bg-lamp" : phase === "rolling" ? "bg-yellow" : "bg-green"}`}>
               {phase === "braking" ? t("Braking") : phase === "rolling" ? t("Carrying speed") : t("Throttle")}
             </span>
           )}
           {screen === "ready" && (
-            <p className="absolute top-3 left-3 max-w-[60%] bg-night/80 px-2.5 py-1.5 text-[12px] leading-snug text-paint/90 sm:text-[13px]">
+            <p className="absolute top-3 left-3 max-w-[calc(100%-212px)] sm:max-w-[calc(100%-260px)] bg-night/80 px-2.5 py-1.5 text-[12px] leading-snug text-paint/90 sm:text-[13px]">
               {t("Boards at 300, 200, 100 and 50 m before the turn-in")}
             </p>
           )}

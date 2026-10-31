@@ -8,7 +8,7 @@ import { groundAt, setGround, toWorld } from "./geometry";
 import { type Terrain, groundOf, loadTerrain } from "./terrain";
 import { buildTrackside } from "./trackside";
 import { Particles } from "./particles";
-import { EffectComposer, EffectPass, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
+import { BloomEffect, BrightnessContrastEffect, Effect, EffectComposer, EffectPass, HueSaturationEffect, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
 import { N8AOPostPass } from "n8ao";
 
 /**
@@ -26,8 +26,8 @@ const startQuality = (): Quality => {
 import { buildWorld } from "./world";
 import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js";
 import { type Surfaces, loadSurfaces } from "./textures";
-import skyDry from "./assets/sky-rural_asphalt_road.hdr?url";
 import skyWet from "./assets/sky-belfast_open_field.hdr?url";
+import skyGolden from "./assets/sky-spruit_sunrise.hdr?url";
 
 /**
  * The 3D corner for Make the corner. A sky with a real sun (and the same sky
@@ -39,10 +39,27 @@ import skyWet from "./assets/sky-belfast_open_field.hdr?url";
  * (x, -z), y up. Only game3d imports three, so it loads with the game.
  */
 
-const SKY = {
-  dry: { turbidity: 3.2, rayleigh: 1.3, mie: 0.004, g: 0.8, elevation: 36, azimuth: 205, fog: "#bccfe0", near: 260, far: 2300, sun: 2.3, hemi: 1.2, exposure: 0.6 },
-  wet: { turbidity: 0, rayleigh: 0, mie: 0, g: 0, elevation: 50, azimuth: 205, fog: "#959da3", near: 90, far: 850, sun: 0.55, hemi: 1.6, exposure: 0.85 },
+type Look = {
+  turbidity: number; rayleigh: number; mie: number; g: number; elevation: number; azimuth: number;
+  fog: string; near: number; far: number; sun: number; hemi: number; exposure: number;
+  sunColor: string; hemiSky: string; hemiGround: string; env: number;
 };
+const SKY: Record<"wet" | "golden", Look> = {
+  wet: { turbidity: 0, rayleigh: 0, mie: 0, g: 0, elevation: 50, azimuth: 205, fog: "#959da3", near: 90, far: 850, sun: 0.55, hemi: 1.6, exposure: 0.85, sunColor: "#e9eef2", hemiSky: "#d4dade", hemiGround: "#46603a", env: 0.85 },
+  // late afternoon, the look of every dry day: a low warm sun ahead of the car (azimuth set per corner, from the run-up), warm haze, long shadows
+  golden: { turbidity: 10, rayleigh: 3.2, mie: 0.005, g: 0.85, elevation: 8, azimuth: 0, fog: "#d3ad86", near: 90, far: 1300, sun: 3.0, hemi: 1.35, exposure: 0.66, sunColor: "#ffbd7c", hemiSky: "#ffd6ad", hemiGround: "#3c4630", env: 1.0 },
+};
+/** Where the sun is in the golden sky photo (sky-spruit_sunrise.hdr): its bearing as three's spherical theta. */
+const GOLDEN_HDR_SUN_THETA = Math.PI / 2 - (0.578 - 0.5) * 2 * Math.PI;
+
+/** A warm grade for the golden-hour look: a touch more red, a little less blue, after tone mapping. */
+class WarmEffect extends Effect {
+  constructor() {
+    super("WarmEffect", "uniform vec3 tint; void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) { outputColor = vec4(inputColor.rgb * tint, inputColor.a); }", {
+      uniforms: new Map([["tint", new THREE.Uniform(new THREE.Vector3(1.06, 1.0, 0.88))]]),
+    });
+  }
+}
 
 const DUST = new THREE.Color("#9c8562");
 const SPRAY = new THREE.Color("#dde3e8");
@@ -77,6 +94,8 @@ export class CornerScene {
   /** frame times, for stepping the quality down on a device that can't keep up */
   private slowFrames = 0;
   private readonly exposure: number;
+  /** the golden-hour look (bloom on the sun and the glints, a warmer grade) */
+  private readonly golden: boolean;
   private readonly camPos = new THREE.Vector3();
   private readonly camLook = new THREE.Vector3();
   private readonly camDir = new THREE.Vector3(0, 0, -1);
@@ -94,7 +113,7 @@ export class CornerScene {
       loadTrack(c.trackId),
       loadScenery(c.trackId),
       loadSurfaces(),
-      new HDRLoader().loadAsync(condition === "wet" ? skyWet : skyDry),
+      new HDRLoader().loadAsync(condition === "wet" ? skyWet : skyGolden),
       loadTerrain(c.id),
     ]);
     const scene = new CornerScene(canvas, c, condition, track, osm, photo, hdr, terrain);
@@ -117,7 +136,10 @@ export class CornerScene {
     const streetCircuit = CATALOG.find((t) => t.id === c.trackId)?.style === "street";
     setGround(terrain ? groundOf(terrain, track.centerline.map(([x, y]) => [x - ox, y - oy] as [number, number]), streetCircuit) : () => 0);
     const wet = condition === "wet";
-    const look = wet ? SKY.wet : SKY.dry;
+    // every dry (and low-downforce) day is late afternoon; a wet day keeps its low cloud
+    const golden = !wet;
+    this.golden = golden;
+    const look = wet ? SKY.wet : SKY.golden;
     const street = CATALOG.find((t) => t.id === c.trackId)?.style === "street";
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance", logarithmicDepthBuffer: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -151,24 +173,31 @@ export class CornerScene {
       });
       return new THREE.Mesh(new THREE.SphereGeometry(scale / 2, 32, 16), mat);
     };
-    this.sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - look.elevation), THREE.MathUtils.degToRad(look.azimuth));
+    // golden hour: the sun low ahead of the camera on the run-up, a little to one side, so the car comes at it backlit
+    const runUp = Math.min(c.x.length - 1, 20);
+    const ahead = Math.atan2(c.x[runUp] - c.x[0], -(c.y[runUp] - c.y[0]));
+    const sunTheta = golden ? ahead + THREE.MathUtils.degToRad(55) : THREE.MathUtils.degToRad(look.azimuth);
+    this.sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - look.elevation), sunTheta);
     const sky = makeSky(4000);
     this.scene.add(sky);
     {
-      // what everything reflects and is lit by: a real photographed sky (CC0, Poly Haven): a sunny rural road, or
-      // an overcast field on a wet day; the sky drawn behind stays the procedural one, with the sun where the shadows say
+      // what everything reflects and is lit by: a real photographed sky (CC0, Poly Haven): a low sun over a field
+      // (spruit_sunrise), or an overcast field on a wet day; the sky drawn behind stays the procedural one, with the sun
+      // where the shadows say
       const pmrem = new THREE.PMREMGenerator(this.renderer);
       hdr.mapping = THREE.EquirectangularReflectionMapping;
       const env = pmrem.fromEquirectangular(hdr);
       this.scene.environment = env.texture;
-      this.scene.environmentIntensity = wet ? 0.85 : 1.25;
+      this.scene.environmentIntensity = look.env;
+      // the photo's sun turned to where the scene's sun is, so the paint catches the light from the right side
+      if (golden) this.scene.environmentRotation.y = GOLDEN_HDR_SUN_THETA - sunTheta;
       hdr.dispose();
       this.track(env, pmrem, sky.geometry, sky.material as THREE.Material, photo);
     }
     this.scene.fog = new THREE.Fog(look.fog, look.near, look.far);
 
-    this.scene.add(new THREE.HemisphereLight(wet ? "#d4dade" : "#dcebff", "#46603a", look.hemi));
-    this.sun = new THREE.DirectionalLight(wet ? "#e9eef2" : "#fff1dc", look.sun);
+    this.scene.add(new THREE.HemisphereLight(look.hemiSky, look.hemiGround, look.hemi));
+    this.sun = new THREE.DirectionalLight(look.sunColor, look.sun);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     const sc = this.sun.shadow.camera;
@@ -212,7 +241,15 @@ export class CornerScene {
     this.wheels = built.wheels;
     this.frontWheels = built.front;
     this.rainLight = built.rainLight;
-    this.carReady = built.ready;
+    this.carReady = golden
+      ? built.ready.then(() => {
+          // in a low sun the paint shows off: glossier, with more of the sky in it
+          built.car.traverse((o) => {
+            const m = (o as THREE.Mesh).material as THREE.MeshPhysicalMaterial | undefined;
+            if (m?.name === "paint") Object.assign(m, { roughness: 0.32, clearcoatRoughness: 0.03, envMapIntensity: 1.0 });
+          });
+        })
+      : built.ready;
     this.scene.add(this.car);
     this.track(built);
 
@@ -254,9 +291,13 @@ export class CornerScene {
       this.ao = ao;
     }
     const tone = new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL });
-    const vignette = new VignetteEffect({ offset: 0.3, darkness: 0.42 });
+    const vignette = new VignetteEffect({ offset: 0.3, darkness: this.golden ? 0.55 : 0.42 });
     composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: SMAAPreset.MEDIUM })));
-    composer.addPass(new EffectPass(this.camera, tone, vignette));
+    if (this.golden) {
+      // only what is brighter than white blooms (the sun, its glints on the paint, the rain light), before tone mapping
+      const bloom = new BloomEffect({ luminanceThreshold: 2.5, luminanceSmoothing: 0.4, mipmapBlur: true, intensity: 0.45, radius: 0.55 });
+      composer.addPass(new EffectPass(this.camera, bloom, tone, new WarmEffect(), new HueSaturationEffect({ saturation: 0.15 }), new BrightnessContrastEffect({ contrast: 0.12 }), vignette));
+    } else composer.addPass(new EffectPass(this.camera, tone, vignette));
     composer.setSize(this.size.w, this.size.h, false);
     this.composer = composer;
   }
