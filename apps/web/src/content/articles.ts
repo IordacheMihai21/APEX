@@ -306,6 +306,378 @@ export const ARTICLES: Article[] = [
     ],
     play: { text: "Read the corners of today's circuit in the Daily Quali", href: "/" },
   },
+  {
+    slug: "trail-braking",
+    kicker: "Braking",
+    title: "Trail braking: how drivers carry the brakes into a corner",
+    description: "What trail braking is, why the fastest drivers ease off the brakes as they turn in instead of letting go at once, and how it helps the car rotate.",
+    intro: [
+      "Ask someone how to drive a corner and they will usually describe three separate steps: brake in a straight line, let go of the brake, then turn. It is a good way to learn, and it is safe. It is also not quite what fast drivers do. Watch the pedal traces from a qualifying lap and the brake pressure does not drop to zero before the steering goes in. It fades away gradually, all the way to the middle of the corner.",
+      "That overlap between braking and turning is called trail braking: the brake pressure 'trails off' as the steering goes in. It is one of the techniques that separate a tidy lap from a fast one, and it follows directly from how a tyre shares its grip.",
+    ],
+    sections: [
+      {
+        h: "The friction circle",
+        p: [
+          "A tyre has a fixed amount of grip, and it can spend that grip in any direction: slowing the car, turning it, or a mix of the two. Engineers draw this as a circle. Straight-line braking uses the whole circle in one direction. A steady corner uses the whole circle sideways. Anything in between, some braking and some turning, sits on the edge of the circle at an angle.",
+          "The three-step method wastes part of that circle. In the moment between letting go of the brake and turning in, the tyres are doing neither job fully. Trail braking fills that gap: as the steering asks for more sideways grip, the brake gives some back, so the tyres stay close to their limit the whole way from the braking zone to the apex.",
+        ],
+      },
+      {
+        h: "Braking later, and deeper",
+        p: [
+          "Because the car is still slowing as it turns in, it does not need to reach its corner speed before the turn-in point. Some of the speed is shed in the first part of the corner itself. That lets the driver brake a few metres later on the straight, which is time gained where the car is fastest.",
+          "The gain is not only in the braking zone. A driver who arrives at the corner with the brakes already off has to guess the entry speed exactly: too fast and there is no way left to scrub speed without running wide. A driver still lightly on the brakes can adjust the speed right up to the apex. Trail braking makes the entry more precise, not just later.",
+        ],
+      },
+      {
+        h: "Helping the car turn",
+        p: [
+          "There is a second reason, and it has to do with weight. When a car brakes, its weight shifts forward onto the front tyres, and a tyre with more weight on it has more grip. Keeping a little brake on as the car turns in keeps the front tyres loaded at exactly the moment they need to grip, so the nose bites and the car turns more willingly.",
+          "Drivers call this rotation. A car that rotates well points towards the apex early, and the sooner it points down the road, the sooner the driver can open the steering and get back on the throttle. A car that will not rotate, that keeps pushing its nose wide, is said to understeer, and trail braking is one of the main tools for curing it from the cockpit.",
+        ],
+      },
+      {
+        h: "The risk: too much, too long",
+        p: [
+          "The same weight shift has a downside. With the weight on the front, the rear tyres are lighter and have less grip. Brake too hard while turning, or keep the brake on too long, and the rear can step out. The car turns more than the driver asked for, and on a fast corner that can end in a spin.",
+          "So trail braking is about a smooth release, not about braking in the corner. The pressure should fall in a steady line as the steering angle rises, reaching zero around the slowest point of the corner. A sudden release upsets the car just as much as holding on too long: the weight springs back to the rear and the front loses the grip it was counting on.",
+        ],
+      },
+      {
+        h: "Where it matters most",
+        p: [
+          "Trail braking earns the most in slow corners at the end of fast straights: hairpins and tight right-angle corners, where the braking zone is long and the entry speed is low. The car does a lot of slowing down, and moving even a small part of that into the corner frees up metres on the straight.",
+          "In fast sweeping corners there is very little braking to trail. The car might only lift off the throttle or touch the brakes briefly, and the line and the steering matter more. In a chicane the brake often stays on lightly through the first part to settle the car for the second.",
+        ],
+      },
+      {
+        h: "Trail braking in the wet",
+        p: [
+          "In the rain, the circle shrinks. Every input has less grip to spend, and the car reacts more sharply when the driver asks for too much. Drivers still trail brake in the wet, but more gently: lower pressure, released earlier, with more of the slowing done in a straight line. The rear stepping out is a bigger risk on a slippery surface, and a mistake costs more.",
+        ],
+      },
+      {
+        h: "How Lapdle models it",
+        p: [
+          "Lapdle's physics uses the friction circle directly. In Make the corner, the car can brake and turn at the same time, but every bit of braking takes away grip it could use for turning, and the other way round. A braking point that looks too late on a straight line can still work if the line gives the car room to finish slowing as it turns, and a braking point that works on one line can put the car off the road on another.",
+          "That is why the best runs in Make the corner rarely come from the earliest braking point. They come from braking late, turning in on a line that lets the car keep shedding speed, and reaching the apex at the right speed with nothing to spare.",
+        ],
+      },
+      {
+        h: "Learning it",
+        p: [
+          "Drivers learn trail braking by doing less, not more. First they brake in a straight line and release fully before turning. Then they let the release overlap the turn-in by a fraction, a little more each lap, feeling for the moment the nose starts to bite. The goal is a single smooth movement: brake pressure going down as the steering goes in, the two inputs crossing over like a pair of dials.",
+        ],
+      },
+    ],
+    play: { text: "Brake late and turn in Make the corner", href: "/make-the-corner" },
+  },
+  {
+    slug: "low-downforce",
+    kicker: "Car setup",
+    title: "Low downforce: why Monza and Mexico City are driven differently",
+    description: "Why teams take the wings off for Monza, why Mexico City's thin air does it for them, and how less downforce changes braking points and the racing line.",
+    intro: [
+      "A racing car is pushed into the ground by its wings and its floor. That push, called downforce, gives the tyres more grip than the car's weight alone could, and it grows with speed. At the speeds of a fast corner, a modern single-seater can have more downforce than it weighs.",
+      "Downforce has a price, though. The same wings that push the car down also hold it back, with drag. On most circuits the trade is worth it, because there are enough corners to win back the time lost on the straights. On a few circuits it is not, and the teams take most of the wing off. Driving one of those cars is a different job.",
+    ],
+    sections: [
+      {
+        h: "Grip against top speed",
+        p: [
+          "Every setup decision on a racing car comes back to this trade. More wing means more grip in the corners and more speed through them, but a lower top speed and a slower run down every straight. Less wing means the car is a missile on the straights and a handful in the corners.",
+          "Engineers decide by simulating the lap both ways. A circuit made of long straights and a few slow corners, where the car spends most of the lap at full throttle, rewards a slippery car. A circuit made of medium and fast corners, where the car is turning most of the time, rewards a car that grips.",
+        ],
+      },
+      {
+        h: "Monza: the temple of speed",
+        p: [
+          "Monza, in northern Italy, is the classic low-downforce circuit. Its lap is a sequence of long straights broken by chicanes and a handful of fast corners, and the cars spend about three quarters of it at full throttle. Teams bring special thin wings for this one weekend, and the cars reach their highest speeds of the year.",
+          "Lapdle's physics shows the same trade. Its low-downforce car carries less wing and much less drag, and on Monza's perfect lap it reaches about 346 km/h on the straights. It is roughly half a second faster round Monza than the normal car, and three to four seconds slower on twisty circuits, where the missing grip costs more in the corners than the straights give back.",
+        ],
+      },
+      {
+        h: "Mexico City: thin air",
+        p: [
+          "Mexico City's circuit takes the wings off a different way. It sits about 2,200 metres above sea level, and the air there is roughly a fifth thinner than at the coast. Downforce and drag both depend on how dense the air is, so every wing on the car works less hard. Teams bolt on their biggest wings, the ones they would use at Monaco, and still end up with about as much downforce as a Monza car.",
+          "Thin air also means less drag, so Mexico produces some of the highest top speeds of the season on its long run to the first corner. The engines have to work harder for cooling, the brakes run hot, and the cars slide around in the slow stadium section, but on the straights they fly.",
+        ],
+      },
+      {
+        h: "What changes in the braking zones",
+        p: [
+          "Less downforce changes braking first. A racing car brakes hardest at high speed, when the wings press the tyres into the ground. Take away downforce and the car arrives at each braking zone faster, but with less grip to slow down with, so the braking zones get longer. A driver who brakes at the usual marker will miss the corner.",
+          "The car also becomes harder to slow down evenly. Downforce falls away as the car slows, so a low-downforce car loses grip faster through the braking zone. Drivers brake earlier and more progressively, and they are careful about turning in while still braking, because there is less grip to share between the two.",
+        ],
+      },
+      {
+        h: "What changes in the corners",
+        p: [
+          "In slow corners, where downforce never contributed much, a low-downforce car is almost as quick as a normal one. The difference shows in the medium and fast corners. A corner that was flat out with full wings may need a lift of the throttle, or even a touch of the brakes. A fast corner taken at 270 km/h may drop to 240.",
+          "The line changes with it. With less grip in fast corners, the car needs every centimetre of track width, and drivers lean harder on the exits, where it can be tempting to run wide over the kerbs. In slow corners, the gain from a strong exit is bigger than ever, because the car accelerates harder and longer down a straight with less drag holding it back.",
+        ],
+      },
+      {
+        h: "Why it makes the racing closer",
+        p: [
+          "Low-downforce circuits tend to produce good racing. The long straights and the slippery cars give a following driver a strong tow, and the late braking zones at the end of those straights are natural places to overtake. Cars that are slower over a lap can still defend, and cars that are faster can still attack.",
+        ],
+      },
+      {
+        h: "Try it in Lapdle",
+        p: [
+          "Some days, Lapdle's Daily Quali and Make the corner run with the low-downforce car. The circuit is the same, but the braking points move, a corner that was flat out may need a lift, and the line that was best yesterday is no longer quite right. Comparing your low-downforce lap with a dry one on the same circuit is the clearest way to see how much the wings were doing.",
+        ],
+      },
+    ],
+    play: { text: "Play today's Daily Quali", href: "/" },
+  },
+  {
+    slug: "why-monaco-is-slow",
+    kicker: "Circuits",
+    title: "Why Monaco is the slowest lap of the year",
+    description: "Monaco is the shortest and slowest circuit on the calendar, and still the one drivers most want to win. Why the lap is so slow, and why it is so hard to drive.",
+    intro: [
+      "Monaco is the odd one out on the calendar. Most circuits are built for racing, with wide tracks, long run-off areas and corners shaped to give fast cars something to do. Monaco is a town. For one weekend a year, its streets, harbour front and a tunnel under a hotel become a circuit, lined with barriers on both sides.",
+      "The result is the slowest lap of the season. A pole lap at Monaco averages around 170 km/h, against more than 260 km/h at Monza. And yet drivers rank it among the hardest and most rewarding laps in the world. Both facts have the same cause.",
+    ],
+    sections: [
+      {
+        h: "Short, tight and twisty",
+        p: [
+          "The circuit is about 3.3 km long, the shortest on the calendar, and it fits nineteen corners into that distance. There is no straight long enough for the car to reach the top speeds it manages elsewhere; the longest flat-out stretch runs through the tunnel and curves the whole way.",
+          "Lapdle's physics shows the shape of the lap. On Monaco's perfect lap the car never goes faster than about 315 km/h, against 346 km/h at Monza, and it drops below 50 km/h twice. Much of the lap is spent between 100 and 200 km/h, braking and accelerating out of one tight corner after another.",
+        ],
+      },
+      {
+        h: "The slowest corner in racing",
+        p: [
+          "The Fairmont hairpin, below the hotel of the same name, is usually called the slowest corner in Formula 1. The cars take it at around 50 km/h, with full steering lock, and the teams fit special steering parts so the cars can turn sharply enough to get round. The line is fixed by the barriers: there is room for one car, and the drivers brush the inside wall with their wheels.",
+          "The hairpin sums up the circuit. A corner like this rewards precision, not bravery: braking to exactly the right speed, turning in at exactly the right moment and getting the power down cleanly on the exit, without touching the barrier on the outside.",
+        ],
+      },
+      {
+        h: "Barriers instead of run-off",
+        p: [
+          "On a modern circuit, a small mistake costs time. At Monaco it usually costs the car. The barriers sit right at the edge of the track, so there is no room to run wide on an exit and recover. The racing line at Monaco is drawn not by the white lines but by the walls, and the fastest drivers take it within centimetres of them.",
+          "That changes how the circuit is driven. On a normal circuit a driver can use all of the road on the exit of a corner and run over the kerb. At Monaco the outside of the exit is a barrier, so drivers often take a slightly tighter exit, giving up a little speed to keep a margin. The fastest laps come from shrinking that margin, lap by lap, through the weekend.",
+        ],
+      },
+      {
+        h: "Maximum downforce",
+        p: [
+          "With no long straights and many slow corners, Monaco is the opposite of Monza. Teams bring their highest-downforce wings, because grip in the corners matters far more than top speed. Drag barely matters when the car is never flat out for long.",
+          "Mechanical grip matters just as much. The streets are bumpy and change surface from one corner to the next: there are painted road markings, drain covers and a dip where the track crosses from one road to another. The cars run softer suspension than usual so the tyres stay in contact with the road.",
+        ],
+      },
+      {
+        h: "Why qualifying is everything",
+        p: [
+          "The tight streets that make the lap slow also make overtaking almost impossible. There is nowhere to get alongside another car, and a driver who is faster by a second a lap can spend the whole race stuck behind a slower car. So the Saturday matters more than the Sunday. The order on the grid is usually close to the order at the finish, and the qualifying lap is the most important lap of the weekend.",
+          "That makes Monaco qualifying one of the most watched sessions of the year: one driver, one lap, inches from the barriers, with the whole race riding on it.",
+        ],
+      },
+      {
+        h: "A circuit that rewards confidence",
+        p: [
+          "Monaco is a circuit where lap times keep falling through the whole weekend. The track gets grippier as the cars lay rubber on public roads that are normally driven by buses and scooters, and the drivers find more speed as they trust themselves closer to the walls. The fastest drivers are not the ones who take the most risk, but the ones who build up to the limit most cleanly.",
+        ],
+      },
+      {
+        h: "Drive it",
+        p: [
+          "Monaco is one of the circuits in Lapdle's rotation. Its guide walks through the corners in order, and when it comes up in the Daily Quali, the slow corners reward a patient, late-apex line more than anywhere else on the calendar.",
+        ],
+      },
+    ],
+    play: { text: "Read the Monaco circuit guide", href: "/circuits/monaco" },
+  },
+  {
+    slug: "kerbs",
+    kicker: "Technique",
+    title: "How to use the kerbs: when to ride them and when to stay off",
+    description: "Kerbs are part of the racing line. Which ones drivers use to make a corner wider, which ones they avoid, and why riding a kerb can be faster or slower.",
+    intro: [
+      "The red and white stripes at the edge of a corner are not decoration. Kerbs mark the edge of the track, protect the grass and the gravel from cars cutting the corner, and give drivers a little extra width to play with. On a fast lap, the car touches a kerb at almost every corner.",
+      "But not every kerb is there to be used, and not every kerb can be used the same way. Knowing which ones to attack, which ones to brush and which ones to avoid is part of learning any circuit.",
+    ],
+    sections: [
+      {
+        h: "Why kerbs make a corner faster",
+        p: [
+          "The racing line is about making a corner as wide as possible, and a kerb adds width. A car that can put two wheels on the inside kerb at the apex can cut the corner by up to a metre. A car that can run out onto the exit kerb can open the curve of its exit by the same amount. A wider curve means a higher speed, and on a corner that leads onto a straight, a higher exit speed carries all the way down it.",
+          "So on most corners, the best line uses the kerb on the inside at the apex and the kerb on the outside at the exit. The question is how much of it.",
+        ],
+      },
+      {
+        h: "Flat kerbs and sausage kerbs",
+        p: [
+          "Kerbs come in different shapes. The most common are low and flat, often with shallow ridges, and a car can drive over them without much fuss. These are the ones drivers use freely at the apex and on the exit.",
+          "Behind them, many circuits add taller kerbs, sometimes called sausage kerbs, rounded bumps designed to stop drivers cutting further. Hitting one of these can launch the car, break the suspension or tear off part of the floor. They are not part of the line; they mark where the line ends.",
+        ],
+      },
+      {
+        h: "The cost of riding a kerb",
+        p: [
+          "Even a flat kerb has a cost. It is bumpier than the track, so the tyres spend part of the time bouncing instead of gripping, and a car that hits a kerb hard while braking or turning can lose grip for a moment. Painted kerbs are also slippery when wet, and many drivers stay off them completely in the rain.",
+          "So drivers judge every kerb on its own. A smooth kerb at the apex of a slow corner, where the car is barely loaded, is free time. The same kerb in the middle of a fast corner, where the car is at the limit of its grip, can unsettle it and cost more than it gives back.",
+        ],
+      },
+      {
+        h: "Apex kerbs",
+        p: [
+          "On the inside of a corner, the kerb lets the car cut a little tighter at the apex. On slow corners, drivers often put the inside wheels well onto it. On fast corners they tend to brush it lightly, enough to use the width but not so much that the car bounces. In chicanes, where the car must change direction quickly, drivers often ride the kerbs hard because cutting across them straightens the path between the two parts.",
+        ],
+      },
+      {
+        h: "Exit kerbs",
+        p: [
+          "On the outside of the exit, the kerb is a safety margin as much as extra width. A driver who reaches it with the steering already unwinding and the throttle wide open has used every centimetre of the track. A driver who arrives there still turning hard is running out of road, and the next step is the grass.",
+          "This is why exit kerbs are where track limits are judged. At most circuits the line at the edge of the track, not the outer edge of the kerb, is the limit. A car with all four wheels beyond it has left the track, and lap times set that way are deleted.",
+        ],
+      },
+      {
+        h: "Kerbs and the car",
+        p: [
+          "How much a driver can use the kerbs also depends on the car. A car with soft suspension rides over kerbs and keeps its grip, while a stiff car skips across them. Teams sometimes soften the setup at circuits where the kerbs are important, giving up a little performance elsewhere so the drivers can attack them.",
+        ],
+      },
+      {
+        h: "Kerbs in Lapdle",
+        p: [
+          "In Make the corner, the kerbs are part of the road and the car can use them, but the grass and the gravel beyond are much slower, and the barrier ends the run. The camera shakes as the car crosses a kerb, so you can feel when your line has used the full width of the track and when it has gone further than it should.",
+          "The best runs usually touch the inside kerb at the apex and drift out to the outside kerb on the exit, just as a real driver would. Going wider than that costs time, and going narrower leaves speed unused.",
+        ],
+      },
+      {
+        h: "Learning the kerbs",
+        p: [
+          "When a driver arrives at a new circuit, the kerbs are among the first things they study, on foot and on video. Which ones can be ridden, how high they are, what lies behind them. Then, lap by lap, they use a little more of each, until they find the point where the next centimetre costs more than it gives.",
+        ],
+      },
+    ],
+    play: { text: "Use the full track in Make the corner", href: "/make-the-corner" },
+  },
+  {
+    slug: "learning-a-circuit",
+    kicker: "Practice",
+    title: "How racing drivers learn a new circuit",
+    description: "Track walks, onboard videos, simulators and reference points: how a driver goes from a new circuit to a qualifying lap in a single weekend.",
+    intro: [
+      "A racing driver arriving at a circuit for a race weekend has very little time. Practice sessions are short, the tyres are limited, and by qualifying the driver must be within a few tenths of the car's limit on every corner. Even at a circuit they know, the car, the tyres and the weather are different from last year.",
+      "So drivers learn circuits in layers, before they ever drive a lap, and then they build speed in a careful order once they are on track.",
+    ],
+    sections: [
+      {
+        h: "Before the weekend: video and simulators",
+        p: [
+          "The first lap of a new circuit is usually driven on a screen. Drivers watch onboard videos of previous laps, from their own team and from others, to learn the order of the corners, the gear for each one and where the car is flat out. Many teams run detailed simulators that model the circuit to the centimetre, and a driver may complete hundreds of laps there before the car is even unloaded.",
+          "The simulator cannot teach everything. The real grip, the bumps and the way the track changes as rubber goes down all have to be learned on the day. But it means the driver arrives knowing where the circuit goes, and can spend the real laps on details.",
+        ],
+      },
+      {
+        h: "The track walk",
+        p: [
+          "On the day before running starts, drivers and engineers walk or cycle around the circuit. It looks relaxed, but it is work. On foot, a driver can see things that are invisible at 300 km/h: the camber of the road, how high the kerbs are, where the surface changes, what lies beyond the edge of the track, and the landmarks that will mark each braking point and turn-in.",
+        ],
+      },
+      {
+        h: "Reference points",
+        p: [
+          "A driver does not judge a braking point by distance. They judge it by what they see. Circuits have marker boards counting down to each corner, usually at 150, 100 and 50 metres, but drivers also use anything that will not move: a change in the tarmac, a crack in the barrier, a sign on a bridge, a shadow in the afternoon.",
+          "Every corner gets a set of these reference points: one for the braking point, one for the turn-in, one for the apex and one for where the car should track out. A lap becomes a chain of them, and a driver who has the chain memorised can drive the lap almost without thinking, leaving attention for the details that change from lap to lap.",
+        ],
+      },
+      {
+        h: "Building up speed",
+        p: [
+          "On track, drivers build up gradually. The first laps are about checking that the circuit matches what they learned, and that the car does what it should. Then they start moving the braking points later, one marker at a time, and carrying more speed into the corners, until they find where the limit is.",
+          "Good drivers do this in a deliberate order. They do not attack every corner at once. They might push the braking in one corner while keeping the rest steady, so that if something goes wrong, they know which change caused it. A lap time is built from separate small gains, each one tested before the next.",
+        ],
+      },
+      {
+        h: "The data",
+        p: [
+          "After every run, drivers sit with their engineers and the data. The car records the speed, the throttle, the brake pressure and the steering angle at every metre of the lap, and the team overlays one driver's lap on another's. A driver can see exactly where a teammate braked later, carried more speed or got on the throttle sooner, and take that back onto the track.",
+          "This is how drivers find the last few tenths. Most of a lap time is found by feel, but the final gains often come from a graph showing that the car was two metres off the ideal line through one corner, or waiting too long to accelerate on the exit of another.",
+        ],
+      },
+      {
+        h: "Learning the conditions",
+        p: [
+          "A circuit is not the same all weekend. It gets faster as rubber goes down, slower when it rains or when the sun heats the track, and the wind can change which way the car slides in a fast corner. Drivers keep learning right up to qualifying, adjusting their reference points as the grip changes.",
+        ],
+      },
+      {
+        h: "Learning a circuit in Lapdle",
+        p: [
+          "Lapdle's daily games follow the same steps in a smaller way. The circuit guides walk through each lap corner by corner, the Daily Quali shows which corner cost the most time after every attempt, and Make the corner puts you in one corner with one braking point to find. Coming back to the same circuit on a different day, with different conditions, shows how much of what you learned still holds.",
+          "The best way to learn a circuit is the same as for a real driver: find the order of the corners, pick your reference points, and then change one thing at a time.",
+        ],
+      },
+    ],
+    play: { text: "Learn the circuits, corner by corner", href: "/circuits" },
+  },
+  {
+    slug: "corner-exit-traction",
+    kicker: "Acceleration",
+    title: "Traction: why the exit of a slow corner decides the straight",
+    description: "Why the first moments of acceleration out of a slow corner matter more than the corner itself, and how the line, the throttle and the tyres decide the exit.",
+    intro: [
+      "Most of a lap time is made on the straights. That sounds odd, because the straights are where every car is simply flat out, but it is true: the car spends far more time on them than in the corners, and what decides how fast it goes down a straight is what happened at the end of the corner before it.",
+      "That end of the corner, the exit, is where traction matters: how much of the engine's power the rear tyres can put on the road without spinning.",
+    ],
+    sections: [
+      {
+        h: "Speed carried down the straight",
+        p: [
+          "Imagine two cars leaving the same slow corner, one at 100 km/h and one at 105 km/h. The faster car starts the straight ahead and stays ahead all the way down it, because both are accelerating as hard as they can and the faster one had a head start. At the end of a long straight, the gap can be several car lengths, all from five km/h at the exit.",
+          "Now imagine the same five km/h gained at the entry to the corner. It is gone by the apex, because both cars slow to the same corner speed. That is why drivers and engineers obsess over exits and talk about entries much less: speed at the exit is carried, speed at the entry is spent.",
+        ],
+      },
+      {
+        h: "Why slow corners are traction-limited",
+        p: [
+          "At low speed, a racing car has far more power than its tyres can use. Downforce is small at 80 km/h, so the rear tyres have little extra grip, and the engine can spin them easily. Out of a hairpin, the driver cannot simply floor the throttle; they must feed it in, adding power as fast as the tyres will take it.",
+          "As the car speeds up, downforce grows and the tyres can take more, until at some point the driver can go flat out. The quicker the car reaches that point, the faster it goes down the straight. Everything about the exit of a slow corner is about reaching full throttle as early as possible.",
+        ],
+      },
+      {
+        h: "The line sets up the exit",
+        p: [
+          "The tyres share their grip between turning and accelerating, so a car that is still turning hard cannot accelerate hard. The way to get on the power early is to finish most of the turning early, which is exactly what a late apex does. By turning in later and pointing the car down the straight sooner, the driver straightens the exit and frees the tyres to put power down.",
+          "This is why a slow corner before a long straight is almost always driven with a late apex, and why the late apex looks slow from the outside: the car takes a tighter, slower path in the first half of the corner to earn a straighter, faster second half.",
+        ],
+      },
+      {
+        h: "Throttle like a dimmer, not a switch",
+        p: [
+          "Good drivers apply the throttle progressively, not in a stab. A sudden burst of power on a car that is still turning will break the rear tyres loose, and the car either slides, losing speed, or spins. A smooth, rising throttle lets the tyres keep gripping all the way out of the corner.",
+          "Engineers look for this on the data: a steady ramp from the apex to full throttle, with the steering unwinding at the same rate. Any wiggle in the throttle trace, a lift after the driver started accelerating, is time lost.",
+        ],
+      },
+      {
+        h: "Tyres and conditions",
+        p: [
+          "Traction is the first thing to go when the tyres wear, overheat or get cold. Worn rear tyres spin more easily, and drivers on old tyres have to be gentler on the exits. In the rain, traction falls dramatically: drivers short-shift, changing to a higher gear earlier, so the engine delivers less torque at the wheels and the tyres have a better chance of gripping.",
+        ],
+      },
+      {
+        h: "Not every exit is equal",
+        p: [
+          "Exits matter most before long straights. The exit of a corner that leads straight into another corner barely matters, because the car will slow down again almost immediately. Drivers sacrifice those exits to set up the corners that do lead somewhere, and a good lap is built by knowing which is which.",
+        ],
+      },
+      {
+        h: "Seeing it in Lapdle",
+        p: [
+          "In the Daily Quali, the speed trace after every lap shows how quickly the car reaches full speed after each corner. A late apex on a corner before a long straight will usually show a slightly lower minimum speed and a much steeper climb afterwards, and the lap time will be better for it. The Speed trap game asks you to guess the speed at points on the perfect lap, from the slowest point of a hairpin to the end of the longest straight.",
+        ],
+      },
+    ],
+    play: { text: "Try a late apex in the Daily Quali", href: "/" },
+  },
 ];
 
 export const article = (slug: string) => ARTICLES.find((a) => a.slug === slug);
