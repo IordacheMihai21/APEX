@@ -8,7 +8,7 @@ import { groundAt, setGround, toWorld } from "./geometry";
 import { type Terrain, groundOf, loadTerrain } from "./terrain";
 import { buildTrackside } from "./trackside";
 import { Particles } from "./particles";
-import { BloomEffect, BrightnessContrastEffect, Effect, EffectComposer, EffectPass, HueSaturationEffect, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
+import { BrightnessContrastEffect, Effect, EffectComposer, EffectPass, HueSaturationEffect, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
 import { N8AOPostPass } from "n8ao";
 
 /**
@@ -94,7 +94,7 @@ export class CornerScene {
   /** frame times, for stepping the quality down on a device that can't keep up */
   private slowFrames = 0;
   private readonly exposure: number;
-  /** the golden-hour look (bloom on the sun and the glints, a warmer grade) */
+  /** the golden-hour look (a warmer grade) */
   private readonly golden: boolean;
   private readonly camPos = new THREE.Vector3();
   private readonly camLook = new THREE.Vector3();
@@ -246,7 +246,7 @@ export class CornerScene {
           // in a low sun the paint shows off: glossier, with more of the sky in it
           built.car.traverse((o) => {
             const m = (o as THREE.Mesh).material as THREE.MeshPhysicalMaterial | undefined;
-            if (m?.name === "paint") Object.assign(m, { roughness: 0.32, clearcoatRoughness: 0.03, envMapIntensity: 1.0 });
+            if (m?.name === "paint") Object.assign(m, { roughness: 0.34, clearcoatRoughness: 0.07, envMapIntensity: 0.95 });
           });
         })
       : built.ready;
@@ -292,12 +292,10 @@ export class CornerScene {
     }
     const tone = new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL });
     const vignette = new VignetteEffect({ offset: 0.3, darkness: this.golden ? 0.55 : 0.42 });
-    composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: SMAAPreset.MEDIUM })));
-    if (this.golden) {
-      // only what is brighter than white blooms (the sun, its glints on the paint, the rain light), before tone mapping
-      const bloom = new BloomEffect({ luminanceThreshold: 2.5, luminanceSmoothing: 0.4, mipmapBlur: true, intensity: 0.45, radius: 0.55 });
-      composer.addPass(new EffectPass(this.camera, bloom, tone, new WarmEffect(), new HueSaturationEffect({ saturation: 0.15 }), new BrightnessContrastEffect({ contrast: 0.12 }), vignette));
-    } else composer.addPass(new EffectPass(this.camera, tone, vignette));
+    // the smoothest edges the device can afford (no bloom: glints on the paint flashed it on and off)
+    composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: this.quality === "high" ? SMAAPreset.ULTRA : SMAAPreset.HIGH })));
+    if (this.golden) composer.addPass(new EffectPass(this.camera, tone, new WarmEffect(), new HueSaturationEffect({ saturation: 0.15 }), new BrightnessContrastEffect({ contrast: 0.12 }), vignette));
+    else composer.addPass(new EffectPass(this.camera, tone, vignette));
     composer.setSize(this.size.w, this.size.h, false);
     this.composer = composer;
   }
@@ -414,27 +412,27 @@ export class CornerScene {
     const t = this.clock;
     // the moment it meets the barrier: a hard jolt that dies away in half a second
     const crash = this.hit ? Math.max(0, 1 - (t - this.hit.at) / 0.5) : 0;
-    // a TV chase camera barely moves: under a centimetre at speed, a little more over the kerbs
-    const buzz = (0.0008 + 0.0022 * fast) * (onKerb ? 2.5 : 1) + (offRoad && speed > 1 ? 0.05 * Math.min(1, speed / 30) : 0) + 0.18 * crash * crash;
+    // a TV chase camera glides: still on the road, a little over the kerbs, rough off it and at the barrier
+    const buzz = (onKerb ? 0.006 : 0) + (offRoad && speed > 1 ? 0.05 * Math.min(1, speed / 30) : 0) + 0.18 * crash * crash;
     const jx = buzz * (Math.sin(t * 71) + 0.6 * Math.sin(t * 113 + 1.7));
     const jy = buzz * (Math.sin(t * 89 + 0.4) + 0.7 * Math.sin(t * 131 + 2.3)) + (onKerb ? 0.008 * Math.sin((pose.s! / 1.25) * Math.PI * 2) : 0);
     const right = new THREE.Vector3(-this.camDir.z, 0, this.camDir.x);
     this.camPos
       .copy(p)
-      .addScaledVector(this.camDir, (tall ? -4.8 : -5.4) + brake * 0.7)
-      .add(new THREE.Vector3(0, (tall ? 2.05 : 1.75) - brake * 0.25 + jy, 0))
-      .addScaledVector(right, jx - lean * 0.25);
+      .addScaledVector(this.camDir, (tall ? -4.8 : -5.4) + brake * 0.4)
+      .add(new THREE.Vector3(0, (tall ? 2.05 : 1.75) - brake * 0.12 + jy, 0))
+      .addScaledVector(right, jx - lean * 0.1);
     this.camLook
       .copy(p)
       .addScaledVector(this.camDir, tall ? 10 : 12)
-      .add(new THREE.Vector3(0, (tall ? 0.1 : 0.55) - brake * 0.9, 0));
+      .add(new THREE.Vector3(0, (tall ? 0.1 : 0.55) - brake * 0.4, 0));
     // over a crest the camera behind could end up in the hillside: keep it above the ground under it
     this.camPos.y = Math.max(this.camPos.y, groundAt(this.camPos.x, -this.camPos.z) + 1.2);
     this.camera.position.copy(this.camPos);
     // lean into the corner: tilt the camera's up a little against the turn
-    this.camera.up.set(0, 1, 0).addScaledVector(right, lean * 0.05).normalize();
+    this.camera.up.set(0, 1, 0).addScaledVector(right, lean * 0.02).normalize();
     this.camera.lookAt(this.camLook);
-    const fov = this.baseFov + 7 * fast * fast;
+    const fov = this.baseFov + 4 * fast * fast;
     if (Math.abs(fov - this.camera.fov) > 0.05) {
       this.camera.fov = fov;
       this.camera.updateProjectionMatrix();

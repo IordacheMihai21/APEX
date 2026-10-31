@@ -42,8 +42,9 @@ export function buildCar() {
     if (disposed) return;
     gltf.scene.traverse((o) => {
       if (o instanceof THREE.Mesh) {
-        // the model has no normals: shade it smooth across curves and sharp at its edges
-        const g = toCreasedNormals(o.geometry, (35 * Math.PI) / 180);
+        // the model has no normals: shade it smooth across its curves (its panels are coarse, so a wide angle hides
+        // the facets) and sharp only at real edges
+        const g = toCreasedNormals(o.geometry, (70 * Math.PI) / 180);
         o.geometry.dispose();
         o.geometry = g;
         geos.push(g);
