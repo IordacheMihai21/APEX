@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { Sky } from "three/examples/jsm/objects/Sky.js";
 import type { Condition } from "@apex/engine";
 import type { CornerData } from "../modes/makeCorner";
 import { CATALOG, loadScenery, loadTrack } from "../game/catalog";
@@ -40,14 +39,16 @@ import skyGolden from "./assets/sky-spruit_sunrise.hdr?url";
  */
 
 type Look = {
-  turbidity: number; rayleigh: number; mie: number; g: number; elevation: number; azimuth: number;
-  fog: string; near: number; far: number; sun: number; hemi: number; exposure: number;
+  /** the sky: a smooth gradient from the horizon up (the haze at the horizon is the fog's colour, so they meet) */
+  skyTop: string; horizon: string; elevation: number;
+  near: number; far: number; sun: number; hemi: number; exposure: number;
   sunColor: string; hemiSky: string; hemiGround: string; env: number;
 };
 const SKY: Record<"wet" | "golden", Look> = {
-  wet: { turbidity: 0, rayleigh: 0, mie: 0, g: 0, elevation: 50, azimuth: 205, fog: "#959da3", near: 90, far: 850, sun: 0.55, hemi: 1.6, exposure: 0.85, sunColor: "#e9eef2", hemiSky: "#d4dade", hemiGround: "#46603a", env: 0.85 },
-  // late afternoon, the look of every dry day: a low warm sun ahead of the car (azimuth set per corner, from the run-up), warm haze, long shadows
-  golden: { turbidity: 10, rayleigh: 3.2, mie: 0.005, g: 0.85, elevation: 8, azimuth: 0, fog: "#d3ad86", near: 90, far: 1300, sun: 3.0, hemi: 1.35, exposure: 0.66, sunColor: "#ffbd7c", hemiSky: "#ffd6ad", hemiGround: "#3c4630", env: 1.0 },
+  wet: { skyTop: "#5e676e", horizon: "#959da3", elevation: 50, near: 90, far: 850, sun: 0.55, hemi: 1.6, exposure: 0.85, sunColor: "#e9eef2", hemiSky: "#d4dade", hemiGround: "#46603a", env: 0.85 },
+  // late afternoon, the look of every dry day: a hazy warm sky with no sun in it (a sun on screen glared as the car
+  // turned towards it), the low warm sun behind the camera to one side (set per corner, from the run-up), long shadows
+  golden: { skyTop: "#a7b0c0", horizon: "#f2d1ab", elevation: 12, near: 120, far: 1500, sun: 3.0, hemi: 1.35, exposure: 0.66, sunColor: "#ffbd7c", hemiSky: "#ffd6ad", hemiGround: "#3c4630", env: 1.0 },
 };
 /** Where the sun is in the golden sky photo (sky-spruit_sunrise.hdr): its bearing as three's spherical theta. */
 const GOLDEN_HDR_SUN_THETA = Math.PI / 2 - (0.578 - 0.5) * 2 * Math.PI;
@@ -151,32 +152,22 @@ export class CornerScene {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     // ---- the sky, and the same sky as the light everything reflects: a clear sky with a real sun, or low cloud on a wet day
+    // the sky: a smooth gradient, its horizon the fog's colour so the far hills fade into it
     const makeSky = (scale: number): THREE.Mesh => {
-      if (!wet) {
-        const sky = new Sky();
-        sky.scale.setScalar(scale);
-        const u = sky.material.uniforms;
-        u.turbidity.value = look.turbidity;
-        u.rayleigh.value = look.rayleigh;
-        u.mieCoefficient.value = look.mie;
-        u.mieDirectionalG.value = look.g;
-        u.sunPosition.value.copy(this.sunDir);
-        return sky;
-      }
       const mat = new THREE.ShaderMaterial({
         side: THREE.BackSide,
         depthWrite: false,
-        uniforms: { top: { value: new THREE.Color("#5e676e") }, horizon: { value: new THREE.Color("#a9b1b6") } },
+        uniforms: { top: { value: new THREE.Color(look.skyTop) }, horizon: { value: new THREE.Color(wet ? "#a9b1b6" : look.horizon) } },
         vertexShader: "varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-        fragmentShader:
-          "uniform vec3 top; uniform vec3 horizon; varying vec3 vDir; void main() { float t = pow(clamp(vDir.y, 0.0, 1.0), 0.45); gl_FragColor = vec4(mix(horizon, top, t), 1.0); }",
+        fragmentShader: `uniform vec3 top; uniform vec3 horizon; varying vec3 vDir; void main() { float t = pow(clamp(vDir.y, 0.0, 1.0), ${wet ? "0.45" : "0.6"}); gl_FragColor = vec4(mix(horizon, top, t), 1.0); }`,
       });
       return new THREE.Mesh(new THREE.SphereGeometry(scale / 2, 32, 16), mat);
     };
-    // golden hour: the sun low ahead of the camera on the run-up, a little to one side, so the car comes at it backlit
+    // golden hour: the sun low behind the camera on the run-up, well to one side, so it lights the car and the road
+    // warm and throws long shadows across the track, but never shines into the view
     const runUp = Math.min(c.x.length - 1, 20);
     const ahead = Math.atan2(c.x[runUp] - c.x[0], -(c.y[runUp] - c.y[0]));
-    const sunTheta = golden ? ahead + THREE.MathUtils.degToRad(55) : THREE.MathUtils.degToRad(look.azimuth);
+    const sunTheta = golden ? ahead + THREE.MathUtils.degToRad(140) : THREE.MathUtils.degToRad(205);
     this.sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - look.elevation), sunTheta);
     const sky = makeSky(4000);
     this.scene.add(sky);
@@ -194,7 +185,7 @@ export class CornerScene {
       hdr.dispose();
       this.track(env, pmrem, sky.geometry, sky.material as THREE.Material, photo);
     }
-    this.scene.fog = new THREE.Fog(look.fog, look.near, look.far);
+    this.scene.fog = new THREE.Fog(look.horizon, look.near, look.far);
 
     this.scene.add(new THREE.HemisphereLight(look.hemiSky, look.hemiGround, look.hemi));
     this.sun = new THREE.DirectionalLight(look.sunColor, look.sun);
@@ -246,7 +237,7 @@ export class CornerScene {
           // in a low sun the paint shows off: glossier, with more of the sky in it
           built.car.traverse((o) => {
             const m = (o as THREE.Mesh).material as THREE.MeshPhysicalMaterial | undefined;
-            if (m?.name === "paint") Object.assign(m, { roughness: 0.34, clearcoatRoughness: 0.07, envMapIntensity: 0.95 });
+            if (m?.name === "paint") Object.assign(m, { roughness: 0.42, clearcoatRoughness: 0.16, envMapIntensity: 0.8 });
           });
         })
       : built.ready;
