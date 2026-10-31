@@ -394,7 +394,7 @@ export const ARTICLES: Article[] = [
         h: "Monza: the temple of speed",
         p: [
           "Monza, in northern Italy, is the classic low-downforce circuit. Its lap is a sequence of long straights broken by chicanes and a handful of fast corners, and the cars spend about three quarters of it at full throttle. Teams bring special thin wings for this one weekend, and the cars reach their highest speeds of the year.",
-          "Lapdle's physics shows the same trade. Its low-downforce car carries less wing and much less drag, and on Monza's perfect lap it reaches about 346 km/h on the straights. It is roughly half a second faster round Monza than the normal car, and three to four seconds slower on twisty circuits, where the missing grip costs more in the corners than the straights give back.",
+          "Lapdle's physics shows the same trade. Its low-downforce car carries less wing and much less drag, and on Monza's perfect lap it reaches about 390 km/h at the end of the straights, against 346 km/h for the normal car. It is roughly half a second faster round Monza than the normal car, and three to four seconds slower on twisty circuits, where the missing grip costs more in the corners than the straights give back.",
         ],
       },
       {

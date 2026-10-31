@@ -1,9 +1,10 @@
+import STATS from "../game/circuitStats.json";
 import { OUTLINES } from "../game/outlines";
 import { CIRCUITS, circuit, circuitSlug } from "../modes/circuits";
 import { WEEKLY_CORNERS } from "../modes/corner";
 import { AdSlot } from "../ui/Ads";
 import { lapTime } from "../ui/format";
-import { CIRCUIT_TEXT } from "./circuitText";
+import { CIRCUIT_MORE, CIRCUIT_TEXT } from "./circuitText";
 import { Page, Section, link } from "./Guides";
 
 /**
@@ -61,6 +62,42 @@ export function CircuitsIndex() {
   );
 }
 
+type LapStats = { maxKmh: number; minKmh: number; accelPct: number; brakePct: number };
+const LAP_STATS = STATS as Record<string, Record<"dry" | "wet" | "lowdf", LapStats>>;
+const secs = (ms: number) => (Math.abs(ms) / 1000).toFixed(1);
+
+/** The perfect lap in numbers, in words: speeds and shares from game/circuitStats.json, times from the outlines. */
+function lapInNumbers(id: string): string[] {
+  const c = circuit(id);
+  const o = OUTLINES[id];
+  const { dry, wet, lowdf } = LAP_STATS[id];
+  const braking = CIRCUITS.map((x) => LAP_STATS[x.id].dry.brakePct);
+  const rank = dry.brakePct >= Math.max(...braking) ? ", more than on any other circuit in Lapdle" : dry.brakePct <= Math.min(...braking) ? ", less than on any other circuit in Lapdle" : "";
+  const out = [
+    `On Lapdle's perfect dry lap the car reaches ${dry.maxKmh} km/h at its fastest and slows to ${dry.minKmh} km/h at the slowest point of the lap. It spends about ${dry.accelPct}% of the lap accelerating and ${dry.brakePct}% braking${rank}.`,
+  ];
+  if (c.poleMs) {
+    const d = o.lapMs - c.poleMs;
+    out.push(`The perfect lap, ${lapTime(o.lapMs)}, is ${secs(d)} s ${d < 0 ? "faster" : "slower"} than the real pole lap of 2025. The model drives one simplified car on every circuit, so the two are close but not the same.`);
+  }
+  const { gold, silver, bronze } = o.medals;
+  out.push(
+    `The medals in the dry are set just above the perfect lap: gold at ${lapTime(gold)}, within ${secs(gold - o.lapMs)} s of it; silver at ${lapTime(silver)}; and bronze at ${lapTime(bronze)}, ${Math.round((100 * (bronze - o.lapMs)) / o.lapMs)}% off the perfect lap. Most of the gap between a bronze and a gold is found in two or three corners, usually the ones before the longest straights.`,
+  );
+  const w = o.conditions.wet;
+  if (w) {
+    out.push(`In the wet the perfect lap is ${secs(w.lapMs - o.lapMs)} s slower, ${Math.round((100 * (w.lapMs - o.lapMs)) / o.lapMs)}% more. Every corner gets slower, the slowest point drops to ${wet.minKmh} km/h, and braking grows to ${wet.brakePct}% of the lap.`);
+  }
+  const l = o.conditions.lowdf;
+  if (l) {
+    const d = l.lapMs - o.lapMs;
+    out.push(
+      `With low downforce the car reaches ${lowdf.maxKmh} km/h, ${lowdf.maxKmh - dry.maxKmh} km/h more than in the dry, ${d < 0 ? `and the lap is ${secs(d)} s quicker: here the straights give back more than the corners take.` : `but the lap is ${secs(d)} s slower, because the corners cost more than the straights give back.`}`,
+    );
+  }
+  return out;
+}
+
 const CONDITIONS = [
   { key: "dry", name: "Dry" },
   { key: "wet", name: "Wet" },
@@ -71,6 +108,7 @@ export function CircuitGuide({ id }: { id: string }) {
   const c = circuit(id);
   const o = OUTLINES[id];
   const text = CIRCUIT_TEXT[id];
+  const more = CIRCUIT_MORE[id];
   const corners = WEEKLY_CORNERS.filter((w) => w.trackId === id);
   const others = CIRCUITS.filter((x) => x.id !== id);
   const facts: [string, string][] = [
@@ -128,8 +166,24 @@ export function CircuitGuide({ id }: { id: string }) {
         </Section>
       )}
 
+      <Section title={`A lap of ${c.name}`}>
+        {more.lap.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </Section>
+
       <Section title="How to drive it">
         <p>{text.drive}</p>
+      </Section>
+
+      <Section title="The lap in numbers">
+        {lapInNumbers(id).map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </Section>
+
+      <Section title="History">
+        <p>{more.history}</p>
       </Section>
 
       <AdSlot kind="inline" />

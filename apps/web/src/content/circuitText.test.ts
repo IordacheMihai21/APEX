@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CIRCUITS } from "../modes/circuits";
-import { CIRCUIT_TEXT } from "./circuitText";
+import STATS from "../game/circuitStats.json";
+import { CIRCUIT_MORE, CIRCUIT_TEXT } from "./circuitText";
 import { contentMeta, contentPath, parseContent } from "./meta";
 
 describe("circuit guides", () => {
@@ -9,7 +10,11 @@ describe("circuit guides", () => {
     for (const c of CIRCUITS) {
       expect(CIRCUIT_TEXT[c.id].character.length, c.id).toBeGreaterThan(100);
       expect(CIRCUIT_TEXT[c.id].drive.length, c.id).toBeGreaterThan(80);
+      expect(CIRCUIT_MORE[c.id].lap.length, c.id).toBeGreaterThanOrEqual(3);
+      expect(CIRCUIT_MORE[c.id].history.length, c.id).toBeGreaterThan(300);
     }
+    expect(Object.keys(CIRCUIT_MORE).sort()).toEqual(Object.keys(CIRCUIT_TEXT).sort());
+    expect(Object.keys(STATS).sort()).toEqual(Object.keys(CIRCUIT_TEXT).sort());
   });
 
   it("parses and prints circuit addresses", () => {
