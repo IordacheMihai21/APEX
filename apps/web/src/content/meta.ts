@@ -3,9 +3,10 @@ import { t } from "../i18n";
 import { CIRCUITS, circuit, circuitBySlug, circuitSlug } from "../modes/circuits";
 import { CIRCUIT_TEXT } from "./circuitText";
 import { quiz } from "./quiz";
+import { article } from "./articles";
 
 /** A content page's address, parsed: About, How to play (the index or one game's guide), or Circuits (the index or one circuit's guide). */
-export type ContentPage = { page: "about" } | { page: "howto"; game?: GameId } | { page: "circuits"; id?: string } | { page: "trivia"; id?: string };
+export type ContentPage = { page: "about" } | { page: "howto"; game?: GameId } | { page: "circuits"; id?: string } | { page: "trivia"; id?: string } | { page: "learn"; slug?: string };
 
 export function parseContent(path: string): ContentPage | null {
   const p = path.replace(/^\/+|\/+$/g, "");
@@ -17,6 +18,9 @@ export function parseContent(path: string): ContentPage | null {
   const c = /^circuits\/([a-z-]+)$/.exec(p);
   const found = c && circuitBySlug(c[1]);
   if (found) return { page: "circuits", id: found.id };
+  if (p === "learn") return { page: "learn" };
+  const l = /^learn\/([a-z-]+)$/.exec(p);
+  if (l && article(l[1])) return { page: "learn", slug: l[1] };
   if (p === "trivia") return { page: "trivia" };
   const t = /^trivia\/([a-z-]+)$/.exec(p);
   const quizOf = t && circuitBySlug(t[1]);
@@ -28,6 +32,7 @@ export function contentPath(c: ContentPage): string {
   if (c.page === "about") return "/about";
   if (c.page === "circuits") return c.id ? `/circuits/${circuitSlug(c.id)}` : "/circuits";
   if (c.page === "trivia") return c.id ? `/trivia/${circuitSlug(c.id)}` : "/trivia";
+  if (c.page === "learn") return c.slug ? `/learn/${c.slug}` : "/learn";
   return c.game ? `/how-to-play/${c.game}` : "/how-to-play";
 }
 
@@ -41,6 +46,15 @@ export function contentMeta(c: ContentPage): { title: string; description: strin
       title: "About Lapdle: the daily racing line challenge",
       description: "Lapdle is a set of short, free racing games on real circuits, new every day. What the games are, how the circuits are made, and how to get in touch.",
     };
+  if (c.page === "learn") {
+    const a = c.slug ? article(c.slug) : undefined;
+    if (!a)
+      return {
+        title: "Learn the racing line: guides to driving fast | Lapdle",
+        description: "Short guides to the racing line: what it is, early vs late apex, how to find a braking point, driving in the wet and how each type of corner is driven.",
+      };
+    return { title: `${a.title} | Lapdle`, description: clip(a.description) };
+  }
   if (c.page === "trivia") {
     if (!c.id)
       return {

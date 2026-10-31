@@ -413,6 +413,7 @@ export const ES: Record<string, string> = {
   "Late-braking hero": "Rey de la frenada tardía",
   "Later": "Después",
   "Launch": "Salida",
+  "Learn the racing line": "Aprende la trazada (en inglés)",
   "Legal and terms": "Aviso legal y condiciones",
   "Legal notice and terms": "Aviso legal y condiciones",
   "Legal notice and terms | Lapdle": "Aviso legal y condiciones | Lapdle",

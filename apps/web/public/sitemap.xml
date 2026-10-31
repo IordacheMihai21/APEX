@@ -55,6 +55,12 @@
   <url><loc>https://lapdle.com/about</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://lapdle.com/privacy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
   <url><loc>https://lapdle.com/legal</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://lapdle.com/learn</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/learn/what-is-a-racing-line</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/learn/early-vs-late-apex</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/learn/braking-points</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/learn/racing-in-the-wet</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/learn/corner-types</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/es</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
   <url><loc>https://lapdle.com/es/mystery</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/es/pit-stop</loc><changefreq>daily</changefreq><priority>0.8</priority></url>

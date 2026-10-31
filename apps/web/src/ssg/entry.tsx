@@ -9,6 +9,7 @@ import { renderToString } from "react-dom/server";
 import { About, HowToPlayGuide, HowToPlayIndex } from "../content/Guides";
 import { CircuitGuide, CircuitsIndex } from "../content/Circuits";
 import { TriviaIndex, TriviaQuiz } from "../content/Trivia";
+import { LearnArticle, LearnIndex } from "../content/Learn";
 import { contentMeta, parseContent } from "../content/meta";
 import { ChevronLeft } from "../ui/icons";
 import { CONTENT_ROUTES } from "../games/registry";
@@ -53,6 +54,8 @@ export function render(path: string): { html: string; title: string; description
   const page =
     c.page === "about" ? <About /> : c.page === "circuits" ? (
         c.id ? <CircuitGuide id={c.id} /> : <CircuitsIndex />
+      ) : c.page === "learn" ? (
+        c.slug ? <LearnArticle slug={c.slug} /> : <LearnIndex />
       ) : c.page === "trivia" ? (
         c.id ? <TriviaQuiz id={c.id} /> : <TriviaIndex />
       ) : c.game ? <HowToPlayGuide id={c.game} /> : <HowToPlayIndex />;

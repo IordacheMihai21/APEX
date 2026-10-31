@@ -16,6 +16,7 @@ import { DAILY_CALLS, dailyCalls, dailyDone, dailyDoneDays, dailyScore } from ".
 import { loadReaction } from "../modes/reaction";
 import { STOPS_PER_DAY, brakingDone, brakingDoneDays, brakingScore, dayStops } from "../modes/braking";
 import { CIRCUITS, circuitSlug } from "../modes/circuits";
+import { ARTICLES } from "../content/articles";
 import { ROUNDS as TRAP_ROUNDS, trapDone, trapDoneDays, trapRounds, trapScore } from "../modes/speedtrap";
 import { MISTAKES as LINEUP_MISTAKES, dailyLineup, lineupDoneDays, lineupGuesses, lineupState } from "../modes/lineup";
 import { AERIAL_TRIES, aerialDoneDays, aerialGuesses, aerialOver, aerialSolved } from "../modes/aerial";
@@ -484,7 +485,7 @@ export const PAGES = {
 export type InfoPage = keyof typeof PAGES;
 
 /** Pre-rendered content pages (static HTML at build time, see src/ssg). */
-export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/how-to-play/${g.id}`), "/circuits", ...CIRCUITS.map((c) => `/circuits/${circuitSlug(c.id)}`), "/trivia", ...CIRCUITS.map((c) => `/trivia/${circuitSlug(c.id)}`)];
+export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/how-to-play/${g.id}`), "/circuits", ...CIRCUITS.map((c) => `/circuits/${circuitSlug(c.id)}`), "/trivia", ...CIRCUITS.map((c) => `/trivia/${circuitSlug(c.id)}`), "/learn", ...ARTICLES.map((a) => `/learn/${a.slug}`)];
 
 /** Every public address of the app itself; each is a pre-rendered page (content/Landing.tsx) that the app takes over. */
 export const PUBLIC_ROUTES = ["/", ...GAMES.flatMap((g) => (g.route ? [g.route] : [])), "/corner", ...Object.keys(PAGES).map((p) => `/${p}`)];

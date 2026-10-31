@@ -62,6 +62,9 @@ function MoreLinks() {
       <a className={link} href="/trivia">
         {t("Circuit trivia")}
       </a>
+      <a className={link} href="/learn">
+        {t("Learn the racing line")}
+      </a>
       <a className={link} href="/about">
         {t("About Lapdle")}
       </a>
