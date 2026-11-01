@@ -4,9 +4,10 @@ import { CIRCUITS, circuit, circuitBySlug, circuitSlug } from "../modes/circuits
 import { CIRCUIT_TEXT } from "./circuitText";
 import { quiz } from "./quiz";
 import { article } from "./articles";
+import { cornerBySlug } from "./cornerText";
 
 /** A content page's address, parsed: About, How to play (the index or one game's guide), or Circuits (the index or one circuit's guide). */
-export type ContentPage = { page: "about" } | { page: "howto"; game?: GameId } | { page: "circuits"; id?: string } | { page: "trivia"; id?: string } | { page: "learn"; slug?: string };
+export type ContentPage = { page: "about" } | { page: "howto"; game?: GameId } | { page: "circuits"; id?: string } | { page: "trivia"; id?: string } | { page: "learn"; slug?: string } | { page: "corners"; slug?: string };
 
 export function parseContent(path: string): ContentPage | null {
   const p = path.replace(/^\/+|\/+$/g, "");
@@ -21,6 +22,9 @@ export function parseContent(path: string): ContentPage | null {
   if (p === "learn") return { page: "learn" };
   const l = /^learn\/([a-z-]+)$/.exec(p);
   if (l && article(l[1])) return { page: "learn", slug: l[1] };
+  if (p === "corners") return { page: "corners" };
+  const k = /^corners\/([a-z0-9-]+)$/.exec(p);
+  if (k && cornerBySlug(k[1])) return { page: "corners", slug: k[1] };
   if (p === "trivia") return { page: "trivia" };
   const t = /^trivia\/([a-z-]+)$/.exec(p);
   const quizOf = t && circuitBySlug(t[1]);
@@ -33,6 +37,7 @@ export function contentPath(c: ContentPage): string {
   if (c.page === "circuits") return c.id ? `/circuits/${circuitSlug(c.id)}` : "/circuits";
   if (c.page === "trivia") return c.id ? `/trivia/${circuitSlug(c.id)}` : "/trivia";
   if (c.page === "learn") return c.slug ? `/learn/${c.slug}` : "/learn";
+  if (c.page === "corners") return c.slug ? `/corners/${c.slug}` : "/corners";
   return c.game ? `/how-to-play/${c.game}` : "/how-to-play";
 }
 
@@ -54,6 +59,15 @@ export function contentMeta(c: ContentPage): { title: string; description: strin
         description: "Short guides to the racing line: what it is, early vs late apex, how to find a braking point, driving in the wet and how each type of corner is driven.",
       };
     return { title: `${a.title} | Lapdle`, description: clip(a.description) };
+  }
+  if (c.page === "corners") {
+    const w = c.slug ? cornerBySlug(c.slug) : undefined;
+    if (!w)
+      return {
+        title: "Famous corners: how to drive twelve of racing's best | Lapdle",
+        description: "Guides to twelve famous corners, from La Source and Tarzan to the Parabolica and Rascasse: where they are, how to drive them and the numbers from the physics.",
+      };
+    return { title: `${w.name} at ${circuit(w.trackId).name}: how to drive it | Lapdle`, description: clip(w.note) };
   }
   if (c.page === "trivia") {
     if (!c.id)

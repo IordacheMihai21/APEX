@@ -65,6 +65,19 @@
   <url><loc>https://lapdle.com/learn/kerbs</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/learn/learning-a-circuit</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/learn/corner-exit-traction</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://lapdle.com/corners/la-source</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners/prima-variante</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners/suzuka-final-chicane</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners/interlagos-first-corner-s</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners/tarzan</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners/austin-turn-1</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners/tamburello</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners/sainte-devote</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners/parabolica</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners/bus-stop</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners/hungaroring-turn-1</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/corners/rascasse</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/es</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
   <url><loc>https://lapdle.com/es/mystery</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/es/pit-stop</loc><changefreq>daily</changefreq><priority>0.8</priority></url>

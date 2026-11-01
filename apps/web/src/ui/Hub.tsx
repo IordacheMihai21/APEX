@@ -962,6 +962,10 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
               <a href="/learn" className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint">
                 {t("Learn the racing line")}
               </a>
+              {" · "}
+              <a href="/corners" className="text-paint underline decoration-line underline-offset-4 hover:decoration-paint">
+                {t("Famous corners")}
+              </a>
               .
             </p>
           </div>

@@ -37,7 +37,7 @@ export const LANG: Lang = detect();
 /** A path without its language prefix: "/es/mystery" → "/mystery", "/es" → "/". */
 export const stripLang = (path: string) => path.replace(ES_PATH, "") || "/";
 /** The pages written in English only (the circuit guides, trivia, About and the Learn articles): they keep their one address. */
-const ENGLISH_ONLY = /^\/(circuits|trivia|about|learn)(\/|$)/;
+const ENGLISH_ONLY = /^\/(circuits|trivia|about|learn|corners)(\/|$)/;
 /** An app path in the current language: "/mystery" → "/es/mystery" in Spanish. */
 export const withLang = (path: string, lang: Lang = LANG) => (lang === "es" && !ENGLISH_ONLY.test(path) ? (path === "/" ? "/es" : `/es${path}`) : path);
 /** Whether a page has a Spanish version at /es (for the prerender, hreflang and the sitemap). */

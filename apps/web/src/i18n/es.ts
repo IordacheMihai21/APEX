@@ -245,6 +245,7 @@ export const ES: Record<string, string> = {
   "Exactly one world title": "Exactamente un título mundial",
   "Exit": "Salida",
   "Facts:": "Datos:",
+  "Famous corners": "Curvas famosas (en inglés)",
   "Faster than the fastest stop on record (1.80 s).": "Más rápida que la parada récord (1,80 s).",
   "Faster than the real 2025 pole": "Más rápido que la pole real de 2025",
   "Faster than the real 2025 pole by {s}s": "Más rápido que la pole real de 2025 por {s}s",

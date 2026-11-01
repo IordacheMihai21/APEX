@@ -95,6 +95,11 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
                 </a>
               </li>
               <li>
+                <a className={link} href="/corners">
+                  {t("Famous corners")}
+                </a>
+              </li>
+              <li>
                 <a className={link} href="/learn">
                   {t("Learn the racing line")}
                 </a>

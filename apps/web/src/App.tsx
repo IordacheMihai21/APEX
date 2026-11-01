@@ -54,6 +54,8 @@ const CircuitGuide = lazy(() => fresh(() => import("./content/Circuits")).then((
 const MakeCorner = lazy(() => fresh(() => import("./ui/MakeCorner")).then((m) => ({ default: m.MakeCorner })));
 const BrakingPoint = lazy(() => fresh(() => import("./ui/BrakingPoint")).then((m) => ({ default: m.BrakingPoint })));
 const LearnIndex = lazy(() => fresh(() => import("./content/Learn")).then((m) => ({ default: m.LearnIndex })));
+const CornersIndex = lazy(() => fresh(() => import("./content/Corners")).then((m) => ({ default: m.CornersIndex })));
+const CornerGuide = lazy(() => fresh(() => import("./content/Corners")).then((m) => ({ default: m.CornerGuide })));
 const LearnArticle = lazy(() => fresh(() => import("./content/Learn")).then((m) => ({ default: m.LearnArticle })));
 const TriviaIndex = lazy(() => fresh(() => import("./content/Trivia")).then((m) => ({ default: m.TriviaIndex })));
 const TriviaQuiz = lazy(() => fresh(() => import("./content/Trivia")).then((m) => ({ default: m.TriviaQuiz })));
@@ -66,7 +68,7 @@ const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) 
 
 /** A screen with its own address: a game's page or an info page (both declared in games/registry). */
 type Mini = GamePage | InfoPage;
-type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "learn"; slug?: string } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "braking-point" } | { kind: "make-the-corner" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "aerial" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "learn"; slug?: string } | { kind: "corners"; slug?: string } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "braking-point" } | { kind: "make-the-corner" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "aerial" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 /** A practice link (?play=practice&track=…&cond=…), as the circuit guides use. */
 function practiceFromQuery(search: string): Screen | null {
@@ -104,7 +106,7 @@ function screenFromPath(pathname: string): Screen | null {
   if (p === "corner") return { kind: "play", mode: "corner", trackId: weeklyCorner().trackId };
   if (isMini(p)) return { kind: p };
   const c = parseContent(p);
-  if (c) return c.page === "about" ? { kind: "about" } : c.page === "circuits" ? { kind: "circuits", id: c.id } : c.page === "trivia" ? { kind: "trivia", id: c.id } : c.page === "learn" ? { kind: "learn", slug: c.slug } : { kind: "howto", game: c.game };
+  if (c) return c.page === "about" ? { kind: "about" } : c.page === "circuits" ? { kind: "circuits", id: c.id } : c.page === "trivia" ? { kind: "trivia", id: c.id } : c.page === "learn" ? { kind: "learn", slug: c.slug } : c.page === "corners" ? { kind: "corners", slug: c.slug } : { kind: "howto", game: c.game };
   return null;
 }
 function asContent(s: Screen): ContentPage | null {
@@ -113,6 +115,7 @@ function asContent(s: Screen): ContentPage | null {
   if (s.kind === "circuits") return { page: "circuits", id: s.id };
   if (s.kind === "trivia") return { page: "trivia", id: s.id };
   if (s.kind === "learn") return { page: "learn", slug: s.slug };
+  if (s.kind === "corners") return { page: "corners", slug: s.slug };
   return null;
 }
 
@@ -324,6 +327,8 @@ export function App() {
           screen.game ? <HowToPlayGuide id={screen.game} /> : <HowToPlayIndex />
         ) : screen.kind === "circuits" ? (
           screen.id ? <CircuitGuide id={screen.id} /> : <CircuitsIndex />
+        ) : screen.kind === "corners" ? (
+          screen.slug ? <CornerGuide key={screen.slug} slug={screen.slug} /> : <CornersIndex />
         ) : screen.kind === "learn" ? (
           screen.slug ? <LearnArticle key={screen.slug} slug={screen.slug} /> : <LearnIndex />
         ) : screen.kind === "trivia" ? (

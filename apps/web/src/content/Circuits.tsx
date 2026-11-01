@@ -2,6 +2,7 @@ import STATS from "../game/circuitStats.json";
 import { OUTLINES } from "../game/outlines";
 import { CIRCUITS, circuit, circuitSlug } from "../modes/circuits";
 import { WEEKLY_CORNERS } from "../modes/corner";
+import { cornerSlug } from "./cornerText";
 import { AdSlot } from "../ui/Ads";
 import { lapTime } from "../ui/format";
 import { CIRCUIT_MORE, CIRCUIT_TEXT } from "./circuitText";
@@ -159,7 +160,12 @@ export function CircuitGuide({ id }: { id: string }) {
             {corners.map((w) => (
               <li key={w.name}>
                 <h3 className="wide text-[17px] leading-tight text-paint">{w.name}</h3>
-                <p className="mt-1">{w.note}</p>
+                <p className="mt-1">
+                  {w.note}{" "}
+                  <a className={link} href={`/corners/${cornerSlug(w)}`}>
+                    How to drive {w.name}
+                  </a>
+                </p>
               </li>
             ))}
           </ul>

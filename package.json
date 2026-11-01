@@ -15,6 +15,7 @@
     "build:braking": "tsx tools/track-builder/src/build-braking.ts",
     "build:speedtrap": "tsx tools/track-builder/src/build-speedtrap.ts",
     "build:circuit-stats": "tsx tools/track-builder/src/build-circuit-stats.ts",
+    "build:corner-stats": "tsx tools/track-builder/src/build-corner-stats.ts",
     "build:scenery": "tsx tools/track-builder/src/import-osm.ts && tsx tools/track-builder/src/trim-scenery.ts",
     "compare": "tsx tools/track-builder/src/compare-lines.ts",
     "check": "tsx tools/track-builder/src/check-tracks.ts",
