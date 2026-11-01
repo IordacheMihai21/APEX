@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { tomorrowQuali } from "../games/tomorrow";
-import { t } from "../i18n";
+import { t, tn } from "../i18n";
 import { playStreak } from "../games/profile";
 import { GAMES, type GameId, todayProgress } from "../games/registry";
 import { msToNextDay } from "../modes/daily";
@@ -168,7 +168,10 @@ export function FinishCard({
             </span>
           </span>
           <span className="text-[13px] text-steel">
-            <span className="wide num text-[16px] text-paint">{streak.current}</span> {t("day streak")}
+            {/* the count in the sentence, picked out ("1 día de racha", "3 días de racha") */}
+            {tn(streak.current, "{n} day streak", "{n}-day streak")
+              .split(/(\d+)/)
+              .map((part, i) => (i % 2 ? <span key={i} className="wide num text-[16px] text-paint">{part}</span> : part))}
           </span>
         </div>
 
