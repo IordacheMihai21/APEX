@@ -1,97 +1,125 @@
 /**
- * The car of Make the corner, from a free 3D model: "F1 2026 concept (polygon
- * model)" by Qvist_designs, CC BY 4.0
- * (https://sketchfab.com/3d-models/f1-2026-concept-polygon-model-ea3bde709b1e4dc9b0ec8557d106ed42).
- * An original design with no team, sponsor or logo. The download is one grey
- * CAD mesh of 1.2 million triangles in millimetres, Z up, nose towards -x; this
- * splits it by shape into the bodywork, the carbon parts (floor, wings,
- * suspension) and four wheels (tyre and rim, each about its own hub so it can
- * roll), paints it in Lapdle's colours, cuts it to a size a phone draws easily
- * and writes a compressed GLB: metres, Y up, nose towards -Z, the middle of the
- * wheelbase at the origin, the ground at y = 0.
+ * The car of Make the corner, from a free 3D model: "My take on the 2026 f1
+ * regulations" by MaG80, CC BY 4.0
+ * (https://sketchfab.com/3d-models/my-take-on-the-2026-f1-regulations-4b77c9b72dc44803a530eaaff18ed590).
+ * The download is a car to the 2026 rules in a blue livery with the series'
+ * logos on it; none of that is kept. Every triangle of the bodywork takes its
+ * colour from the livery texture under it: the black of the floor, wings and
+ * other carbon parts stays carbon, and everything else, logos and stripes
+ * included, is painted plain in Lapdle's orange, so the car carries no texture
+ * and no mark. The four tyres and wheel covers come in one mesh each and are
+ * split into the four wheels, each about its own hub so it can roll. Then the
+ * whole car is scaled to a real wheelbase (3.4 m, as the physics), cut to a
+ * size a phone draws easily and written as a compressed GLB: metres, Y up,
+ * nose towards -Z, the middle of the wheelbase at the origin, the ground at
+ * y = 0. The tail light is left out: the game draws its own.
  *
- * Input: marketing/models/f1_2026_concept_polygon_model/scene.gltf (not in git:
- * download it from the page above). Output: apps/web/src/game3d/car.glb.
+ * Input: marketing/models/f1_2026_mag80/scene.gltf (not in git: download it
+ * from the page above). Output: apps/web/src/game3d/car.glb.
  * Usage: npm run build:car
  */
 import { resolve } from "node:path";
 import { statSync } from "node:fs";
+import sharp from "sharp";
 import { Document, type Material, NodeIO } from "@gltf-transform/core";
 import { EXTMeshoptCompression, KHRMeshQuantization } from "@gltf-transform/extensions";
 import { dedup, meshopt, prune, simplifyPrimitive, weld } from "@gltf-transform/functions";
 import { MeshoptEncoder, MeshoptSimplifier } from "meshoptimizer";
 
 const root = resolve(import.meta.dirname, "../../..");
-const SRC = resolve(root, "marketing/models/f1_2026_concept_polygon_model/scene.gltf");
+const DIR = resolve(root, "marketing/models/f1_2026_mag80");
 const OUT = resolve(root, "apps/web/src/game3d/car.glb");
 
-/** The wheels in the source (mm): axle positions along x, hub height, tyre radius, and where each tyre's inner sidewall is. */
-const FRONT_X = -52;
-const REAR_X = 3345;
-const HUB_Z = 328;
-const TYRE_R = 356;
-const RIM_R = 236;
-const INNER_Y = { front: 580, rear: 520 };
-/** the origin: the middle of the wheelbase */
-const MID_X = (FRONT_X + REAR_X) / 2;
-/** about 1 in 25 triangles kept: plenty for a car seen from a few metres, light enough to draw twice (shadows) on a phone */
-const KEEP = { body: 0.035, carbon: 0.04, tyre: 0.06, rim: 0.06 };
+const WHEELBASE = 3.4;
+/** the share of each part's triangles kept: plenty for a car seen from a few metres, light enough to draw twice (shadows) on a phone */
+const KEEP = { body: 0.3, carbon: 0.3, tyre: 1, rim: 0.12 };
+/** a texel this dark (the sum of its 0-255 channels) is carbon */
+const DARK = 60;
 
 await MeshoptEncoder.ready;
 await MeshoptSimplifier.ready;
 const io = new NodeIO().registerExtensions([EXTMeshoptCompression, KHRMeshQuantization]).registerDependencies({ "meshopt.encoder": MeshoptEncoder });
-const src = await io.read(SRC);
+const src = await io.read(resolve(DIR, "scene.gltf"));
 
-// every triangle of the source, in its own coordinates (the nodes carry no transform but the root's Z-up turn)
-const tris: number[] = [];
-for (const mesh of src.getRoot().listMeshes())
+// the livery texture, to tell carbon from paint
+const tex = await sharp(resolve(DIR, "textures/Livery_baseColor.png")).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+const { width: TW, height: TH } = tex.info;
+const dark = (u: number, v: number) => {
+  const x = Math.min(TW - 1, Math.max(0, Math.floor((u - Math.floor(u)) * TW)));
+  const y = Math.min(TH - 1, Math.max(0, Math.floor((v - Math.floor(v)) * TH)));
+  const i = (y * TW + x) * 3;
+  return tex.data[i] + tex.data[i + 1] + tex.data[i + 2] < DARK;
+};
+
+// every triangle in world space (Y up, nose towards +z, about twice life size), sorted into parts by material
+type Source = "paint" | "carbon" | "tyre" | "rim";
+const soup: Record<Source, number[]> = { paint: [], carbon: [], tyre: [], rim: [] };
+const tf = (m: number[], v: number[]) => [0, 1, 2].map((r) => m[r] * v[0] + m[4 + r] * v[1] + m[8 + r] * v[2] + m[12 + r]);
+for (const node of src.getRoot().listNodes()) {
+  const mesh = node.getMesh();
+  if (!mesh) continue;
+  const world = node.getWorldMatrix() as unknown as number[];
   for (const prim of mesh.listPrimitives()) {
-    const pos = prim.getAttribute("POSITION")!.getArray()!;
+    const name = prim.getMaterial()?.getName();
+    if (name === "RearLight") continue;
+    const pos = prim.getAttribute("POSITION")!;
+    const uv = prim.getAttribute("TEXCOORD_0");
     const idx = prim.getIndices()?.getArray();
-    const n = idx ? idx.length : pos.length / 3;
-    for (let k = 0; k < n; k++) {
-      const i = idx ? idx[k] : k;
-      tris.push(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
+    const n = idx ? idx.length : pos.getCount();
+    const p = [0, 0, 0];
+    const t = [0, 0];
+    for (let k = 0; k < n; k += 3) {
+      const corners = [0, 1, 2].map((j) => (idx ? idx[k + j] : k + j));
+      let into: Source = name === "Wheels" ? "tyre" : name === "WheelCovers" ? "rim" : "paint";
+      if (name === "Livery" && uv) {
+        let su = 0;
+        let sv = 0;
+        for (const c of corners) {
+          uv.getElement(c, t);
+          su += t[0];
+          sv += t[1];
+        }
+        if (dark(su / 3, sv / 3)) into = "carbon";
+      }
+      for (const c of corners) soup[into].push(...tf(world, pos.getElement(c, p)));
     }
   }
-console.log(`${tris.length / 9} triangles in`);
-
-type Part = "body" | "carbon" | `tyre-${string}` | `rim-${string}`;
-const WHEELS = [
-  { id: "FL", x: FRONT_X, side: 1, inner: INNER_Y.front },
-  { id: "FR", x: FRONT_X, side: -1, inner: INNER_Y.front },
-  { id: "RL", x: REAR_X, side: 1, inner: INNER_Y.rear },
-  { id: "RR", x: REAR_X, side: -1, inner: INNER_Y.rear },
-];
-
-/** Which part a triangle belongs to, from its centre (mm, source axes). */
-function part(x: number, y: number, z: number): Part {
-  for (const w of WHEELS) {
-    const d = Math.hypot(x - w.x, z - HUB_Z);
-    if (d < TYRE_R && y * w.side > w.inner) return d > RIM_R ? `tyre-${w.id}` : `rim-${w.id}`;
-  }
-  const ay = Math.abs(y);
-  if (z < 70) return "carbon"; // floor and plank
-  if (x < -430 && (ay > 150 || z < 150)) return "carbon"; // front wing (the nose tip stays painted)
-  if (x > 3760 && z > 420) return "carbon"; // rear wing
-  if (x > 3700 && z < 420 && ay < 520) return "carbon"; // diffuser
-  if (z > 110 && z < 640 && ((ay > 230 && x > -480 && x < 380) || (ay > 240 && x > 2920 && x < 3780))) return "carbon"; // suspension
-  if (z > 760 && x > 650 && x < 1450 && ay < 360) return "carbon"; // halo
-  return "body";
 }
 
-const groups = new Map<Part, number[]>();
-for (let t = 0; t < tris.length; t += 9) {
-  const cx = (tris[t] + tris[t + 3] + tris[t + 6]) / 3;
-  const cy = (tris[t + 1] + tris[t + 4] + tris[t + 7]) / 3;
-  const cz = (tris[t + 2] + tris[t + 5] + tris[t + 8]) / 3;
-  const p = part(cx, cy, cz);
-  let g = groups.get(p);
-  if (!g) groups.set(p, (g = []));
-  for (let k = 0; k < 9; k++) g.push(tris[t + k]);
+// the wheels: their hubs from the tyres' extent in each quarter of the car, and the scale from the wheelbase
+type Wheel = { id: string; x: number; y: number; z: number };
+const quarter = (x: number, z: number, zMid: number) => `${z > zMid ? "F" : "R"}${x > 0 ? "R" : "L"}`;
+let zMin = Infinity;
+let zMax = -Infinity;
+for (let i = 2; i < soup.tyre.length; i += 3) {
+  zMin = Math.min(zMin, soup.tyre[i]);
+  zMax = Math.max(zMax, soup.tyre[i]);
 }
+const zMid0 = (zMin + zMax) / 2;
+const box = new Map<string, number[]>();
+for (let i = 0; i < soup.tyre.length; i += 3) {
+  const [x, y, z] = soup.tyre.slice(i, i + 3);
+  const q = quarter(x, z, zMid0);
+  const b = box.get(q) ?? [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+  box.set(q, [Math.min(b[0], x), Math.min(b[1], y), Math.min(b[2], z), Math.max(b[3], x), Math.max(b[4], y), Math.max(b[5], z)]);
+}
+const wheels: Wheel[] = ["FL", "FR", "RL", "RR"].map((id) => {
+  const b = box.get(id)!;
+  return { id, x: (b[0] + b[3]) / 2, y: (b[1] + b[4]) / 2, z: (b[2] + b[5]) / 2 };
+});
+const front = (wheels[0].z + wheels[1].z) / 2;
+const rear = (wheels[2].z + wheels[3].z) / 2;
+const S = WHEELBASE / (front - rear);
+const zMid = (front + rear) / 2;
+let ground = Infinity;
+for (const part of Object.values(soup)) for (let i = 1; i < part.length; i += 3) ground = Math.min(ground, part[i]);
+console.log(`scale ${S.toFixed(3)}, tyre ${((box.get("FL")![4] - box.get("FL")![1]) * S).toFixed(2)} m across`);
 
-// the new model: three's axes (x = source y, y = source z, z = source x), metres
+// the game's frame: metres, nose towards -z (a half turn about y), the middle of the wheelbase at the origin
+const toGame = (x: number, y: number, z: number): [number, number, number] => [-x * S, (y - ground) * S, -(z - zMid) * S];
+// where the model's tail light was, for the game's own (game3d/car.ts)
+console.log(`tail light at ${toGame(0, 0.695, -5.29).map((v) => v.toFixed(2)).join(", ")}`);
+
 const doc = new Document();
 const buffer = doc.createBuffer();
 const mat = (name: string, colour: [number, number, number], metal: number, rough: number): Material =>
@@ -110,37 +138,49 @@ const scene = doc.createScene("car");
 const car = doc.createNode("car");
 scene.addChild(car);
 
-/** A mesh of one part's triangles, relative to `origin` (mm, source axes). */
+/** A mesh of world-space triangles, in the game's frame, relative to `origin` (game frame). */
 function meshOf(name: string, flat: number[], material: Material, origin: [number, number, number]) {
   const pos = new Float32Array(flat.length);
   for (let i = 0; i < flat.length; i += 3) {
-    pos[i] = (flat[i + 1] - origin[1]) / 1000;
-    pos[i + 1] = (flat[i + 2] - origin[2]) / 1000;
-    pos[i + 2] = (flat[i] - origin[0]) / 1000;
+    const g = toGame(flat[i], flat[i + 1], flat[i + 2]);
+    for (let k = 0; k < 3; k++) pos[i + k] = g[k] - origin[k];
   }
   const prim = doc.createPrimitive().setAttribute("POSITION", doc.createAccessor().setType("VEC3").setArray(pos).setBuffer(buffer)).setMaterial(material);
   return doc.createMesh(name).addPrimitive(prim);
 }
 
-const body = doc.createNode("body").setMesh(meshOf("body", groups.get("body") ?? [], MATS.body, [MID_X, 0, 0]));
-const carbon = doc.createNode("carbon").setMesh(meshOf("carbon", groups.get("carbon") ?? [], MATS.carbon, [MID_X, 0, 0]));
-car.addChild(body).addChild(carbon);
-for (const w of WHEELS) {
+car.addChild(doc.createNode("body").setMesh(meshOf("body", soup.paint, MATS.body, [0, 0, 0])));
+car.addChild(doc.createNode("carbon").setMesh(meshOf("carbon", soup.carbon, MATS.carbon, [0, 0, 0])));
+// each wheel's triangles by the quarter of the car their centre is in
+const perWheel = (flat: number[]) => {
+  const out = new Map<string, number[]>();
+  for (let t = 0; t < flat.length; t += 9) {
+    const q = quarter((flat[t] + flat[t + 3] + flat[t + 6]) / 3, (flat[t + 2] + flat[t + 5] + flat[t + 8]) / 3, zMid0);
+    let list = out.get(q);
+    if (!list) out.set(q, (list = []));
+    for (let k = 0; k < 9; k++) list.push(flat[t + k]);
+  }
+  return out;
+};
+const tyres = perWheel(soup.tyre);
+const rims = perWheel(soup.rim);
+for (const w of wheels) {
   // each wheel about its hub, placed at the hub: rolling is a turn about its x axis, steering about y
-  const hubY = w.side * ((w.inner + 940) / 2);
-  const hub = doc.createNode(`wheel-${w.id}`).setTranslation([hubY / 1000, HUB_Z / 1000, (w.x - MID_X) / 1000]);
-  const origin: [number, number, number] = [w.x, hubY, HUB_Z];
-  hub.addChild(doc.createNode(`tyre-${w.id}`).setMesh(meshOf(`tyre-${w.id}`, groups.get(`tyre-${w.id}`) ?? [], MATS.tyre, origin)));
-  hub.addChild(doc.createNode(`rim-${w.id}`).setMesh(meshOf(`rim-${w.id}`, groups.get(`rim-${w.id}`) ?? [], MATS.rim, origin)));
-  car.addChild(hub);
+  // (the game calls the car's left the side its own left is on, nose towards -z: source +x is the car's right)
+  const hub = toGame(w.x, w.y, w.z);
+  const id = `${w.id[0]}${w.id[1] === "L" ? "R" : "L"}`;
+  const node = doc.createNode(`wheel-${id}`).setTranslation(hub);
+  node.addChild(doc.createNode(`tyre-${id}`).setMesh(meshOf(`tyre-${id}`, tyres.get(w.id) ?? [], MATS.tyre, hub)));
+  node.addChild(doc.createNode(`rim-${id}`).setMesh(meshOf(`rim-${id}`, rims.get(w.id) ?? [], MATS.rim, hub)));
+  car.addChild(node);
 }
-for (const [p, g] of groups) console.log(`  ${p}: ${g.length / 9} triangles`);
+for (const [p, g] of Object.entries(soup)) console.log(`  ${p}: ${g.length / 9} triangles`);
 
 // weld the triangle soup, then cut each part to its share
 await doc.transform(weld({}));
 for (const m of doc.getRoot().listMeshes()) {
   const kind = m.getName().split("-")[0] as keyof typeof KEEP;
-  for (const prim of m.listPrimitives()) simplifyPrimitive(prim, { simplifier: MeshoptSimplifier, ratio: KEEP[kind], error: 0.002 });
+  for (const prim of m.listPrimitives()) simplifyPrimitive(prim, { simplifier: MeshoptSimplifier, ratio: KEEP[kind], error: 0.001 });
 }
 await doc.transform(dedup(), prune(), meshopt({ encoder: MeshoptEncoder, level: "medium" }));
 

@@ -128,18 +128,18 @@ export function Legal() {
         <Section title="3D model">
           <p>
             The car in Make the corner is based on{" "}
-            <a className={link} href="https://sketchfab.com/3d-models/f1-2026-concept-polygon-model-ea3bde709b1e4dc9b0ec8557d106ed42" target="_blank" rel="noreferrer">
-              "F1 2026 concept (polygon model)"
+            <a className={link} href="https://sketchfab.com/3d-models/my-take-on-the-2026-f1-regulations-4b77c9b72dc44803a530eaaff18ed590" target="_blank" rel="noreferrer">
+              "My take on the 2026 f1 regulations"
             </a>{" "}
             by{" "}
-            <a className={link} href="https://sketchfab.com/Qvist_Designs" target="_blank" rel="noreferrer">
-              Qvist_designs
+            <a className={link} href="https://sketchfab.com/MaG80" target="_blank" rel="noreferrer">
+              MaG80
             </a>
             , under the{" "}
             <a className={link} href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">
               Creative Commons Attribution 4.0 licence (CC BY 4.0)
             </a>
-            . We simplified it, split its wheels and painted it in Lapdle's colours. It is an original design, not a model of any real car or team.
+            . We simplified it, split its wheels, left out its livery and logos and painted it in Lapdle's colours. It is not a model of any real team's car.
           </p>
         </Section>
 

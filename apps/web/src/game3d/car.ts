@@ -5,17 +5,17 @@ import { toCreasedNormals } from "three/examples/jsm/utils/BufferGeometryUtils.j
 import carUrl from "./car.glb?url";
 
 /**
- * The car: "F1 2026 concept (polygon model)" by Qvist_designs, CC BY 4.0
- * (credited on the Legal page and under the game), an original design with no
- * team or sponsor, painted in Lapdle's colours and cut down for phones by
- * tools/track-builder/src/build-car.ts. Nose along local -z, ground at y = 0,
+ * The car: "My take on the 2026 f1 regulations" by MaG80, CC BY 4.0
+ * (credited on the Legal page and under the game), a car to the 2026 rules
+ * with no team or sponsor, its livery and logos left out, painted in Lapdle's
+ * colours and cut down for phones by tools/track-builder/src/build-car.ts. Nose along local -z, ground at y = 0,
  * four wheels about their hubs. The model loads separately; `ready` says when
  * it is in.
  */
 export const CAR_CREDIT = {
-  title: "F1 2026 concept (polygon model)",
-  author: "Qvist_designs",
-  url: "https://sketchfab.com/3d-models/f1-2026-concept-polygon-model-ea3bde709b1e4dc9b0ec8557d106ed42",
+  title: "My take on the 2026 f1 regulations",
+  author: "MaG80",
+  url: "https://sketchfab.com/3d-models/my-take-on-the-2026-f1-regulations-4b77c9b72dc44803a530eaaff18ed590",
   license: "CC BY 4.0",
 } as const;
 
@@ -31,7 +31,7 @@ export function buildCar() {
   const rainMat = new THREE.MeshStandardMaterial({ color: "#300", emissive: "#ff2a1a", emissiveIntensity: 0.4 });
   const rainGeo = new THREE.BoxGeometry(0.14, 0.07, 0.03);
   const rainLight = new THREE.Mesh(rainGeo, rainMat);
-  rainLight.position.set(0, 0.42, 2.36);
+  rainLight.position.set(0, 0.32, 2.43);
   car.add(rainLight);
   geos.push(rainGeo);
   mats.add(rainMat);
