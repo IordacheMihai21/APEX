@@ -39,6 +39,35 @@ describe("race weekends", () => {
   });
 });
 
+describe("the rotation", () => {
+  it("keeps every day already played as it was", () => {
+    // the first rotation let Spa through two days running; those days stay
+    expect(dailyTrack("2026-10-29")).toBe("spa");
+    expect(dailyTrack("2026-10-30")).toBe("spa");
+  });
+
+  it("never brings a circuit two days running from 3 November 2026", () => {
+    const days = Array.from({ length: 3 * 365 }, (_, i) => dayAt(28 + i));
+    for (let i = 1; i < days.length; i++) expect(dailyTrack(days[i]), days[i]).not.toBe(dailyTrack(days[i - 1]));
+  });
+
+  it("gives every circuit at most one day in a cycle, a race Saturday included", () => {
+    for (let c = 3; c < 60; c++) {
+      const cycle = Array.from({ length: 12 }, (_, i) => dailyTrack(dayAt(c * 12 + i)));
+      expect(new Set(cycle).size, `cycle ${c}`).toBeGreaterThanOrEqual(11);
+      const counts = new Map<string, number>();
+      for (const t of cycle) counts.set(t, (counts.get(t) ?? 0) + 1);
+      expect(Math.max(...counts.values()), `cycle ${c}`).toBe(1);
+    }
+  });
+
+  it("sends Interlagos only to its race Saturday", () => {
+    expect(dailyTrack("2026-11-06")).not.toBe("interlagos");
+    expect(dailyTrack("2026-11-07")).toBe("interlagos");
+    expect(dailyTrack("2026-11-08")).not.toBe("interlagos");
+  });
+});
+
 describe("archive", () => {
   it("lists every past day, newest first, never today", () => {
     const days = archiveDays(dayAt(3));
