@@ -1,7 +1,7 @@
 /**
  * The famous corners in numbers, for their guides (apps/web/src/content/Corners.tsx): for each corner of the Corner of
  * the week list and each condition, as the physics engine drives the condition's perfect line, the speed where the
- * brakes go on, the distance and time from there to the first corner's slowest point, that speed and the slowest of
+ * brakes go on, the distance and time from there to the group's first stop, that speed and the slowest of
  * the whole group, the speed 150 m past the group's last corner, and the time from the braking point to there.
  * Output: apps/web/src/game/cornerStats.json (generated).
  * Usage: npm run build:corner-stats
@@ -37,18 +37,29 @@ for (const wc of WEEKLY_CORNERS) {
     const lapMs = elapsedMs[n - 1] + (elapsedMs[n - 1] - elapsedMs[n - 2]);
     // metres and seconds from sample a forward to sample b, across the line if need be
     const ahead = (a: number, b: number, arr: Float64Array, total: number) => (arr[ring(b)] - arr[ring(a)] + total) % total;
-    // the first corner's slowest point, then back up the braking curve to where the speed stops rising (as
-    // build-corners.ts, but from the first corner, so a chicane's second part doesn't hide the stop from speed)
     const first = parts[0];
     const last = parts[parts.length - 1];
-    const firstEnd = first.endIndex < first.startIndex ? first.endIndex + n : first.endIndex;
     const groupEnd = last.endIndex < first.startIndex ? last.endIndex + n : last.endIndex;
-    let apex = first.startIndex;
-    for (let i = first.startIndex - 40; i <= firstEnd + 5; i++) if (speed[ring(i)] < speed[ring(apex)]) apex = i;
+    // the first real stop of the group: a slowest point under half the run-up's speed (a kink before it is not one); a
+    // fast corner with no such stop counts from its slowest point
+    let runup = 0;
+    for (let i = first.startIndex - 200; i <= first.startIndex; i++) runup = Math.max(runup, speed[ring(i)]);
+    let low0 = first.startIndex;
+    for (let i = first.startIndex - 40; i <= groupEnd + 10; i++) if (speed[ring(i)] < speed[ring(low0)]) low0 = i;
+    let apex = low0;
+    for (let i = first.startIndex - 40; i <= groupEnd + 10; i++) {
+      const v = speed[ring(i)];
+      if (v < 0.5 * runup && v <= speed[ring(i - 1)] && v <= speed[ring(i + 1)]) {
+        apex = i;
+        break;
+      }
+    }
+    // back up the braking curve from that stop (so a chicane's second part doesn't hide the stop from speed), over a
+    // short lift on the way in (under 6 m/s), to where the speed stops rising
     let peak = apex;
     for (let i = apex - 1; i > apex - 400; i--) {
       if (speed[ring(i)] >= speed[ring(peak)] - 1e-6) peak = i;
-      else if (speed[ring(i)] < speed[ring(peak)] - 0.3) break;
+      else if (speed[ring(i)] < speed[ring(peak)] - 6) break;
     }
     const brake = peak;
     // the slowest point of the whole group, and the way out: EXIT_M past the group's last corner

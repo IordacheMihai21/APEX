@@ -15,6 +15,11 @@
   "name": "Austin's Turn 1"
  },
  {
+  "id": "monaco-0",
+  "trackId": "monaco",
+  "name": "Sainte Dévote"
+ },
+ {
   "id": "hungaroring-0",
   "trackId": "hungaroring",
   "name": "Hungaroring's Turn 1"
@@ -78,21 +83,6 @@
   "id": "interlagos-1",
   "trackId": "interlagos",
   "name": "Interlagos Turn 4"
- },
- {
-  "id": "monaco-2",
-  "trackId": "monaco",
-  "name": "Monaco Turns 9–11"
- },
- {
-  "id": "monaco-3",
-  "trackId": "monaco",
-  "name": "Monaco Turns 12–14"
- },
- {
-  "id": "monaco-7",
-  "trackId": "monaco",
-  "name": "Monaco Turns 22–24"
  },
  {
   "id": "monza-3",

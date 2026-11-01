@@ -447,7 +447,7 @@ export const ARTICLES: Article[] = [
         h: "Short, tight and twisty",
         p: [
           "The circuit is about 3.3 km long, the shortest on the calendar, and it fits nineteen corners into that distance. There is no straight long enough for the car to reach the top speeds it manages elsewhere; the longest flat-out stretch runs through the tunnel and curves the whole way.",
-          "Lapdle's physics shows the shape of the lap. On Monaco's perfect lap the car never goes faster than about 315 km/h, against 346 km/h at Monza, and it drops below 50 km/h twice. Much of the lap is spent between 100 and 200 km/h, braking and accelerating out of one tight corner after another.",
+          "Lapdle's physics shows the shape of the lap. On Monaco's perfect lap the car never goes faster than about 320 km/h, against 346 km/h at Monza, and it drops below 50 km/h twice. Much of the lap is spent between 100 and 200 km/h, braking and accelerating out of one tight corner after another.",
         ],
       },
       {

@@ -13,7 +13,8 @@ export const REAL_CIRCUITS: RealCircuit[] = [
   { sourceId: "be-1925", id: "spa", name: "Spa-Francorchamps", country: "BE", widthMeters: 14 },
   { sourceId: "gb-1948", id: "silverstone", name: "Silverstone", country: "GB", widthMeters: 15 },
   { sourceId: "jp-1962", id: "suzuka", name: "Suzuka", country: "JP", widthMeters: 13 },
-  { sourceId: "mc-1929", id: "monaco", name: "Monaco", country: "MC", widthMeters: 10 },
+  // the source trace starts at Casino Square: the line is 2527 m on (measured against the real 2025 pole lap, OpenF1)
+  { sourceId: "mc-1929", id: "monaco", name: "Monaco", country: "MC", widthMeters: 10, startShiftM: 2527 },
   { sourceId: "br-1940", id: "interlagos", name: "Interlagos", country: "BR", widthMeters: 14 },
   { sourceId: "hu-1986", id: "hungaroring", name: "Hungaroring", country: "HU", widthMeters: 13 },
   { sourceId: "at-1969", id: "red-bull-ring", name: "Spielberg", country: "AT", widthMeters: 14 },
