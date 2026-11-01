@@ -3,7 +3,8 @@
  * regulations" by MaG80, CC BY 4.0
  * (https://sketchfab.com/3d-models/my-take-on-the-2026-f1-regulations-4b77c9b72dc44803a530eaaff18ed590).
  * The download is a car to the 2026 rules in a blue livery with the series'
- * logos on it; none of that is kept. Every triangle of the bodywork takes its
+ * logos on it; none of that is kept. The front and rear wings are carbon, and
+ * every other triangle of the bodywork takes its
  * colour from the livery texture under it: the black of the floor, wings and
  * other carbon parts stays carbon, and everything else, logos and stripes
  * included, is painted plain in Lapdle's orange, so the car carries no texture
@@ -70,8 +71,10 @@ for (const node of src.getRoot().listNodes()) {
     const t = [0, 0];
     for (let k = 0; k < n; k += 3) {
       const corners = [0, 1, 2].map((j) => (idx ? idx[k + j] : k + j));
-      let into: Source = name === "Wheels" ? "tyre" : name === "WheelCovers" ? "rim" : "paint";
-      if (name === "Livery" && uv) {
+      // the wings are bare carbon, whatever the livery says
+      const wing = /wing/i.test(node.getName());
+      let into: Source = name === "Wheels" ? "tyre" : name === "WheelCovers" ? "rim" : wing ? "carbon" : "paint";
+      if (name === "Livery" && uv && !wing) {
         let su = 0;
         let sv = 0;
         for (const c of corners) {
