@@ -12,7 +12,7 @@ import { TriviaIndex, TriviaQuiz } from "../content/Trivia";
 import { LearnArticle, LearnIndex } from "../content/Learn";
 import { contentMeta, parseContent } from "../content/meta";
 import { ChevronLeft } from "../ui/icons";
-import { CONTENT_ROUTES } from "../games/registry";
+import { CONTENT_ROUTES, NOINDEX_ROUTES } from "../games/registry";
 import { LANDING_ROUTES, landing } from "../content/Landing";
 import { t, withLang } from "../i18n";
 
@@ -43,9 +43,9 @@ export const routes = CONTENT_ROUTES;
 /** The app's own pages (hub, games, archive, records…): static text the app replaces when it starts. */
 export const landingRoutes = LANDING_ROUTES;
 
-export function renderLanding(path: string): { html: string; title: string; description: string } {
+export function renderLanding(path: string): { html: string; title: string; description: string; noindex: boolean } {
   const { node, title, description } = landing(path);
-  return { html: renderToString(<Frame>{node}</Frame>), title, description };
+  return { html: renderToString(<Frame>{node}</Frame>), title, description, noindex: NOINDEX_ROUTES.includes(path) };
 }
 
 export function render(path: string): { html: string; title: string; description: string } {

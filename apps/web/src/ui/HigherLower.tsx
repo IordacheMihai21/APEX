@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { t, tn } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
+import { GameAbout } from "../content/GameAbout";
 import { FinishCard } from "./FinishCard";
 import { gameFinished, gameStarted, shared } from "../games/events";
 import type { CircuitFacts } from "../modes/circuits";
@@ -208,6 +209,7 @@ function Endless({ onPlayDaily, modeSwitch }: { onPlayDaily: () => void; modeSwi
           onClose={() => setFinish(false)}
         />
       )}
+      <GameAbout id="higher-lower" />
       <AdBelow />
     </div>
   );
@@ -398,6 +400,7 @@ function Daily({ modeSwitch, onEndless }: { modeSwitch: React.ReactNode; onEndle
           onClose={() => setFinish(false)}
         />
       )}
+      <GameAbout id="higher-lower" />
       <AdBelow />
     </div>
   );

@@ -1,6 +1,5 @@
 import { LANG, t, tn } from "../i18n";
 import { CATALOG } from "../game/catalog";
-import { AdBelow } from "./Ads";
 import { CONDITION_NAME, DAILY_LAPS, type DailyRecord, archiveDays, bestMedal } from "../modes/daily";
 import { MEDAL_NAME } from "../modes/medals";
 import { CircuitOutline } from "./Hub";
@@ -75,7 +74,6 @@ export function Archive({ onPlay }: { onPlay: (day: string, trackId: string) => 
           </ul>
         )}
       </div>
-      <AdBelow />
     </div>
   );
 }

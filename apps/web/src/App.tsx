@@ -249,7 +249,9 @@ export function App() {
   // AdSense asks for ads well away from games that are played with the mouse
   // (150 px or more): the side rails stay off the race screen, where you drag
   // points across the whole map, and show everywhere else.
-  const rails = ADS_ON && screen.kind !== "play";
+  // no ads while racing, nor on the archive and records (the player's own data, little text of their own)
+  const adFree = screen.kind === "play" || screen.kind === "archive" || screen.kind === "records";
+  const rails = ADS_ON && !adFree;
   const track = screen.kind === "play" ? CATALOG.find((t) => t.id === screen.trackId) : null;
 
   return (
@@ -371,8 +373,8 @@ export function App() {
       )}
       </div>
 
-      {/* phones: a small strip under the page (its own row, so it never covers anything); never while racing */}
-      {screen.kind !== "play" && adShows("anchor") && (
+      {/* phones: a small strip under the page (its own row, so it never covers anything); never while racing, nor on the archive and records */}
+      {!adFree && adShows("anchor") && (
         <aside aria-label={t("Advertisement")} className="flex justify-center border-t border-line bg-night pt-1 pb-[max(4px,env(safe-area-inset-bottom))] lg:hidden">
           <AdSlot kind="anchor" />
         </aside>

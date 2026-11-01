@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import sitemap from "../public/sitemap.xml?raw";
 import { hasSpanish, stripLang, t, tn, withLang } from "./i18n";
 import { ES } from "./i18n/es";
-import { CONTENT_ROUTES, PUBLIC_ROUTES } from "./games/registry";
+import { CONTENT_ROUTES, NOINDEX_ROUTES, PUBLIC_ROUTES } from "./games/registry";
 
 const vars = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
@@ -33,7 +33,7 @@ describe("i18n", () => {
   });
 
   it("lists every Spanish page in the sitemap", () => {
-    for (const route of [...PUBLIC_ROUTES, ...CONTENT_ROUTES].filter(hasSpanish)) {
+    for (const route of [...PUBLIC_ROUTES, ...CONTENT_ROUTES].filter((r) => hasSpanish(r) && !NOINDEX_ROUTES.includes(r))) {
       const es = route === "/" ? "/es" : `/es${route}`;
       expect(sitemap, `${es} in public/sitemap.xml`).toContain(`<loc>https://lapdle.com${es}</loc>`);
     }

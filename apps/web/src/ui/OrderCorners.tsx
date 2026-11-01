@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { t } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
+import { GameAbout } from "../content/GameAbout";
 import { FinishCard } from "./FinishCard";
 import { NextToday } from "./NextToday";
 import { gameFinished, gameStarted } from "../games/events";
@@ -271,6 +272,7 @@ export function OrderCorners() {
         </div>
       </div>
 
+      <GameAbout id="corner-order" />
       <AdBelow />
 
       {finish && over && (

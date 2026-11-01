@@ -23,6 +23,7 @@ import { loadReaction } from "../modes/reaction";
 import { ADS_ON, AdSlot } from "./Ads";
 import { Chequered, Down, GameMarks, LowDownforce, Rain, Up } from "./icons";
 import { Footer } from "./Footer";
+import { GameAbout } from "../content/GameAbout";
 import { Gantry } from "./Gantry";
 import { MedalDisc, MedalLadder, PoleTarget } from "./Medals";
 import { lapTime } from "./format";
@@ -967,6 +968,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
         </div>
       </section>
 
+      <GameAbout id="quali" />
       <Footer onAction={onAction} />
     </div>
   );

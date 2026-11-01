@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import redirects from "../../public/_redirects?raw";
 import sitemap from "../../public/sitemap.xml?raw";
-import { CONTENT_ROUTES, DAILY_SET, GAMES, GAME_PAGES, PUBLIC_ROUTES, game, todayProgress } from "./registry";
+import { CONTENT_ROUTES, DAILY_SET, GAMES, GAME_PAGES, NOINDEX_ROUTES, PUBLIC_ROUTES, game, todayProgress } from "./registry";
 
 const store: Record<string, string> = {};
 beforeEach(() => {
@@ -27,7 +27,9 @@ describe("game registry", () => {
     // a game added to the registry also needs its sitemap entry; its page is pre-rendered
     // (content/Landing.tsx), so a rewrite to the home page would only hide it
     for (const route of PUBLIC_ROUTES) {
-      expect(sitemap, `${route} in public/sitemap.xml`).toContain(`<loc>https://lapdle.com${route}</loc>`);
+      const loc = `<loc>https://lapdle.com${route}</loc>`;
+      if (NOINDEX_ROUTES.includes(route)) expect(sitemap, `${route} kept out of public/sitemap.xml`).not.toContain(loc);
+      else expect(sitemap, `${route} in public/sitemap.xml`).toContain(loc);
       expect(redirects, `${route} not rewritten in public/_redirects`).not.toMatch(new RegExp(`^${route}/?\\s`, "m"));
     }
   });

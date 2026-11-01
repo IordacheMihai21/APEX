@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { t } from "../i18n";
 import { HowToPlay } from "./HowToPlay";
 import { AdBelow } from "./Ads";
+import { GameAbout } from "../content/GameAbout";
 import { FinishCard } from "./FinishCard";
 import { gameFinished, gameStarted, shared } from "../games/events";
 import { OUTLINES } from "../game/outlines";
@@ -287,6 +288,7 @@ export function Mystery({ onPlayDaily }: { onPlayDaily: () => void }) {
           />
         );
       })()}
+      <GameAbout id="mystery" />
       <AdBelow />
     </div>
   );

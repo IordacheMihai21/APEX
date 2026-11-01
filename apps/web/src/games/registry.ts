@@ -487,5 +487,8 @@ export type InfoPage = keyof typeof PAGES;
 /** Pre-rendered content pages (static HTML at build time, see src/ssg). */
 export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/how-to-play/${g.id}`), "/circuits", ...CIRCUITS.map((c) => `/circuits/${circuitSlug(c.id)}`), "/trivia", ...CIRCUITS.map((c) => `/trivia/${circuitSlug(c.id)}`), "/learn", ...ARTICLES.map((a) => `/learn/${a.slug}`)];
 
+/** Pages that show the player's own data with little text of their own: no ads on them, and kept out of search (noindex, not in the sitemap). */
+export const NOINDEX_ROUTES = ["/archive", "/records"];
+
 /** Every public address of the app itself; each is a pre-rendered page (content/Landing.tsx) that the app takes over. */
 export const PUBLIC_ROUTES = ["/", ...GAMES.flatMap((g) => (g.route ? [g.route] : [])), "/corner", ...Object.keys(PAGES).map((p) => `/${p}`)];

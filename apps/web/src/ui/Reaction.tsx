@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { GameAbout } from "../content/GameAbout";
 import { t } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { FinishCard } from "./FinishCard";
@@ -203,6 +204,9 @@ export function Reaction({ onPlayDaily }: { onPlayDaily: () => void }) {
           onClose={() => setFinish(false)}
         />
       )}
+      <div className="mt-8 w-full">
+        <GameAbout id="reaction" />
+      </div>
     </div>
   );
 }

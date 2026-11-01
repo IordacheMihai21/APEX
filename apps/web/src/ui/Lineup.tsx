@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { t, tn } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
+import { GameAbout } from "../content/GameAbout";
 import { FinishCard } from "./FinishCard";
 import { NextToday } from "./NextToday";
 import { gameFinished, gameStarted } from "../games/events";
@@ -176,6 +177,7 @@ export function Lineup() {
         ({LINEUP_SOURCE.license})
       </p>
 
+      <GameAbout id="line-up" />
       <AdBelow />
 
       {finish && state.over && (

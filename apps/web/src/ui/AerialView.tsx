@@ -3,6 +3,7 @@ import type { GameTrack } from "@apex/engine";
 import { t } from "../i18n";
 import { HowToPlay } from "./HowToPlay";
 import { AdBelow } from "./Ads";
+import { GameAbout } from "../content/GameAbout";
 import { FinishCard } from "./FinishCard";
 import { NextToday } from "./NextToday";
 import { gameFinished, gameStarted } from "../games/events";
@@ -252,6 +253,7 @@ export function AerialView() {
         </div>
       </div>
 
+      <GameAbout id="aerial" />
       <AdBelow />
 
       {finish && over && (

@@ -6,7 +6,6 @@ import { CIRCUITS } from "../modes/circuits";
 import { CONDITION_NAME, LAUNCH, dailyCondition, dailyNumber, dailyTrack } from "../modes/daily";
 import { type BoardDay, type LapRecord, ONLINE, fetchRecentBoards, fetchRecords } from "../online";
 import { LANG, t, withLang } from "../i18n";
-import { AdBelow } from "./Ads";
 import { delta, lapTime } from "./format";
 
 const fmt = new Intl.DateTimeFormat(LANG === "es" ? "es" : "en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -118,7 +117,6 @@ export function Records() {
           )}
         </section>
       </div>
-      <AdBelow />
     </div>
   );
 }

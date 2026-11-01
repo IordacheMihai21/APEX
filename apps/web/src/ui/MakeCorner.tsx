@@ -4,6 +4,7 @@ import { t } from "../i18n";
 import type { Condition } from "@apex/engine";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
+import { GameAbout } from "../content/GameAbout";
 import { FinishCard } from "./FinishCard";
 import { NextToday } from "./NextToday";
 import { gameFinished, gameStarted } from "../games/events";
@@ -543,6 +544,7 @@ export function MakeCorner() {
         {t("(SRTM, USGS 3DEP, Copernicus EU-DEM and others)")}
       </p>
 
+      <GameAbout id="make-the-corner" />
       <AdBelow />
 
       {finish && done && (

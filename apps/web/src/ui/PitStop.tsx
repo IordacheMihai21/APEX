@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { t } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
+import { GameAbout } from "../content/GameAbout";
 import { FinishCard } from "./FinishCard";
 import { gameFinished, gameStarted, shared } from "../games/events";
 import { FRONT_AXLE, REAR_AXLE, TRACK_HALF, bareCar } from "../game/car";
@@ -513,6 +514,7 @@ export function PitStop({ onPlayDaily }: { onPlayDaily: () => void }) {
           onClose={() => setFinish(false)}
         />
       )}
+      <GameAbout id="pit-stop" />
       <AdBelow />
     </div>
   );

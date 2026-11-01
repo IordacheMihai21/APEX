@@ -1,6 +1,7 @@
 import { GAMES, type GameDef, type GameId, PAGES, type InfoPage, PUBLIC_ROUTES, game } from "../games/registry";
 import { t, withLang } from "../i18n";
 import { Page, Section, link } from "./Guides";
+import { GameAbout } from "./GameAbout";
 
 /**
  * What the game's own pages (the hub, each game, the archive and records)
@@ -84,6 +85,7 @@ function Hub() {
       <Section title={t("Today's games")}>
         <GameList />
       </Section>
+      <GameAbout id="quali" className="space-y-8" />
       <MoreLinks />
     </Page>
   );
@@ -103,20 +105,7 @@ function GamePage({ id }: { id: GameId }) {
         <p className="mt-4 text-[17px] leading-relaxed text-paint/90">{g.blurb}</p>
         <p className="mt-2 text-[15px] text-steel">{g.cadence === "daily" ? t("A new round every day at midnight, the same for everyone.") : t("Play as often as you like.")}</p>
       </header>
-      {g.howTo && (
-        <Section title={t("How it works")}>
-          <ol className="list-decimal space-y-2 pl-5 marker:text-ink">
-            {g.howTo.steps.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-          <p>
-            <a className={link} href={withLang(`/how-to-play/${id}`)}>
-              {t("Rules, scoring and tips for {game}", { game: g.name })}
-            </a>
-          </p>
-        </Section>
-      )}
+      <GameAbout id={id} className="space-y-8" />
       <Section title={t("More to play")}>
         <GameList except={id} />
       </Section>

@@ -12,8 +12,6 @@
   <url><loc>https://lapdle.com/aerial</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/reaction</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/corner</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://lapdle.com/archive</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
-  <url><loc>https://lapdle.com/records</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/how-to-play/quali</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/mystery</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -79,8 +77,6 @@
   <url><loc>https://lapdle.com/es/aerial</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/es/reaction</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/es/corner</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://lapdle.com/es/archive</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
-  <url><loc>https://lapdle.com/es/records</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/es/how-to-play</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/es/how-to-play/quali</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/es/how-to-play/mystery</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

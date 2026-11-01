@@ -49,7 +49,7 @@ const jobs = [
     .map(([route, renderPage]) => ({ route, path: esPath(route), lang: "es", renderPage })),
 ];
 for (const { route, path, lang, renderPage } of jobs) {
-  const { html, title, description } = renderPage(route);
+  const { html, title, description, noindex } = renderPage(route);
   const url = `${site}${path}`;
   let page = template;
   if (path !== "/") {
@@ -62,6 +62,7 @@ for (const { route, path, lang, renderPage } of jobs) {
     page = set(page, /(<meta name="twitter:title" content=")[^"]*/, attr(title));
     page = set(page, /(<meta name="twitter:description" content=")[^"]*/, attr(description));
   }
+  if (noindex) page = set(page, /(<meta name="robots" content=")[^"]*/, "noindex, follow");
   if (lang === "es") {
     page = set(page, /(<html lang=")[^"]*/, "es");
     page = set(page, /(<meta property="og:locale" content=")[^"]*/, "es_ES");

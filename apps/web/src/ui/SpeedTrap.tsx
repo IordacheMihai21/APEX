@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { t } from "../i18n";
 import { HowToPlay, modalOpen } from "./HowToPlay";
 import { AdBelow } from "./Ads";
+import { GameAbout } from "../content/GameAbout";
 import { FinishCard } from "./FinishCard";
 import { NextToday } from "./NextToday";
 import { gameFinished, gameStarted } from "../games/events";
@@ -260,6 +261,7 @@ export function SpeedTrap() {
         </div>
       </div>
 
+      <GameAbout id="speed-trap" />
       <AdBelow />
 
       {finish && done && (
