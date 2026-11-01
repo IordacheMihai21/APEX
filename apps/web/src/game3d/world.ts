@@ -285,6 +285,10 @@ export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | n
     const roofMat = keep(new THREE.MeshStandardMaterial({ color: "#6b6d70", roughness: 0.9, side: THREE.DoubleSide }));
     const standWallMat = keep(new THREE.MeshStandardMaterial({ map: tex.concrete, roughness: 0.9, side: THREE.DoubleSide }));
     const crowdMat = keep(new THREE.MeshStandardMaterial({ map: keep(crowdTexture()), roughness: 0.95, side: THREE.DoubleSide }));
+    // a stand's roof: a light steel canopy over the seats, on posts along the back
+    // (a little light of its own: its underside is all in shade, and the ground's green bounce turned it olive)
+    const canopyMat = keep(new THREE.MeshStandardMaterial({ color: "#d3d6da", emissive: "#7a7d82", roughness: 0.55, metalness: 0.2, side: THREE.DoubleSide }));
+    const postMat = keep(new THREE.MeshStandardMaterial({ color: "#9a9ea4", roughness: 0.6, metalness: 0.3 }));
     const pitsMat = keep(new THREE.MeshStandardMaterial({ color: "#e4e2dc", roughness: 0.7, side: THREE.DoubleSide }));
     const nearestTrack = (x: number, y: number): [number, number] => {
       let bd = Infinity;
@@ -338,6 +342,47 @@ export function buildWorld(c: CornerData, track: GameTrack, osm: SceneryData | n
         if (!e) continue;
         bucket(standWallMat, e.walls);
         bucket(crowdMat, e.roof);
+        // the roof covers the back 55% of the seats (a half-plane clip of the footprint)
+        const cut = lo + 0.45 * (hi - lo);
+        const keepPts: number[] = [];
+        for (let i = 0; i < flat.length; i += 2) {
+          const ax = flat[i];
+          const ay = flat[i + 1];
+          const bx = flat[(i + 2) % flat.length];
+          const by = flat[(i + 3) % flat.length];
+          const pa = ax * fx + ay * fy - cut;
+          const pb = bx * fx + by * fy - cut;
+          if (pa >= 0) keepPts.push(ax, ay);
+          if (pa >= 0 !== pb >= 0) {
+            const t = pa / (pa - pb);
+            keepPts.push(ax + (bx - ax) * t, ay + (by - ay) * t);
+          }
+        }
+        const canopy = keepPts.length >= 6 ? extrude(keepPts, (x, y) => rake(x, y) + 4.5) : null;
+        if (canopy) {
+          bucket(canopyMat, canopy.roof);
+          canopy.walls.dispose();
+          // the roof runs 4.5 m over the seats, rising with them; posts at the back corners and every 12 m between them,
+          // from the top row up to the roof
+          const pts: [number, number][] = [];
+          for (let i = 0; i < flat.length; i += 2) pts.push([flat[i], flat[i + 1]]);
+          const base = Math.min(...pts.map(([x, y]) => groundAt(x, y)));
+          for (let i = 0; i < pts.length; i++) {
+            const [ax, ay] = pts[i];
+            const [bx, by] = pts[(i + 1) % pts.length];
+            const back = (x: number, y: number) => x * fx + y * fy - lo > 0.75 * (hi - lo);
+            if (!back(ax, ay) || !back(bx, by)) continue;
+            const len = Math.hypot(bx - ax, by - ay);
+            for (let k = 0; k <= Math.floor(len / 12); k++) {
+              const t = len < 1 ? 0 : (k * 12) / len;
+              const px = ax + (bx - ax) * t;
+              const py = ay + (by - ay) * t;
+              const post = new THREE.BoxGeometry(0.35, 4.5, 0.35);
+              post.translate(px, base + rake(px, py) + 2.25, -py);
+              bucket(postMat, post);
+            }
+          }
+        }
       } else {
         const h = Math.max(3, b.h);
         const e = extrude(flat, () => h);

@@ -27,7 +27,8 @@
     "build:lineup": "tsx tools/track-builder/src/build-lineup.ts",
     "build:corners": "tsx tools/track-builder/src/build-corners.ts",
     "build:car": "tsx tools/track-builder/src/build-car.ts",
-    "build:terrain": "tsx tools/track-builder/src/build-terrain.ts"
+    "build:terrain": "tsx tools/track-builder/src/build-terrain.ts",
+    "build:skyline": "tsx tools/track-builder/src/build-skyline.ts"
   },
   "devDependencies": {
     "tsx": "^4.23.15",

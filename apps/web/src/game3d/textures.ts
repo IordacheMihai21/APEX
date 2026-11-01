@@ -123,20 +123,28 @@ export function fenceAlpha(): THREE.CanvasTexture {
 
 /** A grandstand full of people: rows of seats, a dot of colour for each fan. */
 export function crowdTexture(): THREE.CanvasTexture {
+  // stepped rows (about 0.9 m each) of red seats, half of them taken
   const c = draw(256, 256, (g) => {
     const r = rng(11);
-    g.fillStyle = "#4a4f57";
-    g.fillRect(0, 0, 256, 256);
     const shirts = ["#e9e6df", "#c8241c", "#1d3f86", "#f2c500", "#ff6a13", "#1b1b1b", "#3f8a3c", "#8a8f99", "#d8d2c4", "#7a1f1f"];
-    for (let y = 0; y < 256; y += 8) {
-      g.fillStyle = "rgba(0,0,0,0.35)";
-      g.fillRect(0, y + 6, 256, 2);
-      for (let x = 0; x < 256; x += 5) {
-        if (r() < 0.12) continue; // an empty seat
-        g.fillStyle = shirts[Math.floor(r() * shirts.length)];
-        g.fillRect(x + r(), y + 1.5, 3.5, 4);
-        g.fillStyle = r() < 0.5 ? "#e0b48f" : "#8a5a3c";
-        g.fillRect(x + 0.8, y, 2.4, 2);
+    for (let y = 0; y < 256; y += 16) {
+      // the tread, then the riser in shadow
+      g.fillStyle = "#8d8f92";
+      g.fillRect(0, y, 256, 11);
+      g.fillStyle = "#4b4d52";
+      g.fillRect(0, y + 11, 256, 5);
+      for (let x = 0; x < 256; x += 8) {
+        // a seat: back and pan
+        g.fillStyle = "#a3221b";
+        g.fillRect(x + 1, y + 2, 6, 7);
+        g.fillStyle = "#c8352a";
+        g.fillRect(x + 1, y + 2, 6, 2);
+        if (r() < 0.5) {
+          g.fillStyle = shirts[Math.floor(r() * shirts.length)];
+          g.fillRect(x + 1.5 + r(), y + 3, 5, 6);
+          g.fillStyle = r() < 0.5 ? "#e0b48f" : "#8a5a3c";
+          g.fillRect(x + 2.5, y, 3, 3);
+        }
       }
     }
   });

@@ -5,6 +5,7 @@ import { CATALOG, loadScenery, loadTrack } from "../game/catalog";
 import { buildCar } from "./car";
 import { groundAt, setGround, toWorld } from "./geometry";
 import { type Terrain, groundOf, loadTerrain } from "./terrain";
+import { type SkylineData, buildSkyline, loadSkyline } from "./skyline";
 import { buildTrackside } from "./trackside";
 import { Particles } from "./particles";
 import { BrightnessContrastEffect, Effect, EffectComposer, EffectPass, HueSaturationEffect, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
@@ -75,6 +76,9 @@ export class CornerScene {
   private readonly rainLight: THREE.Mesh;
   private readonly sun: THREE.DirectionalLight;
   private readonly sunDir: THREE.Vector3;
+  /** the sky and the skyline move with the camera, so the hills always stand inside the sky */
+  private readonly sky: THREE.Mesh;
+  private hills: THREE.Group | null = null;
   private readonly rain: THREE.LineSegments | null = null;
   /** dust and gravel off the road, spray in the wet */
   private readonly particles = new Particles(900);
@@ -110,14 +114,15 @@ export class CornerScene {
 
   /** Load the circuit and its surroundings, then build the corner. */
   static async create(canvas: HTMLCanvasElement, c: CornerData, condition: Condition): Promise<CornerScene> {
-    const [track, osm, photo, hdr, terrain] = await Promise.all([
+    const [track, osm, photo, hdr, terrain, skyline] = await Promise.all([
       loadTrack(c.trackId),
       loadScenery(c.trackId),
       loadSurfaces(),
       new HDRLoader().loadAsync(condition === "wet" ? skyWet : skyGolden),
       loadTerrain(c.id),
+      loadSkyline(c.id),
     ]);
-    const scene = new CornerScene(canvas, c, condition, track, osm, photo, hdr, terrain);
+    const scene = new CornerScene(canvas, c, condition, track, osm, photo, hdr, terrain, skyline);
     await scene.carReady;
     return scene;
   }
@@ -131,6 +136,7 @@ export class CornerScene {
     photo: Surfaces,
     hdr: THREE.DataTexture,
     terrain: Terrain | null,
+    skyline: SkylineData | null,
   ) {
     // everything this scene builds stands on this corner's ground
     const [ox, oy] = c.origin;
@@ -170,6 +176,7 @@ export class CornerScene {
     const sunTheta = golden ? ahead + THREE.MathUtils.degToRad(140) : THREE.MathUtils.degToRad(205);
     this.sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - look.elevation), sunTheta);
     const sky = makeSky(4000);
+    this.sky = sky;
     this.scene.add(sky);
     {
       // what everything reflects and is lit by: a real photographed sky (CC0, Poly Haven): a low sun over a field
@@ -186,6 +193,13 @@ export class CornerScene {
       this.track(env, pmrem, sky.geometry, sky.material as THREE.Material, photo);
     }
     this.scene.fog = new THREE.Fog(look.horizon, look.near, look.far);
+    // the real hills and mountains on the horizon, fading into the same haze
+    if (skyline) {
+      const hills = buildSkyline(skyline, { wet, horizon: look.horizon, sunDir: this.sunDir });
+      this.hills = hills.group;
+      this.scene.add(hills.group);
+      this.track(hills);
+    }
 
     this.scene.add(new THREE.HemisphereLight(look.hemiSky, look.hemiGround, look.hemi));
     this.sun = new THREE.DirectionalLight(look.sunColor, look.sun);
@@ -237,7 +251,10 @@ export class CornerScene {
           // in a low sun the paint shows off: glossier, with more of the sky in it
           built.car.traverse((o) => {
             const m = (o as THREE.Mesh).material as THREE.MeshPhysicalMaterial | undefined;
-            if (m?.name === "paint") Object.assign(m, { roughness: 0.42, clearcoatRoughness: 0.16, envMapIntensity: 0.8 });
+            if (m?.name === "paint") {
+              Object.assign(m, { roughness: 0.32, clearcoatRoughness: 0.06, envMapIntensity: 1.3 });
+              m.color.multiplyScalar(0.78);
+            }
           });
         })
       : built.ready;
@@ -410,8 +427,8 @@ export class CornerScene {
     const right = new THREE.Vector3(-this.camDir.z, 0, this.camDir.x);
     this.camPos
       .copy(p)
-      .addScaledVector(this.camDir, (tall ? -4.8 : -5.4) + brake * 0.4)
-      .add(new THREE.Vector3(0, (tall ? 2.05 : 1.75) - brake * 0.12 + jy, 0))
+      .addScaledVector(this.camDir, (tall ? -6.6 : -6.2) + brake * 0.4)
+      .add(new THREE.Vector3(0, (tall ? 2.3 : 1.9) - brake * 0.12 + jy, 0))
       .addScaledVector(right, jx - lean * 0.1);
     this.camLook
       .copy(p)
@@ -420,6 +437,9 @@ export class CornerScene {
     // over a crest the camera behind could end up in the hillside: keep it above the ground under it
     this.camPos.y = Math.max(this.camPos.y, groundAt(this.camPos.x, -this.camPos.z) + 1.2);
     this.camera.position.copy(this.camPos);
+    this.sky.position.set(this.camPos.x, 0, this.camPos.z);
+    // the skyline's angles are seen from 3 m above the apex
+    this.hills?.position.set(this.camPos.x, 3, this.camPos.z);
     // lean into the corner: tilt the camera's up a little against the turn
     this.camera.up.set(0, 1, 0).addScaledVector(right, lean * 0.02).normalize();
     this.camera.lookAt(this.camLook);
