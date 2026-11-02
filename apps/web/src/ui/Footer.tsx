@@ -105,6 +105,11 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
                 </a>
               </li>
               <li>
+                <a className={link} href="/updates">
+                  {t("What's new")}
+                </a>
+              </li>
+              <li>
                 <a className={link} href="/trivia">
                   {t("Circuit trivia")}
                 </a>

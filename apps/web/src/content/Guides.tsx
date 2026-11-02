@@ -160,6 +160,16 @@ export function About() {
         </p>
       </Section>
 
+      <Section title="Always changing">
+        <p>
+          Lapdle is updated every week: new games, new guides and articles, fixes to the circuits and the physics. Every change players can see is listed, newest first, on{" "}
+          <a className={link} href="/updates">
+            What's new
+          </a>
+          .
+        </p>
+      </Section>
+
       <Section title="Contact">
         <p>
           Questions, ideas or a bug to report? Write to{" "}

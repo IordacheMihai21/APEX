@@ -7,11 +7,12 @@ import { article } from "./articles";
 import { cornerBySlug } from "./cornerText";
 
 /** A content page's address, parsed: About, How to play (the index or one game's guide), or Circuits (the index or one circuit's guide). */
-export type ContentPage = { page: "about" } | { page: "howto"; game?: GameId } | { page: "circuits"; id?: string } | { page: "trivia"; id?: string } | { page: "learn"; slug?: string } | { page: "corners"; slug?: string };
+export type ContentPage = { page: "about" } | { page: "howto"; game?: GameId } | { page: "circuits"; id?: string } | { page: "trivia"; id?: string } | { page: "learn"; slug?: string } | { page: "corners"; slug?: string } | { page: "updates" };
 
 export function parseContent(path: string): ContentPage | null {
   const p = path.replace(/^\/+|\/+$/g, "");
   if (p === "about") return { page: "about" };
+  if (p === "updates") return { page: "updates" };
   if (p === "how-to-play") return { page: "howto" };
   const m = /^how-to-play\/([a-z-]+)$/.exec(p);
   if (m && GAMES.some((g) => g.id === m[1])) return { page: "howto", game: m[1] as GameId };
@@ -34,6 +35,7 @@ export function parseContent(path: string): ContentPage | null {
 
 export function contentPath(c: ContentPage): string {
   if (c.page === "about") return "/about";
+  if (c.page === "updates") return "/updates";
   if (c.page === "circuits") return c.id ? `/circuits/${circuitSlug(c.id)}` : "/circuits";
   if (c.page === "trivia") return c.id ? `/trivia/${circuitSlug(c.id)}` : "/trivia";
   if (c.page === "learn") return c.slug ? `/learn/${c.slug}` : "/learn";
@@ -50,6 +52,11 @@ export function contentMeta(c: ContentPage): { title: string; description: strin
     return {
       title: "About Lapdle: the daily racing line challenge",
       description: "Lapdle is a set of short, free racing games on real circuits, new every day. What the games are, how the circuits are made, and how to get in touch.",
+    };
+  if (c.page === "updates")
+    return {
+      title: "What's new in Lapdle: every update to the game | Lapdle",
+      description: "Every change players can see in Lapdle, newest first: new games and guides, fixes to the circuits and the physics, and what changed in each daily game.",
     };
   if (c.page === "learn") {
     const a = c.slug ? article(c.slug) : undefined;

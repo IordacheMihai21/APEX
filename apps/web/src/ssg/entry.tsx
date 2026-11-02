@@ -11,6 +11,7 @@ import { CircuitGuide, CircuitsIndex } from "../content/Circuits";
 import { TriviaIndex, TriviaQuiz } from "../content/Trivia";
 import { LearnArticle, LearnIndex } from "../content/Learn";
 import { CornerGuide, CornersIndex } from "../content/Corners";
+import { Updates } from "../content/Updates";
 import { contentMeta, parseContent } from "../content/meta";
 import { ChevronLeft } from "../ui/icons";
 import { CONTENT_ROUTES, NOINDEX_ROUTES } from "../games/registry";
@@ -53,7 +54,7 @@ export function render(path: string): { html: string; title: string; description
   const c = parseContent(path);
   if (!c) throw new Error(`not a content page: ${path}`);
   const page =
-    c.page === "about" ? <About /> : c.page === "circuits" ? (
+    c.page === "about" ? <About /> : c.page === "updates" ? <Updates /> : c.page === "circuits" ? (
         c.id ? <CircuitGuide id={c.id} /> : <CircuitsIndex />
       ) : c.page === "corners" ? (
         c.slug ? <CornerGuide slug={c.slug} /> : <CornersIndex />
