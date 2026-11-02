@@ -2,6 +2,8 @@ import { GAMES, type GameDef, type GameId, PAGES, type InfoPage, PUBLIC_ROUTES, 
 import { t, withLang } from "../i18n";
 import { Page, Section, link } from "./Guides";
 import { GameAbout } from "./GameAbout";
+import { Privacy } from "../ui/Privacy";
+import { Legal } from "../ui/Legal";
 
 /**
  * What the game's own pages (the hub, each game, the archive and records)
@@ -131,6 +133,19 @@ function Corner() {
           {t("One famous corner a week. Set your line through it as often as you like and get as close as you can to the perfect time through that corner.")}
         </p>
       </header>
+      <Section title={t("How it works")}>
+        <p>{t("Each week, from Monday to Sunday, Lapdle picks one of the best-known corners in racing: La Source, Tarzan, the Parabolica, Sainte Dévote and others, traced from the real circuit. The rest of the lap runs on the perfect line, so everyone arrives at the corner at the same speed, and you only decide what happens inside it.")}</p>
+        <p>{t("You set where the car brakes, how deep it turns in, where it touches the apex and how early it gets back on the power. The car then drives your line with the same physics as the Daily Quali, and the score is the time you lose to the perfect line through that corner alone.")}</p>
+        <p>{t("You can try as often as you like. Your best run of the week is the one that counts, and it earns a medal the closer it gets to the perfect line. A new corner arrives every Monday.")}</p>
+      </Section>
+      <Section title={t("Famous corner guides")}>
+        <p>{t("Every corner in the rotation has a guide: where it is and why it is famous, how to drive it, the mistakes to avoid, and the corner in numbers from Lapdle's own physics.")}</p>
+        <p>
+          <a className={link} href="/corners">
+            {t("Famous corners")}
+          </a>
+        </p>
+      </Section>
       <Section title={t("More to play")}>
         <GameList />
       </Section>
@@ -173,6 +188,20 @@ export function landing(route: string): { node: React.ReactNode; title: string; 
   const key = route.slice(1);
   if (key in PAGES) {
     const page = key as InfoPage;
+    // the privacy page and the legal notice in full, as the app shows them, with the links home
+    if (page === "privacy" || page === "legal")
+      return {
+        node: (
+          <>
+            {page === "privacy" ? <Privacy /> : <Legal />}
+            <div className="mx-auto max-w-[68ch] px-4 pb-16 md:px-8">
+              <MoreLinks />
+            </div>
+          </>
+        ),
+        title: t(PAGES[page]),
+        description: t(INFO[page].description),
+      };
     return { node: <Info page={page} />, title: t(PAGES[page]), description: t(INFO[page].description) };
   }
   const g = GAMES.find((x) => x.route === route);
