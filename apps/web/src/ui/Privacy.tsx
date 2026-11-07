@@ -53,7 +53,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
  * what this build has switched on (ads, analytics, a contact address).
  */
 export function Privacy() {
-  const updated = "4 October 2026";
+  const updated = "7 November 2026";
   return (
     <div className="h-full overflow-y-auto">
       <article className="mx-auto max-w-[68ch] space-y-7 px-4 pt-8 pb-16 md:px-8 lg:pt-12">
@@ -100,7 +100,7 @@ export function Privacy() {
         {ANALYTICS_ON && (
           <Section title="Visit statistics">
             <p>
-              We count visits with Plausible Analytics, which uses no cookies and collects no personal data: no IP addresses are stored and visitors can't be tracked across sites or days. We see totals such as how many people
+              We count visits with Umami, which uses no cookies and keeps no IP addresses in its statistics. A visit is grouped under an anonymous code worked out from the IP address and browser, which differs from site to site and changes every month. We see totals such as how many people
               opened the Daily Quali and how many laps were driven, by page, country and device type. To see how often people come back, the app adds a few rough ranges worked out on your device (such as
               "played yesterday" or "played 4 to 7 days"); no id, date or time is sent, and nothing is stored for it.
             </p>

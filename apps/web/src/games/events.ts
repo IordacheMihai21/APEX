@@ -1,7 +1,7 @@
 /**
  * Per-game analytics, the numbers a monetisation partner asks for: how many
  * who open a game finish it (completion), how many come back the next day
- * (retention), and how many games a visit plays (depth). Plausible is
+ * (retention), and how many games a visit plays (depth). Umami is
  * cookieless and has no idea who anyone is, so each event carries a few coarse
  * buckets worked out on the device from what it already keeps (see
  * games/profile.ts): how many days it has played, when it last played, how much

@@ -1,57 +1,43 @@
 /**
- * Plausible analytics: cookieless and aggregate (no personal data, nothing
- * stored on the device), loaded only when VITE_PLAUSIBLE_DOMAIN is set. The
- * app has its own addresses but changes them with replaceState, so page views
- * are sent by hand whenever the screen changes.
- *
- * Two kinds of Plausible script work:
- * - the site's own script (VITE_PLAUSIBLE_SRC = https://plausible.io/js/pa-….js,
- *   from Site settings > Site installation), started with plausible.init and
- *   automatic page views off; what Plausible gives new sites;
- * - the older manual script with data-domain (the default when no SRC is set).
+ * Umami analytics: cookieless, no IP addresses in the statistics, live site only.
+ * The app has its own addresses but changes them with replaceState, so page
+ * views are sent by hand whenever the screen changes. The website id is public:
+ * it sits in the script tag of every page.
  */
-const DOMAIN = import.meta.env.VITE_PLAUSIBLE_DOMAIN as string | undefined;
-const SRC = (import.meta.env.VITE_PLAUSIBLE_SRC as string | undefined) || "https://plausible.io/js/script.manual.js";
-/** the site's own script (pa-….js) takes plausible.init; the older ones take data-domain */
-const SITE_SCRIPT = /\/pa-[^/]+\.js$/.test(SRC);
+const WEBSITE_ID = "d1a94723-d0b7-47ec-bbaf-fa6abdd7abf3";
+const SRC = "https://cloud.umami.is/script.js";
+const HOST = "lapdle.com";
 
-type Plausible = ((event: string, options?: { u?: string; url?: string; props?: Record<string, string | number | boolean> }) => void) & {
-  q?: unknown[];
-  o?: unknown;
-  init?: (options: Record<string, unknown>) => void;
-};
+type Payload = Record<string, unknown>;
+type Umami = { track: { (build: (props: Payload) => Payload): void; (event: string, data?: Record<string, string | number | boolean>): void } };
 declare global {
   interface Window {
-    plausible?: Plausible;
+    umami?: Umami;
   }
 }
 
-export const ANALYTICS_ON = !!DOMAIN;
+export const ANALYTICS_ON = true;
 
 let started = false;
 /** Only the live site counts: preview deployments and local builds of production never do. */
-const liveHost = () => typeof location !== "undefined" && DOMAIN !== undefined && (location.hostname === DOMAIN || location.hostname === `www.${DOMAIN}`);
+const liveHost = () => typeof location !== "undefined" && (location.hostname === HOST || location.hostname === `www.${HOST}`);
+/** Calls made before the script arrives, sent once it has. */
+const waiting: (() => void)[] = [];
+const send = (call: () => void) => (window.umami ? call() : waiting.push(call));
 
 export function initAnalytics() {
-  if (started || !DOMAIN || import.meta.env.DEV || !liveHost()) return;
+  if (started || import.meta.env.DEV || !liveHost()) return;
   started = true;
-  // queue calls made before the script arrives
-  window.plausible ??= Object.assign((...args: unknown[]) => void (window.plausible!.q ??= []).push(args), {});
   const s = document.createElement("script");
   s.src = SRC;
-  if (SITE_SCRIPT) {
-    // the snippet Plausible gives: init queued for the script, page views sent by the app
-    s.async = true;
-    window.plausible.init ??= (o: Record<string, unknown>) => void (window.plausible!.o = o);
-    window.plausible.init({ autoCapturePageviews: false });
-  } else {
-    s.defer = true;
-    s.dataset.domain = DOMAIN;
-  }
+  s.async = true;
+  s.dataset.websiteId = WEBSITE_ID;
+  s.dataset.autoPageview = "false";
+  s.onload = () => waiting.splice(0).forEach((call) => call());
   document.head.appendChild(s);
 }
 
-/** The query parameters Plausible reads a visit's source from (the rest it ignores). */
+/** The query parameters that say where a visit came from (the rest are the app's own). */
 const SOURCE_PARAMS = ["ref", "source", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
 
 /** Only the source parameters of a query string ("?ref=tiktok"), or "" when there are none. */
@@ -66,8 +52,19 @@ export function sourceQuery(search: string): string {
   return s ? `?${s}` : "";
 }
 
+/** Umami reads only utm_ parameters, so a link tagged ?ref=tiktok goes in as utm_source=tiktok. */
+export function utmQuery(query: string): string {
+  const q = new URLSearchParams(query);
+  const from = q.get("ref") ?? q.get("source");
+  q.delete("ref");
+  q.delete("source");
+  if (from && !q.has("utm_source")) q.set("utm_source", from);
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
+
 /** Read when the page loads, before the app rewrites its address, so a tagged link (?ref=tiktok) keeps its source. */
-let arrival = typeof location !== "undefined" ? sourceQuery(location.search) : "";
+let arrival = typeof location !== "undefined" ? utmQuery(sourceQuery(location.search)) : "";
 /** The visit's own source (ref, else utm_source), lower case, kept for the whole page load: "" when untagged. */
 const ARRIVED_FROM = typeof location !== "undefined" ? (new URLSearchParams(location.search).get("ref") ?? new URLSearchParams(location.search).get("utm_source") ?? "").toLowerCase() : "";
 export const arrivedFrom = () => ARRIVED_FROM;
@@ -90,19 +87,20 @@ function hostOf(url: string): string {
 }
 
 let lastPath = "";
-/** A page view for the current address (deduplicated, so re-renders don't count twice); the first carries the visit's source. */
+/** A page view for the current address (deduplicated, so re-renders don't count twice); the first carries the visit's source and referrer. */
 export function pageview() {
   if (!started) return;
   const path = location.pathname;
   if (path === lastPath) return;
+  const first = lastPath === "";
   lastPath = path;
-  const url = location.origin + path + arrival;
+  const url = path + arrival;
   arrival = "";
-  window.plausible?.("pageview", SITE_SCRIPT ? { url } : { u: url });
+  send(() => window.umami?.track((props) => ({ ...props, url, referrer: first ? props.referrer : "" })));
 }
 
 /** A named event with a few small properties (no ids, no times of day, nothing personal). */
 export function track(event: string, props: Record<string, string | number | boolean> = {}) {
   if (!started) return;
-  window.plausible?.(event, { props });
+  send(() => window.umami?.track(event, props));
 }
