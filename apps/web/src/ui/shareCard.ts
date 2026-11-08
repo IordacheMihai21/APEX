@@ -181,3 +181,143 @@ export async function dailyCard(daily: DailyRecord): Promise<Blob> {
 
   return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("no image"))), "image/png"));
 }
+
+/** What a minigame's finish card says, drawn as a picture by resultCard. */
+export type ResultCardData = {
+  eyebrow: string;
+  title: string;
+  tone: "win" | "loss" | "neutral";
+  value: string;
+  valueLabel?: string;
+  message?: string;
+  stats: [string, string][];
+  /** the share text without its link: its first line is the eyebrow again, the rest is the result grid */
+  preview: string;
+};
+
+/** Text cut to a width, with an ellipsis where it had to be cut. */
+function fit(ctx: Ctx, s: string, max: number): string {
+  if (ctx.measureText(s).width <= max) return s;
+  let out = [...s];
+  while (out.length && ctx.measureText(out.join("") + "…").width > max) out = out.slice(0, -1);
+  return out.join("") + "…";
+}
+
+/** Words wrapped to a width, at most `lines` lines. */
+function wrap(ctx: Ctx, s: string, max: number, lines: number): string[] {
+  const out: string[] = [];
+  let cur = "";
+  for (const w of s.split(/\s+/)) {
+    const next = cur ? `${cur} ${w}` : w;
+    if (ctx.measureText(next).width <= max || !cur) cur = next;
+    else {
+      out.push(cur);
+      cur = w;
+    }
+  }
+  if (cur) out.push(cur);
+  return out.length > lines ? [...out.slice(0, lines - 1), fit(ctx, out.slice(lines - 1).join(" "), max)] : out;
+}
+
+/**
+ * Any minigame's result as a picture, the same 4:5 card as the Daily Quali's:
+ * the game and its number, the verdict, the big number, the result grid from
+ * the share text, the player's stats, and where to play. Sent with the share
+ * text where the phone can share files, so a story or a group chat shows the
+ * result without anyone opening a link.
+ */
+export async function resultCard(d: ResultCardData): Promise<Blob> {
+  await document.fonts?.ready;
+  const C = {
+    night: token("--color-night", "#0a0b0d"),
+    board: token("--color-board", "#121418"),
+    line: token("--color-line", "#2b2f37"),
+    paint: token("--color-paint", "#f2f2ee"),
+    steel: token("--color-steel", "#9aa1ab"),
+    ink: token("--color-ink", "#ff6a13"),
+    green: token("--color-green", "#29cc6a"),
+  };
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d")! as Ctx;
+  ctx.fillStyle = C.night;
+  ctx.fillRect(0, 0, W, H);
+  ctx.textBaseline = "alphabetic";
+  const inner = W - PAD * 2;
+
+  // header: wordmark left, the game and its number right, a hairline under both
+  font(ctx, 800, 40, true);
+  ctx.fillStyle = C.paint;
+  ctx.fillText("LAPDLE", PAD, PAD + 34);
+  const mark = ctx.measureText("LAPDLE").width;
+  font(ctx, 600, 30, false);
+  ctx.textAlign = "right";
+  ctx.fillText(fit(ctx, d.eyebrow, inner - mark - 40), W - PAD, PAD + 32);
+  ctx.textAlign = "left";
+  ctx.fillStyle = C.line;
+  ctx.fillRect(PAD, PAD + 66, inner, 2);
+
+  // the verdict, then the number large in the accent
+  let size = 96;
+  font(ctx, 800, size, true);
+  while (ctx.measureText(d.title).width > inner && size > 52) font(ctx, 800, (size -= 4), true);
+  ctx.fillStyle = d.tone === "win" ? C.green : C.paint;
+  ctx.fillText(fit(ctx, d.title, inner), PAD, 290);
+
+  size = 220;
+  font(ctx, 800, size, true);
+  while (ctx.measureText(d.value).width > inner * 0.75 && size > 100) font(ctx, 800, (size -= 8), true);
+  ctx.fillStyle = C.ink;
+  ctx.fillText(d.value, PAD - 6, 290 + 40 + size * 0.78);
+  let y = 290 + 40 + size * 0.78;
+  if (d.valueLabel) {
+    const vw = ctx.measureText(d.value).width;
+    font(ctx, 600, 36, false);
+    ctx.fillStyle = C.steel;
+    ctx.fillText(fit(ctx, d.valueLabel, inner - vw - 30), PAD + vw + 24, y);
+  }
+
+  if (d.message) {
+    font(ctx, 500, 36, false);
+    ctx.fillStyle = C.paint;
+    for (const l of wrap(ctx, d.message, inner, 2)) ctx.fillText(l, PAD, (y += 62));
+  }
+
+  // the result grid: the share text's lines after its header line (emoji rows, guesses)
+  const statsTop = H - PAD - 60 - 150;
+  const grid = d.preview.split("\n").slice(1).map((l) => l.trim()).filter(Boolean);
+  if (grid.length) {
+    const room = statsTop - 40 - (y + 50);
+    const lh = Math.max(34, Math.min(96, Math.floor(room / grid.length)));
+    const shown = grid.slice(0, Math.floor(room / lh));
+    font(ctx, 600, Math.round(lh * 0.72), false);
+    ctx.fillStyle = C.paint;
+    y += 30;
+    for (const l of shown) ctx.fillText(fit(ctx, l, inner), PAD, (y += lh));
+  }
+
+  // the player's numbers between hairlines, as on the finish card
+  ctx.fillStyle = C.line;
+  ctx.fillRect(PAD, statsTop, inner, 2);
+  ctx.fillRect(PAD, statsTop + 150, inner, 2);
+  const col = inner / Math.max(1, d.stats.length);
+  ctx.textAlign = "center";
+  d.stats.forEach(([label, v], i) => {
+    const cx = PAD + col * i + col / 2;
+    font(ctx, 800, 56, true);
+    ctx.fillStyle = C.paint;
+    ctx.fillText(fit(ctx, v, col - 20), cx, statsTop + 78);
+    font(ctx, 600, 24, false);
+    ctx.fillStyle = C.steel;
+    ctx.fillText(fit(ctx, label.toUpperCase(), col - 20), cx, statsTop + 120);
+  });
+
+  // footer: the dare and where to take it, in the accent
+  font(ctx, 700, 32, false);
+  ctx.fillStyle = C.ink;
+  ctx.fillText(t("Can you beat it? Play free at {site}", { site: location.host }), W / 2, H - PAD + 8);
+  ctx.textAlign = "left";
+
+  return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("no image"))), "image/png"));
+}

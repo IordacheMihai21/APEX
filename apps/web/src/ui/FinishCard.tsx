@@ -57,6 +57,31 @@ export function FinishCard({
   const [left, setLeft] = useState(msToNextDay);
   const [copied, setCopied] = useState(false);
   const close = useRef<HTMLButtonElement>(null);
+  // what the share will say, shown before it is sent (the link line left out)
+  const preview = shareText.replace(/\n?https?:\/\/\S+\s*$/, "");
+  // the result as a picture, drawn once when the card opens, so Share sends it at once
+  // (a phone's share sheet must open straight from the tap)
+  const [card, setCard] = useState<{ blob: Blob; url: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    let url: string | null = null;
+    import("./shareCard")
+      .then((m) => m.resultCard({ eyebrow, title, tone, value, valueLabel, message, stats, preview }))
+      .then((blob) => {
+        if (!live) return;
+        url = URL.createObjectURL(blob);
+        setCard({ blob, url });
+      })
+      .catch(() => {
+        /* no canvas: the text share still works */
+      });
+    return () => {
+      live = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+    // drawn once per card
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     close.current?.focus();
     const id = setInterval(() => setLeft(msToNextDay()), 1000);
@@ -70,14 +95,11 @@ export function FinishCard({
 
   const share = async () => {
     shared(game);
-    if (await shareOrCopy(shareText)) {
+    if (await shareOrCopy(shareText, card?.blob)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     }
   };
-  // what the share will say, shown before it is sent (the link line left out)
-  const preview = shareText.replace(/\n?https?:\/\/\S+\s*$/, "");
-
   // read when the card opens: the game that just finished has already saved its result
   const progress = todayProgress();
   const streak = playStreak();
@@ -128,9 +150,14 @@ export function FinishCard({
           ))}
         </dl>
 
-        <p className="mt-4 border border-line bg-night/60 px-3 py-2.5 text-[13px] leading-snug whitespace-pre-line text-paint/85" aria-label={t("Your result to share")}>
-          {preview}
-        </p>
+        {/* what Share sends: the picture where it could be drawn, else the text */}
+        {card ? (
+          <img src={card.url} alt={preview} className="mx-auto mt-4 aspect-[4/5] w-full max-w-[260px] border border-line" />
+        ) : (
+          <p className="mt-4 border border-line bg-night/60 px-3 py-2.5 text-[13px] leading-snug whitespace-pre-line text-paint/85" aria-label={t("Your result to share")}>
+            {preview}
+          </p>
+        )}
         <div className="mt-3 flex flex-wrap gap-2.5">
           <button className={`${primaryBtn} flex-1 basis-36`} onClick={share}>
             <Share className="h-4 w-4" />

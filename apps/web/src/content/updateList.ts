@@ -6,6 +6,14 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-11-08",
+    title: "Share your result as a picture",
+    body: [
+      "Every game's finish card now draws your result as a picture: the game and its number, your verdict, the score, your result grid and your stats. Share sends it with the text, so a group chat or a story shows how you did without anyone opening a link. Where a phone or browser can't share pictures, Share sends the text as before.",
+    ],
+    links: [["Play today's games", "/"]],
+  },
+  {
     date: "2026-11-02",
     title: "Corner of the week explained",
     body: ["The Corner of the week page now says how the game works: one famous corner from Monday to Sunday, the rest of the lap on the perfect line so everyone arrives at the same speed, unlimited tries and a medal for your best run of the week. It links to the guide for every corner in the rotation."],

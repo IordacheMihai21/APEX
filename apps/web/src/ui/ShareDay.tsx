@@ -6,9 +6,19 @@ import { shareLink } from "../shareLink";
 import { Share } from "./icons";
 import { secondaryBtn } from "./styles";
 
-/** The phone's share sheet where there is one, else the clipboard. True when copied (to say so). */
-export async function shareOrCopy(text: string): Promise<boolean> {
+/**
+ * The phone's share sheet where there is one, else the clipboard. True when copied (to say so).
+ * With a picture, and a phone that can share files, the picture goes with the text.
+ */
+export async function shareOrCopy(text: string, image?: Blob | null): Promise<boolean> {
   try {
+    if (image && navigator.canShare) {
+      const file = new File([image], "lapdle.png", { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], text });
+        return false;
+      }
+    }
     if (navigator.share) {
       await navigator.share({ text });
       return false;

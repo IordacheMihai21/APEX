@@ -266,6 +266,7 @@ export const ES: Record<string, string> = {
   "Find four groups of four: drivers, teams, cars and circuits that share something. Yellow is the easiest, purple the trickiest.": "Encuentra cuatro grupos de cuatro: pilotos, equipos, coches y circuitos que tienen algo en común. El amarillo es el más fácil; el morado, el más difícil.",
   "Find the groups": "Encuentra los grupos",
   "Find the perfect lap at {site}": "Busca la vuelta perfecta en {site}",
+  "Can you beat it? Play free at {site}": "¿Puedes superarlo? Juega gratis en {site}",
   "Find the start line and follow the arrow: the first tile is the first real turn after it.": "Busca la línea de salida y sigue la flecha: la primera ficha es la primera curva de verdad después de ella.",
   "Fine-tune": "Ajustar",
   "Finish today's runs": "Termina los intentos de hoy",
