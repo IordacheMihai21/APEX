@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@fontsource-variable/archivo/wdth.css";
 import { colourBlind, setColourBlind } from "./game/palette";
+import { applyVegas, vegasOn } from "./game/vegasNight";
 
 import "./index.css";
 import { App } from "./App";
@@ -13,6 +14,8 @@ initAnalytics();
 visit();
 // apply the saved timing palette before the first paint
 setColourBlind(colourBlind());
+// Las Vegas Grand Prix week: the neon night look (index.html already set it for the first paint)
+applyVegas(vegasOn());
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

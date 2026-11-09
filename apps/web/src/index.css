@@ -1098,3 +1098,69 @@ canvas {
     animation: none;
   }
 }
+
+/*
+ * Vegas Night (Las Vegas Grand Prix week, see game/vegasNight.ts): a neon night. Pink takes the player's colour,
+ * the ground turns violet with a sunset glow from the horizon, and palm trees and the city stand on the skyline
+ * behind the page. The timing colours stay as they are.
+ */
+:root[data-theme="vegas"] {
+  --color-night: #10081c;
+  --color-board: #1a0f2c;
+  --color-graphite: #26173d;
+  --color-line: #3a2456;
+  --color-asphalt: #2b1f3d;
+  --color-paint: #fff3f7;
+  --color-steel: #dccbea;
+  --color-ink: #ff5c9d;
+  --color-ink-hot: #ff8cbc;
+}
+:root[data-theme="vegas"] body {
+  /* a pastel sunset over still water (public/vegas-sky.svg) with palms leaning in from both screen edges
+     (vegas-palms-l/r.svg, from marketing/art/vegas-scene.py), under a violet veil that is deepest where the type sits */
+  background:
+    linear-gradient(180deg, rgba(16, 8, 28, 0.6) 0%, rgba(16, 8, 28, 0.36) 45%, rgba(16, 8, 28, 0.18) 100%),
+    url("/vegas-palms-l.svg") left -6vh bottom -2vh / auto 82vh no-repeat,
+    url("/vegas-palms-r.svg") right -6vh bottom -2vh / auto 74vh no-repeat,
+    url("/vegas-sky.svg") 58% bottom / cover no-repeat,
+    #2c2c72;
+}
+@media (max-width: 640px) {
+  :root[data-theme="vegas"] body {
+    background:
+      linear-gradient(180deg, rgba(16, 8, 28, 0.62) 0%, rgba(16, 8, 28, 0.4) 50%, rgba(16, 8, 28, 0.2) 100%),
+      url("/vegas-palms-l.svg") left -26vw bottom -2vh / auto 60vh no-repeat,
+      url("/vegas-palms-r.svg") right -30vw bottom -2vh / auto 52vh no-repeat,
+      url("/vegas-sky.svg") 58% bottom / cover no-repeat,
+      #2c2c72;
+  }
+}
+:root[data-theme="vegas"] #root {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+:root[data-theme="vegas"] .bg-board,
+:root[data-theme="vegas"] .bg-night {
+  background-color: rgb(26 15 44 / 0.82);
+  backdrop-filter: blur(6px);
+}
+:root[data-theme="vegas"] .text-paint,
+:root[data-theme="vegas"] .text-steel {
+  text-shadow: 0 1px 8px rgba(16, 8, 28, 0.55);
+}
+:root[data-theme="vegas"] .wide {
+  text-shadow: 0 2px 14px rgba(16, 8, 28, 0.55);
+}
+:root[data-theme="vegas"] .text-ink {
+  text-shadow: 0 1px 6px rgba(16, 8, 28, 0.7);
+}
+:root[data-theme="vegas"] .btn-go:not(:disabled) {
+  background-image: linear-gradient(90deg, #ff3d8b, #ff7a3d);
+  box-shadow: 0 8px 24px -6px rgba(255, 61, 139, 0.55);
+  text-shadow: none;
+}
+/* the Vegas Night name: the sunset's hot pink, set heavy */
+.vegas-sign {
+  color: var(--color-ink);
+}

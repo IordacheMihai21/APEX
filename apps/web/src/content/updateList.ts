@@ -6,6 +6,14 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-11-09",
+    title: "Vegas Night, 19 to 23 November",
+    body: [
+      "For the Las Vegas Grand Prix week Lapdle goes neon: a violet night, the player's line in hot pink, a pastel sunset over the water behind the page, with palm trees leaning in from the edges. It starts by itself on 19 November and ends after the race weekend. The timing colours stay the same, and a switch on the home page keeps the classic look if you prefer it.",
+    ],
+    links: [["Play today's games", "/"]],
+  },
+  {
     date: "2026-11-08",
     title: "Share your result as a picture",
     body: [

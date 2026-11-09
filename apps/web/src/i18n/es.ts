@@ -4,6 +4,10 @@
  * Circuit and corner names stay as they are.
  */
 export const ES: Record<string, string> = {
+  "Vegas Night": "Noche en Las Vegas",
+  "It's Las Vegas Grand Prix week, so Lapdle goes neon until Monday.": "Es la semana del Gran Premio de Las Vegas, así que Lapdle se pone neón hasta el lunes.",
+  "Classic look": "Aspecto clásico",
+  "Neon look": "Aspecto neón",
   "(archive)": "(archivo)",
   "(low downforce)": "(poca carga aerodinámica)",
   "(or press Space)": "(o pulsa Espacio)",

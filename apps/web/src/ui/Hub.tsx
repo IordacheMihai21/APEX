@@ -31,6 +31,7 @@ import { LapGrid } from "./LapGrid";
 import { Roll } from "./Roll";
 import { Segments } from "./Segments";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { setVegas, vegasOn, vegasWeek } from "../game/vegasNight";
 
 export type HubAction =
   | { kind: "daily" }
@@ -197,6 +198,32 @@ function CornerMap({ trackId, complex }: { trackId: string; complex: number }) {
  * For a visit that came in from one of our short videos (a tagged bio or description link): the clips show Make the
  * corner, so today's corner comes first, one tap away, instead of the Quali the page leads with. Dismissable.
  */
+/**
+ * Vegas Night: during Las Vegas Grand Prix week the hub says why Lapdle has gone neon, with a switch back to the
+ * classic look (and back again).
+ */
+function VegasBand() {
+  const [on, setOn] = useState(vegasOn);
+  if (!vegasWeek() && !on) return null;
+  const flip = () => {
+    setVegas(!on);
+    setOn(!on);
+  };
+  return (
+    <section aria-label={t("Vegas Night")} className="border-b border-line bg-board/80">
+      <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 md:px-8">
+        <p className="min-w-0 flex-1 text-[14px] leading-snug text-paint/90">
+          <span className="wide vegas-sign mr-2 text-[17px] uppercase">{t("Vegas Night")}</span>
+          {t("It's Las Vegas Grand Prix week, so Lapdle goes neon until Monday.")}
+        </p>
+        <button className={secondaryBtn} onClick={flip}>
+          {on ? t("Classic look") : t("Neon look")}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function ClipCard({ onAction }: { onAction: (a: HubAction) => void }) {
   const [shown, setShown] = useState(fromClips);
   if (!shown) return null;
@@ -701,6 +728,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
     <div className="hub relative h-full overflow-x-hidden overflow-y-auto">
       <TodayBar daily={daily} onAction={onAction} />
       <StreakRisk day={today} onAction={onAction} />
+      <VegasBand />
       {week && (
         <p className="border-b border-line bg-board px-4 py-2 text-center text-[13px] text-paint/90">
           {quali ? (
