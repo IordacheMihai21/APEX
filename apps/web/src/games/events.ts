@@ -17,6 +17,7 @@
  */
 import { track } from "../analytics";
 import { standalone } from "../install";
+import { reminderPlayed } from "../reminder";
 import { LANG } from "../i18n";
 import { dateKey } from "../modes/daily";
 import { playedDays } from "./profile";
@@ -98,5 +99,7 @@ export function gameFinished(game: Tracked, mode: Mode, result: Props = {}) {
     const { done, total } = todayProgress();
     track("Game finished", { game, mode, player: player(), today: `${done}/${total}`, ...result });
     if (mode === "daily" && done === total) track("Daily set done", { player: player() });
+    // a daily game played today: today's reminder isn't needed
+    if (mode === "daily") void reminderPlayed();
   }, 0);
 }

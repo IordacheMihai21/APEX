@@ -66,3 +66,27 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+// The daily reminder (src/reminder.ts, supabase/functions/push): show what the push says, and a tap opens Lapdle,
+// in a tab that's already open when there is one.
+self.addEventListener("push", (event) => {
+  let msg = { title: "Today's Lapdle is ready", body: "New games are waiting.", url: "/?ref=push", tag: "daily" };
+  try {
+    msg = { ...msg, ...event.data.json() };
+  } catch {
+    /* an empty or plain push still reminds */
+  }
+  event.waitUntil(self.registration.showNotification(msg.title, { body: msg.body, tag: msg.tag, icon: "/icon-192.png", badge: "/icon-192.png", data: { url: msg.url } }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url ?? "/", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((tabs) => {
+      const open = tabs.find((c) => new URL(c.url).origin === self.location.origin);
+      if (open) return open.navigate(url).then((c) => (c ?? open).focus());
+      return self.clients.openWindow(url);
+    }),
+  );
+});

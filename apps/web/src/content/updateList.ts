@@ -6,6 +6,15 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-11-10",
+    title: "A daily reminder, if you want one",
+    body: [
+      "After a daily game, the result card now offers a reminder when tomorrow's games are out, at an hour you pick. It's one notification a day saying which circuit and conditions the Daily Quali has, and it skips any day you've already played. You can change the hour or turn it off in the menu.",
+      "It works in Chrome, Edge, Firefox and Samsung Internet on phones and computers, and on iPhone and iPad once Lapdle is added to the Home Screen. Nothing is asked for besides the hour: no account or email.",
+    ],
+    links: [["Play today's games", "/"]],
+  },
+  {
     date: "2026-11-09",
     title: "Vegas Night, 19 to 23 November",
     body: [

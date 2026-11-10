@@ -5,3 +5,7 @@ project_id = "apex"
 # The app calls it with the publishable key, which isn't a JWT; the function
 # validates every field itself and only ever writes re-simulated laps.
 verify_jwt = false
+
+[functions.push]
+# The daily reminder: the app calls it with the publishable key (not a JWT); pg_cron calls it with the cron secret.
+verify_jwt = false

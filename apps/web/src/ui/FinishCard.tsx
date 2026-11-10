@@ -8,6 +8,7 @@ import { shared } from "../games/events";
 import { ChevronRight, Share } from "./icons";
 import { ShareDayButton, shareOrCopy } from "./ShareDay";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { ReminderOffer } from "./Reminder";
 
 /** Where a finished game can send the player next (App listens for this). */
 export type GoTo = GameId;
@@ -179,6 +180,7 @@ export function FinishCard({
           {t("Tomorrow's Daily Quali:")} <span className="font-semibold text-paint">{tomorrowQuali()}</span>.
           {streak.current > 0 && ` ${t("Come back to make it a {n}-day streak.", { n: streak.current + 1 })}`}
         </p>
+        {daily && <ReminderOffer />}
 
         {/* today's set: how much is done, the streak, then what's left first */}
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-line pt-4">

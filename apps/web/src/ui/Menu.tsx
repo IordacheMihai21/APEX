@@ -4,6 +4,7 @@ import { loadSeason, seasonDone } from "../modes/season";
 import type { HubAction } from "./Hub";
 import { Chequered, Close, GameMarks } from "./icons";
 import { LANG, type Lang, setLang, t } from "../i18n";
+import { ReminderMenu } from "./Reminder";
 
 /**
  * The menu behind the hub's ☰: every game in one list, today's daily set first
@@ -109,6 +110,7 @@ export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () =
               </li>
             ))}
           </ul>
+          <ReminderMenu rowClass={row} headingClass={heading} />
         </nav>
       </div>
     </div>

@@ -1077,4 +1077,17 @@ export const ES: Record<string, string> = {
   "{wheel} wheel": "Rueda {wheel}",
   "{wheel} wheel, now: press {key}": "Rueda {wheel}, ahora: pulsa {key}",
   "© OpenStreetMap contributors": "© colaboradores de OpenStreetMap",
+  // the daily reminder (ui/Reminder.tsx)
+  "Daily reminder": "Recordatorio diario",
+  "Daily reminder on, at {time}.": "Recordatorio diario activado, a las {time}.",
+  "Get a reminder when tomorrow's games are out.": "Recibe un aviso cuando salgan los juegos de mañana.",
+  "No reminder": "Sin recordatorio",
+  "Reminder time": "Hora del recordatorio",
+  "Turning on…": "Activando…",
+  "Remind me": "Avísame",
+  "Notifications are blocked for Lapdle in this browser. You can allow them in the site settings.": "Las notificaciones de Lapdle están bloqueadas en este navegador. Puedes permitirlas en los ajustes del sitio.",
+  "That didn't work. Check your connection and try again.": "No ha funcionado. Revisa tu conexión y vuelve a intentarlo.",
+  "On iPhone and iPad, add Lapdle to your Home Screen first, then turn the reminder on in the app.": "En iPhone y iPad, primero añade Lapdle a tu pantalla de inicio y luego activa el recordatorio en la app.",
+  "Remind me every day at {time}": "Avísame cada día a las {time}",
+  "Turn off": "Desactivar",
 };

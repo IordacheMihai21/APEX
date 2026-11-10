@@ -97,6 +97,21 @@ export function Privacy() {
           </Section>
         )}
 
+        {ONLINE && (
+          <Section title="Daily reminder">
+            <p>
+              The reminder is off unless you turn it on, after your browser asks you to allow notifications. When you do, your browser gives us an address at its own push service (Google, Mozilla, Apple or
+              Microsoft) and two keys that encrypt the message, and the app sends them with the hour you picked, your time zone (such as Europe/Vienna) and the site's language. When you finish a daily game, the app
+              tells the server the date, so that day's reminder doesn't come. No name, account, email, device number or IP address is stored with it.
+            </p>
+            <p>
+              It's stored in the same Supabase database in the EU (Frankfurt) and used only to send that one notification a day; the push service delivers it to your browser. Turning the reminder off in the menu
+              deletes the entry at once, and so does blocking notifications for this site (the push service then tells us the address is gone). The legal basis is your consent (Art. 6(1)(a) GDPR), which you can
+              withdraw at any time by turning it off.
+            </p>
+          </Section>
+        )}
+
         {ANALYTICS_ON && (
           <Section title="Visit statistics">
             <p>
