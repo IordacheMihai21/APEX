@@ -1,7 +1,7 @@
 import { CATALOG } from "../game/catalog";
 import { t } from "../i18n";
 import { OUTLINES, loadOutlineDetail } from "../game/outlines";
-import { CIRCUITS } from "../modes/circuits";
+import { CIRCUITS, factsOf } from "../modes/circuits";
 import { CONDITION_NAME, DAILY_LAPS, type DailyRecord, bestMedal, conditionOf, dailyNumber } from "../modes/daily";
 import { type Grade, bestPerGroup } from "../modes/grading";
 import { MEDAL_COLOR, MEDAL_NAME } from "../modes/medals";
@@ -39,7 +39,7 @@ function font(ctx: Ctx, weight: number, size: number, wide: boolean) {
 export async function dailyCard(daily: DailyRecord): Promise<Blob> {
   await document.fonts?.ready;
   const info = CATALOG.find((c) => c.id === daily.trackId)!;
-  const facts = CIRCUITS.find((c) => c.id === daily.trackId);
+  const facts = factsOf(daily.trackId);
   const o = OUTLINES[daily.trackId];
   const detail = await loadOutlineDetail(daily.trackId);
   const C = {

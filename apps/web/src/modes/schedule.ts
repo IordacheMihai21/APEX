@@ -45,6 +45,8 @@ export const RACE_WEEKENDS: { trackId: string; from: string; to: string }[] = [
   { trackId: "monza", from: "2026-09-04", to: "2026-09-06" },
   { trackId: "austin", from: "2026-10-23", to: "2026-10-25" },
   { trackId: "interlagos", from: "2026-11-06", to: "2026-11-08" },
+  // qualifying 21 Nov 04:00 UTC (Friday night in Las Vegas), race 22 Nov UTC
+  { trackId: "las-vegas", from: "2026-11-20", to: "2026-11-22" },
 ];
 
 const addDays = (key: string, n: number) => dateKey(new Date(Date.parse(`${key}T12:00:00`) + n * 86_400_000));

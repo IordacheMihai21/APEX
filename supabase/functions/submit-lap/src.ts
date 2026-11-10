@@ -33,6 +33,7 @@ import austin from "../../../data/tracks/austin.v1.json";
 import barcelona from "../../../data/tracks/barcelona.v1.json";
 import hungaroring from "../../../data/tracks/hungaroring.v1.json";
 import imola from "../../../data/tracks/imola.v1.json";
+import lasVegas from "../../../data/tracks/las-vegas.v1.json";
 import interlagos from "../../../data/tracks/interlagos.v1.json";
 import monaco from "../../../data/tracks/monaco.v1.json";
 import monza from "../../../data/tracks/monza.v1.json";
@@ -48,7 +49,7 @@ declare const Deno: {
 };
 
 const TRACKS: Record<string, GameTrack> = Object.fromEntries(
-  [austin, barcelona, hungaroring, imola, interlagos, monaco, monza, redBullRing, silverstone, spa, suzuka, zandvoort].map((t) => [(t as GameTrack).id, t as GameTrack]),
+  [austin, barcelona, hungaroring, imola, lasVegas, interlagos, monaco, monza, redBullRing, silverstone, spa, suzuka, zandvoort].map((t) => [(t as GameTrack).id, t as GameTrack]),
 );
 const prepared = new Map<string, { pt: ReturnType<typeof prepareTrack>; ctl: ReturnType<typeof trackControls> }>();
 

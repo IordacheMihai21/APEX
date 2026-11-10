@@ -7,6 +7,15 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-10",
+    title: "Las Vegas joins Lapdle",
+    body: [
+      "The Las Vegas street circuit is in the game: 6.2 km, the long run down the Strip and the tight section round the Sphere. Drive it any time in Free Practice, dry, wet or with low downforce.",
+      "On Saturday 21 November, qualifying day of the Las Vegas Grand Prix, the Daily Quali moves to Las Vegas for everyone, in the dry. The rest of the daily rotation keeps its twelve circuits.",
+    ],
+    links: [["Free Practice", "/"]],
+  },
+  {
+    date: "2026-11-10",
     title: "Names on the board, the road to 1,000, and colours for bringing friends",
     body: [
       "The Daily Quali board now shows names. Add a nickname under today's result and your best lap appears by name with your position among everyone who drove; change it or take it off any time. No account needed.",

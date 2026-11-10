@@ -24,6 +24,9 @@ export const CATALOG: TrackInfo[] = [
   { id: "austin", name: "Austin", country: "United States", flag: "🇺🇸" },
   { id: "barcelona", name: "Barcelona", country: "Spain", flag: "🇪🇸" },
   { id: "imola", name: "Imola", country: "Italy", flag: "🇮🇹" },
+  // race-week circuit (Las Vegas Grand Prix, 20-22 Nov 2026): Daily Quali on qualifying day and Free Practice; not in
+  // the daily rotation, the minigames or the circuit guides (modes/circuits.ts EVENT_FACTS has its figures)
+  { id: "las-vegas", name: "Las Vegas", country: "United States", style: "street", flag: "🇺🇸" },
   { id: "kestrel", name: "Kestrel", country: "Test circuit", flag: "🏁" },
 ];
 

@@ -55,6 +55,7 @@ const VENUES: Record<string, string> = {
   austin: "Austin",
   barcelona: "Barcelona",
   imola: "Imola",
+  "las-vegas": "Las Vegas",
 };
 
 const COPY = {

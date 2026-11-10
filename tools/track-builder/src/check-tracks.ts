@@ -14,6 +14,8 @@ import { fmt } from "./format";
 export const REFERENCE_POLE_MS: Record<string, number> = {
   monza: 78_792, spa: 100_562, silverstone: 84_892, suzuka: 86_983, monaco: 69_954, interlagos: 69_511,
   hungaroring: 75_372, "red-bull-ring": 63_971, zandvoort: 68_662, austin: 92_510, barcelona: 71_546, imola: 74_670,
+  // Las Vegas: the 2024 pole (1:32.312, dry); 2025 qualifying was wet (1:47.934), no fit for the dry lap
+  "las-vegas": 92_312,
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

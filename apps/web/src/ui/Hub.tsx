@@ -15,7 +15,7 @@ import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/se
 import { cornerLabel, dailyCorner, raceWeekCorner } from "../modes/makeCornerDay";
 import { fromClips } from "../analytics";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
-import { CIRCUITS } from "../modes/circuits";
+import { CIRCUITS, factsOf } from "../modes/circuits";
 import { cornerMedal, daysLeft, loadCornerWeek, weekNumber, weeklyCorner } from "../modes/corner";
 import { loadHigherLower } from "../modes/higherLower";
 import { MYSTERY_TRIES, REVEAL, isOver, isSolved, loadMystery, mysteryAnswer, revealOffset } from "../modes/mystery";
@@ -680,7 +680,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
 
   const info = CATALOG.find((c) => c.id === daily.trackId)!;
   // the official figures, the same ones the minigames use (our corner groups can differ)
-  const facts = CIRCUITS.find((c) => c.id === daily.trackId);
+  const facts = factsOf(daily.trackId);
   const condition = conditionOf(daily);
   // build today's circuit textures ahead, so lights out opens without a freeze. Not during page
   // load (the work would block the first seconds): on the player's first touch, scroll or key,

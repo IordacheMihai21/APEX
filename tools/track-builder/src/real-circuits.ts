@@ -22,6 +22,9 @@ export const REAL_CIRCUITS: RealCircuit[] = [
   { sourceId: "us-2012", id: "austin", name: "Austin", country: "US", widthMeters: 15 },
   { sourceId: "es-1991", id: "barcelona", name: "Barcelona", country: "ES", widthMeters: 14 },
   { sourceId: "it-1953", id: "imola", name: "Imola", country: "IT", widthMeters: 13 },
+  // added for the 2026 race week (19-22 Nov); kept out of the 12-circuit daily rotation and the circuit facts, so no
+  // past day changes: it is a race-weekend Daily Quali and a Free Practice circuit
+  { sourceId: "us-2023", id: "las-vegas", name: "Las Vegas", country: "US", widthMeters: 14 },
 ];
 
 const RAW = resolve(import.meta.dirname, "../../../data/raw/bacinger/f1-circuits.geojson");
