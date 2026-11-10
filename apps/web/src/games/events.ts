@@ -105,6 +105,8 @@ export function gameFinished(game: Tracked, mode: Mode, result: Props = {}) {
       void reminderPlayed();
       // counted for today's road to 1,000, and credits the invite this device came in on
       void roadPlayed();
+      // the first daily game finished is when the pitlane name is offered (ui/Pitlane.tsx decides whether to)
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("lapdle:pitlane", { detail: { force: false } }));
     }
   }, 0);
 }

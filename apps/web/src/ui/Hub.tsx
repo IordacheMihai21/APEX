@@ -6,6 +6,7 @@ import { GAMES, type GamePage, type InfoPage, game, todayProgress } from "../gam
 import { playStreak } from "../games/profile";
 import { InstallBand } from "./Install";
 import { RoadBand } from "./RoadBand";
+import { Championship } from "./Championship";
 import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES, type Outline, type OutlineDetail, loadOutlineDetail } from "../game/outlines";
@@ -841,6 +842,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
       <GameCards onAction={onAction} group="daily" />
       <InstallBand />
       <RoadBand />
+      <Championship />
       <AdBand />
 
       {/* more to play: the extras, then the weekly corner, the season and practice */}

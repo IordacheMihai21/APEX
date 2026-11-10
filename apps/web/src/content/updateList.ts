@@ -6,6 +6,15 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-11-11",
+    title: "Your racing name and the monthly Championship",
+    body: [
+      "After your first daily game, Lapdle now asks what to call you, with a racing name filled in that you can keep or change. It's optional: skip it and nothing changes. The same name shows on the Daily Quali board and in the menu, where you can change it any time.",
+      "The home page has a Championship for each month: a Grand Prix is a day you finish a daily game, and the named players with the most Grands Prix this month lead, ties going to the longer run of days in a row. It starts again on the 1st, so a new player can top it in their first month.",
+    ],
+    links: [["Play today's games", "/"]],
+  },
+  {
     date: "2026-11-10",
     title: "Las Vegas joins Lapdle",
     body: [

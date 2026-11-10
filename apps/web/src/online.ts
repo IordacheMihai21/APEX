@@ -246,3 +246,20 @@ export async function setNickname(nickname: string | null): Promise<"ok" | "take
     return "failed";
   }
 }
+
+// ---- championship --------------------------------------------------------------------------------------------------
+export interface ChampionRow {
+  pos: number;
+  nickname: string;
+  /** Grands Prix (days with a daily game finished) this month */
+  gps: number;
+  /** current days in a row */
+  streak: number;
+  total: number;
+  badge: boolean;
+}
+
+/** This month's Championship: the named players with the most Grands Prix (null: unreachable). */
+export async function fetchChampionship(today: string, limit = 10): Promise<ChampionRow[] | null> {
+  return rpc<ChampionRow[]>("championship", { p_today: today, p_limit: limit });
+}

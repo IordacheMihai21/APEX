@@ -6,6 +6,8 @@ import { Chequered, Close, GameMarks } from "./icons";
 import { LANG, type Lang, setLang, t } from "../i18n";
 import { ReminderMenu } from "./Reminder";
 import { ColourPicker } from "./RoadBand";
+import { openPitlane } from "./Pitlane";
+import { myNickname } from "../online";
 
 /**
  * The menu behind the hub's ☰: every game in one list, today's daily set first
@@ -110,6 +112,15 @@ export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () =
                 </button>
               </li>
             ))}
+          </ul>
+          <p className={heading}>{t("Your name")}</p>
+          <ul>
+            <li>
+              <button className={row} onClick={() => { onClose(); openPitlane(true); }}>
+                <span className="min-w-0 flex-1 truncate">{myNickname() ? t("Racing as {name}", { name: myNickname()! }) : t("Pick a racing name")}</span>
+                <span className="shrink-0 text-[12px] text-steel">{myNickname() ? t("Change") : ""}</span>
+              </button>
+            </li>
           </ul>
           <ColourPicker headingClass={heading} />
           <ReminderMenu rowClass={row} headingClass={heading} />
