@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { DailyBoard } from "./ui/DailyBoard";
 import { t } from "./i18n";
 import { CATALOG } from "./game/catalog";
 import { OUTLINES } from "./game/outlines";
@@ -139,6 +140,7 @@ export function DailySummary({ onClose, onWatch }: { onClose: () => void; onWatc
           {t("Daily Quali #{n}, {circuit}. Next circuit in", { n: dailyNumber(), circuit: info.name })} <span className="num">{countdown}</span>.
         </p>
         <StandingLine daily={daily} className="mt-2" />
+        {boardOf(daily) && <DailyBoard board={boardOf(daily)!} />}
         <div className="mt-4 aspect-[4/5] w-full border border-line bg-night">
           {card ? <img src={card} alt={t("Share card: {result} at {circuit}", { result: dayHeadline(daily), circuit: info.name })} className="card-in h-full w-full" /> : <div className="skeleton h-full w-full" aria-hidden="true" />}
         </div>

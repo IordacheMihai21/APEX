@@ -7,6 +7,16 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-10",
+    title: "Names on the board, the road to 1,000, and colours for bringing friends",
+    body: [
+      "The Daily Quali board now shows names. Add a nickname under today's result and your best lap appears by name with your position among everyone who drove; change it or take it off any time. No account needed.",
+      "The home page shows how many people have played today on the road to 1,000. The day 1,000 players finish a daily game, a new circuit joins Lapdle for everyone.",
+      "Every link you share now counts the friends who come in on it and play a daily game. One friend unlocks a Magenta line colour, three unlock Cyan, and ten put a gold star next to your name on the board. The friend gets Magenta too. Pick your colour in the menu.",
+    ],
+    links: [["Play today's games", "/"]],
+  },
+  {
+    date: "2026-11-10",
     title: "Challenge a friend",
     body: [
       "Every daily game's result card now has a Challenge a friend button. It sends your result with a link straight into the same game, and your friend plays the same round you did. When they open it, a strip at the top says what to beat, and their own result card shows your score next to theirs.",

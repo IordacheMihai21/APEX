@@ -49,13 +49,15 @@ export async function forgetThisDevice(): Promise<number | null> {
     const { removed } = (await res.json()) as { removed: number };
     localStorage.removeItem(DEVICE_KEY);
     localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem("apex.nickname");
     return removed;
   } catch {
     return null;
   }
 }
 
-function deviceId(): string {
+/** This device's anonymous id, made on first use. */
+export function deviceId(): string {
   try {
     let id = localStorage.getItem(DEVICE_KEY);
     if (!id) {
@@ -92,7 +94,7 @@ function writeCache(b: Board, s: Standing) {
   window.dispatchEvent(new CustomEvent(EVENT, { detail: cacheId(b) }));
 }
 
-const headers = () => ({ apikey: KEY!, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" });
+export const headers = () => ({ apikey: KEY!, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" });
 
 /** Send the day's best line; the server times it and answers with where you stand. */
 export async function submitDailyLine(b: Board, knots: number[]): Promise<Standing | null> {
@@ -197,4 +199,50 @@ export async function fetchRecords(physics: string): Promise<LapRecord[] | null>
 export async function fetchRecentBoards(): Promise<BoardDay[] | null> {
   const rows = await rpc<{ day: string; track_id: string; condition: Condition; players: number; best_ms: number; median_ms: number }[]>("recent_boards", { p_days: 30 });
   return rows && rows.map((r) => ({ day: r.day, trackId: r.track_id, condition: r.condition, players: r.players, bestMs: r.best_ms, medianMs: r.median_ms }));
+}
+
+// ---- named board -------------------------------------------------------------------------------------------------
+const NICK_KEY = "apex.nickname";
+
+export interface BoardRow {
+  pos: number;
+  nickname: string;
+  lapMs: number;
+  badge: boolean;
+}
+
+/** The nickname this device put on the board (null: none). */
+export function myNickname(): string | null {
+  try {
+    return localStorage.getItem(NICK_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Today's named board: each named player's position among all of the day's players (null: unreachable). */
+export async function fetchBoard(b: Board, limit = 10): Promise<BoardRow[] | null> {
+  const rows = await rpc<{ pos: number; nickname: string; lap_ms: number; badge: boolean }[]>("daily_board", { p_day: b.day, p_track: b.trackId, p_condition: b.condition, p_limit: limit });
+  return rows && rows.map((r) => ({ pos: r.pos, nickname: r.nickname, lapMs: r.lap_ms, badge: r.badge }));
+}
+
+/**
+ * Put this device's laps on the board under a nickname (or take the name off with null). Resolves "ok", "taken"
+ * (another player has it), "invalid" or "failed".
+ */
+export async function setNickname(nickname: string | null): Promise<"ok" | "taken" | "invalid" | "failed"> {
+  if (!ONLINE) return "failed";
+  try {
+    const res = await fetch(`${URL_}/functions/v1/submit-lap`, { method: "POST", headers: headers(), body: JSON.stringify({ action: "nickname", deviceId: deviceId(), nickname }) });
+    if (res.status === 409) return "taken";
+    if (res.status === 400) return "invalid";
+    if (!res.ok) return "failed";
+    const { nickname: saved } = (await res.json()) as { nickname: string | null };
+    if (saved) localStorage.setItem(NICK_KEY, saved);
+    else localStorage.removeItem(NICK_KEY);
+    window.dispatchEvent(new CustomEvent(EVENT, { detail: "nickname" }));
+    return "ok";
+  } catch {
+    return "failed";
+  }
 }

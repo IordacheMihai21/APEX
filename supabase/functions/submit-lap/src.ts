@@ -7,6 +7,11 @@
  * so the time on the board is exactly what the line drives and can't be made
  * up. It keeps each device's best lap per day and answers with the standing.
  *
+ * It is also the way in for the board's other writes: a nickname for the day's
+ * board (action "nickname"), the daily player count and invite credits
+ * ("played"), and the ten-friend badge ("badge"); see
+ * supabase/migrations/20261110_board_names_road_invites.sql.
+ *
  * Built into index.ts by `npm run build:functions` (esbuild bundles the
  * engine and the circuits), deployed with the Supabase CLI.
  */
@@ -23,6 +28,7 @@ import {
 } from "../../../packages/engine/src/index";
 // the game's own schedule, so the board only takes the day's real Daily Quali
 import { dailyCondition, dailyTrack } from "../../../apps/web/src/modes/schedule";
+import { cleanNickname } from "../../../apps/web/src/games/nickname";
 import austin from "../../../data/tracks/austin.v1.json";
 import barcelona from "../../../data/tracks/barcelona.v1.json";
 import hungaroring from "../../../data/tracks/hungaroring.v1.json";
@@ -133,6 +139,57 @@ Deno.serve(async (req) => {
       if (!(await withinLimits(req, body.deviceId))) return json(429, { error: "too many requests" });
       const removed = await rpc("forget_device", { p_device: body.deviceId });
       return json(200, { removed: removed ?? 0 });
+    } catch (e) {
+      return json(500, { error: (e as Error).message });
+    }
+  }
+
+  // a nickname for the day's board, or none (null) to drop off it by name
+  if (body.action === "nickname") {
+    if (typeof body.deviceId !== "string" || !UUID.test(body.deviceId)) return json(400, { error: "deviceId" });
+    const raw = (body as { nickname?: unknown }).nickname;
+    const name = raw === null ? null : typeof raw === "string" ? cleanNickname(raw) : undefined;
+    if (name === undefined || (raw !== null && name === null)) return json(400, { error: "nickname" });
+    try {
+      if (!(await withinLimits(req, body.deviceId))) return json(429, { error: "too many requests" });
+      const result = await rpc("set_nickname", { p_device: body.deviceId, p_nickname: name });
+      return result === "taken" ? json(409, { error: "taken" }) : json(200, { nickname: name });
+    } catch (e) {
+      return json(500, { error: (e as Error).message });
+    }
+  }
+
+  // a daily game finished: count the device for the day's "road to 1,000", and credit the invite it came in on
+  if (body.action === "played") {
+    const invite = (body as { invite?: unknown }).invite;
+    if (typeof body.deviceId !== "string" || !UUID.test(body.deviceId)) return json(400, { error: "deviceId" });
+    if (typeof body.day !== "string" || !plausibleDay(body.day)) return json(400, { error: "day" });
+    if (invite != null && (typeof invite !== "string" || !/^[a-z0-9]{10}$/.test(invite))) return json(400, { error: "invite" });
+    try {
+      if (!(await withinLimits(req, body.deviceId))) return json(429, { error: "too many requests" });
+      // one IP can't farm one invite code with fresh devices: a few new friends per code per IP per day
+      let code = (invite as string | null) ?? null;
+      if (code) {
+        const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+        const salt = Deno.env.get("RATE_SALT") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+        const key = `inv:${(await sha256(`${salt}|${body.day}|${ip}|${code}`)).slice(0, 32)}`;
+        if ((await rpc("take_submit_slot", { p_key: key, p_window_seconds: 86400, p_limit: 3 })) !== true) code = null;
+      }
+      const credited = await rpc("record_played", { p_day: body.day, p_device: body.deviceId, p_invite: code });
+      return json(200, { credited: credited === true });
+    } catch (e) {
+      return json(500, { error: (e as Error).message });
+    }
+  }
+
+  // ten friends in: the gold star next to the inviter's nickname
+  if (body.action === "badge") {
+    const code = (body as { code?: unknown }).code;
+    if (typeof body.deviceId !== "string" || !UUID.test(body.deviceId)) return json(400, { error: "deviceId" });
+    if (typeof code !== "string" || !/^[a-z0-9]{10}$/.test(code)) return json(400, { error: "code" });
+    try {
+      if (!(await withinLimits(req, body.deviceId))) return json(429, { error: "too many requests" });
+      return json(200, { badge: (await rpc("claim_badge", { p_device: body.deviceId, p_code: code })) === true });
     } catch (e) {
       return json(500, { error: (e as Error).message });
     }

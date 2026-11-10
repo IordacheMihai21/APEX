@@ -1,4 +1,5 @@
 import { t } from "../i18n";
+import { inviteParam } from "../community";
 import type { GameId } from "./registry";
 
 /**
@@ -35,7 +36,7 @@ export const dismissChallenge = () => {
 };
 
 /** What "Challenge a friend" sends: the result in a sentence, then the link straight into the game. */
-export function challengeMessage(game: GameId, path: string, title: string, value: string, origin = typeof location !== "undefined" ? location.origin : "https://lapdle.com"): string {
-  const link = `${origin}${path}?ref=challenge-${game}&score=${encodeURIComponent(value)}`;
+export function challengeMessage(game: GameId, path: string, title: string, value: string, origin = typeof location !== "undefined" ? location.origin : "https://lapdle.com", invite: string | null = typeof location !== "undefined" ? inviteParam() : null): string {
+  const link = `${origin}${path}?ref=challenge-${game}&score=${encodeURIComponent(value)}${invite ? `&${invite}` : ""}`;
   return `${t("I got {value} on {game}. Can you beat it?", { value, game: title })}\n${link}`;
 }

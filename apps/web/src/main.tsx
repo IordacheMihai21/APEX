@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import "@fontsource-variable/archivo/wdth.css";
 import { colourBlind, setColourBlind } from "./game/palette";
 import { applyVegas, vegasOn } from "./game/vegasNight";
+import { applyPlayerColour } from "./community";
 
 import "./index.css";
 import { App } from "./App";
@@ -16,6 +17,8 @@ visit();
 setColourBlind(colourBlind());
 // Las Vegas Grand Prix week: the neon night look (index.html already set it for the first paint)
 applyVegas(vegasOn());
+// the player colour a friend invite unlocked, over the page's own
+applyPlayerColour();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

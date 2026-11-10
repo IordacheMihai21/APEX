@@ -18,6 +18,7 @@
 import { track } from "../analytics";
 import { standalone } from "../install";
 import { reminderPlayed } from "../reminder";
+import { roadPlayed } from "../community";
 import { LANG } from "../i18n";
 import { dateKey } from "../modes/daily";
 import { playedDays } from "./profile";
@@ -100,6 +101,10 @@ export function gameFinished(game: Tracked, mode: Mode, result: Props = {}) {
     track("Game finished", { game, mode, player: player(), today: `${done}/${total}`, ...result });
     if (mode === "daily" && done === total) track("Daily set done", { player: player() });
     // a daily game played today: today's reminder isn't needed
-    if (mode === "daily") void reminderPlayed();
+    if (mode === "daily") {
+      void reminderPlayed();
+      // counted for today's road to 1,000, and credits the invite this device came in on
+      void roadPlayed();
+    }
   }, 0);
 }
