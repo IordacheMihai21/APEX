@@ -24,6 +24,7 @@ import {
   SpeakerSlash,
   SteeringWheel,
   Wind,
+  Sword,
   Wrench,
   X as PhX,
 } from "@phosphor-icons/react";
@@ -57,6 +58,7 @@ export const Rain = make(CloudRain);
 export const SoundOn = make(SpeakerHigh);
 export const SoundOff = make(SpeakerSlash);
 export const LowDownforce = make(Wind);
+export const Swords = make(Sword);
 
 /** One mark per daily game, for the Today bar before the game is played. */
 export const GameMarks = {

@@ -5,10 +5,11 @@ import { playStreak } from "../games/profile";
 import { GAMES, type GameId, todayProgress } from "../games/registry";
 import { msToNextDay } from "../modes/daily";
 import { shared } from "../games/events";
-import { ChevronRight, Share } from "./icons";
+import { ChevronRight, Share, Swords } from "./icons";
 import { ShareDayButton, shareOrCopy } from "./ShareDay";
 import { primaryBtn, secondaryBtn } from "./styles";
 import { ReminderOffer } from "./Reminder";
+import { challengeFor, challengeMessage } from "../games/scoreChallenge";
 
 /** Where a finished game can send the player next (App listens for this). */
 export type GoTo = GameId;
@@ -57,6 +58,7 @@ export function FinishCard({
 }) {
   const [left, setLeft] = useState(msToNextDay);
   const [copied, setCopied] = useState(false);
+  const [dared, setDared] = useState(false);
   const close = useRef<HTMLButtonElement>(null);
   // what the share will say, shown before it is sent (the link line left out)
   const preview = shareText.replace(/\n?https?:\/\/\S+\s*$/, "");
@@ -101,6 +103,17 @@ export function FinishCard({
       setTimeout(() => setCopied(false), 1800);
     }
   };
+  // a daily game with its own page can be sent as a challenge: the friend plays the same round
+  const route = GAMES.find((g) => g.id === game)?.route ?? null;
+  const friend = daily ? challengeFor(game) : null;
+  const dare = async () => {
+    if (!route) return;
+    shared(`challenge-${game}`);
+    if (await shareOrCopy(challengeMessage(game, route, eyebrow, value), card?.blob)) {
+      setDared(true);
+      setTimeout(() => setDared(false), 1800);
+    }
+  };
   // read when the card opens: the game that just finished has already saved its result
   const progress = todayProgress();
   const streak = playStreak();
@@ -141,6 +154,7 @@ export function FinishCard({
           {valueLabel && <span className="caption">{valueLabel}</span>}
         </div>
         {message && <p className="mt-2 text-[15px] leading-snug text-paint/80">{message}</p>}
+        {friend && <p className="mt-2 text-[14px] text-steel">{t("Your friend got {value}.", { value: friend })}</p>}
 
         <dl className="mt-5 grid border-y border-line py-3 text-center" style={{ gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}>
           {stats.map(([label, v]) => (
@@ -170,6 +184,12 @@ export function FinishCard({
             </button>
           )}
         </div>
+        {daily && route && (
+          <button className={`${secondaryBtn} mt-2.5 w-full`} onClick={dare}>
+            <Swords className="h-4 w-4" />
+            {dared ? t("Copied") : t("Challenge a friend")}
+          </button>
+        )}
         {daily && (
           <p className="mt-3 text-[13px] text-steel">
             {t(`Next ${daily} in`)} <span className="num font-semibold text-paint">{clock(left)}</span>

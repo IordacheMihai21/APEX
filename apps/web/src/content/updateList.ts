@@ -7,6 +7,14 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-10",
+    title: "Challenge a friend",
+    body: [
+      "Every daily game's result card now has a Challenge a friend button. It sends your result with a link straight into the same game, and your friend plays the same round you did. When they open it, a strip at the top says what to beat, and their own result card shows your score next to theirs.",
+    ],
+    links: [["Play today's games", "/"]],
+  },
+  {
+    date: "2026-11-10",
     title: "A daily reminder, if you want one",
     body: [
       "After a daily game, the result card now offers a reminder when tomorrow's games are out, at an hour you pick. It's one notification a day saying which circuit and conditions the Daily Quali has, and it skips any day you've already played. You can change the hour or turn it off in the menu.",

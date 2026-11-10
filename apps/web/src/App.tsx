@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useState, useRef } from "react";
+import { ChallengeBanner } from "./ui/ChallengeBanner";
 import { GAME_PAGES, type GameId, type GamePage, type InfoPage, PAGES, game } from "./games/registry";
 import { type ContentPage, contentMeta, contentPath, parseContent } from "./content/meta";
 import { flushSync } from "react-dom";
@@ -316,6 +317,7 @@ export function App() {
         </aside>
       )}
       <main className="relative min-h-0 [view-transition-name:stage]">
+        <ChallengeBanner screen={screen.kind} />
         <Suspense fallback={screen.kind === "play" ? <Loading trackId={screen.trackId} error={null} /> : null}>
         {screen.kind === "hub" ? (
           <Hub onAction={act} />

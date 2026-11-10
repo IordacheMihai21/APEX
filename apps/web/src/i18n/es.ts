@@ -1090,4 +1090,9 @@ export const ES: Record<string, string> = {
   "On iPhone and iPad, add Lapdle to your Home Screen first, then turn the reminder on in the app.": "En iPhone y iPad, primero añade Lapdle a tu pantalla de inicio y luego activa el recordatorio en la app.",
   "Remind me every day at {time}": "Avísame cada día a las {time}",
   "Turn off": "Desactivar",
+  // challenge a friend (games/scoreChallenge.ts)
+  "Challenge a friend": "Reta a un amigo",
+  "I got {value} on {game}. Can you beat it?": "He sacado {value} en {game}. ¿Me superas?",
+  "Your friend got {value}.": "Tu amigo sacó {value}.",
+  "A friend got {value} on today's {game}. Can you beat it?": "Un amigo sacó {value} en el {game} de hoy. ¿Lo superas?",
 };
