@@ -34,6 +34,16 @@ import { shareLink } from "./shareLink";
 
 // the 3D view of a corner (three.js and the corner's surroundings) loads only when it is opened
 const Corner3D = lazy(() => import("./ui/Corner3D"));
+/** The 3D view is hidden until it ships: on in development, or with ?3d=1 (remembered on this device). */
+const SHOW_3D = (() => {
+  if (import.meta.env.DEV) return true;
+  try {
+    if (new URLSearchParams(location.search).get("3d") === "1") localStorage.setItem("lapdle.3d", "1");
+    return localStorage.getItem("lapdle.3d") === "1";
+  } catch {
+    return false;
+  }
+})();
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 
@@ -405,7 +415,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
   const [fine, setFine] = useFineTune();
   const [view3d, setView3d] = useState(false);
   const cx = game.controls.complexes[s.complex];
-  const open3d = (
+  const open3d = SHOW_3D && (
     <button className={secondaryBtn} onClick={() => setView3d(true)} title={t("See this corner and your line in 3D")}>
       {t("3D view")}
     </button>
