@@ -7,6 +7,13 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-11",
+    title: "See your line in 3D",
+    body: [
+      "While you set your line in the Daily Quali, Free Practice and the Perfect Season, the new 3D view shows the corner you're working on in 3D, with your line painted on the road and the perfect line beside it, and the car driving your line at the speed it would carry. Pick Early apex, Classic or Late apex there and watch the difference, then move on to the next corner.",
+    ],
+  },
+  {
+    date: "2026-11-11",
     title: "Every Daily Quali lap counts on the road to 1,000",
     body: [
       "Your first Daily Quali lap of the day now counts you on the road to 1,000 and as a Grand Prix in the monthly Championship, even if you don't use all six laps. Finishing any other daily game counts as before.",

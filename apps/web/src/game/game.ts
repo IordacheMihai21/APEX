@@ -29,6 +29,8 @@ import { C, lossColor } from "./palette";
 import { type PersonalBest, loadPB, loadSectorBests, logEvent, savePB, saveSectorBests } from "./storage";
 import { type Grade, type GroupGrade, gradeFor } from "../modes/grading";
 import { type DriveState, driveState } from "./drive";
+import { stretchOf } from "./stretch";
+import type { CornerData } from "../modes/makeCorner";
 
 export type Phase = "setup" | "lights" | "race" | "result";
 export type Mode = "daily" | "season" | "practice" | "corner";
@@ -1038,6 +1040,23 @@ export class Game {
   /** The line as it stands (after a race: the line just raced), for "Beat my lap" links. */
   currentKnots(): number[] {
     return this.z.slice();
+  }
+
+  /**
+   * The selected corner group driven on the current line, as a 3D stretch (the 3D view of the setup screen): the
+   * player's line from the run-up to the exit, with the speeds the physics gives it, plus the perfect line through
+   * the same group for comparison. Null when the line can't be driven.
+   */
+  cornerStretch(): { mine: CornerData; perfect: CornerData | null } | null {
+    const cx = this.controls.complexes[this.sel.complex];
+    if (!cx) return null;
+    const sim = simulateLap({ track: this.pt, line: { knotOffsets: this.z }, car: this.car });
+    if (!sim.valid) return null;
+    const group = { corners: cx.corners, direction: cx.direction, index: cx.id, name: cx.name };
+    const mine = stretchOf(this.track, this.pt, group, sim.samples);
+    if (!mine) return null;
+    const ref = stretchOf(this.track, this.pt, group, this.reference.samples);
+    return { mine, perfect: ref };
   }
 
   /** Back to setup, at the group containing `cornerName`, or the worst one from the last run. */

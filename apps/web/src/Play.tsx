@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { tomorrowQuali } from "./games/tomorrow";
 import { t, tn } from "./i18n";
 import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
@@ -30,6 +31,9 @@ import { submitDailyLine } from "./online";
 import { roadPlayed } from "./community";
 import { CORNER_MEDAL_MS, type CornerWeek, cornerMedal, cornerShare, daysLeft, loadCornerWeek, recordCornerRun, weekNumber, weeklyCorner } from "./modes/corner";
 import { shareLink } from "./shareLink";
+
+// the 3D view of a corner (three.js and the corner's surroundings) loads only when it is opened
+const Corner3D = lazy(() => import("./ui/Corner3D"));
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 
@@ -399,7 +403,21 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
   const phone = usePhone();
   const ref = useInset(game, "bottom");
   const [fine, setFine] = useFineTune();
+  const [view3d, setView3d] = useState(false);
   const cx = game.controls.complexes[s.complex];
+  const open3d = (
+    <button className={secondaryBtn} onClick={() => setView3d(true)} title={t("See this corner and your line in 3D")}>
+      {t("3D view")}
+    </button>
+  );
+  const overlay3d =
+    view3d &&
+    createPortal(
+      <Suspense fallback={<div className="fixed inset-0 z-30 grid place-items-center bg-night text-[15px] text-steel">{t("Loading the corner in 3D…")}</div>}>
+        <Corner3D game={game} onClose={() => setView3d(false)} />
+      </Suspense>,
+      document.body,
+    );
   const inside = cx.direction === "mixed" ? null : cx.direction;
   const gate = cx.gates[s.gate];
   const last = s.complex === game.controls.complexes.length - 1;
@@ -528,6 +546,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
           <button className={secondaryBtn} onClick={() => setFine(!fine)} aria-expanded={fine}>
             {fine ? t("Done") : t("Fine-tune")}
           </button>
+          {open3d}
           {s.pbMs !== null && s.mode === "practice" && (
             <button className={secondaryBtn} onClick={() => game.loadBest()}>
               {t("Best line")}
@@ -548,6 +567,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
           <button className={secondaryBtn} onClick={() => setFine(!fine)} aria-expanded={fine}>
             {fine ? t("Done") : t("Fine-tune")}
           </button>
+          {open3d}
           {s.pbMs !== null && s.mode === "practice" && (
             <button className={secondaryBtn} onClick={() => game.loadBest()}>
               {t("Best line")}
@@ -578,6 +598,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
         {challengeLine}
         {styleBlock}
         {actionRowPhone}
+        {overlay3d}
       </DragSheet>
     );
 
@@ -588,6 +609,7 @@ function ControlBar({ s, game, coach }: { s: Snapshot; game: Game; coach: Return
       {challengeLine}
       {styleBlock}
       {actionRow}
+      {overlay3d}
     </>
   );
 

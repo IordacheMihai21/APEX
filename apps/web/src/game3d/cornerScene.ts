@@ -3,7 +3,7 @@ import type { Condition } from "@apex/engine";
 import type { CornerData } from "../modes/makeCorner";
 import { CATALOG, loadScenery, loadTrack } from "../game/catalog";
 import { buildCar } from "./car";
-import { groundAt, setGround, toWorld } from "./geometry";
+import { groundAt, setGround, strip, toWorld } from "./geometry";
 import { type Terrain, groundOf, loadTerrain } from "./terrain";
 import { type SkylineData, buildSkyline, loadSkyline } from "./skyline";
 import { buildTrackside } from "./trackside";
@@ -508,7 +508,43 @@ export class CornerScene {
     else this.renderer.render(this.scene, this.camera);
   }
 
+  private lines: THREE.Mesh[] = [];
+
+  /**
+   * Paint lines on the road (the Daily Quali's 3D view): the player's line, and the perfect line under it. Points are
+   * in this scene's metres (origin at the stretch's apex); each call replaces the last lines.
+   */
+  setLines(lines: { x: number[]; y: number[]; color: string; width: number; opacity?: number }[]) {
+    for (const m of this.lines) {
+      this.scene.remove(m);
+      m.geometry.dispose();
+      (m.material as THREE.Material).dispose();
+    }
+    this.lines = lines.map((l, order) => {
+      const stations = l.x.map((x, i) => {
+        const j = Math.min(l.x.length - 1, i + 1);
+        const k = Math.max(0, i - 1);
+        const dx = l.x[j] - l.x[k];
+        const dy = l.y[j] - l.y[k];
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = (-dy / len) * (l.width / 2);
+        const ny = (dx / len) * (l.width / 2);
+        const h = 0.05 + order * 0.01;
+        return { a: [x + nx, l.y[i] + ny, h] as [number, number, number], b: [x - nx, l.y[i] - ny, h] as [number, number, number], v: i };
+      });
+      const mat = new THREE.MeshBasicMaterial({ color: l.color, transparent: true, opacity: l.opacity ?? 0.9, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 - order, toneMapped: false });
+      const mesh = new THREE.Mesh(strip(stations), mat);
+      mesh.renderOrder = 2 + order;
+      this.scene.add(mesh);
+      return mesh;
+    });
+  }
+
   dispose() {
+    for (const m of this.lines) {
+      m.geometry.dispose();
+      (m.material as THREE.Material).dispose();
+    }
     this.composer?.dispose();
     for (const d of this.disposables) d.dispose();
     this.renderer.dispose();
