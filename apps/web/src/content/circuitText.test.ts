@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CIRCUITS } from "../modes/circuits";
+import { GUIDE_CIRCUITS as CIRCUITS } from "../modes/circuits";
 import STATS from "../game/circuitStats.json";
 import { CIRCUIT_MORE, CIRCUIT_TEXT } from "./circuitText";
 import { contentMeta, contentPath, parseContent } from "./meta";

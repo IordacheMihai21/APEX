@@ -1,6 +1,6 @@
 import { GAMES, type GameId, game } from "../games/registry";
 import { t } from "../i18n";
-import { CIRCUITS, circuit, circuitBySlug, circuitSlug } from "../modes/circuits";
+import { GUIDE_CIRCUITS, circuit, circuitBySlug, circuitSlug, factsOf, guideBySlug } from "../modes/circuits";
 import { CIRCUIT_TEXT } from "./circuitText";
 import { quiz } from "./quiz";
 import { article } from "./articles";
@@ -18,7 +18,7 @@ export function parseContent(path: string): ContentPage | null {
   if (m && GAMES.some((g) => g.id === m[1])) return { page: "howto", game: m[1] as GameId };
   if (p === "circuits") return { page: "circuits" };
   const c = /^circuits\/([a-z-]+)$/.exec(p);
-  const found = c && circuitBySlug(c[1]);
+  const found = c && guideBySlug(c[1]);
   if (found) return { page: "circuits", id: found.id };
   if (p === "learn") return { page: "learn" };
   const l = /^learn\/([a-z-]+)$/.exec(p);
@@ -92,10 +92,10 @@ export function contentMeta(c: ContentPage): { title: string; description: strin
   if (c.page === "circuits") {
     if (!c.id)
       return {
-        title: "Circuit guides: twelve real circuits to master | Lapdle",
-        description: clip(`Guides to the twelve real circuits in Lapdle: ${CIRCUITS.map((x) => x.name).join(", ")}. Facts, famous corners, the perfect lap and how to drive each one.`),
+        title: "Circuit guides: thirteen real circuits to master | Lapdle",
+        description: clip(`Guides to the real circuits in Lapdle: ${GUIDE_CIRCUITS.map((x) => x.name).join(", ")}. Facts, the perfect lap and how to drive each one.`),
       };
-    const x = circuit(c.id);
+    const x = factsOf(c.id)!;
     return { title: `${x.name} circuit guide: facts, corners and the perfect lap | Lapdle`, description: clip(CIRCUIT_TEXT[x.id].character) };
   }
   if (!c.game)

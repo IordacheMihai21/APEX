@@ -1,6 +1,6 @@
 import STATS from "../game/circuitStats.json";
 import { OUTLINES } from "../game/outlines";
-import { CIRCUITS, circuit, circuitSlug } from "../modes/circuits";
+import { CIRCUITS, GUIDE_CIRCUITS, circuitSlug, factsOf } from "../modes/circuits";
 import { WEEKLY_CORNERS } from "../modes/corner";
 import { cornerSlug } from "./cornerText";
 import { AdSlot } from "../ui/Ads";
@@ -42,12 +42,12 @@ export function CircuitsIndex() {
         <p className="caption">Lapdle</p>
         <h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">Circuit guides</h1>
         <p className="mt-4 text-[16px] leading-relaxed text-paint/85">
-          Twelve real circuits, traced from map data and raced in Lapdle every day. Each guide covers the circuit's facts and famous corners, how to drive it, and the perfect lap to chase in the dry, the wet and with
+          Thirteen real circuits, traced from map data and raced in Lapdle: twelve every day, and Las Vegas in its race week. Each guide covers the circuit's facts and famous corners, how to drive it, and the perfect lap to chase in the dry, the wet and with
           low downforce.
         </p>
       </header>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {CIRCUITS.map((c) => (
+        {GUIDE_CIRCUITS.map((c) => (
           <li key={c.id}>
             <a href={`/circuits/${circuitSlug(c.id)}`} className="track-tile flex h-full flex-col border border-line bg-board/70 p-3">
               <Outline id={c.id} className="aspect-square w-full" />
@@ -69,17 +69,17 @@ const secs = (ms: number) => (Math.abs(ms) / 1000).toFixed(1);
 
 /** The perfect lap in numbers, in words: speeds and shares from game/circuitStats.json, times from the outlines. */
 function lapInNumbers(id: string): string[] {
-  const c = circuit(id);
+  const c = factsOf(id)!;
   const o = OUTLINES[id];
   const { dry, wet, lowdf } = LAP_STATS[id];
-  const braking = CIRCUITS.map((x) => LAP_STATS[x.id].dry.brakePct);
+  const braking = GUIDE_CIRCUITS.map((x) => LAP_STATS[x.id].dry.brakePct);
   const rank = dry.brakePct >= Math.max(...braking) ? ", more than on any other circuit in Lapdle" : dry.brakePct <= Math.min(...braking) ? ", less than on any other circuit in Lapdle" : "";
   const out = [
     `On Lapdle's perfect dry lap the car reaches ${dry.maxKmh} km/h at its fastest and slows to ${dry.minKmh} km/h at the slowest point of the lap. It spends about ${dry.accelPct}% of the lap accelerating and ${dry.brakePct}% braking${rank}.`,
   ];
   if (c.poleMs) {
     const d = o.lapMs - c.poleMs;
-    out.push(`The perfect lap, ${lapTime(o.lapMs)}, is ${secs(d)} s ${d < 0 ? "faster" : "slower"} than the real pole lap of 2025. The model drives one simplified car on every circuit, so the two are close but not the same.`);
+    out.push(`The perfect lap, ${lapTime(o.lapMs)}, is ${secs(d)} s ${d < 0 ? "faster" : "slower"} than the real pole lap of ${c.poleYear ?? 2025}. The model drives one simplified car on every circuit, so the two are close but not the same.`);
   }
   const { gold, silver, bronze } = o.medals;
   out.push(
@@ -106,12 +106,13 @@ const CONDITIONS = [
 ] as const;
 
 export function CircuitGuide({ id }: { id: string }) {
-  const c = circuit(id);
+  const c = factsOf(id)!;
   const o = OUTLINES[id];
   const text = CIRCUIT_TEXT[id];
   const more = CIRCUIT_MORE[id];
   const corners = WEEKLY_CORNERS.filter((w) => w.trackId === id);
-  const others = CIRCUITS.filter((x) => x.id !== id);
+  const others = GUIDE_CIRCUITS.filter((x) => x.id !== id);
+  const hasQuiz = CIRCUITS.some((x) => x.id === id);
   const facts: [string, string][] = [
     ["Country", `${c.flag} ${c.country}`],
     ["Lap length", `${c.lengthKm.toFixed(3)} km`],
@@ -119,7 +120,7 @@ export function CircuitGuide({ id }: { id: string }) {
     ["First Grand Prix", String(c.firstGp)],
     ["Race distance", `${c.laps} laps, ${(c.laps * c.lengthKm).toFixed(1)} km`],
   ];
-  if (c.poleMs) facts.push(["Pole lap, 2025", lapTime(c.poleMs)]);
+  if (c.poleMs) facts.push([`Pole lap, ${c.poleYear ?? 2025}`, lapTime(c.poleMs)]);
 
   return (
     <Page>
@@ -231,6 +232,7 @@ export function CircuitGuide({ id }: { id: string }) {
         <p className="mt-3 text-[14px] text-steel">Free practice at {c.name}: unlimited laps, and the perfect line on demand. Pick a condition above to drive it in the wet or with low downforce.</p>
       </div>
 
+      {hasQuiz && (
       <Section title={`${c.name} quiz`}>
         <p>
           Know it by heart?{" "}
@@ -240,6 +242,7 @@ export function CircuitGuide({ id }: { id: string }) {
           : a few quick questions on the circuit.
         </p>
       </Section>
+      )}
 
       <Section title="More circuits">
         <ul className="flex flex-wrap gap-x-5 gap-y-2">

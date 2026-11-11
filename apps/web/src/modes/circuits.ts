@@ -26,6 +26,8 @@ export interface CircuitFacts {
   firstGp: number;
   laps: number;
   poleMs: number | null;
+  /** the season of the pole lap in poleMs, when it isn't the latest (2025) */
+  poleYear?: number;
 }
 
 const FACTS: Record<string, Omit<CircuitFacts, "id" | "name" | "country" | "flag" | "poleMs">> = {
@@ -61,7 +63,7 @@ export const circuit = (id: string) => CIRCUITS.find((c) => c.id === id)!;
  * (6.201 km, 17 corners, 50 laps, first Grand Prix 2023); pole is the 2024 lap (2025 qualifying was wet).
  */
 export const EVENT_FACTS: Record<string, CircuitFacts> = {
-  "las-vegas": { id: "las-vegas", name: "Las Vegas", country: "United States", flag: "🇺🇸", poleMs: 92_312, continent: "North America", lengthKm: 6.201, turns: 17, firstGp: 2023, laps: 50 },
+  "las-vegas": { id: "las-vegas", name: "Las Vegas", country: "United States", flag: "🇺🇸", poleMs: 92_312, poleYear: 2024, continent: "North America", lengthKm: 6.201, turns: 17, firstGp: 2023, laps: 50 },
 };
 /** The official figures for any circuit in the game, race-week ones included (undefined for the test circuit). */
 export const factsOf = (id: string): CircuitFacts | undefined => CIRCUITS.find((c) => c.id === id) ?? EVENT_FACTS[id];
@@ -69,6 +71,10 @@ export const factsOf = (id: string): CircuitFacts | undefined => CIRCUITS.find((
 /** A circuit's public address segment (/circuits/<slug>): the venue's place name where the internal id carries a sponsor's. */
 export const circuitSlug = (id: string) => (id === "red-bull-ring" ? "spielberg" : id);
 export const circuitBySlug = (slug: string) => CIRCUITS.find((c) => circuitSlug(c.id) === slug);
+
+/** Circuits with a guide page (/circuits/<slug>): the twelve, then the race-week ones. Only the guides use this list. */
+export const GUIDE_CIRCUITS: CircuitFacts[] = [...CIRCUITS, ...Object.values(EVENT_FACTS)];
+export const guideBySlug = (slug: string) => GUIDE_CIRCUITS.find((c) => circuitSlug(c.id) === slug);
 
 /** A small seeded generator (mulberry32), so a day's puzzle is the same for everyone. */
 export function seeded(seed: number): () => number {

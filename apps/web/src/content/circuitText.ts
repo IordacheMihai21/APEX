@@ -77,6 +77,12 @@ export const CIRCUIT_TEXT: Record<string, { character: string; drive: string }> 
     drive:
       "Several chicanes punish too much kerb: take enough to straighten the car, but not so much that it unsettles the exit. Tamburello sets the pace for the run along the river.",
   },
+  "las-vegas": {
+    character:
+      "Las Vegas is a night street circuit laid out on the roads around the Strip, with a permanent pit building on the east side of the city. It is long, fast and flat, and its defining feature is a run of nearly two kilometres flat out along Las Vegas Boulevard, past the resorts and casinos.",
+    drive:
+      "Most of the lap is straights, so the exits decide it: the slow corners before the long runs are worth more than any fast corner. Brake in a straight line, turn the car early and get on the throttle as soon as it points down the road. The walls are close, so a line that clips the apex by a little too much costs more than it gains.",
+  },
 };
 
 /**
@@ -204,5 +210,15 @@ export const CIRCUIT_MORE: Record<string, { lap: string[]; history: string }> =
       ],
       history:
         "Imola, officially the Autodromo Internazionale Enzo e Dino Ferrari, opened in the 1950s near the town of Imola in northern Italy. It was built on public land beside the Santerno river, and its first races were for motorcycles. It held its first world championship Grand Prix in 1980 and was the home of the San Marino Grand Prix for many years. Several fast corners were turned into chicanes in the 1990s for safety. It is one of the few circuits that run anti-clockwise, and is known for its changes of elevation, kerbs and narrow track. The circuit runs through a public park beside the town, and parts of it are open to walkers and cyclists outside race weekends. Its narrow, old-fashioned layout makes it a favourite of drivers, who see it as a real test of precision.",
+    },
+    "las-vegas": {
+      lap: [
+        "The lap starts on the straight beside the pit building and ends in the first corner, a slow left-hander reached under heavy braking. The first few corners are tight and close together, a short street section where the car changes direction at low speed before the track opens up.",
+        "From there the lap heads north on long, wide roads, with quick bends that are taken flat or nearly flat with low downforce. The track passes the Sphere and swings around the resorts at the north end of the lap through a series of slower, tighter corners. These are the corners that set up the most important part of the circuit.",
+        "Then comes the Strip itself: the track turns onto Las Vegas Boulevard and runs south for nearly two kilometres at full throttle, past the hotels and fountains, with the car at its top speed for longer than almost anywhere else in racing. At the end of the boulevard a slow, tight section brings the speed right down before the track turns back towards the pit straight.",
+        "Where is the time at Las Vegas? In the exits of the slow corners. With so much of the lap spent at full throttle, a small gain in speed out of the corner before the boulevard is carried all the way down it, and the same is true of the corners onto the back straight and the pit straight. The low grip of a street surface on a cold desert night makes the braking zones harder than they look: the tyres take time to come up to temperature, and a lock-up into a slow corner costs time on the straight that follows.",
+      ],
+      history:
+        "Grand Prix racing first came to Las Vegas in 1981 and 1982, on a temporary track laid out in the car park of Caesars Palace. The racing on the Strip itself began in 2023, when the current circuit was built on the roads around it, with a permanent pit and paddock building on land east of the boulevard. The race is held at night, on a Saturday in November, and most of the track uses public roads that are open to traffic for the rest of the year. The cold of a desert night in November gives it some of the lowest track temperatures of the season, and its long straights make it one of the fastest street circuits ever raced. Its first weekend was interrupted in practice when a loose drain cover on the boulevard damaged a car, and the covers along the track were checked before running resumed.",
     },
   };

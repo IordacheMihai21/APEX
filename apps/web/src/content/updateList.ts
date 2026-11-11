@@ -7,6 +7,14 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-11",
+    title: "A circuit guide for Las Vegas",
+    body: [
+      "Las Vegas has its own guide, like the other twelve circuits: the facts, a lap of the circuit from the first corner to the run down the Strip, how to drive it in Lapdle, the perfect lap in numbers and the history of Grand Prix racing in the city.",
+    ],
+    links: [["Las Vegas guide", "/circuits/las-vegas"]],
+  },
+  {
+    date: "2026-11-11",
     title: "Your racing name and the monthly Championship",
     body: [
       "After your first daily game, Lapdle now asks what to call you, with a racing name filled in that you can keep or change. It's optional: skip it and nothing changes. The same name shows on the Daily Quali board and in the menu, where you can change it any time.",
