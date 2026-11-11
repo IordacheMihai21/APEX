@@ -5,8 +5,9 @@ import { playStreak } from "../games/profile";
 import { GAMES, type GameId, todayProgress } from "../games/registry";
 import { msToNextDay } from "../modes/daily";
 import { shared } from "../games/events";
+import { track } from "../analytics";
 import { ChevronRight, Share, Swords } from "./icons";
-import { ShareDayButton, shareOrCopy } from "./ShareDay";
+import { ShareDayButton, canSharePicture, sharePicture, shareOrCopy } from "./ShareDay";
 import { primaryBtn, secondaryBtn } from "./styles";
 import { ReminderOffer } from "./Reminder";
 import { challengeFor, challengeMessage } from "../games/scoreChallenge";
@@ -59,6 +60,7 @@ export function FinishCard({
   const [left, setLeft] = useState(msToNextDay);
   const [copied, setCopied] = useState(false);
   const [dared, setDared] = useState(false);
+  const [pictured, setPictured] = useState(false);
   const close = useRef<HTMLButtonElement>(null);
   // what the share will say, shown before it is sent (the link line left out)
   const preview = shareText.replace(/\n?https?:\/\/\S+\s*$/, "");
@@ -98,7 +100,7 @@ export function FinishCard({
 
   const share = async () => {
     shared(game);
-    if (await shareOrCopy(shareText, card?.blob)) {
+    if (await shareOrCopy(shareText)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     }
@@ -109,9 +111,18 @@ export function FinishCard({
   const dare = async () => {
     if (!route) return;
     shared(`challenge-${game}`);
-    if (await shareOrCopy(challengeMessage(game, route, eyebrow, value), card?.blob)) {
+    if (await shareOrCopy(challengeMessage(game, route, eyebrow, value))) {
       setDared(true);
       setTimeout(() => setDared(false), 1800);
+    }
+  };
+  // the card as a picture, for stories: the text is copied too, so the link can be pasted where the app drops it
+  const picture = async () => {
+    if (!card) return;
+    shared(`picture-${game}`);
+    if (await sharePicture(shareText, card.blob)) {
+      setPictured(true);
+      setTimeout(() => setPictured(false), 4000);
     }
   };
   // read when the card opens: the game that just finished has already saved its result
@@ -122,6 +133,12 @@ export function FinishCard({
   const next = GAMES.filter((g) => g.id !== game)
     .map((g) => ({ g, left: g.inDailySet && !doneToday.has(g.id), done: g.inDailySet && doneToday.has(g.id) }))
     .sort((a, b) => Number(b.left) - Number(a.left));
+  // the next of today's games, offered right under Share: one tap from one game to the next
+  const upNext = next.find((n) => n.left)?.g ?? null;
+  const playNext = (id: GameId, from: "button" | "list") => {
+    track("Play next", { from: game, to: id, place: from });
+    go(id);
+  };
 
   const titleTone = tone === "win" ? "text-green" : tone === "loss" ? "text-paint" : "text-paint";
   return (
@@ -167,7 +184,17 @@ export function FinishCard({
 
         {/* what Share sends: the picture where it could be drawn, else the text */}
         {card ? (
-          <img src={card.url} alt={preview} className="mx-auto mt-4 aspect-[4/5] w-full max-w-[260px] border border-line" />
+          <>
+            <img src={card.url} alt={preview} className="mx-auto mt-4 aspect-[4/5] w-full max-w-[260px] border border-line" />
+            {canSharePicture() && (
+              <p className="mt-1.5 text-center text-[13px] text-steel">
+                <button className="underline decoration-steel/50 underline-offset-2 hover:text-paint" onClick={picture}>
+                  {t("Share the picture")}
+                </button>
+                {pictured && <span className="block">{t("Your result is copied too: paste it under the picture for the link.")}</span>}
+              </p>
+            )}
+          </>
         ) : (
           <p className="mt-4 border border-line bg-night/60 px-3 py-2.5 text-[13px] leading-snug whitespace-pre-line text-paint/85" aria-label={t("Your result to share")}>
             {preview}
@@ -184,6 +211,12 @@ export function FinishCard({
             </button>
           )}
         </div>
+        {upNext && (
+          <button className={`${secondaryBtn} mt-2.5 w-full justify-between border-ink/60`} onClick={() => playNext(upNext.id, "button")}>
+            <span className="min-w-0 truncate">{t("Next: {game}", { game: upNext.name })}</span>
+            <ChevronRight className="h-4 w-4 shrink-0" />
+          </button>
+        )}
         {daily && route && (
           <button className={`${secondaryBtn} mt-2.5 w-full`} onClick={dare}>
             <Swords className="h-4 w-4" />
@@ -232,7 +265,7 @@ export function FinishCard({
         <ul className="mt-2 divide-y divide-line border-y border-line">
           {next.map(({ g, left, done }) => (
             <li key={g.id}>
-              <button className="group flex w-full items-center gap-3 py-2.5 text-left" onClick={() => go(g.id)}>
+              <button className="group flex w-full items-center gap-3 py-2.5 text-left" onClick={() => playNext(g.id, "list")}>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2 text-[15px] font-semibold text-paint">
                     {g.name}

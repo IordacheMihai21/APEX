@@ -12,6 +12,7 @@ import { challengeUrl } from "./modes/challenge";
 import { Share } from "./ui/icons";
 import { primaryBtn, secondaryBtn } from "./ui/styles";
 import { shared } from "./games/events";
+import { canSharePicture, sharePicture, shareOrCopy } from "./ui/ShareDay";
 import { cachedStanding, refreshStanding, standingLine, useStanding } from "./online";
 import { lapTime } from "./ui/format";
 
@@ -38,27 +39,41 @@ export function ShareButton({
   variant?: "primary" | "secondary";
 }) {
   const [done, setDone] = useState(false);
+  // text only: it carries the link everywhere (a picture sent with it makes many apps drop the text); `image` is for
+  // the picture button next to the card (SharePictureButton)
+  void image;
   const share = async () => {
     shared(label === t("Challenge") ? "challenge" : "daily");
-    try {
-      if (image && navigator.canShare) {
-        const file = new File([await image()], "apex-daily.png", { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) return await navigator.share({ files: [file], text });
-      }
-      if (navigator.share) await navigator.share({ text });
-      else {
-        await navigator.clipboard.writeText(text);
-        setDone(true);
-        setTimeout(() => setDone(false), 1800);
-      }
-    } catch {
-      /* share sheet dismissed */
+    if (await shareOrCopy(text)) {
+      setDone(true);
+      setTimeout(() => setDone(false), 1800);
     }
   };
   return (
     <button className={variant === "primary" ? `${primaryBtn} flex-1` : secondaryBtn} onClick={share}>
       <Share className="h-4 w-4" /> {done ? t("Copied") : label}
     </button>
+  );
+}
+
+/** The day's card as a picture, for stories (where the device can share files); the text is copied for the link. */
+export function SharePictureButton({ text, blob }: { text: string; blob: Blob | null }) {
+  const [pictured, setPictured] = useState(false);
+  if (!blob || !canSharePicture()) return null;
+  const picture = async () => {
+    shared("picture-daily");
+    if (await sharePicture(text, blob, "lapdle-daily.png")) {
+      setPictured(true);
+      setTimeout(() => setPictured(false), 4000);
+    }
+  };
+  return (
+    <p className="mt-1.5 text-center text-[13px] text-steel">
+      <button className="underline decoration-steel/50 underline-offset-2 hover:text-paint" onClick={picture}>
+        {t("Share the picture")}
+      </button>
+      {pictured && <span className="block">{t("Your result is copied too: paste it under the picture for the link.")}</span>}
+    </p>
   );
 }
 
@@ -112,6 +127,7 @@ export function DailySummary({ onClose, onWatch }: { onClose: () => void; onWatc
   const countdown = useCountdown();
   const share = dailyShare(daily);
   const [card, setCard] = useState<string | null>(null);
+  const [blob, setBlob] = useState<Blob | null>(null);
   useEffect(() => {
     let url: string | null = null;
     let live = true;
@@ -119,6 +135,7 @@ export function DailySummary({ onClose, onWatch }: { onClose: () => void; onWatc
       if (!live) return;
       url = URL.createObjectURL(b);
       setCard(url);
+      setBlob(b);
     });
     return () => {
       live = false;
@@ -144,6 +161,7 @@ export function DailySummary({ onClose, onWatch }: { onClose: () => void; onWatc
         <div className="mt-4 aspect-[4/5] w-full border border-line bg-night">
           {card ? <img src={card} alt={t("Share card: {result} at {circuit}", { result: dayHeadline(daily), circuit: info.name })} className="card-in h-full w-full" /> : <div className="skeleton h-full w-full" aria-hidden="true" />}
         </div>
+        <SharePictureButton text={share.text} blob={blob} />
         <div className="mt-3 flex flex-wrap gap-2">
           <ShareButton text={share.text} image={share.image} />
           {card && (

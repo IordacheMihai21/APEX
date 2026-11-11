@@ -746,6 +746,8 @@ export const ES: Record<string, string> = {
   "Share": "Compartir",
   "Share card: {result} at {circuit}": "Tarjeta para compartir: {result} en {circuit}",
   "Share result": "Compartir resultado",
+  "Share the picture": "Compartir la imagen",
+  "Your result is copied too: paste it under the picture for the link.": "Tu resultado también está copiado: pégalo bajo la imagen para que lleve el enlace.",
   "Share your day": "Comparte tu día",
   "Sharp calls": "Muy fino",
   "Sharp eye": "Buen ojo",

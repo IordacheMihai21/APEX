@@ -8,25 +8,50 @@ import { secondaryBtn } from "./styles";
 
 /**
  * The phone's share sheet where there is one, else the clipboard. True when copied (to say so).
- * With a picture, and a phone that can share files, the picture goes with the text.
+ * The result goes as text: the grid and the link arrive together everywhere, and chat apps draw the link's preview.
+ * (Sent with a picture, many apps keep the picture and drop the text, and the link with it: see sharePicture.)
  */
-export async function shareOrCopy(text: string, image?: Blob | null): Promise<boolean> {
-  try {
-    if (image && navigator.canShare) {
-      const file = new File([image], "lapdle.png", { type: "image/png" });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], text });
-        return false;
-      }
-    }
-    if (navigator.share) {
+export async function shareOrCopy(text: string): Promise<boolean> {
+  if (navigator.share) {
+    try {
       await navigator.share({ text });
       return false;
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return false; // share sheet dismissed
+      // no share sheet after all (a desktop browser without a share target): copy instead
     }
+  }
+  try {
     await navigator.clipboard.writeText(text);
     return true;
   } catch {
-    return false; // share sheet dismissed
+    return false;
+  }
+}
+
+/** Whether this device can share a picture (a phone's share sheet with files). */
+export function canSharePicture(): boolean {
+  try {
+    return typeof navigator !== "undefined" && !!navigator.canShare && navigator.canShare({ files: [new File([new Uint8Array(1)], "x.png", { type: "image/png" })] });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The result card as a picture, for stories and feeds. The text goes with it where the app keeps it, and is copied
+ * first, so the link can be pasted where the app drops it. True when the picture was handed to the share sheet.
+ */
+export async function sharePicture(text: string, image: Blob, name = "lapdle.png"): Promise<boolean> {
+  // not awaited: the share sheet must open within the same tap (iOS drops it after an await)
+  navigator.clipboard?.writeText(text).catch(() => {});
+  try {
+    const file = new File([image], name, { type: "image/png" });
+    if (!navigator.canShare?.({ files: [file] })) return false;
+    await navigator.share({ files: [file], text });
+    return true;
+  } catch {
+    return false;
   }
 }
 
