@@ -95,7 +95,7 @@ export function Privacy() {
             </p>
             <p>
               If you add a nickname to the board, it is stored with your device number and shown to everyone next to your best lap of the day and your position. It is optional, you can change or remove it from the
-              board at any time, and it is deleted 30 days after you last finish a daily game. When you finish any daily game, the app also sends the date with your device number once a day, so the home page can show how many
+              board at any time, and it is deleted 30 days after you last finish a daily game. When you play a daily game (a Daily Quali lap, or any other daily game finished), the app also sends the date with your device number once a day, so the home page can show how many
               people played today and, for players with a nickname, how many days they played this month in the Championship (these dates are kept 400 days). Links you share carry a random invite code made on your device (not your device number); when a friend who has never played before opens one and finishes a daily
               game, their device number is stored against that code, so the code's owner can unlock colours. Only the count is ever shown, never who the friends are; these entries are kept 180 days.
             </p>

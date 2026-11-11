@@ -33,7 +33,7 @@ export function Championship() {
           <h2 id="champ-h" className="wide text-[26px] leading-none text-paint">
             {t("Championship")} <span className="text-steel capitalize">{month}</span>
           </h2>
-          <p className="text-[13px] text-steel">{t("A Grand Prix is a day you finish a daily game. Resets on the 1st.")}</p>
+          <p className="text-[13px] text-steel">{t("A Grand Prix is a day you play a daily game. Resets on the 1st.")}</p>
         </div>
         <div className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)]">
           {rows && rows.length > 0 ? (

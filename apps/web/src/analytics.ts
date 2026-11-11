@@ -1,11 +1,13 @@
 /**
- * Umami analytics: cookieless, no IP addresses in the statistics, live site only.
+ * Umami analytics: cookieless, no IP addresses in the statistics, live site only. The script and its data go
+ * through lapdle.com/lp/ (rewrites in vercel.json: the script from cloud.umami.is, the data to gateway.umami.is), so blockers that drop third-party
+ * analytics hosts don't hide those visits.
  * The app has its own addresses but changes them with replaceState, so page
  * views are sent by hand whenever the screen changes. The website id is public:
  * it sits in the script tag of every page.
  */
 const WEBSITE_ID = "d1a94723-d0b7-47ec-bbaf-fa6abdd7abf3";
-const SRC = "https://cloud.umami.is/script.js";
+const SRC = "/lp/script.js";
 const HOST = "lapdle.com";
 
 type Payload = Record<string, unknown>;
@@ -32,6 +34,7 @@ export function initAnalytics() {
   s.src = SRC;
   s.async = true;
   s.dataset.websiteId = WEBSITE_ID;
+  s.dataset.hostUrl = `${location.origin}/lp`;
   s.dataset.autoPageview = "false";
   s.onload = () => waiting.splice(0).forEach((call) => call());
   document.head.appendChild(s);

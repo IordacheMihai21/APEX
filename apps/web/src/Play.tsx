@@ -27,6 +27,7 @@ import { ChevronDown, ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, U
 import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 import { Loading, ShareButton, StandingLine, boardOf, dailyShare, dayHeadline, useCountdown } from "./Dialogs";
 import { submitDailyLine } from "./online";
+import { roadPlayed } from "./community";
 import { CORNER_MEDAL_MS, type CornerWeek, cornerMedal, cornerShare, daysLeft, loadCornerWeek, recordCornerRun, weekNumber, weeklyCorner } from "./modes/corner";
 import { shareLink } from "./shareLink";
 
@@ -83,6 +84,8 @@ export function Play({
             const next = recordLap(before, { lapTimeMs: lap.lapTimeMs, grades: lap.grades }, lap.knots);
             const qmode = day ? "archive" : "daily";
             if (before.laps.length === 0) gameStarted("quali", qmode);
+            // today's first lap counts the device on the road to 1,000 (the invite waits for a finished game)
+            if (!day) void roadPlayed(false);
             if (next.status !== "playing" && before.status === "playing") gameFinished("quali", qmode, { medal: bestMedal(next) ?? "none", laps: next.laps.length });
             // today's best line goes on the board (the server times it); archive replays don't
             const board = boardOf(next);

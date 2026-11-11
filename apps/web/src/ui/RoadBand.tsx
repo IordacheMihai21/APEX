@@ -39,7 +39,7 @@ export function RoadBand() {
           <h2 id="road-h" className="wide text-[26px] leading-none text-paint">
             {t("Road to 1,000")}
           </h2>
-          <p className="mt-2 max-w-[44ch] text-[15px] leading-snug text-steel">{t("The day 1,000 players finish a daily game, a new circuit joins Lapdle for everyone.")}</p>
+          <p className="mt-2 max-w-[44ch] text-[15px] leading-snug text-steel">{t("The day 1,000 players play a daily game, a new circuit joins Lapdle for everyone.")}</p>
           <div className="mt-4" aria-hidden={!road}>
             <div className="flex items-baseline justify-between gap-3">
               <span className="wide num text-[34px] leading-none text-paint">{road ? road.today.toLocaleString() : "…"}</span>

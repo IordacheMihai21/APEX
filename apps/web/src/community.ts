@@ -7,7 +7,7 @@ import { track } from "./analytics";
 
 /**
  * The community layer, all anonymous:
- * - Road to 1,000: each device that finishes a daily game is counted once for the day (submit-lap "played"), and the
+ * - Road to 1,000: each device that plays a daily game (drives a Daily Quali lap or finishes any daily game) is counted once for the day (submit-lap "played"), and the
  *   hub shows today's total against the goal.
  * - Invites: every device has its own random invite code (not its device id) in the links it shares (?inv=). A friend
  *   who arrives on one, has never played before and finishes a daily game is credited to that code, once.
@@ -175,10 +175,14 @@ async function submit<T>(body: unknown): Promise<T | null> {
 }
 
 /** A daily game was finished: count this device for today (once a day), and credit the invite it came in on. */
-export async function roadPlayed(): Promise<void> {
+/**
+ * Count this device for today's road to 1,000. A Daily Quali lap counts it (`finished` false); the invite it came in on
+ * is credited only when a daily game is finished, so it is sent then, even when the day is already counted.
+ */
+export async function roadPlayed(finished = true): Promise<void> {
   const day = dateKey();
-  if (store.get(PLAYED_KEY) === day) return;
-  const invite = invitedBy();
+  const invite = finished ? invitedBy() : null;
+  if (store.get(PLAYED_KEY) === day && !invite) return;
   const r = await submit<{ credited: boolean }>({ action: "played", deviceId: deviceId(), day, invite });
   if (!r) return;
   store.set(PLAYED_KEY, day);

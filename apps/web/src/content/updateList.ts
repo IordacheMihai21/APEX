@@ -7,6 +7,13 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-11",
+    title: "Every Daily Quali lap counts on the road to 1,000",
+    body: [
+      "Your first Daily Quali lap of the day now counts you on the road to 1,000 and as a Grand Prix in the monthly Championship, even if you don't use all six laps. Finishing any other daily game counts as before.",
+    ],
+  },
+  {
+    date: "2026-11-11",
     title: "A circuit guide for Las Vegas",
     body: [
       "Las Vegas has its own guide, like the other twelve circuits: the facts, a lap of the circuit from the first corner to the run down the Strip, how to drive it in Lapdle, the perfect lap in numbers and the history of Grand Prix racing in the city.",
