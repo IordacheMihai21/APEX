@@ -1,6 +1,6 @@
 /**
  * Umami analytics: cookieless, no IP addresses in the statistics, live site only. The script and its data go
- * through lapdle.com/lp/ (a Cloudflare Pages Function, functions/lp/[[path]].js), so blockers that drop third-party
+ * through lapdle.com/lp/ (a Cloudflare Pages worker, public/_worker.js, that only /lp/* reaches), so blockers that drop third-party
  * analytics hosts don't hide those visits. If that copy can't be loaded, Umami's own script is loaded instead.
  * The app has its own addresses but changes them with replaceState, so page
  * views are sent by hand whenever the screen changes. The website id is public:
