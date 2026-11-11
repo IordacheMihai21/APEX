@@ -1,13 +1,14 @@
 /**
  * Umami analytics: cookieless, no IP addresses in the statistics, live site only. The script and its data go
- * through lapdle.com/lp/ (rewrites in vercel.json: the script from cloud.umami.is, the data to gateway.umami.is), so blockers that drop third-party
- * analytics hosts don't hide those visits.
+ * through lapdle.com/lp/ (a Cloudflare Pages Function, functions/lp/[[path]].js), so blockers that drop third-party
+ * analytics hosts don't hide those visits. If that copy can't be loaded, Umami's own script is loaded instead.
  * The app has its own addresses but changes them with replaceState, so page
  * views are sent by hand whenever the screen changes. The website id is public:
  * it sits in the script tag of every page.
  */
 const WEBSITE_ID = "d1a94723-d0b7-47ec-bbaf-fa6abdd7abf3";
 const SRC = "/lp/script.js";
+const DIRECT_SRC = "https://cloud.umami.is/script.js";
 const HOST = "lapdle.com";
 
 type Payload = Record<string, unknown>;
@@ -30,13 +31,18 @@ const send = (call: () => void) => (window.umami ? call() : waiting.push(call));
 export function initAnalytics() {
   if (started || import.meta.env.DEV || !liveHost()) return;
   started = true;
+  load(SRC, `${location.origin}/lp`, () => load(DIRECT_SRC));
+}
+
+function load(src: string, hostUrl?: string, onError?: () => void) {
   const s = document.createElement("script");
-  s.src = SRC;
+  s.src = src;
   s.async = true;
   s.dataset.websiteId = WEBSITE_ID;
-  s.dataset.hostUrl = `${location.origin}/lp`;
+  if (hostUrl) s.dataset.hostUrl = hostUrl;
   s.dataset.autoPageview = "false";
   s.onload = () => waiting.splice(0).forEach((call) => call());
+  if (onError) s.onerror = () => (s.remove(), onError());
   document.head.appendChild(s);
 }
 

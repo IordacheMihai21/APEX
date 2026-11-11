@@ -3,14 +3,6 @@
   "installCommand": "cd ../.. && npm ci",
   "rewrites": [
     {
-      "source": "/lp/api/send",
-      "destination": "https://gateway.umami.is/api/send"
-    },
-    {
-      "source": "/lp/:match*",
-      "destination": "https://cloud.umami.is/:match*"
-    },
-    {
       "source": "/((?!assets/)[^.]*)",
       "destination": "/index.html"
     }
