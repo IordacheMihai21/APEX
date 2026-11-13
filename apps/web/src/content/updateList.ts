@@ -6,6 +6,14 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-11-13",
+    title: "Reminders after the Daily Quali, and friends count from their first lap",
+    body: [
+      "The daily reminder is now offered right after your Daily Quali result too, not only after the other daily games: pick an hour and Lapdle tells you when tomorrow's games are out. On iPhone and iPad it works once Lapdle is added to the Home Screen, and the offer now says so.",
+      "A friend who opens your link now counts from their first Daily Quali lap, so you unlock Magenta as soon as they've driven one, without waiting for all six laps.",
+    ],
+  },
+  {
     date: "2026-11-11",
     title: "Las Vegas gets its surroundings",
     body: [

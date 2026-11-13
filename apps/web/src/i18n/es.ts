@@ -747,6 +747,7 @@ export const ES: Record<string, string> = {
   "Share card: {result} at {circuit}": "Tarjeta para compartir: {result} en {circuit}",
   "Share result": "Compartir resultado",
   "Share the picture": "Compartir la imagen",
+  "Want a reminder when tomorrow's games are out? Add Lapdle to your Home Screen (Share, then Add to Home Screen), then turn it on in the app.": "¿Quieres un aviso cuando salgan los juegos de mañana? Añade Lapdle a tu pantalla de inicio (Compartir y luego Añadir a pantalla de inicio) y actívalo en la app.",
   "3D view": "Vista 3D",
   "See this corner and your line in 3D": "Mira esta curva y tu trazada en 3D",
   "Loading the corner in 3D…": "Cargando la curva en 3D…",

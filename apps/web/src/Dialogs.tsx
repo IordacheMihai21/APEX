@@ -43,8 +43,9 @@ export function ShareButton({
   // the picture button next to the card (SharePictureButton)
   void image;
   const share = async () => {
-    shared(label === t("Challenge") ? "challenge" : "daily");
-    if (await shareOrCopy(text)) {
+    const what = label === t("Challenge") ? "challenge" : "daily";
+    shared(what);
+    if (await shareOrCopy(text, what)) {
       setDone(true);
       setTimeout(() => setDone(false), 1800);
     }

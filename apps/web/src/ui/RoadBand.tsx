@@ -21,7 +21,7 @@ export function RoadBand() {
   const invite = async () => {
     shared("invite");
     const link = `${location.origin}/?ref=invite&inv=${myInviteCode()}`;
-    if (await shareOrCopy(`${t("Five daily F1 games, free, the same for everyone. Play today's with me:")}\n${link}`)) {
+    if (await shareOrCopy(`${t("Five daily F1 games, free, the same for everyone. Play today's with me:")}\n${link}`, "invite")) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     }

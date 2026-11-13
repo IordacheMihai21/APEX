@@ -100,7 +100,7 @@ export function FinishCard({
 
   const share = async () => {
     shared(game);
-    if (await shareOrCopy(shareText)) {
+    if (await shareOrCopy(shareText, game)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     }
@@ -111,7 +111,7 @@ export function FinishCard({
   const dare = async () => {
     if (!route) return;
     shared(`challenge-${game}`);
-    if (await shareOrCopy(challengeMessage(game, route, eyebrow, value))) {
+    if (await shareOrCopy(challengeMessage(game, route, eyebrow, value), `challenge-${game}`)) {
       setDared(true);
       setTimeout(() => setDared(false), 1800);
     }
@@ -217,6 +217,7 @@ export function FinishCard({
             <ChevronRight className="h-4 w-4 shrink-0" />
           </button>
         )}
+        {daily && <ReminderOffer from={game} className="mt-3" />}
         {daily && route && (
           <button className={`${secondaryBtn} mt-2.5 w-full`} onClick={dare}>
             <Swords className="h-4 w-4" />
@@ -233,7 +234,6 @@ export function FinishCard({
           {t("Tomorrow's Daily Quali:")} <span className="font-semibold text-paint">{tomorrowQuali()}</span>.
           {streak.current > 0 && ` ${t("Come back to make it a {n}-day streak.", { n: streak.current + 1 })}`}
         </p>
-        {daily && <ReminderOffer />}
 
         {/* today's set: how much is done, the streak, then what's left first */}
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-line pt-4">

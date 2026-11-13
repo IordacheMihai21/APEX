@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { dayShareReady, dayShareText } from "../games/dayShare";
 import { shared } from "../games/events";
+import { track } from "../analytics";
 import { t } from "../i18n";
 import { shareLink } from "../shareLink";
 import { Share } from "./icons";
@@ -11,10 +12,12 @@ import { secondaryBtn } from "./styles";
  * The result goes as text: the grid and the link arrive together everywhere, and chat apps draw the link's preview.
  * (Sent with a picture, many apps keep the picture and drop the text, and the link with it: see sharePicture.)
  */
-export async function shareOrCopy(text: string): Promise<boolean> {
+export async function shareOrCopy(text: string, what = "other"): Promise<boolean> {
   if (navigator.share) {
     try {
       await navigator.share({ text });
+      // the share sheet closed on a target: sent (a tap on Share alone is counted by shared(), dismissed or not)
+      track("Share sent", { what, how: "sheet" });
       return false;
     } catch (e) {
       if ((e as Error)?.name === "AbortError") return false; // share sheet dismissed
@@ -23,6 +26,7 @@ export async function shareOrCopy(text: string): Promise<boolean> {
   }
   try {
     await navigator.clipboard.writeText(text);
+    track("Share sent", { what, how: "copy" });
     return true;
   } catch {
     return false;
@@ -49,6 +53,7 @@ export async function sharePicture(text: string, image: Blob, name = "lapdle.png
     const file = new File([image], name, { type: "image/png" });
     if (!navigator.canShare?.({ files: [file] })) return false;
     await navigator.share({ files: [file], text });
+    track("Share sent", { what: "picture", how: "sheet" });
     return true;
   } catch {
     return false;
@@ -61,7 +66,7 @@ export function ShareDayButton({ className = secondaryBtn }: { className?: strin
   if (!dayShareReady()) return null;
   const go = async () => {
     shared("day");
-    if (await shareOrCopy(dayShareText(shareLink("/", "share-day")))) {
+    if (await shareOrCopy(dayShareText(shareLink("/", "share-day")), "day")) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     }

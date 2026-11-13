@@ -10,7 +10,8 @@ import { track } from "./analytics";
  * - Road to 1,000: each device that plays a daily game (drives a Daily Quali lap or finishes any daily game) is counted once for the day (submit-lap "played"), and the
  *   hub shows today's total against the goal.
  * - Invites: every device has its own random invite code (not its device id) in the links it shares (?inv=). A friend
- *   who arrives on one, has never played before and finishes a daily game is credited to that code, once.
+ *   who arrives on one, has never played before and plays a daily game (a Daily Quali lap, or any daily game finished) is
+ *   credited to that code, once.
  * - Rewards: 1 friend in unlocks the Magenta player colour, 3 unlock Cyan, 10 put a gold star next to the inviter's
  *   board nickname. The friend gets Magenta too. Colours only change how your line and buttons look.
  * Everything fails quietly: offline, the game plays the same.
@@ -176,8 +177,8 @@ async function submit<T>(body: unknown): Promise<T | null> {
 
 /** A daily game was finished: count this device for today (once a day), and credit the invite it came in on. */
 /**
- * Count this device for today's road to 1,000. A Daily Quali lap counts it (`finished` false); the invite it came in on
- * is credited only when a daily game is finished, so it is sent then, even when the day is already counted.
+ * Count this device for today's road to 1,000 (a Daily Quali lap, or any daily game finished), and credit the invite
+ * it came in on. `finished` false holds the invite back (counting only); every caller now credits it.
  */
 export async function roadPlayed(finished = true): Promise<void> {
   const day = dateKey();
