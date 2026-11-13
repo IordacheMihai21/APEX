@@ -351,3 +351,23 @@ export async function recordGame(day: string, game: string): Promise<void> {
   if (!id) return;
   await rpc<null>("record_game", { p_day: day, p_device: id, p_game: game });
 }
+
+// ---- the team grid (/team) -----------------------------------------------------------------------------------------
+
+export interface GridCar {
+  pos: number;
+  nickname: string | null;
+  /** livery id (public/cars/<id>.webp): "grey" for a driver without a name */
+  colour: string;
+  badge: boolean;
+}
+
+/** A day's grid: every device that played, in the order it joined. */
+export async function fetchTeamGrid(day: string): Promise<GridCar[] | null> {
+  return rpc<GridCar[]>("team_grid", { p_day: day, p_limit: 1000 });
+}
+
+/** The cars on each day of the challenge from its first day (the last row may be tomorrow, in an early time zone). */
+export async function fetchTeamDays(from: string): Promise<{ day: string; cars: number }[] | null> {
+  return rpc<{ day: string; cars: number }[]>("team_days", { p_from: from });
+}

@@ -63,6 +63,8 @@ export function Pitlane() {
     const r = await setNickname(clean);
     if (r !== "ok") return setState(r);
     track("Pitlane", { action: "named" });
+    // the car on the team grid takes the colour already picked
+    void import("../community").then((m) => m.syncCarColour());
     setOpen(false);
   };
   return (

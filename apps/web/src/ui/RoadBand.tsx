@@ -29,7 +29,8 @@ export function RoadBand() {
 
   const pct = road ? Math.min(100, (road.today / ROAD_GOAL) * 100) : 0;
   const rewards: [number, string][] = [
-    ...COLOURS.filter((x) => x.need > 0).map((x): [number, string] => [x.need, t("{colour} line colour", { colour: x.name })]),
+    [1, t("{colour} line colour", { colour: "Magenta" })],
+    [3, t("Pick your car colour on the team grid")],
     [BADGE_FRIENDS, t("Gold star on the board")],
   ];
   return (
@@ -49,6 +50,9 @@ export function RoadBand() {
               <div className="h-full bg-ink transition-[width] duration-700" style={{ width: `${pct}%` }} />
             </div>
             {road && road.best > road.today && <p className="mt-1.5 text-[13px] text-steel">{t("Best day so far: {n}.", { n: road.best.toLocaleString() })}</p>}
+            <a href="/team" className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-ink underline-offset-4 hover:underline">
+              {t("See today's grid")} <span aria-hidden="true">→</span>
+            </a>
           </div>
         </div>
 
@@ -85,7 +89,7 @@ export function ColourPicker({ headingClass }: { headingClass: string }) {
   return (
     <>
       <p className={headingClass}>{t("Your colour")}</p>
-      <div className="flex gap-3 px-5 py-3" role="radiogroup" aria-label={t("Your colour")}>
+      <div className="flex flex-wrap gap-2.5 px-5 py-3" role="radiogroup" aria-label={t("Your colour")}>
         {COLOURS.map((x) => {
           const open = x.id === "papaya" || c.colours.includes(x.id);
           const on = c.colour.id === x.id;

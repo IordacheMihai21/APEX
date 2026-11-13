@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { C } from "./game/palette";
 import { playedDays } from "./games/profile";
 import { dateKey } from "./modes/schedule";
-import { ONLINE, deviceId, headers } from "./online";
+import { ONLINE, deviceId, headers, myNickname } from "./online";
 import { track } from "./analytics";
 
 /**
@@ -76,7 +76,7 @@ export const invitedBy = () => store.get(FROM_KEY);
 
 // ---- rewards -------------------------------------------------------------------------------------------------------
 export interface PlayerColour {
-  id: "papaya" | "magenta" | "cyan";
+  id: "papaya" | "magenta" | "cyan" | "red" | "blue" | "sky" | "green" | "lime" | "yellow" | "white" | "silver" | "purple" | "gold";
   name: string;
   hex: string;
   /** friends needed to unlock it (0: everyone) */
@@ -85,7 +85,18 @@ export interface PlayerColour {
 export const COLOURS: PlayerColour[] = [
   { id: "papaya", name: "Papaya", hex: "#ff6a13", need: 0 },
   { id: "magenta", name: "Magenta", hex: "#ff4fa3", need: 1 },
+  // three friends who played: any car colour (the team grid's cars and the player's line, public/cars/<id>.webp)
   { id: "cyan", name: "Cyan", hex: "#22d3d3", need: 3 },
+  { id: "red", name: "Red", hex: "#e5332a", need: 3 },
+  { id: "blue", name: "Blue", hex: "#3b7bff", need: 3 },
+  { id: "sky", name: "Sky", hex: "#4fb3ff", need: 3 },
+  { id: "green", name: "Green", hex: "#1fbf62", need: 3 },
+  { id: "lime", name: "Lime", hex: "#a6e22e", need: 3 },
+  { id: "yellow", name: "Yellow", hex: "#f5c518", need: 3 },
+  { id: "white", name: "White", hex: "#eef0f2", need: 3 },
+  { id: "silver", name: "Silver", hex: "#aab3bd", need: 3 },
+  { id: "purple", name: "Purple", hex: "#8a5cff", need: 3 },
+  { id: "gold", name: "Gold", hex: "#e0b33c", need: 3 },
 ];
 export const BADGE_FRIENDS = 10;
 
@@ -149,10 +160,17 @@ export function setPlayerColour(id: PlayerColour["id"]) {
   if (!colourUnlocked(id)) return;
   store.set(COLOUR_KEY, id);
   track("Colour", { colour: id });
+  void syncCarColour();
   // back to Papaya: reload the canvas colours from the theme
   if (id === "papaya") location.reload();
   else applyPlayerColour();
   notify();
+}
+
+/** The car on the team grid takes the player's colour (a named driver only; the server checks the three friends). */
+export async function syncCarColour(): Promise<void> {
+  if (!myNickname()) return;
+  await rpc<string>("set_colour", { p_device: deviceId(), p_code: myInviteCode(), p_colour: playerColour().id });
 }
 
 // ---- network -------------------------------------------------------------------------------------------------------

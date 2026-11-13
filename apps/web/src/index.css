@@ -185,11 +185,30 @@ canvas {
 .podium-name {
   animation: fade 0.5s ease-out both;
 }
+/* the team grid: cars roll onto their slots one after another (ui/Team.tsx); the player's own car glows Papaya */
+@keyframes team-roll {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.team-car {
+  animation: team-roll 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+.team-me {
+  filter: drop-shadow(0 0 10px rgb(255 128 0 / 0.75)) drop-shadow(0 6px 6px rgb(0 0 0 / 0.45));
+}
 @media (prefers-reduced-motion: reduce) {
   .tower-row,
   .tower-live .tower-row,
   .podium-step,
-  .podium-name {
+  .podium-name,
+  .team-car {
     opacity: 1;
     animation: none;
   }

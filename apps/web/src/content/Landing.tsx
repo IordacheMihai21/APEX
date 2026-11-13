@@ -36,6 +36,11 @@ const INFO: Record<InfoPage, { h1: string; description: string; text: string }> 
     description: "Today's Daily Quali podium and every driver who set a lap, one place each, against the perfect lap.",
     text: "Today's Daily Quali as a podium, then every driver who set a lap, fastest first, with the gap to the fastest and the perfect lap to chase.",
   },
+  team: {
+    h1: "The team",
+    description: "The Road to 1,000 as a starting grid: every driver who plays a Lapdle daily game puts one car on that day's grid.",
+    text: "Every driver who plays a daily game puts one car on that day's grid, with their racing name and their car colour. Fill all 1,000 places in one day and a new circuit joins Lapdle for everyone.",
+  },
   privacy: {
     h1: "Privacy",
     description: "How Lapdle handles data: no account, game progress kept on your device, an anonymous daily leaderboard entry, cookieless analytics, and ads and consent.",

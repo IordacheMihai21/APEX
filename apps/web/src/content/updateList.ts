@@ -6,6 +6,15 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-11-14",
+    title: "The team: your car on the Road to 1,000 grid",
+    body: [
+      "A new page, The team, shows the Road to 1,000 as a starting grid. Every driver who plays a daily game puts one car on that day's grid, in the order they joined: named drivers with their name above the car, drivers without a name in grey. There's one grid for every day of the challenge, from Day 1 on 13 November.",
+      "Cars race Papaya. Bring three friends who play from your link and you pick your car's colour from eleven, and it shows on the grid. Magenta for your line still comes with the first friend.",
+    ],
+    links: [["The team", "/team"]],
+  },
+  {
     date: "2026-11-13",
     title: "Two leaderboards: the Championship and the fastest today",
     body: [
