@@ -7,6 +7,7 @@
  */
 import { dateKey } from "../modes/daily";
 import { DAILY_SET, GAMES, type GameId } from "./registry";
+import { restoredDays } from "../online";
 
 export interface PlayStreak {
   /** days in a row with a daily game finished, up to today (or yesterday, until today is played) */
@@ -44,6 +45,8 @@ export function playedDays(): Map<string, GameId[]> {
         list.push(g.id);
         days.set(day, list);
       }
+  // days played on this player's other browser, brought back by a restore link (online.ts)
+  for (const day of restoredDays()) if (!days.has(day)) days.set(day, []);
   return days;
 }
 

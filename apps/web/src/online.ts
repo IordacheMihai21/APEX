@@ -263,3 +263,68 @@ export interface ChampionRow {
 export async function fetchChampionship(today: string, limit = 10): Promise<ChampionRow[] | null> {
   return rpc<ChampionRow[]>("championship", { p_today: today, p_limit: limit });
 }
+
+// ---- restore: the same player on another browser -------------------------------------------------------------------
+
+const RESTORED_DAYS_KEY = "apex.restored.days";
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i;
+
+/**
+ * This device's restore link: opened in another browser (or after this one forgot the site), it brings back the
+ * name, the Championship and the streak. It carries the anonymous device id, so it's the player's own key.
+ */
+export function restoreLink(): string {
+  const origin = typeof location !== "undefined" ? location.origin : "https://lapdle.com";
+  return `${origin}/?restore=${deviceId()}`;
+}
+
+/** The device id in a pasted restore link or code, or null. */
+export function restoreCodeIn(text: string): string | null {
+  return text.match(UUID_RE)?.[0].toLowerCase() ?? null;
+}
+
+/** A restore link this page was opened with (read before the app tidies the address), or null. */
+export const RESTORE_ARRIVAL: string | null = typeof location !== "undefined" ? restoreCodeIn(new URLSearchParams(location.search).get("restore") ?? "") : null;
+
+/** Days a restore brought back from the server (the streak counts them as played). */
+export function restoredDays(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(RESTORED_DAYS_KEY) ?? "[]");
+    return Array.isArray(v) ? v.filter((d) => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) : [];
+  } catch {
+    return [];
+  }
+}
+
+export interface RestorePreview {
+  nickname: string | null;
+  days: string[];
+}
+
+/** What a restore code would bring back: null when the code is unknown, "failed" when the server can't be reached. */
+export async function previewRestore(code: string): Promise<RestorePreview | null | "failed"> {
+  if (!ONLINE) return "failed";
+  try {
+    const res = await fetch(`${URL_}/rest/v1/rpc/restore_device`, { method: "POST", headers: headers(), body: JSON.stringify({ p_device: code }) });
+    if (!res.ok) return "failed";
+    const rows = (await res.json()) as { nickname: string | null; days: string[] }[];
+    return rows[0] ? { nickname: rows[0].nickname, days: rows[0].days ?? [] } : null;
+  } catch {
+    return "failed";
+  }
+}
+
+/** Become the device a restore code belongs to: its id, its name and its days. */
+export function applyRestore(code: string, preview: RestorePreview) {
+  try {
+    localStorage.setItem(DEVICE_KEY, code);
+    if (preview.nickname) localStorage.setItem(NICK_KEY, preview.nickname);
+    else localStorage.removeItem(NICK_KEY);
+    const days = new Set([...restoredDays(), ...preview.days]);
+    localStorage.setItem(RESTORED_DAYS_KEY, JSON.stringify([...days].sort()));
+    localStorage.removeItem(CACHE_KEY);
+  } catch {
+    /* storage is off: nothing to restore into */
+  }
+  window.dispatchEvent(new CustomEvent(EVENT));
+}

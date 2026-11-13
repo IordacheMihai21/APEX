@@ -5,6 +5,7 @@ import type { HubAction } from "./Hub";
 import { Chequered, Close, GameMarks } from "./icons";
 import { LANG, type Lang, setLang, t } from "../i18n";
 import { ReminderMenu } from "./Reminder";
+import { RestoreMenu } from "./Restore";
 import { ColourPicker } from "./RoadBand";
 import { openPitlane } from "./Pitlane";
 import { myNickname } from "../online";
@@ -124,6 +125,7 @@ export function Menu({ open, onClose, onAction }: { open: boolean; onClose: () =
           </ul>
           <ColourPicker headingClass={heading} />
           <ReminderMenu rowClass={row} headingClass={heading} />
+          <RestoreMenu headingClass={heading} />
         </nav>
       </div>
     </div>

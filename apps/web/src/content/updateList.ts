@@ -7,6 +7,14 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-13",
+    title: "Keep your name and streak on any browser",
+    body: [
+      "The menu has a new Your progress section with your restore link. Open it in another browser or on another phone and you're the same player there: your racing name, your Grands Prix in the Championship and your streak come back.",
+      "Opening Lapdle from Instagram, TikTok or Facebook uses the app's own browser, which forgets the site between visits. Lapdle now says so there and copies your link, so you can carry on in Safari or Chrome without starting again. Thanks to the player who told us about it.",
+    ],
+  },
+  {
+    date: "2026-11-13",
     title: "Reminders after the Daily Quali, and friends count from their first lap",
     body: [
       "The daily reminder is now offered right after your Daily Quali result too, not only after the other daily games: pick an hour and Lapdle tells you when tomorrow's games are out. On iPhone and iPad it works once Lapdle is added to the Home Screen, and the offer now says so.",

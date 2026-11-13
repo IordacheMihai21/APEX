@@ -97,7 +97,7 @@ export function Pitlane() {
               ⚄
             </button>
           </div>
-          {state === "taken" && <p className="mt-1.5 text-[13px] text-kerb">{t("That nickname is taken. Try another.")}</p>}
+          {state === "taken" && <p className="mt-1.5 text-[13px] text-kerb">{t("That nickname is taken. Try another, or if it's yours from another browser, use your restore link from the menu.")}</p>}
           {state === "invalid" && <p className="mt-1.5 text-[13px] text-kerb">{t("3 to 16 letters, numbers, spaces, dots, dashes or underscores.")}</p>}
           {state === "failed" && <p className="mt-1.5 text-[13px] text-kerb">{t("That didn't work. Check your connection and try again.")}</p>}
           <div className="mt-4 flex flex-wrap gap-2.5">

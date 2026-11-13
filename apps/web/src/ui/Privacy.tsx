@@ -99,6 +99,11 @@ export function Privacy() {
               people played today and, for players with a nickname, how many days they played this month in the Championship (these dates are kept 400 days). Links you share carry a random invite code made on your device (not your device number); when a friend who has never played before opens one and plays a daily
               game, their device number is stored against that code, so the code's owner can unlock colours. Only the count is ever shown, never who the friends are; these entries are kept 180 days.
             </p>
+            <p>
+              Your restore link (Menu, Your progress) is the address of this site with your anonymous device number in it. Opened in another browser, it asks
+              the server for that number's nickname and the days it played, and if you confirm, that browser becomes the same anonymous player. Nothing else
+              is sent or kept for it. Anyone with the link can play as you, so keep it to yourself.
+            </p>
             <ForgetMe />
           </Section>
         )}
