@@ -7,12 +7,12 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-13",
-    title: "Standings: today's podium and every driver",
+    title: "Two leaderboards: the Championship and the fastest today",
     body: [
-      "A new Standings page shows today's Daily Quali as a podium, P2, P1 and P3, then every driver who set a lap, and the whole of this month's Championship. The home page shows today's five fastest next to the Championship, with a link to the full standings.",
+      "The Championship and today's fastest Daily Quali laps each have their own page: a podium, P2, P1 and P3, a few figures (drivers, the leader, your place), and every driver below, with a search box and a Find me button. On the home page the two boards sit side by side, each with its Full standings.",
       "Every driver now has a place of their own. On the day's board a tie goes to whoever set the lap first; in the Championship it goes to the longer run of days in a row, then to more daily games played this month, then to whoever started first.",
     ],
-    links: [["Standings", "/standings"]],
+    links: [["Championship", "/championship"], ["Fastest today", "/fastest"]],
   },
   {
     date: "2026-11-13",

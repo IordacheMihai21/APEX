@@ -64,7 +64,8 @@ const LearnArticle = lazy(() => fresh(() => import("./content/Learn")).then((m) 
 const TriviaIndex = lazy(() => fresh(() => import("./content/Trivia")).then((m) => ({ default: m.TriviaIndex })));
 const TriviaQuiz = lazy(() => fresh(() => import("./content/Trivia")).then((m) => ({ default: m.TriviaQuiz })));
 const Records = lazy(() => fresh(() => import("./ui/Records")).then((m) => ({ default: m.Records })));
-const Standings = lazy(() => fresh(() => import("./ui/Standings")).then((m) => ({ default: m.Standings })));
+const ChampionshipPage = lazy(() => fresh(() => import("./ui/Leaderboards")).then((m) => ({ default: m.ChampionshipPage })));
+const FastestPage = lazy(() => fresh(() => import("./ui/Leaderboards")).then((m) => ({ default: m.FastestPage })));
 const OrderCorners = lazy(() => fresh(() => import("./ui/OrderCorners")).then((m) => ({ default: m.OrderCorners })));
 const SpeedTrap = lazy(() => fresh(() => import("./ui/SpeedTrap")).then((m) => ({ default: m.SpeedTrap })));
 const Lineup = lazy(() => fresh(() => import("./ui/Lineup")).then((m) => ({ default: m.Lineup })));
@@ -73,7 +74,7 @@ const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) 
 
 /** A screen with its own address: a game's page or an info page (both declared in games/registry). */
 type Mini = GamePage | InfoPage;
-type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "learn"; slug?: string } | { kind: "corners"; slug?: string } | { kind: "updates" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "braking-point" } | { kind: "make-the-corner" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "aerial" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "standings" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+type Screen = { kind: "hub" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "learn"; slug?: string } | { kind: "corners"; slug?: string } | { kind: "updates" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "braking-point" } | { kind: "make-the-corner" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "aerial" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "championship" } | { kind: "fastest" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 /** A practice link (?play=practice&track=…&cond=…), as the circuit guides use. */
 function practiceFromQuery(search: string): Screen | null {
@@ -347,8 +348,10 @@ export function App() {
           screen.id ? <TriviaQuiz key={screen.id} id={screen.id} /> : <TriviaIndex />
         ) : screen.kind === "records" ? (
           <Records />
-        ) : screen.kind === "standings" ? (
-          <Standings />
+        ) : screen.kind === "championship" ? (
+          <ChampionshipPage />
+        ) : screen.kind === "fastest" ? (
+          <FastestPage />
         ) : screen.kind === "legal" ? (
           <Legal />
         ) : screen.kind === "privacy" ? (

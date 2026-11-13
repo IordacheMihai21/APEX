@@ -26,10 +26,15 @@ const INFO: Record<InfoPage, { h1: string; description: string; text: string }> 
     description: "The fastest Daily Quali laps on every circuit in Lapdle, each against the perfect lap, plus the boards of the last 30 days.",
     text: "The fastest Daily Quali lap ever set on each circuit and condition, measured against the perfect lap, and the boards of the last 30 days. Only laps from each day's real Daily Quali count.",
   },
-  standings: {
-    h1: "Standings",
-    description: "Today's Daily Quali podium and full classification, and this month's Championship of the players who come back most.",
-    text: "Today's Daily Quali as a podium, then every driver who set a lap, one place each, and this month's Championship: a Grand Prix for each day you play a daily game.",
+  championship: {
+    h1: "Championship",
+    description: "This month's Championship in Lapdle: every named driver, one place each, ranked by Grands Prix (days with a daily game played).",
+    text: "This month's Championship: a Grand Prix for each day you play a daily game, the podium, and every named driver in their own place. It starts again on the 1st.",
+  },
+  fastest: {
+    h1: "Fastest today",
+    description: "Today's Daily Quali podium and every driver who set a lap, one place each, against the perfect lap.",
+    text: "Today's Daily Quali as a podium, then every driver who set a lap, fastest first, with the gap to the fastest and the perfect lap to chase.",
   },
   privacy: {
     h1: "Privacy",

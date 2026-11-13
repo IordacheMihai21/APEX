@@ -61,6 +61,7 @@ export function Tower({ rows, hot, label }: { rows: TowerRowData[]; hot?: string
         return (
           <li
             key={`${r.pos}-${r.name ?? "x"}`}
+            id={r.mine ? "tower-me" : undefined}
             style={{ ["--i" as string]: Math.min(i, 12) }}
             className={`tower-row group relative flex h-11 items-stretch overflow-hidden bg-board transition-transform duration-200 hover:translate-x-1 ${r.pos === 1 ? "tower-p1" : ""} ${r.mine ? "ring-1 ring-ink/70" : ""}`}
           >

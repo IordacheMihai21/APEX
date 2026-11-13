@@ -9,18 +9,10 @@ import { openPitlane } from "./Pitlane";
 import { TowerPanel } from "./Tower";
 import { primaryBtn, secondaryBtn } from "./styles";
 
-/** Under each board: the whole of that board on the standings page. */
+/** Under each board: the whole of that board on its own page. */
 function FullLink({ href }: { href: string }) {
-  // the app opens its own pages in place and drops the #board, so the board to start at is passed alongside
-  const remember = () => {
-    try {
-      sessionStorage.setItem("lapdle.standings.at", href.split("#")[1] ?? "");
-    } catch {
-      /* the page starts at the top */
-    }
-  };
   return (
-    <a href={href} onClick={remember} className={`${primaryBtn} mt-3 w-full`}>
+    <a href={href} className={`${primaryBtn} mt-3 w-full`}>
       {t("Full standings")}
     </a>
   );
@@ -72,7 +64,7 @@ export function Championship() {
             accent="var(--color-ink)"
             rows={rows?.map((r) => ({ pos: r.pos, name: r.nickname, value: `${r.gps} GP`, note: r.streak > 1 ? t("{n} in a row", { n: r.streak }) : undefined, mine: r.nickname === mine, badge: r.badge }))}
             empty={t("No names in this month's standings yet. Be the first.")}
-            footer={<FullLink href="/standings#championship" />}
+            footer={<FullLink href="/championship" />}
           />
           <TowerPanel
             title={t("Fastest today")}
@@ -81,7 +73,7 @@ export function Championship() {
             hot="var(--color-purple)"
             rows={fast?.map((r) => ({ pos: r.pos, name: r.nickname, value: lapTime(r.lapMs), note: gap(r.lapMs, lead) || undefined, mine: !!mine && r.nickname === mine, badge: r.badge }))}
             empty={t("No laps yet today. Be the first on the podium.")}
-            footer={<FullLink href="/standings#today" />}
+            footer={<FullLink href="/fastest" />}
           />
         </div>
 

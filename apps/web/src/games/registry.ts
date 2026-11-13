@@ -480,7 +480,8 @@ export function todayProgress(day = dateKey()) {
 export const PAGES = {
   archive: "Daily Quali archive: every past circuit | Lapdle",
   records: "Lap records: the fastest Daily Quali laps | Lapdle",
-  standings: "Standings: today's podium and the monthly Championship | Lapdle",
+  championship: "The monthly Championship: every driver, one place each | Lapdle",
+  fastest: "Fastest today: the Daily Quali podium and every lap | Lapdle",
   privacy: "Privacy | Lapdle",
   legal: "Legal notice and terms | Lapdle",
 } as const;
@@ -490,7 +491,7 @@ export type InfoPage = keyof typeof PAGES;
 export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/how-to-play/${g.id}`), "/circuits", ...GUIDE_CIRCUITS.map((c) => `/circuits/${circuitSlug(c.id)}`), "/trivia", ...CIRCUITS.map((c) => `/trivia/${circuitSlug(c.id)}`), "/learn", ...ARTICLES.map((a) => `/learn/${a.slug}`), "/corners", ...Object.values(CORNER_TEXT).map((c) => `/corners/${c.slug}`), "/updates"];
 
 /** Pages that show the player's own data with little text of their own: no ads on them, and kept out of search (noindex, not in the sitemap). */
-export const NOINDEX_ROUTES = ["/archive", "/records", "/standings"];
+export const NOINDEX_ROUTES = ["/archive", "/records", "/championship", "/fastest"];
 
 /** Every public address of the app itself; each is a pre-rendered page (content/Landing.tsx) that the app takes over. */
 export const PUBLIC_ROUTES = ["/", ...GAMES.flatMap((g) => (g.route ? [g.route] : [])), "/corner", ...Object.keys(PAGES).map((p) => `/${p}`)];
