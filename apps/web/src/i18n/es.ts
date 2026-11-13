@@ -755,6 +755,7 @@ export const ES: Record<string, string> = {
   "Play today's games": "Juega los juegos de hoy",
   "Open": "Libre",
   "wet": "mojado",
+  "dry": "seco",
   "low downforce": "poca carga",
   "Full standings": "Clasificación completa",
   "A Grand Prix is a day you play a daily game. Ties go to the longer run of days in a row, then to more daily games played this month.": "Un Gran Premio es un día en que juegas un juego diario. Los empates se deciden por la racha más larga y después por más juegos diarios este mes.",

@@ -6,6 +6,7 @@ import { type ChampionRow, type DayRow, ONLINE, fetchChampionship, fetchDayBoard
 import { lapTime } from "./format";
 import { openPitlane } from "./Pitlane";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { Tower } from "./Tower";
 
 const GOLD = "#f5c518";
 const SILVER = "#c0c7d1";
@@ -27,27 +28,28 @@ function Name({ name, mine }: { name: string | null; mine: boolean }) {
 /** The top three of the day, as on an F1 podium: P2 on the left, P1 in the middle and highest, P3 on the right. */
 function Podium({ rows, mine }: { rows: DayRow[]; mine: string | null }) {
   const lead = rows[0]?.lapMs ?? 0;
-  const spots: [DayRow | undefined, number, string, string][] = [
-    [rows[1], 2, SILVER, "h-[120px]"],
-    [rows[0], 1, GOLD, "h-[170px]"],
-    [rows[2], 3, BRONZE, "h-[90px]"],
+  // they rise P3, P2, then P1, and each name appears once its step is up
+  const spots: [DayRow | undefined, number, string, string, number][] = [
+    [rows[1], 2, SILVER, "h-[120px]", 250],
+    [rows[0], 1, GOLD, "h-[170px]", 500],
+    [rows[2], 3, BRONZE, "h-[90px]", 0],
   ];
   return (
     <div className="mt-6 grid grid-cols-3 items-end gap-2 sm:gap-4">
-      {spots.map(([r, pos, color, h]) => (
+      {spots.map(([r, pos, color, h, delay]) => (
         <div key={pos} className="flex min-w-0 flex-col items-center text-center">
           {r ? (
-            <>
+            <div className="podium-name flex w-full flex-col items-center" style={{ animationDelay: `${delay + 550}ms` }}>
               <span className="w-full px-1 text-[14px] leading-tight sm:text-[16px]">
                 <Name name={r.nickname} mine={!!mine && r.nickname === mine} />
               </span>
               <span className="num mt-1 text-[15px] font-semibold text-paint sm:text-[18px]">{lapTime(r.lapMs)}</span>
               <span className="num text-[12px] text-steel">{gap(r.lapMs, lead) || " "}</span>
-            </>
+            </div>
           ) : (
             <span className="text-[13px] text-steel">{t("Open")}</span>
           )}
-          <div className={`mt-2 flex w-full items-start justify-center ${h}`} style={{ background: `linear-gradient(180deg, ${color} 0%, ${color}22 100%)` }}>
+          <div className={`podium-step mt-2 flex w-full items-start justify-center ${h}`} style={{ background: `linear-gradient(180deg, ${color} 0%, ${color}22 100%)`, animationDelay: `${delay}ms` }}>
             <span className="wide mt-2 text-[44px] leading-none text-night sm:text-[56px]">{pos}</span>
           </div>
         </div>
@@ -103,18 +105,13 @@ export function Standings() {
           <>
             <Podium rows={day} mine={mine} />
             {day.length > 3 && (
-              <ol className="mt-6 divide-y divide-line border-y border-line">
-                {day.slice(3).map((r) => (
-                  <li key={r.pos} className="flex items-center gap-3 py-2 text-[15px]">
-                    <span className="num w-10 shrink-0 text-right text-steel">P{r.pos}</span>
-                    <span className="min-w-0 flex-1 truncate">
-                      <Name name={r.nickname} mine={!!mine && r.nickname === mine} />
-                    </span>
-                    <span className="num shrink-0 text-[13px] text-steel">{gap(r.lapMs, lead)}</span>
-                    <span className="num w-20 shrink-0 text-right font-semibold text-paint">{lapTime(r.lapMs)}</span>
-                  </li>
-                ))}
-              </ol>
+              <div className="mt-6">
+                <Tower
+                  label={t("Fastest today")}
+                  hot="var(--color-purple)"
+                  rows={day.slice(3).map((r) => ({ pos: r.pos, name: r.nickname, value: lapTime(r.lapMs), note: gap(r.lapMs, lead), mine: !!mine && r.nickname === mine, badge: r.badge }))}
+                />
+              </div>
             )}
           </>
         )}
@@ -132,21 +129,12 @@ export function Standings() {
         ) : champ.length === 0 ? (
           <p className="mt-6 text-[14px] text-steel">{t("No names in this month's standings yet. Be the first.")}</p>
         ) : (
-          <ol className="mt-4 divide-y divide-line border-y border-line">
-            {champ.map((r) => (
-              <li key={r.nickname} className="flex items-center gap-3 py-2 text-[15px]">
-                <span className="num w-10 shrink-0 text-right" style={{ color: r.pos === 1 ? GOLD : r.pos === 2 ? SILVER : r.pos === 3 ? BRONZE : undefined }}>
-                  P{r.pos}
-                </span>
-                <span className="min-w-0 flex-1 truncate">
-                  <Name name={r.nickname} mine={r.nickname === mine} />
-                  {r.badge && <span className="ml-1.5 text-[#f5c518]">★</span>}
-                </span>
-                {r.streak > 1 && <span className="shrink-0 text-[12px] text-steel">{t("{n} in a row", { n: r.streak })}</span>}
-                <span className="num w-14 shrink-0 text-right font-semibold text-paint">{r.gps} GP</span>
-              </li>
-            ))}
-          </ol>
+          <div className="mt-4">
+            <Tower
+              label={t("Championship")}
+              rows={champ.map((r) => ({ pos: r.pos, name: r.nickname, value: `${r.gps} GP`, note: r.streak > 1 ? t("{n} in a row", { n: r.streak }) : undefined, mine: r.nickname === mine, badge: r.badge }))}
+            />
+          </div>
         )}
       </section>
 
