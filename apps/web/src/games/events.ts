@@ -19,6 +19,7 @@ import { track } from "../analytics";
 import { standalone } from "../install";
 import { reminderPlayed } from "../reminder";
 import { roadPlayed } from "../community";
+import { recordGame } from "../online";
 import { LANG } from "../i18n";
 import { dateKey } from "../modes/daily";
 import { playedDays } from "./profile";
@@ -104,7 +105,8 @@ export function gameFinished(game: Tracked, mode: Mode, result: Props = {}) {
     if (mode === "daily") {
       void reminderPlayed();
       // counted for today's road to 1,000, and credits the invite this device came in on
-      void roadPlayed();
+      // counted, then this game noted on today's row (it splits ties in the Championship)
+      void roadPlayed().then(() => recordGame(dateKey(), game));
       // the first daily game finished is when the pitlane name is offered (ui/Pitlane.tsx decides whether to)
       if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("lapdle:pitlane", { detail: { force: false } }));
     }

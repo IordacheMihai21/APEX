@@ -328,3 +328,26 @@ export function applyRestore(code: string, preview: RestorePreview) {
   }
   window.dispatchEvent(new CustomEvent(EVENT));
 }
+
+// ---- standings -----------------------------------------------------------------------------------------------------
+
+export interface DayRow {
+  pos: number;
+  /** null: a driver without a racing name */
+  nickname: string | null;
+  lapMs: number;
+  badge: boolean;
+}
+
+/** Everyone who set a lap on a day's Daily Quali, one place each (the standings page). */
+export async function fetchDayBoard(day: string, trackId: string, condition: Condition, limit = 200): Promise<DayRow[] | null> {
+  const rows = await rpc<{ pos: number; nickname: string | null; lap_ms: number; badge: boolean }[]>("day_board", { p_day: day, p_track: trackId, p_condition: condition, p_limit: limit });
+  return rows ? rows.map((r) => ({ pos: r.pos, nickname: r.nickname, lapMs: r.lap_ms, badge: r.badge })) : null;
+}
+
+/** A daily game finished today: noted on today's row (only splits ties in the Championship). */
+export async function recordGame(day: string, game: string): Promise<void> {
+  const id = existingDeviceId();
+  if (!id) return;
+  await rpc<null>("record_game", { p_day: day, p_device: id, p_game: game });
+}

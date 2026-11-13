@@ -26,6 +26,11 @@ const INFO: Record<InfoPage, { h1: string; description: string; text: string }> 
     description: "The fastest Daily Quali laps on every circuit in Lapdle, each against the perfect lap, plus the boards of the last 30 days.",
     text: "The fastest Daily Quali lap ever set on each circuit and condition, measured against the perfect lap, and the boards of the last 30 days. Only laps from each day's real Daily Quali count.",
   },
+  standings: {
+    h1: "Standings",
+    description: "Today's Daily Quali podium and full classification, and this month's Championship of the players who come back most.",
+    text: "Today's Daily Quali as a podium, then every driver who set a lap, one place each, and this month's Championship: a Grand Prix for each day you play a daily game.",
+  },
   privacy: {
     h1: "Privacy",
     description: "How Lapdle handles data: no account, game progress kept on your device, an anonymous daily leaderboard entry, cookieless analytics, and ads and consent.",

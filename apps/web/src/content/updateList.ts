@@ -7,6 +7,15 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-13",
+    title: "Standings: today's podium and every driver",
+    body: [
+      "A new Standings page shows today's Daily Quali as a podium, P2, P1 and P3, then every driver who set a lap, and the whole of this month's Championship. The home page shows today's five fastest next to the Championship, with a link to the full standings.",
+      "Every driver now has a place of their own. On the day's board a tie goes to whoever set the lap first; in the Championship it goes to the longer run of days in a row, then to more daily games played this month, then to whoever started first.",
+    ],
+    links: [["Standings", "/standings"]],
+  },
+  {
+    date: "2026-11-13",
     title: "Keep your name and streak on any browser",
     body: [
       "The menu has a new Your progress section with your restore link. Open it in another browser or on another phone and you're the same player there: your racing name, your Grands Prix in the Championship and your streak come back.",

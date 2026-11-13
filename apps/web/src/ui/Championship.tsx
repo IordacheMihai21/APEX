@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { LANG, t } from "../i18n";
-import { dateKey } from "../modes/schedule";
-import { type ChampionRow, ONLINE, fetchChampionship, myNickname } from "../online";
+import { dailyCondition, dailyTrack, dateKey } from "../modes/schedule";
+import { type ChampionRow, type DayRow, ONLINE, fetchChampionship, fetchDayBoard, myNickname } from "../online";
+import { lapTime } from "./format";
 import { playStreak, playedDays } from "../games/profile";
 import { openPitlane } from "./Pitlane";
 import { secondaryBtn } from "./styles";
@@ -15,8 +16,10 @@ export function Championship() {
   const [rows, setRows] = useState<ChampionRow[] | null | undefined>(undefined);
   const today = dateKey();
   const [mine, setMine] = useState(myNickname);
+  const [fast, setFast] = useState<DayRow[] | null | undefined>(undefined);
   useEffect(() => {
     void fetchChampionship(today).then(setRows);
+    void fetchDayBoard(today, dailyTrack(today), dailyCondition(today), 5).then(setFast);
     const on = () => setMine(myNickname());
     window.addEventListener("apex:standing", on);
     return () => window.removeEventListener("apex:standing", on);
@@ -53,6 +56,28 @@ export function Championship() {
           ) : (
             <p className="border-y border-line py-4 text-[14px] text-steel">{rows === undefined ? t("Loading the standings…") : rows === null ? t("The standings can't be reached right now.") : t("No names in this month's standings yet. Be the first.")}</p>
           )}
+          <div className="flex flex-col gap-4">
+          <div className="border border-line bg-board/60 p-4">
+            <p className="caption">{t("Fastest today")}</p>
+            {fast && fast.length > 0 ? (
+              <ol className="mt-2 space-y-1.5">
+                {fast.map((r) => (
+                  <li key={r.pos} className="flex items-center gap-2 text-[14px]">
+                    <span className="num w-7 shrink-0 text-steel" style={{ color: r.pos === 1 ? "#f5c518" : r.pos === 2 ? "#c0c7d1" : r.pos === 3 ? "#cd8a4a" : undefined }}>
+                      P{r.pos}
+                    </span>
+                    <span className={`min-w-0 flex-1 truncate font-semibold ${r.nickname ? "text-paint" : "text-steel italic"}`}>{r.nickname ?? t("Unnamed driver")}</span>
+                    <span className="num shrink-0 text-paint">{lapTime(r.lapMs)}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="mt-2 text-[14px] text-steel">{fast === undefined ? t("Loading the standings…") : fast === null ? t("The standings can't be reached right now.") : t("No laps yet today. Be the first on the podium.")}</p>
+            )}
+            <a href="/standings" className="mt-3 inline-block text-[14px] font-semibold text-ink underline decoration-ink/40 underline-offset-4">
+              {t("Full standings")} →
+            </a>
+          </div>
           <div className="border border-line bg-board/60 p-4">
             <p className="caption">{t("You")}</p>
             <p className="mt-1 text-[15px] text-paint">
@@ -66,6 +91,7 @@ export function Championship() {
             <button className={`${secondaryBtn} mt-3`} onClick={() => openPitlane(true)}>
               {mine ? t("Change name") : t("Get on the standings")}
             </button>
+          </div>
           </div>
         </div>
       </div>
