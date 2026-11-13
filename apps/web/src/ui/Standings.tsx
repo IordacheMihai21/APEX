@@ -71,6 +71,18 @@ export function Standings() {
   const [day, setDay] = useState<DayRow[] | null | undefined>(undefined);
   const [champ, setChamp] = useState<ChampionRow[] | null | undefined>(undefined);
   const [mine, setMine] = useState(myNickname);
+  // opened from one board on the home page (/standings#championship): start at that board once the lists are in
+  useEffect(() => {
+    if (day === undefined || champ === undefined) return;
+    let id = typeof location !== "undefined" ? location.hash.slice(1) : "";
+    try {
+      id ||= sessionStorage.getItem("lapdle.standings.at") ?? "";
+      sessionStorage.removeItem("lapdle.standings.at");
+    } catch {
+      /* start at the top */
+    }
+    if (id) document.getElementById(id)?.scrollIntoView({ block: "start" });
+  }, [day, champ]);
   useEffect(() => {
     void fetchDayBoard(today, trackId, cond).then(setDay);
     void fetchChampionship(today, 500).then(setChamp);
@@ -82,11 +94,12 @@ export function Standings() {
   if (!ONLINE) return null;
   const lead = day?.[0]?.lapMs ?? 0;
   return (
+    <div className="h-full overflow-y-auto">
     <div className="mx-auto max-w-[880px] px-4 pt-8 pb-16 md:px-8">
       <p className="caption">Lapdle</p>
       <h1 className="wide mt-1 text-[clamp(34px,7vw,56px)] leading-none text-paint">{t("Standings")}</h1>
 
-      <section aria-labelledby="today-h" className="mt-8">
+      <section id="today" aria-labelledby="today-h" className="mt-8 scroll-mt-4">
         <h2 id="today-h" className="wide text-[24px] leading-none text-paint">
           {t("Fastest today")}
         </h2>
@@ -117,7 +130,7 @@ export function Standings() {
         )}
       </section>
 
-      <section aria-labelledby="champ-full-h" className="mt-12">
+      <section id="championship" aria-labelledby="champ-full-h" className="mt-12 scroll-mt-4">
         <h2 id="champ-full-h" className="wide text-[24px] leading-none text-paint">
           {t("Championship")} <span className="text-steel capitalize">{month}</span>
         </h2>
@@ -148,6 +161,7 @@ export function Standings() {
           {t("Play today's games")}
         </a>
       </div>
+    </div>
     </div>
   );
 }
