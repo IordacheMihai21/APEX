@@ -7,6 +7,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { loadScenery, loadTrack } from "../game/catalog";
+import { CONDITION_CARS, prepareTrack, simulateLap } from "@apex/engine";
+import { groundAt } from "../game3d/geometry";
 import { type RearLights, buildCarF1 } from "../game3d/carF1";
 import { buildCircuitWorld, loadCircuitGround } from "../game3d/circuitWorld";
 import { loadSurfaces } from "../game3d/textures";
@@ -78,17 +80,52 @@ scene.traverse((o) => {
 const stats = document.getElementById("stats") as HTMLElement;
 const built = `${trackId}, ${detail}${renderer.capabilities.reversedDepthBuffer ? ", reversed depth" : ""}: built in ${Math.round(performance.now() - t0)} ms, ${(tris / 1e6).toFixed(2)} M triangles`;
 
-// ---- placing the car on the lap, and the cameras
-const line = world.line;
-const N = line.x.length;
-const lapLen = track.lengthMeters;
-const pointAt = (s: number) => {
-  const f = (((s % lapLen) + lapLen) % lapLen) / (lapLen / N);
-  const i = Math.floor(f) % N;
-  const j = (i + 1) % N;
-  const u = f - Math.floor(f);
-  return new THREE.Vector3(line.x[i] + (line.x[j] - line.x[i]) * u, line.h[i] + (line.h[j] - line.h[i]) * u, -(line.y[i] + (line.y[j] - line.y[i]) * u));
+// ---- the lap: the line (the day's perfect line, or ?line=centre for the centre line) driven by the game's own physics
+// (@apex/engine's simulateLap): where the car is, how fast, how hard it turns, at every point
+const pt = prepareTrack(track);
+const lineOf = params.get("line") === "centre" ? { knotOffsets: new Array(pt.k).fill(0) } : track.optimalLine!;
+const sim = simulateLap({ track: pt, line: lineOf, car: CONDITION_CARS.dry });
+const smp = sim.samples;
+const N = smp.x.length;
+const pathH = Array.from(smp.x, (x, i) => groundAt(x, smp.y[i]) + 0.03);
+const lapLen = smp.distance[N - 1] + Math.hypot(smp.x[0] - smp.x[N - 1], smp.y[0] - smp.y[N - 1]);
+const lapMs = sim.rawLapTimeMs;
+/** the sample index and the share of the way to the next one, at s metres along the driven line */
+const locate = (s: number): [number, number, number] => {
+  const w = ((s % lapLen) + lapLen) % lapLen;
+  let lo = 0;
+  let hi = N - 1;
+  if (w >= smp.distance[N - 1]) return [N - 1, 0, (w - smp.distance[N - 1]) / (lapLen - smp.distance[N - 1])];
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (smp.distance[mid] <= w) lo = mid;
+    else hi = mid;
+  }
+  return [lo, hi, (w - smp.distance[lo]) / Math.max(1e-6, smp.distance[hi] - smp.distance[lo])];
 };
+const lerpAt = (arr: ArrayLike<number>, s: number) => {
+  const [i, j0, u] = locate(s);
+  const j = i === N - 1 ? 0 : j0;
+  return arr[i] + (arr[j] - arr[i]) * u;
+};
+const pointAt = (s: number) => new THREE.Vector3(lerpAt(smp.x, s), lerpAt(pathH, s), -lerpAt(smp.y, s));
+const speedAt = (s: number) => lerpAt(smp.speed, s);
+const curvatureAt = (s: number) => lerpAt(smp.curvature, s);
+/** where the car is (m along the line) t seconds into the lap */
+const sAtTime = (t: number) => {
+  const ms = ((t * 1000) % lapMs + lapMs) % lapMs;
+  let lo = 0;
+  let hi = N - 1;
+  if (ms >= smp.elapsedMs[N - 1]) return smp.distance[N - 1] + ((ms - smp.elapsedMs[N - 1]) / Math.max(1, lapMs - smp.elapsedMs[N - 1])) * (lapLen - smp.distance[N - 1]);
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (smp.elapsedMs[mid] <= ms) lo = mid;
+    else hi = mid;
+  }
+  const u = (ms - smp.elapsedMs[lo]) / Math.max(1e-6, smp.elapsedMs[hi] - smp.elapsedMs[lo]);
+  return smp.distance[lo] + (smp.distance[hi] - smp.distance[lo]) * u;
+};
+const vMax = Math.max(...smp.speed);
 let mode: "chase" | "tv" | "orbit" = "chase";
 const boomDir = new THREE.Vector3(0, 0, -1);
 let boomPitch = 0;
@@ -119,7 +156,8 @@ function place(at: number, m: typeof mode = mode) {
   if (dh > Math.PI) dh -= 2 * Math.PI;
   if (dh < -Math.PI) dh += 2 * Math.PI;
   // heading measured clockwise from north: a right-hander increases it; steering is positive to the left
-  const kappa = -dh / 6;
+  void dh;
+  const kappa = curvatureAt(s);
   const want = Math.atan(3.4 * kappa) * 1.15;
   steerNow += (want - steerNow) * (driving ? 1 - Math.pow(1 - 0.2, frameDt * 60) : 1);
   car.setSteer(steerNow);
@@ -252,6 +290,20 @@ let clock = 0;
   else renderer.render(scene, camera);
 };
 let manual = false;
+/**
+ * One frame of the lap at t seconds, as the game will show it: the car where the physics has it, at its speed, the
+ * rear lights flashing while it harvests (braking, lifting) and fast at the end of the longest straights (super
+ * clipping, near top speed).
+ */
+(window as unknown as { lapFrame: (t: number, dt: number) => void; lapInfo: () => { lapMs: number; vMax: number } }).lapFrame = (t, dt) => {
+  const at = sAtTime(t);
+  const v = speedAt(at);
+  const ahead = speedAt(at + v * 0.25);
+  const decel = (v - ahead) / 0.25;
+  const lights: RearLights = decel > 4 ? "harvest" : v > vMax * 0.96 ? "clip" : "off";
+  (window as unknown as { renderAt: (s: number, dt: number, speed?: number, lights?: RearLights) => void }).renderAt(at, dt, v, lights);
+};
+(window as unknown as { lapInfo: () => { lapMs: number; vMax: number } }).lapInfo = () => ({ lapMs, vMax });
 /** for checking details: a fixed camera relative to the car (car frame: x right, y up, z back) after placing it */
 (window as unknown as { look: (at: number, eye: number[], target: number[], fov: number, lights?: RearLights) => void }).look = (at, eye, target, fov, lights = "off") => {
   manual = true;
@@ -291,12 +343,11 @@ renderer.setAnimationLoop((now) => {
   if (frames % 30 === 0) fps = Math.round(1 / Math.max(dt, 1e-3));
   frameDt = dt;
   if (driving) {
-    // A Formula car slows for a hairpin; at 250 km/h a whole steering movement lasted only a few frames.
-    const bend = THREE.MathUtils.clamp((Math.abs(currentSteer) - 0.04) / 0.34, 0, 1);
-    const speed = 70 - 52 * bend * bend * (3 - 2 * bend);
-    curSpeed = speed;
-    place(s + speed * dt);
-    spinWheels(speed, dt);
+    // the car at the speed the game's physics gives it here
+    const v = speedAt(s);
+    curSpeed = v;
+    place(s + v * dt);
+    spinWheels(v, dt);
   }
   if (mode === "orbit") controls.update();
   // the sky, clouds and hills move with the camera; the sun's shadow follows the car
