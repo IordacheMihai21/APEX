@@ -1,0 +1,26 @@
+{
+  "fir-a": {
+    "frames": 12,
+    "height": 18.84,
+    "centreY": 9.38,
+    "radius": 9.6
+  },
+  "fir-b": {
+    "frames": 12,
+    "height": 13.97,
+    "centreY": 6.94,
+    "radius": 9.76
+  },
+  "fir-c": {
+    "frames": 12,
+    "height": 14.43,
+    "centreY": 7.17,
+    "radius": 15.43
+  },
+  "broad-a": {
+    "frames": 12,
+    "height": 4.53,
+    "centreY": 2.25,
+    "radius": 2.65
+  }
+}

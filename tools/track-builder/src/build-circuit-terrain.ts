@@ -5,15 +5,15 @@
  * Satellite heights are of the surface (roofs and treetops) and a few metres noisy, so:
  * - the ground is sampled on a 20 m grid, each point taking the lower quarter of its 5 x 5 neighbourhood, and the 5 m
  *   grid is interpolated from that;
- * - the road follows the lap's height profile, smoothed round the lap (Gaussian, sigma 40 m), each point the lowest of
+ * - the road follows the lap's height profile, smoothed round the lap (Gaussian, sigma 18 m), each point the lowest of
  *   a few samples within 15 m;
  * - the ground across the track is laid flat at the profile's height out to FLAT_IN from the centre line, blending
  *   back to the real terrain by FLAT_TO.
  *
  * Output:
- * - apps/web/src/game/circuit3d/<id>.bin: Int16 decimetres relative to the start line, row by row from the south-west
+ * - apps/web/src/game/circuit3d/<id>.bin: Int16 centimetres relative to the start line, row by row from the south-west
  *   (x east, y north, track metres);
- * - <id>.json: the grid (x0, y0, step, nx, ny) and the road's height at every centre-line point (decimetres).
+ * - <id>.json: the grid (x0, y0, step, nx, ny) and the road's height at every centre-line point (centimetres).
  * Usage: npm run build:circuit-terrain -- spa
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -51,7 +51,7 @@ for (const id of ids) {
   // the lap's height profile
   const around = [[0, 0], [15, 0], [-15, 0], [0, 15], [0, -15], [10, 10], [-10, 10], [10, -10], [-10, -10]];
   const raw = await Promise.all(cl.map(async ([x, y]) => Math.min(...(await Promise.all(around.map(([a, b]) => elevation(...ll(x + a, y + b))))))));
-  const sigma = 40 / step;
+  const sigma = 18 / step;
   const w = Math.ceil(3 * sigma);
   const kernel = Array.from({ length: 2 * w + 1 }, (_, k) => Math.exp(-((k - w) ** 2) / (2 * sigma * sigma)));
   const ksum = kernel.reduce((a, b) => a + b, 0);
@@ -131,7 +131,7 @@ for (const id of ids) {
       const t = ni < 0 ? 0 : Math.min(1, Math.max(0, (FLAT_TO - d) / (FLAT_TO - FLAT_IN)));
       const blend = t * t * (3 - 2 * t);
       const h = g * (1 - blend) + (ni < 0 ? g : profile[ni]) * blend;
-      const v = Math.round((h - zero) * 10);
+      const v = Math.round((h - zero) * 100);
       out[j * nx + i] = v;
       lo = Math.min(lo, v);
       hi = Math.max(hi, v);
@@ -139,9 +139,9 @@ for (const id of ids) {
   writeFileSync(resolve(outDir, `${id}.bin`), Buffer.from(out.buffer));
   writeFileSync(
     resolve(outDir, `${id}.json`),
-    JSON.stringify({ x0, y0, step: STEP, nx, ny, road: profile.map((p) => Math.round((p - zero) * 10)) }),
+    JSON.stringify({ x0, y0, step: STEP, nx, ny, unit: 0.01, road: profile.map((p) => Math.round((p - zero) * 100)) }),
   );
   const pl = Math.min(...profile) - zero;
   const ph = Math.max(...profile) - zero;
-  console.log(`${id}: ${nx} x ${ny} at ${STEP} m, ground ${(lo / 10).toFixed(0)} to +${(hi / 10).toFixed(0)} m, road ${pl.toFixed(1)} to +${ph.toFixed(1)} m from the start line`);
+  console.log(`${id}: ${nx} x ${ny} at ${STEP} m, ground ${(lo / 100).toFixed(0)} to +${(hi / 100).toFixed(0)} m, road ${pl.toFixed(1)} to +${ph.toFixed(1)} m from the start line`);
 }

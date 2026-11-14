@@ -10,7 +10,11 @@ import { loadScenery, loadTrack } from "../game/catalog";
 import { buildCarF1 } from "../game3d/carF1";
 import { buildCircuitWorld, loadCircuitGround } from "../game3d/circuitWorld";
 import { loadSurfaces } from "../game3d/textures";
+import { loadTreeAtlases } from "../game3d/treeImpostors";
 import { buildSkyline, loadSkyline } from "../game3d/skyline";
+import { BrightnessContrastEffect, EffectComposer, EffectPass, HueSaturationEffect, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
+import { N8AOPostPass } from "n8ao";
+import { MotionBlurEffect } from "../game3d/motionBlur";
 
 const params = new URLSearchParams(location.search);
 const trackId = params.get("track") ?? "spa";
@@ -19,7 +23,7 @@ const detail = params.get("car") === "lite" ? "lite" : "full";
 const canvas = document.getElementById("c") as HTMLCanvasElement;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance", // reversed depth keeps the far hills and the road's layers apart (where the device has it); a logarithmic depth
   // buffer did too, but cost half the frame rate (it turns off the GPU's early depth test, and the trees overdraw)
-  reversedDepthBuffer: params.get("rev") !== "0", preserveDrawingBuffer: true });
+  reversedDepthBuffer: params.get("rev") === "1" || (params.get("rev") !== "0" && params.get("post") === "0"), preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(Number(params.get("dpr") ?? 2), devicePixelRatio));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NeutralToneMapping;
@@ -28,13 +32,13 @@ renderer.shadowMap.enabled = params.get("shadow") !== "0";
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(55, 1, 0.2, 20000);
+const camera = new THREE.PerspectiveCamera(55, 1, 0.3, 20000);
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 controls.enabled = false;
 
 // ---- a clear day: a blue sky, paler at the horizon, the sun high and to one side, a few soft clouds
-const LOOK = { top: "#3f78c0", horizon: "#cfdbe4", sun: "#fff1dc", fog: "#c9d5de" };
+const LOOK = { top: "#4a7fbf", horizon: "#cdd8e0", sun: "#fff1dc", fog: "#bfcbd4" };
 const sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 38), THREE.MathUtils.degToRad(215));
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
@@ -90,7 +94,8 @@ for (let k = 0; k < 16; k++) {
   clouds.add(sp);
 }
 scene.add(clouds);
-scene.fog = new THREE.Fog(LOOK.fog, 400, 6500);
+// haze: the far woods and hills go pale and blue-grey with distance, as through real air
+scene.fog = new THREE.Fog(LOOK.fog, 220, 4200);
 // what the paint reflects: the same sky
 {
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -114,8 +119,8 @@ scene.add(sun, sun.target);
 
 // ---- the circuit and the car
 const t0 = performance.now();
-const [track, osm, photo, ground, skyline] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadSkyline(`${trackId}-0`)]);
-const world = buildCircuitWorld(track, ground, osm, photo, { wet: false, street: false, detail, maxTrees: params.has("trees") ? Number(params.get("trees")) : undefined });
+const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadSkyline(`${trackId}-0`), loadTreeAtlases()]);
+const world = buildCircuitWorld(track, ground, osm, photo, { wet: false, street: false, detail, maxTrees: params.has("trees") ? Number(params.get("trees")) : undefined, treeAtlases });
 scene.add(world.group);
 let hills: THREE.Group | null = null;
 if (skyline) {
@@ -145,37 +150,72 @@ const pointAt = (s: number) => {
   const u = f - Math.floor(f);
   return new THREE.Vector3(line.x[i] + (line.x[j] - line.x[i]) * u, line.h[i] + (line.h[j] - line.h[i]) * u, -(line.y[i] + (line.y[j] - line.y[i]) * u));
 };
+const headingAt = (at: number) => {
+  const a = pointAt(at - 6);
+  const b = pointAt(at + 6);
+  return Math.atan2(a.z - b.z, b.x - a.x);
+};
 let mode: "chase" | "tv" | "orbit" = "chase";
+const boomDir = new THREE.Vector3(0, 0, -1);
+let boomPitch = 0;
+let chaseInit = false;
+let frameDt = 1 / 60;
 let s = 0;
 let driving = false;
+let currentSteer = 0;
 function place(at: number, m: typeof mode = mode) {
   s = at;
   mode = m;
   const p = pointAt(s);
-  const ahead = pointAt(s + 4);
-  const behind = pointAt(s - 4);
+  // the heading from 6 m either side (the centre line is a polyline: a shorter base would twitch at every point), the
+  // pitch from the two axles' heights (the wheelbase is 3.4 m)
+  const ahead = pointAt(s + 6);
+  const behind = pointAt(s - 6);
+  const flat = new THREE.Vector3(ahead.x - behind.x, 0, ahead.z - behind.z).normalize();
+  const pitch = Math.atan2(pointAt(s + 1.7).y - pointAt(s - 1.7).y, 3.4);
+  const dir = flat.clone().multiplyScalar(Math.cos(pitch)).setY(Math.sin(pitch));
   car.car.position.copy(p);
-  // nose (local -z) along the lap, pitched with the slope
-  const dir = ahead.clone().sub(behind).normalize();
   car.car.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(), dir, new THREE.Vector3(0, 1, 0)));
+  // Turn the front axle with the bend in the centre line. The rear wheels keep pointing along the body.
+  const turn = Math.atan2(Math.sin(headingAt(s + 6) - headingAt(s - 6)), Math.cos(headingAt(s + 6) - headingAt(s - 6)));
+  const steer = THREE.MathUtils.clamp(Math.atan((3.4 * turn) / 12) * 1.7, -0.58, 0.58);
+  currentSteer = steer;
+  for (const wheel of car.front) {
+    const inner = (wheel.name.endsWith("L") && steer > 0) || (wheel.name.endsWith("R") && steer < 0);
+    wheel.rotation.y = steer * (inner ? 1.08 : 0.92);
+  }
+  if (car.steer) car.steer.rotation.z = -steer * 1.7;
+  car.setBraking(driving && Math.abs(steer) > 0.18 ? 1 : 0);
   controls.enabled = mode === "orbit";
   if (mode === "chase") {
-    const back = pointAt(s - 7.5);
-    camera.position.copy(back).add(new THREE.Vector3(0, 2.0, 0));
-    camera.lookAt(pointAt(s + 12).add(new THREE.Vector3(0, 0.6, 0)));
-    camera.fov = 58;
+    // a boom 6.2 m behind the car's middle (about 3 m behind its rear wing) and 1.55 m up, as in a racing game: the camera rides with the car (no lag along
+    // the road, so the car never runs away from it); only the boom's direction follows the car's heading and the
+    // road's slope, eased, so the car turns in the frame through a corner and the horizon stays calm
+    const k = driving ? 1 - Math.pow(1 - 0.14, frameDt * 60) : 1;
+    if (!chaseInit || !driving) {
+      boomDir.copy(flat);
+      boomPitch = pitch;
+      chaseInit = true;
+    } else {
+      boomDir.lerp(flat, k).normalize();
+      boomPitch += (pitch - boomPitch) * k;
+    }
+    const back = boomDir.clone().multiplyScalar(-6.2 * Math.cos(boomPitch)).setY(-6.2 * Math.sin(boomPitch));
+    camera.position.copy(p).add(back).add(new THREE.Vector3(0, 1.55, 0));
+    const look = p.clone().addScaledVector(boomDir, 9).add(new THREE.Vector3(0, 0.55 + 9 * Math.sin(boomPitch), 0));
+    camera.lookAt(look);
+    camera.fov = 56;
   } else if (mode === "tv") {
-    // a camera on the outside of the track, a little ahead, long lens on the car
+    // a low camera outside the corner, close enough to see the wheels and bodywork move
     const side = new THREE.Vector3(-dir.z, 0, dir.x);
-    camera.position.copy(pointAt(s + 40)).add(side.multiplyScalar(22)).add(new THREE.Vector3(0, 4, 0));
+    camera.position.copy(pointAt(s + 11)).add(side.multiplyScalar(6)).add(new THREE.Vector3(0, 1.8, 0));
     camera.lookAt(p.clone().add(new THREE.Vector3(0, 0.5, 0)));
-    camera.fov = 22;
+    camera.fov = 26;
   } else {
     controls.target.copy(p);
     if (camera.position.distanceTo(p) > 200) camera.position.copy(p).add(new THREE.Vector3(30, 25, 30));
   }
   camera.updateProjectionMatrix();
-  for (const w of car.wheels) w.rotation.x -= 0.6;
   slider.value = String(Math.round(s));
 }
 const ui = document.getElementById("ui") as HTMLElement;
@@ -197,8 +237,44 @@ ui.append(drive, slider);
 (window as unknown as { place: typeof place }).place = place;
 place(Number(params.get("s") ?? 30), (params.get("mode") as typeof mode) ?? "chase");
 
+// post: contact shadows (ambient occlusion) where things meet the ground, then a filmic grade a little cooler and
+// softer than the raw render, the smoothest edges, a light vignette. ?post=0 renders plain; ?blur=0 drops the camera blur.
+const usePost = params.get("post") !== "0";
+let composer: EffectComposer | null = null;
+let ao: N8AOPostPass | null = null;
+let blur: MotionBlurEffect | null = null;
+if (usePost) {
+  renderer.toneMapping = THREE.NoToneMapping;
+  composer = new EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType });
+  composer.addPass(new RenderPass(scene, camera));
+  if (params.get("ao") === "1") {
+  ao = new N8AOPostPass(scene, camera, innerWidth, innerHeight);
+  ao.setQualityMode("Medium");
+  ao.configuration.aoRadius = 2.2;
+  ao.configuration.distanceFalloff = 1.2;
+  ao.configuration.intensity = 2.6;
+  ao.configuration.halfRes = true;
+  composer.addPass(ao);
+  }
+  if (params.get("blur") !== "0") {
+    blur = new MotionBlurEffect(camera, { shutter: 0.5, reversedDepth: renderer.capabilities.reversedDepthBuffer });
+    composer.addPass(new EffectPass(camera, blur));
+  }
+  composer.addPass(new EffectPass(camera, new SMAAEffect({ preset: SMAAPreset.HIGH })));
+  composer.addPass(
+    new EffectPass(
+      camera,
+      new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL }),
+      new HueSaturationEffect({ saturation: -0.14 }),
+      new BrightnessContrastEffect({ brightness: 0.02, contrast: -0.04 }),
+      new VignetteEffect({ offset: 0.35, darkness: 0.35 }),
+    ),
+  );
+}
+
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
+  composer?.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
 }
@@ -207,12 +283,48 @@ resize();
 let last = performance.now();
 let frames = 0;
 let fps = 0;
+// for recording: draw one frame with the car at s, as if driving, dt seconds after the last
+(window as unknown as { renderAt: (s: number, dt: number) => void }).renderAt = (at, dt) => {
+  manual = true;
+  driving = true;
+  frameDt = dt;
+  place(at, "chase");
+  sky.position.copy(camera.position);
+  clouds.position.copy(camera.position);
+  if (hills) hills.position.set(camera.position.x, hills.position.y, camera.position.z);
+  sun.target.position.copy(car.car.position);
+  sun.position.copy(car.car.position).addScaledVector(sunDir, 400);
+  spinWheels(80, dt);
+  blur?.setCar(car.car);
+  if (composer) composer.render(dt);
+  else renderer.render(scene, camera);
+};
+let manual = false;
+/**
+ * The wheels at speed: really they turn about 6 rad a frame at 290 km/h, which a camera can't show (a wheel turning
+ * nearly a whole round a frame looks still, or turning back). Show a visible forward turn of the sidewall markings,
+ * with their lettering smeared across the exposure.
+ */
+function spinWheels(speed: number, dt: number) {
+  const real = (speed * dt) / 0.36;
+  const shown = Math.min(real, 0.72);
+  for (const w of car.wheels) w.rotation.x -= shown;
+  car.setSpinBlur(shown * 0.5);
+}
 renderer.setAnimationLoop((now) => {
+  if (manual) return;
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   frames++;
   if (frames % 30 === 0) fps = Math.round(1 / Math.max(dt, 1e-3));
-  if (driving) place(s + 70 * dt);
+  frameDt = dt;
+  if (driving) {
+    // A Formula car slows for a hairpin; at 250 km/h a whole steering movement lasted only a few frames.
+    const bend = THREE.MathUtils.clamp((Math.abs(currentSteer) - 0.04) / 0.34, 0, 1);
+    const speed = 70 - 52 * bend * bend * (3 - 2 * bend);
+    place(s + speed * dt);
+    spinWheels(speed, dt);
+  }
   if (mode === "orbit") controls.update();
   // the sky, clouds and hills move with the camera; the sun's shadow follows the car
   sky.position.copy(camera.position);
@@ -221,6 +333,8 @@ renderer.setAnimationLoop((now) => {
   sun.target.position.copy(car.car.position);
   sun.position.copy(car.car.position).addScaledVector(sunDir, 400);
   stats.textContent = `${built} · ${fps} fps · s ${Math.round(s)} m`;
-  renderer.render(scene, camera);
+  blur?.setCar(car.car);
+  if (composer) composer.render(dt);
+  else renderer.render(scene, camera);
   (window as unknown as { frameReady: boolean }).frameReady = true;
 });

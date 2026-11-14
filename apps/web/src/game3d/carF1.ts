@@ -96,7 +96,12 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
   bodyMat.customProgramCacheKey = () => "lapdle-car-zones";
   const bodyMeshes: THREE.Mesh[] = [];
   const tyreMeshes: THREE.Mesh[] = [];
+  const rearLamps: THREE.MeshBasicMaterial[] = [];
+  const rearGlows: THREE.SpriteMaterial[] = [];
+  let rearGlowTexture: THREE.Texture | null = null;
   const tyreBand = { value: new THREE.Color(look.tyreBand ?? DEFAULT_LOOK.tyreBand) };
+  /** how far (rad) the wheels turn in one frame, for blurring the sidewall's lettering round the tyre */
+  const spinBlur = { value: 0 };
 
   let disposed = false;
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -144,16 +149,42 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
     if (bodyMeshes[0]) uniforms.uZone.value.multiplyMatrices(inv, bodyMeshes[0].matrixWorld);
     // each tyre gets the compound's coloured band on its sidewalls, drawn in the frame of its own hub
     for (const o of tyreMeshes) {
-      const hub = new THREE.Matrix4().copy(o.parent!.matrixWorld).invert().multiply(o.matrixWorld);
+      // the model's tyre has its sidewalls curved in towards the rim, so from behind the tread and the sidewall read as
+      // two separate pieces: it's replaced by a clean, perfectly round tyre of the same size (its extent about the hub)
+      const rel = new THREE.Matrix4().copy(o.parent!.matrixWorld).invert().multiply(o.matrixWorld);
+      const box = new THREE.Box3().setFromBufferAttribute(o.geometry.getAttribute("position") as THREE.BufferAttribute).applyMatrix4(rel);
+      const radius = Math.max(box.max.y, -box.min.y, box.max.z, -box.min.z);
+      geos.add(o.geometry);
+      o.geometry = tyreGeometry(radius, box.min.x, box.max.x);
+      geos.add(o.geometry);
+      o.position.set(0, 0, 0);
+      o.quaternion.identity();
+      o.scale.set(1, 1, 1);
+      o.updateMatrix();
+      const hub = new THREE.Matrix4();
       const m = (o.material as THREE.MeshStandardMaterial).clone();
       m.onBeforeCompile = (sh) => {
         sh.uniforms.uHub = { value: hub };
         sh.uniforms.uBand = tyreBand;
+        sh.uniforms.uSpin = spinBlur;
         sh.vertexShader = sh.vertexShader
           .replace("#include <common>", "#include <common>\nuniform mat4 uHub;\nvarying vec3 vHubPos;\nvarying vec3 vHubNrm;")
           .replace("#include <begin_vertex>", "#include <begin_vertex>\nvHubPos = (uHub * vec4(position, 1.0)).xyz;\nvHubNrm = mat3(uHub) * normal;");
         sh.fragmentShader = sh.fragmentShader
-          .replace("#include <common>", "#include <common>\nuniform vec3 uBand;\nvarying vec3 vHubPos;\nvarying vec3 vHubNrm;")
+          .replace("#include <common>", `#include <common>
+uniform vec3 uBand;
+uniform float uSpin;
+varying vec3 vHubPos;
+varying vec3 vHubNrm;
+// Two bright, broken-up sidewall labels, large enough to read as the tyre spins past the camera.
+float lettering(float a, float r) {
+  float ring = smoothstep(0.26, 0.267, r) * (1.0 - smoothstep(0.296, 0.304, r));
+  float ph = mod(a + 3.14159265, 6.2831853);
+  float labels = step(0.22, ph) * step(ph, 1.18) + step(3.55, ph) * step(ph, 4.26);
+  float gaps = step(0.19, fract(ph * 17.0));
+  return ring * min(labels, 1.0) * gaps;
+}
+`)
           .replace(
             "#include <color_fragment>",
             `#include <color_fragment>
@@ -161,12 +192,52 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
             float side = smoothstep(0.55, 0.75, abs(normalize(vHubNrm).x));
             float aa = fwidth(r);
             float band = smoothstep(0.296 - aa, 0.296 + aa, r) * (1.0 - smoothstep(0.312 - aa, 0.312 + aa, r));
-            diffuseColor.rgb = mix(diffuseColor.rgb, uBand, band * side);`,
+            diffuseColor.rgb = mix(diffuseColor.rgb, uBand, band * side);
+            // the lettering, smeared round the tyre by how far it turns in a frame (as a camera's shutter sees it)
+            float ang = atan(vHubPos.z, vHubPos.y);
+            float lt = 0.0;
+            for (int k = 0; k < 10; k++) lt += lettering(ang + uSpin * (float(k) / 9.0 - 0.5), r);
+            float sideFace = smoothstep(0.72, 0.9, abs(normalize(vHubNrm).x));
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.9), (lt / 10.0) * sideFace * 0.92);
+`,
           );
       };
       m.customProgramCacheKey = () => "lapdle-tyre-band";
       mats.add(m);
       o.material = m;
+    }
+    // A central rain light and the two rear-wing endplate lamps. The soft halo faces the camera, while the LED
+    // rectangles remain attached to the car from any angle.
+    const glowCanvas = document.createElement("canvas");
+    glowCanvas.width = glowCanvas.height = 64;
+    const ctx = glowCanvas.getContext("2d")!;
+    const gradient = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
+    gradient.addColorStop(0, "rgba(255,80,55,0.95)");
+    gradient.addColorStop(0.18, "rgba(255,30,20,0.65)");
+    gradient.addColorStop(1, "rgba(255,0,0,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 64, 64);
+    const glowTexture = new THREE.CanvasTexture(glowCanvas);
+    rearGlowTexture = glowTexture;
+    for (const [x, y, z, width, height, halo] of [
+      [0, 0.30, 2.46, 0.14, 0.065, 4.2],
+      [-0.62, 0.76, 2.12, 0.04, 0.06, 2.5],
+      [0.62, 0.76, 2.12, 0.04, 0.06, 2.5],
+    ]) {
+      const ledMat = new THREE.MeshBasicMaterial({ color: "#ff1818", toneMapped: false, side: THREE.DoubleSide });
+      const led = new THREE.Mesh(new THREE.PlaneGeometry(width, height), ledMat);
+      led.position.set(x, y, z);
+      car.add(led);
+      geos.add(led.geometry);
+      mats.add(ledMat);
+      rearLamps.push(ledMat);
+      const glowMat = new THREE.SpriteMaterial({ map: glowTexture, color: "#ff3b23", transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.55 });
+      const glow = new THREE.Sprite(glowMat);
+      glow.position.set(x, y, z + 0.035);
+      glow.scale.set(width * halo, height * halo, 1);
+      car.add(glow);
+      mats.add(glowMat);
+      rearGlows.push(glowMat);
     }
   });
 
@@ -188,6 +259,12 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
     /** the rain light glows while braking (0..1) */
     setBraking(on: number) {
       if (rainLight) (rainLight as THREE.MeshStandardMaterial).emissiveIntensity = 0.4 + 3.6 * on;
+      for (const glow of rearGlows) glow.opacity = 0.45 + 0.45 * on;
+      for (const lamp of rearLamps) lamp.color.set(on > 0.5 ? "#ff5550" : "#ff1818");
+    },
+    /** how far the wheels turn in this frame (rad): blurs the sidewall's lettering by as much */
+    setSpinBlur(rad: number) {
+      spinBlur.value = rad;
     },
     /** repaint the car */
     setLook(next: CarLook) {
@@ -200,6 +277,7 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
       disposed = true;
       for (const g of geos) g.dispose();
       for (const m of mats) m.dispose();
+      rearGlowTexture?.dispose();
       bodyMat.dispose();
     },
   };
@@ -253,3 +331,36 @@ float carbonWeave(vec3 p, vec3 n) {
   return 0.8 + 0.4 * (0.5 + 0.5 * sin(along * 3.14159)) * (0.6 + 0.4 * tw);
 }
 `;
+
+/**
+ * A racing slick about the x axis: the tread at full radius across most of the width, rounded shoulders, sidewalls
+ * straight down to the rim. x0..x1 is its width (hub frame), the rim's radius about 70% of the tyre's.
+ */
+function tyreGeometry(radius: number, x0: number, x1: number): THREE.BufferGeometry {
+  const rim = radius * 0.71;
+  const width = x1 - x0;
+  const sh = Math.min(0.06, width * 0.16);
+  const pts: THREE.Vector2[] = [];
+  // the inner sidewall from the rim out, the inner shoulder, the tread, the outer shoulder, the outer sidewall in
+  // (Vector2: x = radius, y = along the axle)
+  const side = (from: number, to: number, at: number) => {
+    for (let k = 0; k <= 6; k++) pts.push(new THREE.Vector2(from + ((to - from) * k) / 6, at));
+  };
+  // a quarter circle about (cr radius, ca along the axle), angle 0 pointing out radially, +90 degrees along +x
+  const shoulder = (cr: number, ca: number, a0: number, a1: number) => {
+    for (let k = 0; k <= 10; k++) {
+      const a = a0 + ((a1 - a0) * k) / 10;
+      pts.push(new THREE.Vector2(cr + Math.cos(a) * sh, ca + Math.sin(a) * sh));
+    }
+  };
+  side(rim, radius - sh, x0);
+  shoulder(radius - sh, x0 + sh, -Math.PI / 2, 0);
+  for (let k = 1; k < 12; k++) pts.push(new THREE.Vector2(radius, x0 + sh + ((width - 2 * sh) * k) / 12));
+  shoulder(radius - sh, x1 - sh, 0, Math.PI / 2);
+  side(radius - sh, rim, x1);
+  const g = new THREE.LatheGeometry(pts, 128);
+  // the lathe turns about y: lay it about x, the axle
+  g.rotateZ(-Math.PI / 2);
+  g.computeVertexNormals();
+  return g;
+}

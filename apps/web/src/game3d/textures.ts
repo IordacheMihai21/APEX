@@ -6,6 +6,8 @@ import grassColor from "./assets/grass-color.webp?url";
 import grassNormal from "./assets/grass-normal.webp?url";
 import gravelColor from "./assets/gravel-color.webp?url";
 import gravelNormal from "./assets/gravel-normal.webp?url";
+import concreteWall from "./assets/concrete-wall-polyhaven.webp?url";
+import corrugatedRoof from "./assets/corrugated-roof-polyhaven.webp?url";
 import broadA from "./assets/trees/broad-a.webp?url";
 import broadB from "./assets/trees/broad-b.webp?url";
 import broadC from "./assets/trees/broad-c.webp?url";
@@ -168,24 +170,51 @@ export function windowsTexture(): THREE.CanvasTexture {
   return tile(c, 12);
 }
 
-/** Trackside boards: Lapdle's own, dark with the orange name, and white with the address. */
+/** Printed vinyl panels with the small wear, rivets and border of a mounted trackside sponsor board. */
 export function boardTextures(): THREE.CanvasTexture[] {
-  const make = (bg: string, fg: string, text: string, size: number) => {
-    const c = draw(512, 96, (g) => {
-      g.fillStyle = bg;
-      g.fillRect(0, 0, 512, 96);
+  const make = (bg: string, fg: string, text: string, tagline: string) => {
+    const c = draw(1024, 192, (g) => {
+      const r = rng(text.length * 1049);
+      const shade = g.createLinearGradient(0, 0, 0, 192);
+      shade.addColorStop(0, bg);
+      shade.addColorStop(0.54, bg);
+      shade.addColorStop(1, bg === "#f0f0eb" ? "#cfd0cc" : "#050708");
+      g.fillStyle = shade;
+      g.fillRect(0, 0, 1024, 192);
       g.fillStyle = fg;
-      g.font = `900 ${size}px Archivo, Arial, sans-serif`;
+      g.fillRect(0, 0, 12, 192);
+      g.fillRect(1012, 0, 12, 192);
+      g.fillStyle = bg === "#f0f0eb" ? "rgba(0,0,0,0.09)" : "rgba(255,255,255,0.10)";
+      for (let i = 0; i < 1300; i++) g.fillRect(r() * 1024, r() * 192, 1 + r() * 4, 1);
+      g.strokeStyle = bg === "#f0f0eb" ? "#a8aba8" : "#596066";
+      g.lineWidth = 3;
+      g.strokeRect(17, 9, 990, 174);
+      for (const x of [30, 994]) for (const y of [28, 164]) {
+        g.fillStyle = "#8e9497";
+        g.beginPath(); g.arc(x, y, 5, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#454b4e";
+        g.beginPath(); g.arc(x, y, 1.5, 0, Math.PI * 2); g.fill();
+      }
+      g.shadowColor = "rgba(0,0,0,0.28)";
+      g.shadowBlur = 5;
+      g.shadowOffsetY = 3;
+      g.fillStyle = fg;
+      g.font = "900 122px Archivo, Arial, sans-serif";
       g.textAlign = "center";
       g.textBaseline = "middle";
-      g.fillText(text, 256, 52);
+      g.fillText(text, 512, 83);
+      g.shadowBlur = 0;
+      g.shadowOffsetY = 0;
+      g.font = "700 29px Archivo, Arial, sans-serif";
+      g.fillText(tagline, 512, 155);
     });
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 8;
     return t;
   };
-  return [make("#0a0b0d", "#ff6a13", "LAPDLE", 74), make("#f2f2ee", "#0a0b0d", "lapdle.com", 64), make("#ff6a13", "#0a0b0d", "LAPDLE", 74)];
+  // the same boards stand at every circuit (Make the corner's corners too): Lapdle's own, nothing about one place
+  return [make("#0a0d10", "#ff6a13", "LAPDLE", "DAILY F1 GAMES"), make("#f0f0eb", "#151a1e", "LAPDLE.COM", "PLAY TODAY'S DAILY QUALI"), make("#ff6a13", "#0a0d10", "LAPDLE", "EVERY LAP COUNTS")];
 }
 
 /** A braking board: the distance in big black numbers on white, with a red border. */
@@ -243,6 +272,7 @@ export interface Surfaces {
   asphalt: Photo;
   grass: Photo;
   gravel: Photo;
+  architecture: { concrete: THREE.Texture; roof: THREE.Texture };
   /** photographs of whole trees, cut out (generated for us), by kind */
   trees: Record<"broad" | "conifer" | "palm", TreePicture[]>;
   dispose(): void;
@@ -250,7 +280,7 @@ export interface Surfaces {
 
 /**
  * The photographed surfaces (CC0: asphalt_track from Poly Haven, Grass005 and Gravel023 from ambientCG), 1K and
- * WebP, about 1 MB in all: the road, the grass and the gravel traps. Geometry UVs are in metres. And the trees:
+ * WebP: the road, grass, gravel, concrete and corrugated metal. Geometry UVs are in metres. And the trees:
  * photographs of whole trees on white (generated with Gemini on our Google Cloud project), cut out to see-through
  * WebP, about 440 KB.
  */
@@ -264,13 +294,15 @@ export async function loadSurfaces(): Promise<Surfaces> {
     t.anisotropy = 8;
     return t;
   };
-  const [ac, an, gc, gn, vc, vn] = await Promise.all([
+  const [ac, an, gc, gn, vc, vn, concrete, roof] = await Promise.all([
     load(asphaltColor, 2.5, true),
     load(asphaltNormal, 2.5, false),
     load(grassColor, 3, true),
     load(grassNormal, 3, false),
     load(gravelColor, 2, true),
     load(gravelNormal, 2, false),
+    load(concreteWall, 5, true),
+    load(corrugatedRoof, 5, true),
   ]);
   const tree = async (url: string): Promise<TreePicture> => {
     const t = await loader.loadAsync(url);
@@ -284,9 +316,10 @@ export async function loadSurfaces(): Promise<Surfaces> {
     asphalt: { map: ac, normal: an },
     grass: { map: gc, normal: gn },
     gravel: { map: vc, normal: vn },
+    architecture: { concrete, roof },
     trees: { broad: [ba, bb, bc], conifer: [ca], palm: [pa, pb] },
     dispose() {
-      for (const t of [ac, an, gc, gn, vc, vn, ba.map, bb.map, bc.map, ca.map, pa.map, pb.map]) t.dispose();
+      for (const t of [ac, an, gc, gn, vc, vn, concrete, roof, ba.map, bb.map, bc.map, ca.map, pa.map, pb.map]) t.dispose();
     },
   };
 }
