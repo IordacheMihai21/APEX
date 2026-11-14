@@ -93,6 +93,12 @@ export class MotionBlurEffect extends Effect {
     // the car's box corners on screen, padded a little
     this.camera.updateMatrixWorld();
     const r = (this.uniforms.get("uCarRect") as THREE.Uniform<THREE.Vector4>).value.set(2, 2, -1, -1);
+    // a camera inside the car (the cockpit): the car can be anywhere on screen
+    const eye = this.camera.position.clone().applyMatrix4(car.matrixWorld.clone().invert());
+    if (Math.abs(eye.x) < 1.2 && eye.y < 1.4 && Math.abs(eye.z) < 3.1) {
+      r.set(-0.1, -0.1, 1.1, 1.1);
+      return;
+    }
     const p = new THREE.Vector3();
     for (const x of [-1.1, 1.1])
       for (const y of [0, 1.2])

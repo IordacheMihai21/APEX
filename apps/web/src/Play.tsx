@@ -33,9 +33,11 @@ import { dateKey as dateKeyNow } from "./modes/schedule";
 import { roadPlayed } from "./community";
 import { CORNER_MEDAL_MS, type CornerWeek, cornerMedal, cornerShare, daysLeft, loadCornerWeek, recordCornerRun, weekNumber, weeklyCorner } from "./modes/corner";
 import { shareLink } from "./shareLink";
+import { has3D, lap3DOn, setLap3D } from "./game3d/available";
 
 // the 3D view of a corner (three.js and the corner's surroundings) loads only when it is opened
 const Corner3D = lazy(() => import("./ui/Corner3D"));
+const Lap3D = lazy(() => import("./ui/Lap3D"));
 /** The 3D view is hidden until it ships: on in development, or with ?3d=1 (remembered on this device). */
 const SHOW_3D = (() => {
   if (import.meta.env.DEV) return true;
@@ -230,6 +232,13 @@ function GameView({
   const racing = s.phase === "race" || s.phase === "lights";
   const phone = usePhone();
   const [towerOpen, setTowerOpen] = useState(false);
+  // the lap in 3D, where the circuit has been built for it: loaded with the game, shown while the lap runs
+  const can3D = SHOW_3D && has3D(game.track.id);
+  const [view3D, setView3D] = useState(() => can3D && lap3DOn());
+  const toggle3D = () => {
+    setLap3D(!view3D);
+    setView3D(!view3D);
+  };
   const showGrades = s.grades && (s.phase === "result" || s.phase === "setup");
   const rows = names.map((name, i) => {
     const g = s.grades?.[i];
@@ -242,6 +251,11 @@ function GameView({
   return (
     <>
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-label={t("{circuit} circuit", { circuit: game.track.name })} />
+      {view3D && (
+        <Suspense fallback={null}>
+          <Lap3D game={game} visible={racing} />
+        </Suspense>
+      )}
       {/* ODbL: the credit stays visible whenever the map is on screen */}
       {game.scenery.hasOsm && (
         <a
@@ -279,7 +293,7 @@ function GameView({
       </div>
       {phone && game.scenery.hasOsm && <OsmCredit />}
       </div>
-      {s.phase === "setup" && !s.locked && <ViewControls game={game} />}
+      {s.phase === "setup" && !s.locked && <ViewControls game={game} view3D={can3D ? view3D : null} onToggle3D={toggle3D} />}
       {s.phase === "setup" && !s.locked && <ControlBar s={s} game={game} coach={coach} />}
       {s.phase === "setup" && s.locked && daily && <LockedNote daily={daily} game={game} onHub={() => onNext(null)} />}
       {racing && <RaceHud s={s} onSkip={() => game.skip()} />}
@@ -311,9 +325,19 @@ function useInset(game: Game, side: "bottom" | "right") {
   return ref;
 }
 
-function ViewControls({ game }: { game: Game }) {
+function ViewControls({ game, view3D, onToggle3D }: { game: Game; view3D: boolean | null; onToggle3D: () => void }) {
   return (
     <div className="absolute top-[140px] right-2 flex flex-col">
+      {view3D !== null && (
+        <button
+          className={`${iconBtn} mb-2 w-auto px-2 text-[12px] font-bold ${view3D ? "text-ink" : "text-steel"}`}
+          onClick={onToggle3D}
+          aria-pressed={view3D}
+          title={view3D ? t("Watch the lap in 3D: on") : t("Watch the lap in 3D: off")}
+        >
+          3D
+        </button>
+      )}
       <button className={`${iconBtn} border-b-0`} onClick={() => game.zoom(1.4)} aria-label={t("Zoom in")} title={t("Zoom in")}>
         <Plus />
       </button>

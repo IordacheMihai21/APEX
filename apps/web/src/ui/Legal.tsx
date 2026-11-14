@@ -141,6 +141,26 @@ export function Legal() {
             </a>
             . We simplified it, split its wheels, left out its livery and logos and painted it in Lapdle's colours. It is not a model of any real team's car.
           </p>
+          <p>
+            The car of the 3D laps is based on{" "}
+            <a className={link} href="https://sketchfab.com/3d-models/f1-2026-concept-polygon-model-ea3bde709b1e4dc9b0ec8557d106ed42" target="_blank" rel="noreferrer">
+              "F1 2026 concept (polygon model)"
+            </a>{" "}
+            by Qvist Designs, with the steering wheel of{" "}
+            <a className={link} href="https://skfb.ly/pKNCK" target="_blank" rel="noreferrer">
+              "AM26 - F1 25/F1 2026 DLC"
+            </a>{" "}
+            by DeX, both under the{" "}
+            <a className={link} href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">
+              Creative Commons Attribution 4.0 licence (CC BY 4.0)
+            </a>
+            . We split its wheels, replaced its tyres, painted it in zones and added its lights. The way the body is divided into paint zones follows{" "}
+            <a className={link} href="https://github.com/KhazP/librecorsa" target="_blank" rel="noreferrer">
+              LibreCorsa
+            </a>{" "}
+            (MIT licence). Its trees are made from Poly Haven's scanned "Fir Tree 01" and "Tree Small 02" (CC0; Rob Tuytel and Rico Cilliers), and its concrete and
+            corrugated metal from Poly Haven's textures (CC0).
+          </p>
         </Section>
 
         <Section title="Software">

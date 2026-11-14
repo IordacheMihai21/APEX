@@ -780,6 +780,15 @@ export class Game {
     this.emit();
   }
 
+  /**
+   * The lap now, for the 3D view: the simulated lap, the race clock (ms; 0 on the grid while the lights come on), and the
+   * pace target's lap with how much slower it runs; null outside a lap.
+   */
+  lapView(): { sim: SimulationResult; tMs: number; phase: Phase; ghost: SimulationResult; ghostScale: number } | null {
+    if (!this.sim || (this.phase !== "lights" && this.phase !== "race" && this.phase !== "result")) return null;
+    return { sim: this.sim, tMs: this.phase === "lights" ? 0 : this.raceT, phase: this.phase, ghost: this.reference, ghostScale: this.pace.scale };
+  }
+
   skip() {
     if ((this.phase === "race" || this.phase === "lights") && this.sim) this.demo ? this.finishDemo() : this.finishRace();
   }
