@@ -7,7 +7,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { loadScenery, loadTrack } from "../game/catalog";
-import { buildCarF1 } from "../game3d/carF1";
+import { type RearLights, buildCarF1 } from "../game3d/carF1";
 import { buildCircuitWorld, loadCircuitGround } from "../game3d/circuitWorld";
 import { loadSurfaces } from "../game3d/textures";
 import { loadTreeAtlases } from "../game3d/treeImpostors";
@@ -158,6 +158,7 @@ const headingAt = (at: number) => {
 let mode: "chase" | "tv" | "orbit" = "chase";
 const boomDir = new THREE.Vector3(0, 0, -1);
 let boomPitch = 0;
+let steerNow = 0;
 let chaseInit = false;
 let frameDt = 1 / 60;
 let s = 0;
@@ -174,6 +175,18 @@ function place(at: number, m: typeof mode = mode) {
   const flat = new THREE.Vector3(ahead.x - behind.x, 0, ahead.z - behind.z).normalize();
   const pitch = Math.atan2(pointAt(s + 1.7).y - pointAt(s - 1.7).y, 3.4);
   const dir = flat.clone().multiplyScalar(Math.cos(pitch)).setY(Math.sin(pitch));
+  // the front wheels steer into the bend: a car on a curve of radius R turns them by about atan(wheelbase / R);
+  // the bend from the turn of the heading over 6 m either side, eased so it doesn't twitch at the line's points
+  const hIn = Math.atan2(p.x - behind.x, -(p.z - behind.z));
+  const hOut = Math.atan2(ahead.x - p.x, -(ahead.z - p.z));
+  let dh = hOut - hIn;
+  if (dh > Math.PI) dh -= 2 * Math.PI;
+  if (dh < -Math.PI) dh += 2 * Math.PI;
+  // heading measured clockwise from north: a right-hander increases it; steering is positive to the left
+  const kappa = -dh / 6;
+  const want = Math.atan(3.4 * kappa) * 1.15;
+  steerNow += (want - steerNow) * (driving ? 1 - Math.pow(1 - 0.2, frameDt * 60) : 1);
+  car.setSteer(steerNow);
   car.car.position.copy(p);
   car.car.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(), dir, new THREE.Vector3(0, 1, 0)));
   // Turn the front axle with the bend in the centre line. The rear wheels keep pointing along the body.
@@ -257,7 +270,7 @@ if (usePost) {
   composer.addPass(ao);
   }
   if (params.get("blur") !== "0") {
-    blur = new MotionBlurEffect(camera, { shutter: 0.5, reversedDepth: renderer.capabilities.reversedDepthBuffer });
+    blur = new MotionBlurEffect(camera, { shutter: 0.4, reversedDepth: renderer.capabilities.reversedDepthBuffer });
     composer.addPass(new EffectPass(camera, blur));
   }
   composer.addPass(new EffectPass(camera, new SMAAEffect({ preset: SMAAPreset.HIGH })));
@@ -284,8 +297,12 @@ let last = performance.now();
 let frames = 0;
 let fps = 0;
 // for recording: draw one frame with the car at s, as if driving, dt seconds after the last
-(window as unknown as { renderAt: (s: number, dt: number) => void }).renderAt = (at, dt) => {
+let clock = 0;
+(window as unknown as { renderAt: (s: number, dt: number, speed?: number, lights?: RearLights) => void }).renderAt = (at, dt, speed = 80, lights = "off") => {
   manual = true;
+  clock += dt;
+  car.setRearLights(lights);
+  car.updateLights(clock);
   driving = true;
   frameDt = dt;
   place(at, "chase");
@@ -294,7 +311,7 @@ let fps = 0;
   if (hills) hills.position.set(camera.position.x, hills.position.y, camera.position.z);
   sun.target.position.copy(car.car.position);
   sun.position.copy(car.car.position).addScaledVector(sunDir, 400);
-  spinWheels(80, dt);
+  spinWheels(speed, dt);
   blur?.setCar(car.car);
   if (composer) composer.render(dt);
   else renderer.render(scene, camera);

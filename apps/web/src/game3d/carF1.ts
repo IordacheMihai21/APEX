@@ -27,6 +27,9 @@ export const CAR_F1_CREDIT = [
 ] as const;
 
 export type CarDetail = "full" | "lite";
+export type RearLights = "off" | "on" | "harvest" | "clip";
+/** degrees at the steering wheel per degree at the front wheels */
+export const STEER_RATIO = 12;
 
 /** Full detail on a desktop-class device, the lighter body on phones and small or low-memory devices. */
 export function carDetail(): CarDetail {
@@ -97,11 +100,25 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
   const bodyMeshes: THREE.Mesh[] = [];
   const tyreMeshes: THREE.Mesh[] = [];
   const rearLamps: THREE.MeshBasicMaterial[] = [];
+  const disposables: { dispose(): void }[] = [];
+  /**
+   * What the rear lights do, as on a 2026 car: "off"; "on", steady (on intermediate or wet tyres); "harvest", flashing
+   * while the car recovers energy (braking, lifting off); "clip", flashing fast (super clipping: recharging at full
+   * throttle at the end of a long straight).
+   */
+  let lightMode: RearLights = "off";
   const rearGlows: THREE.SpriteMaterial[] = [];
   let rearGlowTexture: THREE.Texture | null = null;
   const tyreBand = { value: new THREE.Color(look.tyreBand ?? DEFAULT_LOOK.tyreBand) };
   /** how far (rad) the wheels turn in one frame, for blurring the sidewall's lettering round the tyre */
   const spinBlur = { value: 0 };
+
+  /** the lights' brightness now: 0 dark lens, 1 lit */
+  const applyLights = (level: number) => {
+    if (rainLight) (rainLight as THREE.MeshStandardMaterial).emissiveIntensity = 0.2 + 3 * level;
+    for (const lamp of rearLamps) lamp.color.setRGB(0.25 + 3.2 * level, 0.02 + 0.25 * level, 0.01 + 0.12 * level);
+    for (const glow of rearGlows) glow.opacity = 0.7 * level;
+  };
 
   let disposed = false;
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -206,39 +223,57 @@ float lettering(float a, float r) {
       mats.add(m);
       o.material = m;
     }
-    // A central rain light and the two rear-wing endplate lamps. The soft halo faces the camera, while the LED
-    // rectangles remain attached to the car from any angle.
+    // The 2026 rear lights: the central light under the rear crash structure and an LED strip down the trailing edge of
+    // each rear wing endplate, which mirrors it (Formula 1's technical regulations; formula1.com, "What do the new
+    // lights on F1 cars mean"). Each is a panel of LEDs fixed to the car with a soft halo turned to the camera.
     const glowCanvas = document.createElement("canvas");
     glowCanvas.width = glowCanvas.height = 64;
     const ctx = glowCanvas.getContext("2d")!;
     const gradient = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
     gradient.addColorStop(0, "rgba(255,80,55,0.95)");
-    gradient.addColorStop(0.18, "rgba(255,30,20,0.65)");
+    gradient.addColorStop(0.2, "rgba(255,30,20,0.6)");
     gradient.addColorStop(1, "rgba(255,0,0,0)");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 64, 64);
     const glowTexture = new THREE.CanvasTexture(glowCanvas);
     rearGlowTexture = glowTexture;
+    // the LEDs: a grid of round dots behind the lens
+    const ledCanvas = document.createElement("canvas");
+    ledCanvas.width = ledCanvas.height = 32;
+    const lc = ledCanvas.getContext("2d")!;
+    lc.fillStyle = "#3a0000";
+    lc.fillRect(0, 0, 32, 32);
+    lc.fillStyle = "#ffffff";
+    for (let yy = 4; yy < 32; yy += 8) for (let xx = 4; xx < 32; xx += 8) { lc.beginPath(); lc.arc(xx, yy, 3, 0, Math.PI * 2); lc.fill(); }
+    const ledTexture = new THREE.CanvasTexture(ledCanvas);
+    ledTexture.wrapS = ledTexture.wrapT = THREE.RepeatWrapping;
+    ledTexture.colorSpace = THREE.SRGBColorSpace;
     for (const [x, y, z, width, height, halo] of [
-      [0, 0.30, 2.46, 0.14, 0.065, 4.2],
-      [-0.62, 0.76, 2.12, 0.04, 0.06, 2.5],
-      [0.62, 0.76, 2.12, 0.04, 0.06, 2.5],
+      // central: under the crash structure, 10 cm by 5.5 cm
+      [0, 0.275, 2.452, 0.1, 0.055, 4.5],
+      // endplates: 2 cm wide, 26 cm tall, down each trailing edge
+      [-0.548, 0.68, 2.452, 0.022, 0.26, 2.2],
+      [0.548, 0.68, 2.452, 0.022, 0.26, 2.2],
     ]) {
-      const ledMat = new THREE.MeshBasicMaterial({ color: "#ff1818", toneMapped: false, side: THREE.DoubleSide });
+      const tex = ledTexture.clone();
+      tex.repeat.set(Math.max(1, Math.round(width / 0.012)) / 4, Math.max(1, Math.round(height / 0.012)) / 4);
+      const ledMat = new THREE.MeshBasicMaterial({ map: tex, color: "#ff1a10", toneMapped: false, side: THREE.DoubleSide });
       const led = new THREE.Mesh(new THREE.PlaneGeometry(width, height), ledMat);
       led.position.set(x, y, z);
       car.add(led);
       geos.add(led.geometry);
       mats.add(ledMat);
+      disposables.push(tex);
       rearLamps.push(ledMat);
-      const glowMat = new THREE.SpriteMaterial({ map: glowTexture, color: "#ff3b23", transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.55 });
+      const glowMat = new THREE.SpriteMaterial({ map: glowTexture, color: "#ff3b23", transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 });
       const glow = new THREE.Sprite(glowMat);
-      glow.position.set(x, y, z + 0.035);
-      glow.scale.set(width * halo, height * halo, 1);
+      glow.position.set(x, y, z + 0.03);
+      glow.scale.set(Math.max(width, height * 0.35) * halo, height * halo * 0.9, 1);
       car.add(glow);
       mats.add(glowMat);
       rearGlows.push(glowMat);
     }
+    applyLights(0);
   });
 
   return {
@@ -257,10 +292,27 @@ float lettering(float a, float r) {
       return cameras;
     },
     /** the rain light glows while braking (0..1) */
+    /**
+     * Steer: the front wheels turn about their kingpins by `rad` (positive to the left), as much as 14 degrees
+     * normally (about 20 at Monaco), and the steering wheel turns 12 times as far (about 180 degrees in a hairpin).
+     */
+    setSteer(rad: number) {
+      const d = Math.max(-0.35, Math.min(0.35, rad));
+      for (const w of front) w.rotation.y = d;
+      if (steer) (steer as THREE.Object3D).rotation.z = d * STEER_RATIO;
+    },
+    /** set what the rear lights do (see RearLights) */
+    setRearLights(mode: RearLights) {
+      lightMode = mode;
+    },
+    /** advance the lights' flashing to time t (s) */
+    updateLights(t: number) {
+      const level = lightMode === "on" ? 1 : lightMode === "harvest" ? (t * 4) % 1 < 0.5 ? 1 : 0 : lightMode === "clip" ? (t * 10) % 1 < 0.5 ? 1 : 0 : 0;
+      applyLights(level);
+    },
+    /** older name: braking lights the rear (flashing, as harvesting) */
     setBraking(on: number) {
-      if (rainLight) (rainLight as THREE.MeshStandardMaterial).emissiveIntensity = 0.4 + 3.6 * on;
-      for (const glow of rearGlows) glow.opacity = 0.45 + 0.45 * on;
-      for (const lamp of rearLamps) lamp.color.set(on > 0.5 ? "#ff5550" : "#ff1818");
+      lightMode = on > 0.5 ? "harvest" : "off";
     },
     /** how far the wheels turn in this frame (rad): blurs the sidewall's lettering by as much */
     setSpinBlur(rad: number) {
@@ -279,6 +331,7 @@ float lettering(float a, float r) {
       for (const m of mats) m.dispose();
       rearGlowTexture?.dispose();
       bodyMat.dispose();
+      for (const d of disposables) d.dispose();
     },
   };
 }
