@@ -28,6 +28,7 @@
     "build:corners": "tsx tools/track-builder/src/build-corners.ts",
     "build:car": "tsx tools/track-builder/src/build-car.ts",
     "build:car-f1": "tsx tools/track-builder/src/build-car-f1.ts",
+    "build:circuit-terrain": "tsx tools/track-builder/src/build-circuit-terrain.ts",
     "build:terrain": "tsx tools/track-builder/src/build-terrain.ts",
     "build:skyline": "tsx tools/track-builder/src/build-skyline.ts"
   },
