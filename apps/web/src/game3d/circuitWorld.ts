@@ -3,6 +3,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import type { GameTrack } from "@apex/engine";
 import type { SceneryData } from "../game/surroundings";
 import { FLORA_BY_TRACK, type Species, pickSpecies } from "../game/trees";
+import { type StandParts, buildCrowd, buildGrandstand } from "./grandstand";
 import { type TreeInstance, type TreeKind, buildTreeImpostors } from "./treeImpostors";
 import { type Station, extrude, groundAt, inside, polygon, setGround, smooth, strip, toWorld, wall } from "./geometry";
 import { type Surfaces, bandAlpha, boardTextures, distanceBoard, fenceAlpha, kerbTexture, surfaceTextures } from "./textures";
@@ -919,8 +920,10 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
     // the bigger blocks (hospitality, offices) have their storeys of glazing; sheds and kiosks stay plain
     const officeMat = keep(new THREE.MeshStandardMaterial({ map: keep(glazingTexture()), color: "#e6e4de", roughness: 0.75, side: THREE.DoubleSide }));
     const standWallMat = keep(new THREE.MeshStandardMaterial({ map: photo.architecture.concrete, color: "#c8cbca", roughness: 0.9, side: THREE.DoubleSide }));
-    const crowdMat = keep(new THREE.MeshStandardMaterial({ map: keep(seatsTexture()), roughness: 0.9, side: THREE.DoubleSide }));
-    const canopyMat = keep(new THREE.MeshStandardMaterial({ map: photo.architecture.roof, color: "#b7bdc0", roughness: 0.72, metalness: 0.22, side: THREE.DoubleSide }));
+    const seatMat = keep(new THREE.MeshStandardMaterial({ color: "#284a86", roughness: 0.6 }));
+    const crowdStands: StandParts["people"][] = [];
+    // a light roof: its underside is all in shade, so a little light of its own keeps it from going black
+    const canopyMat = keep(new THREE.MeshStandardMaterial({ map: photo.architecture.roof, color: "#c9ced2", emissive: "#4a4e54", roughness: 0.72, metalness: 0.15, side: THREE.DoubleSide }));
     const pitsMat = keep(new THREE.MeshStandardMaterial({ map: keep(glazingTexture()), color: "#e4e2dc", roughness: 0.6, side: THREE.DoubleSide }));
     const buckets = new Map<THREE.Material, THREE.BufferGeometry[]>();
     const bucket = (m: THREE.Material, g: THREE.BufferGeometry) => {
@@ -940,63 +943,20 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
       cy /= flat.length / 2;
       blockers.push(flat);
       if (b.k === "stand") {
+        // a real grandstand: tiers of concrete, rows of seats, people in them, a roof on the deep ones
         const [ti] = nearestIndex(cx, cy, 400);
         const tx = ti >= 0 ? cl[ti][0] - cx : 0;
         const ty = ti >= 0 ? cl[ti][1] - cy : 1;
         const d = Math.hypot(tx, ty) || 1;
-        const fx = -tx / d;
-        const fy = -ty / d;
-        let lo = Infinity;
-        let hi = -Infinity;
-        for (let i = 0; i < flat.length; i += 2) {
-          const p = flat[i] * fx + flat[i + 1] * fy;
-          lo = Math.min(lo, p);
-          hi = Math.max(hi, p);
-        }
-        const top = Math.max(6, b.h);
-        const rake = (x: number, y: number) => 2 + ((x * fx + y * fy - lo) / Math.max(1, hi - lo)) * (top - 2);
-        const e = extrude(flat, rake);
-        if (!e) continue;
-        bucket(standWallMat, e.walls);
-        bucket(crowdMat, e.roof);
-        const cut = lo + 0.45 * (hi - lo);
-        const keepPts: number[] = [];
-        for (let i = 0; i < flat.length; i += 2) {
-          const ax = flat[i];
-          const ay = flat[i + 1];
-          const bx = flat[(i + 2) % flat.length];
-          const by = flat[(i + 3) % flat.length];
-          const pa = ax * fx + ay * fy - cut;
-          const pb = bx * fx + by * fy - cut;
-          if (pa >= 0) keepPts.push(ax, ay);
-          if (pa >= 0 !== pb >= 0) {
-            const t = pa / (pa - pb);
-            keepPts.push(ax + (bx - ax) * t, ay + (by - ay) * t);
-          }
-        }
-        const canopy = keepPts.length >= 6 ? extrude(keepPts, (x, y) => rake(x, y) + 4.5) : null;
-        if (canopy) {
-          bucket(canopyMat, canopy.roof);
-          canopy.walls.dispose();
-          const pts: [number, number][] = [];
-          for (let i = 0; i < flat.length; i += 2) pts.push([flat[i], flat[i + 1]]);
-          const base = Math.min(...pts.map(([x, y]) => groundAt(x, y)));
-          for (let i = 0; i < pts.length; i++) {
-            const [ax, ay] = pts[i];
-            const [bx, by] = pts[(i + 1) % pts.length];
-            const back = (x: number, y: number) => x * fx + y * fy - lo > 0.75 * (hi - lo);
-            if (!back(ax, ay) || !back(bx, by)) continue;
-            const len = Math.hypot(bx - ax, by - ay);
-            for (let k = 0; k <= Math.floor(len / 12); k++) {
-              const t = len < 1 ? 0 : (k * 12) / len;
-              const px = ax + (bx - ax) * t;
-              const py = ay + (by - ay) * t;
-              const post = new THREE.BoxGeometry(0.35, 4.5, 0.35);
-              post.translate(px, base + rake(px, py) + 2.25, -py);
-              bucket(postMat, post);
-            }
-          }
-        }
+        let base = Infinity;
+        for (let i = 0; i < flat.length; i += 2) base = Math.min(base, groundAt(flat[i], flat[i + 1]));
+        const stand = buildGrandstand(flat, [-tx / d, -ty / d], Math.max(6, b.h), base, rnd, o.detail === "full" ? 0.74 : 0.45);
+        if (!stand) continue;
+        for (const g of stand.concrete) bucket(standWallMat, g);
+        for (const g of stand.seats) bucket(seatMat, g);
+        for (const g of stand.steel) bucket(postMat, g);
+        for (const g of stand.roof) bucket(canopyMat, g);
+        if (stand.people.length) crowdStands.push(stand.people);
       } else {
         const h = Math.max(3, b.h);
         const e = extrude(flat, () => h);
@@ -1024,6 +984,28 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
       for (const g of flat) if (!geos.includes(g)) g.dispose();
       if (merged) mesh(merged, m, { cast: true });
     }
+    // the crowd, stand by stand: people in full near the camera, simpler ones further off (THREE.LOD picks), each
+    // stand culled on its own; the same seed for both, so nobody changes clothes as the camera comes closer
+    let people = 0;
+    crowdStands.forEach((list, k) => {
+      people += list.length;
+      const c = new THREE.Vector3();
+      for (const p of list) c.add(new THREE.Vector3(p.x, p.h, -p.y));
+      c.divideScalar(list.length);
+      const seeded = (seed: number) => () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      const lod = new THREE.LOD();
+      lod.position.copy(c);
+      if (o.detail === "full") {
+        const near = buildCrowd(list, seeded(1000 + k), "full", c);
+        lod.addLevel(near.group, 0);
+        disposables.push(near);
+      }
+      const far = buildCrowd(list, seeded(1000 + k), "lite", c);
+      lod.addLevel(far.group, o.detail === "full" ? 130 : 0);
+      disposables.push(far);
+      group.add(lod);
+    });
+    void people;
   }
 
   // ---- trees: impostors of real scanned trees (game3d/treeImpostors.ts), the nearest to the track first, up to what
@@ -1141,43 +1123,6 @@ function glazingTexture(): THREE.CanvasTexture {
   return t;
 }
 
-/** Grandstand seats: rows of blue seats, about one in four taken, in metres. */
-function seatsTexture(): THREE.CanvasTexture {
-  const c = document.createElement("canvas");
-  c.width = 256;
-  c.height = 256;
-  const g = c.getContext("2d")!;
-  // 256 px = 8 m
-  g.fillStyle = "#202d39";
-  g.fillRect(0, 0, 256, 256);
-  for (let y = 0; y < 256; y += 16) {
-    g.fillStyle = "rgba(0,0,0,0.38)";
-    g.fillRect(0, y + 12, 256, 4);
-    for (let x = 0; x < 256; x += 8) {
-      g.fillStyle = "#354b61";
-      g.fillRect(x + 1, y + 2, 6, 9);
-      g.fillStyle = "#51677c";
-      g.fillRect(x + 1, y + 2, 6, 2);
-    }
-  }
-  let s = 5;
-  const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  const shirts = ["#aeb8b5", "#963c34", "#b0a16a", "#29343b", "#a35f3f", "#55718d", "#57735f"];
-  for (let y = 0; y < 256; y += 16)
-    for (let x = 2; x < 256; x += 8) {
-      if (r() > 0.10) continue;
-      g.fillStyle = shirts[Math.floor(r() * shirts.length)];
-      g.fillRect(x, y + 2, 6, 9);
-      g.fillStyle = "#c99a78";
-      g.fillRect(x + 1.5, y, 3, 3);
-    }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(1 / 8, 1 / 8);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 8;
-  return t;
-}
 
 /** A marshal post's number: black on white. */
 function numberPlate(n: number): THREE.CanvasTexture {
