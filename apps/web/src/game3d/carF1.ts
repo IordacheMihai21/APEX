@@ -250,10 +250,11 @@ float lettering(float a, float r) {
     ledTexture.colorSpace = THREE.SRGBColorSpace;
     for (const [x, y, z, width, height, halo] of [
       // central: under the crash structure, 10 cm by 5.5 cm
-      [0, 0.275, 2.452, 0.1, 0.055, 4.5],
-      // endplates: 2 cm wide, 26 cm tall, down each trailing edge
-      [-0.548, 0.68, 2.452, 0.022, 0.26, 2.2],
-      [0.548, 0.68, 2.452, 0.022, 0.26, 2.2],
+      [0, 0.265, 2.452, 0.085, 0.05, 3.6],
+      // endplates: 1.4 cm wide, 16 cm tall, on the trailing edge at the top of each endplate (where it's vertical, from
+      // 0.65 m up, 0.57 m out from the middle)
+      [-0.566, 0.81, 2.454, 0.014, 0.16, 2.4],
+      [0.566, 0.81, 2.454, 0.014, 0.16, 2.4],
     ]) {
       const tex = ledTexture.clone();
       tex.repeat.set(Math.max(1, Math.round(width / 0.012)) / 4, Math.max(1, Math.round(height / 0.012)) / 4);
@@ -274,6 +275,35 @@ float lettering(float a, float r) {
       rearGlows.push(glowMat);
     }
     applyLights(0);
+
+    // contact shadows: where each tyre presses on the road the ground is darkest, and the floor, a few centimetres off
+    // it, shades the road under the whole car; without them the car seems to float over the track
+    const shadowCanvas = document.createElement("canvas");
+    shadowCanvas.width = shadowCanvas.height = 64;
+    const sc = shadowCanvas.getContext("2d")!;
+    const sg = sc.createRadialGradient(32, 32, 0, 32, 32, 32);
+    sg.addColorStop(0, "rgba(0,0,0,1)");
+    sg.addColorStop(0.45, "rgba(0,0,0,0.75)");
+    sg.addColorStop(1, "rgba(0,0,0,0)");
+    sc.fillStyle = sg;
+    sc.fillRect(0, 0, 64, 64);
+    const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+    disposables.push(shadowTex);
+    const shadowMat = (opacity: number) => {
+      const m = new THREE.MeshBasicMaterial({ map: shadowTex, color: "#000000", transparent: true, opacity, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+      mats.add(m);
+      return m;
+    };
+    const decal = (x: number, z: number, w: number, l: number, opacity: number) => {
+      const g = new THREE.PlaneGeometry(w, l).rotateX(-Math.PI / 2);
+      geos.add(g);
+      const m = new THREE.Mesh(g, shadowMat(opacity));
+      m.position.set(x, 0.006, z);
+      m.renderOrder = 2;
+      car.add(m);
+    };
+    decal(0, 0, 2.1, 5.4, 0.42);
+    for (const w of wheels) decal(w.position.x, w.position.z, 0.62, 0.95, 0.85);
   });
 
   return {
@@ -298,7 +328,11 @@ float lettering(float a, float r) {
      */
     setSteer(rad: number) {
       const d = Math.max(-0.35, Math.min(0.35, rad));
-      for (const w of front) w.rotation.y = d;
+      // Ackermann: the inside wheel turns a little more than the outside one (it runs a tighter circle)
+      for (const w of front) {
+        const inside = (w.name.endsWith("L") && d > 0) || (w.name.endsWith("R") && d < 0);
+        w.rotation.y = d * (inside ? 1.08 : 0.93);
+      }
       if (steer) (steer as THREE.Object3D).rotation.z = d * STEER_RATIO;
     },
     /** set what the rear lights do (see RearLights) */

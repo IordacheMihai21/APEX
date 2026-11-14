@@ -89,11 +89,6 @@ const pointAt = (s: number) => {
   const u = f - Math.floor(f);
   return new THREE.Vector3(line.x[i] + (line.x[j] - line.x[i]) * u, line.h[i] + (line.h[j] - line.h[i]) * u, -(line.y[i] + (line.y[j] - line.y[i]) * u));
 };
-const headingAt = (at: number) => {
-  const a = pointAt(at - 6);
-  const b = pointAt(at + 6);
-  return Math.atan2(a.z - b.z, b.x - a.x);
-};
 let mode: "chase" | "tv" | "orbit" = "chase";
 const boomDir = new THREE.Vector3(0, 0, -1);
 let boomPitch = 0;
@@ -103,6 +98,8 @@ let frameDt = 1 / 60;
 let s = 0;
 let driving = false;
 let currentSteer = 0;
+/** the car's speed now (m/s), for the cornering force */
+let curSpeed = 70;
 function place(at: number, m: typeof mode = mode) {
   s = at;
   mode = m;
@@ -128,22 +125,20 @@ function place(at: number, m: typeof mode = mode) {
   car.setSteer(steerNow);
   car.car.position.copy(p);
   car.car.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(), dir, new THREE.Vector3(0, 1, 0)));
-  // Turn the front axle with the bend in the centre line. The rear wheels keep pointing along the body.
-  const turn = Math.atan2(Math.sin(headingAt(s + 6) - headingAt(s - 6)), Math.cos(headingAt(s + 6) - headingAt(s - 6)));
-  const steer = THREE.MathUtils.clamp(Math.atan((3.4 * turn) / 12) * 1.7, -0.58, 0.58);
-  currentSteer = steer;
-  for (const wheel of car.front) {
-    const inner = (wheel.name.endsWith("L") && steer > 0) || (wheel.name.endsWith("R") && steer < 0);
-    wheel.rotation.y = steer * (inner ? 1.08 : 0.92);
-  }
-  if (car.steer) car.steer.rotation.z = -steer * 1.7;
-  car.setBraking(driving && Math.abs(steer) > 0.18 ? 1 : 0);
+  // the nose turns into the bend ahead of the path, as a car's does: the body runs at a slip angle that grows with
+  // the cornering force (about a degree per g), so the car visibly yaws in the frame while the camera follows its path
+  const lateralG = (curSpeed * curSpeed * kappa) / 9.81;
+  const slip = THREE.MathUtils.clamp(0.018 * lateralG, -0.09, 0.09);
+  car.car.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), slip));
+  // the tyres squash a little under the car's weight and downforce: the body sits that much lower, on the road
+  car.car.position.y -= 0.012;
+  currentSteer = steerNow;
   controls.enabled = mode === "orbit";
   if (mode === "chase") {
     // a boom 6.2 m behind the car's middle (about 3 m behind its rear wing) and 1.55 m up, as in a racing game: the camera rides with the car (no lag along
     // the road, so the car never runs away from it); only the boom's direction follows the car's heading and the
     // road's slope, eased, so the car turns in the frame through a corner and the horizon stays calm
-    const k = driving ? 1 - Math.pow(1 - 0.14, frameDt * 60) : 1;
+    const k = driving ? 1 - Math.pow(1 - 0.22, frameDt * 60) : 1;
     if (!chaseInit || !driving) {
       boomDir.copy(flat);
       boomPitch = pitch;
@@ -186,7 +181,8 @@ const drive = document.createElement("button");
 drive.textContent = "drive";
 drive.onclick = () => (driving = !driving);
 ui.append(drive, slider);
-(window as unknown as { place: typeof place }).place = place;
+(window as unknown as { place: typeof place; carObj: THREE.Object3D }).place = place;
+(window as unknown as { carObj: THREE.Object3D }).carObj = car.car;
 place(Number(params.get("s") ?? 30), (params.get("mode") as typeof mode) ?? "chase");
 
 // post: contact shadows (ambient occlusion) where things meet the ground, then a filmic grade a little cooler and
@@ -239,6 +235,7 @@ let fps = 0;
 let clock = 0;
 (window as unknown as { renderAt: (s: number, dt: number, speed?: number, lights?: RearLights) => void }).renderAt = (at, dt, speed = 80, lights = "off") => {
   manual = true;
+  curSpeed = speed;
   clock += dt;
   car.setRearLights(lights);
   car.updateLights(clock);
@@ -255,6 +252,26 @@ let clock = 0;
   else renderer.render(scene, camera);
 };
 let manual = false;
+/** for checking details: a fixed camera relative to the car (car frame: x right, y up, z back) after placing it */
+(window as unknown as { look: (at: number, eye: number[], target: number[], fov: number, lights?: RearLights) => void }).look = (at, eye, target, fov, lights = "off") => {
+  manual = true;
+  driving = false;
+  place(at, "chase");
+  car.setRearLights(lights);
+  car.updateLights(0.1);
+  car.car.updateMatrixWorld();
+  camera.position.set(eye[0], eye[1], eye[2]).applyMatrix4(car.car.matrixWorld);
+  camera.lookAt(new THREE.Vector3(target[0], target[1], target[2]).applyMatrix4(car.car.matrixWorld));
+  camera.fov = fov;
+  camera.updateProjectionMatrix();
+  daySky.update(camera, 0);
+  sun.target.position.copy(car.car.position);
+  sun.position.copy(car.car.position).addScaledVector(sunDir, 400);
+  blur?.reset();
+  blur?.setCar(car.car);
+  if (composer) composer.render(0.016);
+  else renderer.render(scene, camera);
+};
 /**
  * The wheels at speed: really they turn about 6 rad a frame at 290 km/h, which a camera can't show (a wheel turning
  * nearly a whole round a frame looks still, or turning back). Show a visible forward turn of the sidewall markings,
@@ -277,6 +294,7 @@ renderer.setAnimationLoop((now) => {
     // A Formula car slows for a hairpin; at 250 km/h a whole steering movement lasted only a few frames.
     const bend = THREE.MathUtils.clamp((Math.abs(currentSteer) - 0.04) / 0.34, 0, 1);
     const speed = 70 - 52 * bend * bend * (3 - 2 * bend);
+    curSpeed = speed;
     place(s + speed * dt);
     spinWheels(speed, dt);
   }
