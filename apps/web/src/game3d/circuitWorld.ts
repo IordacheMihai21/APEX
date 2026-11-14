@@ -251,7 +251,25 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
   };
 
   // ---- the ground: the real terrain, a fine mesh along the track and a coarse one to the edge, and a plain beyond
-  const grassMat = keep(new THREE.MeshStandardMaterial({ map: photo.grass.map, normalMap: photo.grass.normal, normalScale: new THREE.Vector2(0.75, 0.75), roughness: 1, vertexColors: true, color: o.wet ? "#a0ae98" : "#e4ead5" }));
+  const grassMat = keep(new THREE.MeshStandardMaterial({ map: photo.grass.map, normalMap: photo.grass.normal, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 1, vertexColors: true, color: o.wet ? "#a0ae98" : "#e4ead5" }));
+  // mown grass: as at a real circuit, the verges are cut in stripes that run with the track, light and dark by the way
+  // the mower laid the blades; they fade out away from the circuit, where the grass is left longer
+  grassMat.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace("#include <common>", "#include <common>\nattribute float trackDist;\nvarying float vTrackDist;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvTrackDist = trackDist;");
+    sh.fragmentShader = sh.fragmentShader
+      .replace("#include <common>", "#include <common>\nvarying float vTrackDist;")
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+        float band = vTrackDist / 7.5;
+        float stripe = smoothstep(0.42, 0.58, abs(fract(band) - 0.5) * 2.0);
+        float near = 1.0 - smoothstep(60.0, 95.0, vTrackDist);
+        diffuseColor.rgb *= mix(1.0, 0.9 + 0.17 * stripe, near * step(9.0, vTrackDist));`,
+      );
+  };
+  grassMat.customProgramCacheKey = () => "lapdle-mown-grass";
   const [gx0, gy0, gx1, gy1] = ground ? ground.box : [-3000, -3000, 3000, 3000];
   const beyond = ground ? ground.edgeMean() - 1.5 : 0;
   {
@@ -312,6 +330,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
       const pos: number[] = [];
       const uv: number[] = [];
       const col: number[] = [];
+      const dist: number[] = [];
       const idx: number[] = [];
       const vert = (i: number, j: number) => {
         const k = j * nx + i;
@@ -328,6 +347,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
         const c = tint(x, y);
         const w = woodAt(x, y) * (trackDist(x, y) > 28 ? 1 : 0);
         col.push(c * (1 - w * 0.62), c * (1 - w * 0.7), c * 0.97 * (1 - w * 0.78));
+        dist.push(trackDist(x, y));
         return (index[k] = pos.length / 3 - 1);
       };
       for (let j = 0; j < ny - 1; j++)
@@ -344,6 +364,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
       g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
       g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
       g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+      g.setAttribute("trackDist", new THREE.Float32BufferAttribute(dist, 1));
       g.setIndex(idx);
       g.computeVertexNormals();
       mesh(g, grassMat);

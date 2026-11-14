@@ -12,6 +12,7 @@ import { buildCircuitWorld, loadCircuitGround } from "../game3d/circuitWorld";
 import { loadSurfaces } from "../game3d/textures";
 import { loadTreeAtlases } from "../game3d/treeImpostors";
 import { buildSkyline, loadSkyline } from "../game3d/skyline";
+import { buildDaySky } from "../game3d/daySky";
 import { BrightnessContrastEffect, EffectComposer, EffectPass, HueSaturationEffect, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
 import { N8AOPostPass } from "n8ao";
 import { MotionBlurEffect } from "../game3d/motionBlur";
@@ -40,74 +41,12 @@ controls.enabled = false;
 // ---- a clear day: a blue sky, paler at the horizon, the sun high and to one side, a few soft clouds
 const LOOK = { top: "#4a7fbf", horizon: "#cdd8e0", sun: "#fff1dc", fog: "#bfcbd4" };
 const sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 38), THREE.MathUtils.degToRad(215));
-const skyMat = new THREE.ShaderMaterial({
-  side: THREE.BackSide,
-  depthWrite: false,
-  fog: false,
-  uniforms: { top: { value: new THREE.Color(LOOK.top) }, horizon: { value: new THREE.Color(LOOK.horizon) }, sunDir: { value: sunDir }, sunCol: { value: new THREE.Color(LOOK.sun) } },
-  vertexShader: "varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-  fragmentShader: `uniform vec3 top; uniform vec3 horizon; uniform vec3 sunDir; uniform vec3 sunCol; varying vec3 vDir;
-    void main() {
-      float t = pow(clamp(vDir.y, 0.0, 1.0), 0.5);
-      vec3 c = mix(horizon, top, t);
-      float s = max(dot(normalize(vDir), sunDir), 0.0);
-      c += sunCol * (pow(s, 600.0) * 1.2 + pow(s, 12.0) * 0.18);
-      gl_FragColor = vec4(c, 1.0);
-    }`,
-});
-const sky = new THREE.Mesh(new THREE.SphereGeometry(12000, 48, 24), skyMat);
-scene.add(sky);
-// clouds: soft white puffs on canvases, far off and high up, moving with the camera like the sky
-function cloudTexture(seed: number) {
-  const c = document.createElement("canvas");
-  c.width = 512;
-  c.height = 256;
-  const g = c.getContext("2d")!;
-  let s = seed;
-  const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  for (let k = 0; k < 26; k++) {
-    const x = 70 + r() * 372;
-    const y = 120 + (r() - 0.5) * 70 - Math.sin(((x - 70) / 372) * Math.PI) * 40;
-    const rad = 30 + r() * 60;
-    const grd = g.createRadialGradient(x, y, 0, x, y, rad);
-    grd.addColorStop(0, "rgba(255,255,255,0.55)");
-    grd.addColorStop(0.6, "rgba(250,251,253,0.25)");
-    grd.addColorStop(1, "rgba(245,247,250,0)");
-    g.fillStyle = grd;
-    g.beginPath();
-    g.arc(x, y, rad, 0, Math.PI * 2);
-    g.fill();
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-const clouds = new THREE.Group();
-for (let k = 0; k < 16; k++) {
-  const mat = new THREE.SpriteMaterial({ map: cloudTexture(k * 97 + 13), fog: false, depthWrite: false, transparent: true, opacity: 0.9 });
-  const sp = new THREE.Sprite(mat);
-  const a = (k / 16) * Math.PI * 2 + Math.random() * 0.3;
-  const d = 7000 + Math.random() * 3000;
-  sp.position.set(Math.cos(a) * d, 900 + Math.random() * 1400, Math.sin(a) * d);
-  const w = 3500 + Math.random() * 3500;
-  sp.scale.set(w, w * 0.45, 1);
-  clouds.add(sp);
-}
-scene.add(clouds);
-// haze: the far woods and hills go pale and blue-grey with distance, as through real air
-scene.fog = new THREE.Fog(LOOK.fog, 220, 4200);
-// what the paint reflects: the same sky
-{
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const envScene = new THREE.Scene();
-  envScene.add(new THREE.Mesh(new THREE.SphereGeometry(100, 32, 16), skyMat));
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(90, 32), new THREE.MeshBasicMaterial({ color: "#4d5a40" }));
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -2;
-  envScene.add(ground);
-  scene.environment = pmrem.fromScene(envScene, 0.02).texture;
-  scene.environmentIntensity = 0.9;
-}
+const daySky = buildDaySky(renderer, sunDir, { coverage: Number(params.get("clouds") ?? 0.5) });
+scene.add(daySky.group);
+// haze: the far woods and hills go pale and blue-grey with distance, into the sky's own horizon
+scene.fog = new THREE.Fog(daySky.horizon, 260, 5200);
+scene.environment = daySky.environment;
+scene.environmentIntensity = 0.42;
 scene.add(new THREE.HemisphereLight("#dce9f7", "#55603f", 1.1));
 const sun = new THREE.DirectionalLight(LOOK.sun, 3.2);
 sun.castShadow = true;
@@ -125,7 +64,7 @@ scene.add(world.group);
 let hills: THREE.Group | null = null;
 if (skyline) {
   // the skyline's rings stand beyond the whole circuit: scaled out (their heights are angles, so they look the same)
-  hills = buildSkyline(skyline, { wet: false, horizon: LOOK.fog, sunDir }).group;
+  hills = buildSkyline(skyline, { wet: false, horizon: `#${daySky.horizon.getHexString()}`, sunDir }).group;
   hills.scale.setScalar(2.6);
   scene.add(hills);
 }
@@ -306,8 +245,7 @@ let clock = 0;
   driving = true;
   frameDt = dt;
   place(at, "chase");
-  sky.position.copy(camera.position);
-  clouds.position.copy(camera.position);
+  daySky.update(camera, clock);
   if (hills) hills.position.set(camera.position.x, hills.position.y, camera.position.z);
   sun.target.position.copy(car.car.position);
   sun.position.copy(car.car.position).addScaledVector(sunDir, 400);
@@ -344,8 +282,7 @@ renderer.setAnimationLoop((now) => {
   }
   if (mode === "orbit") controls.update();
   // the sky, clouds and hills move with the camera; the sun's shadow follows the car
-  sky.position.copy(camera.position);
-  clouds.position.copy(camera.position);
+  daySky.update(camera, now / 1000);
   if (hills) hills.position.set(camera.position.x, hills.position.y, camera.position.z);
   sun.target.position.copy(car.car.position);
   sun.position.copy(car.car.position).addScaledVector(sunDir, 400);
