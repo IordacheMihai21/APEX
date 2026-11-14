@@ -1222,4 +1222,9 @@ export const ES: Record<string, string> = {
   "I'm on the Lapdle grid. Put your car next to mine:": "Estoy en la parrilla de Lapdle. Pon tu coche al lado del mío:",
   "See today's grid": "Ver la parrilla de hoy",
   "Pick your car colour on the team grid": "Elige el color de tu coche en la parrilla del equipo",
+  "Vice City week": "Semana Vice City",
+  "GTA 6 lands on 19 November and the Las Vegas Grand Prix races on the 21st, so Lapdle goes neon until Monday 23rd.": "GTA 6 sale el 19 de noviembre y el Gran Premio de Las Vegas se corre el 21, así que Lapdle se pone neón hasta el lunes 23.",
+  "Bring 3 friends this week and your car goes Neon on the grid.": "Trae a 3 amigos esta semana y tu coche será Neón en la parrilla.",
+  "The Neon car on the team grid, this week only, or any colour": "El coche Neón en la parrilla, solo esta semana, o cualquier color",
+  "This week only: the Neon car, pink to turquoise.": "Solo esta semana: el coche Neón, de rosa a turquesa.",
 };

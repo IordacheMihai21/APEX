@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0a0b0d" />
-    <!-- Vegas Night (19-23 Nov 2026), set before the first paint; same rule as src/game/vegasNight.ts -->
+    <!-- Vice City week (14-23 Nov 2026), set before the first paint; same rule as src/game/vegasNight.ts -->
     <script>
       try {
         var q = new URLSearchParams(location.search).get("theme"), n = new Date(), k = n.getFullYear() * 1e4 + (n.getMonth() + 1) * 100 + n.getDate();
-        if (q === "vegas" || (q !== "classic" && localStorage.getItem("apex.theme") !== "classic" && k >= 20261119 && k <= 20261123)) document.documentElement.dataset.theme = "vegas";
+        if (q === "vegas" || (q !== "classic" && localStorage.getItem("apex.theme") !== "classic" && k >= 20261114 && k <= 20261123)) document.documentElement.dataset.theme = "vegas";
       } catch (e) {}
     </script>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230c0d0f'/%3E%3Ccircle cx='10' cy='12' r='4.5' fill='%23ff2b1a'/%3E%3Ccircle cx='22' cy='12' r='4.5' fill='%23ff2b1a'/%3E%3Crect x='6' y='21' width='20' height='4' rx='2' fill='%23ff6a13'/%3E%3C/svg%3E" />

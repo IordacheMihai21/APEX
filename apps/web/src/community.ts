@@ -76,15 +76,21 @@ export const invitedBy = () => store.get(FROM_KEY);
 
 // ---- rewards -------------------------------------------------------------------------------------------------------
 export interface PlayerColour {
-  id: "papaya" | "magenta" | "cyan" | "red" | "blue" | "sky" | "green" | "lime" | "yellow" | "white" | "silver" | "purple" | "gold";
+  id: "papaya" | "magenta" | "neon" | "cyan" | "red" | "blue" | "sky" | "green" | "lime" | "yellow" | "white" | "silver" | "purple" | "gold";
   name: string;
   hex: string;
   /** friends needed to unlock it (0: everyone) */
   need: number;
+  /** how the swatch is drawn when it isn't a plain colour */
+  swatch?: string;
+  /** last day it can be picked (a colour of one event); whoever has it keeps it */
+  until?: string;
 }
 export const COLOURS: PlayerColour[] = [
   { id: "papaya", name: "Papaya", hex: "#ff6a13", need: 0 },
   { id: "magenta", name: "Magenta", hex: "#ff4fa3", need: 1 },
+  // Vice City week only (to 23 Nov 2026): hot pink at the nose fading to turquoise, for three friends who played
+  { id: "neon", name: "Neon", hex: "#ff2d95", need: 3, swatch: "linear-gradient(180deg, #ff2d95, #19e3d6)", until: "2026-11-23" },
   // three friends who played: any car colour (the team grid's cars and the player's line, public/cars/<id>.webp)
   { id: "cyan", name: "Cyan", hex: "#22d3d3", need: 3 },
   { id: "red", name: "Red", hex: "#e5332a", need: 3 },

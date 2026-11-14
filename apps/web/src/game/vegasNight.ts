@@ -1,12 +1,13 @@
 import { C } from "./palette";
 
 /**
- * Vegas Night: Las Vegas Grand Prix week (19 to 23 November 2026) turns Lapdle neon, a pastel sunset over the water
+ * Vice City week: from 14 November to the Las Vegas Grand Prix weekend (GTA 6 comes out on 19 November, the race is on
+ * 21 November) Lapdle goes neon, a pastel sunset over the water
  * with palm trees behind the page, with hot pink for the player. It switches itself on and off by the player's own date; a player can
  * keep the classic look, and ?theme=vegas previews it on any day. index.html carries the same check inline, so the
  * first paint is already in the right colours: keep the two in step.
  */
-export const VEGAS_FROM = "2026-11-19";
+export const VEGAS_FROM = "2026-11-14";
 export const VEGAS_TO = "2026-11-23";
 const KEY = "apex.theme";
 

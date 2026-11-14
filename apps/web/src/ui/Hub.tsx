@@ -212,11 +212,14 @@ function VegasBand() {
     setOn(!on);
   };
   return (
-    <section aria-label={t("Vegas Night")} className="border-b border-line bg-board/80">
+    <section aria-label={t("Vice City week")} className="border-b border-line bg-board/80">
       <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 md:px-8">
         <p className="min-w-0 flex-1 text-[14px] leading-snug text-paint/90">
-          <span className="wide vegas-sign mr-2 text-[17px] uppercase">{t("Vegas Night")}</span>
-          {t("It's Las Vegas Grand Prix week, so Lapdle goes neon until Monday.")}
+          <span className="wide vegas-sign mr-2 text-[17px] uppercase">{t("Vice City week")}</span>
+          {t("GTA 6 lands on 19 November and the Las Vegas Grand Prix races on the 21st, so Lapdle goes neon until Monday 23rd.")}{" "}
+          <a href="/team" className="font-semibold text-ink underline-offset-4 hover:underline">
+            {t("Bring 3 friends this week and your car goes Neon on the grid.")}
+          </a>
         </p>
         <button className={secondaryBtn} onClick={flip}>
           {on ? t("Classic look") : t("Neon look")}

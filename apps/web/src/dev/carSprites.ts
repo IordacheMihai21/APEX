@@ -69,20 +69,40 @@ const ready = Promise.all([
   }),
 ]);
 
-function paint(hex: string) {
+let zRange: [number, number] = [-3, 3];
+ready.then(() => {
+  const box = new THREE.Box3().setFromObject(built.car);
+  zRange = [box.min.z, box.max.z];
+});
+
+/** Paint the car one colour, or, with `rear`, fade from `hex` at the nose to `rear` at the back (the neon livery). */
+function paint(hex: string, rear?: string) {
   built.car.traverse((o) => {
     const m = (o as THREE.Mesh).material as THREE.MeshPhysicalMaterial | undefined;
     if (m?.name === "paint") {
-      m.color.set(hex);
+      m.color.set(rear ? "#ffffff" : hex);
       m.roughness = 0.38;
       m.clearcoatRoughness = 0.05;
+      m.onBeforeCompile = rear
+        ? (sh) => {
+            sh.uniforms.uA = { value: new THREE.Color(hex) };
+            sh.uniforms.uB = { value: new THREE.Color(rear) };
+            sh.uniforms.uZ = { value: new THREE.Vector2(zRange[0], zRange[1]) };
+            sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying float vZ;").replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvZ = (modelMatrix * vec4(transformed, 1.0)).z;");
+            sh.fragmentShader = sh.fragmentShader
+              .replace("#include <common>", "#include <common>\nvarying float vZ;\nuniform vec3 uA;\nuniform vec3 uB;\nuniform vec2 uZ;")
+              .replace("vec4 diffuseColor = vec4( diffuse, opacity );", "float k = smoothstep(0.2, 0.8, (vZ - uZ.x) / (uZ.y - uZ.x));\nvec4 diffuseColor = vec4( diffuse * mix(uA, uB, k), opacity );");
+          }
+        : () => {};
+      m.customProgramCacheKey = () => (rear ? `fade-${hex}-${rear}` : "flat");
+      m.needsUpdate = true;
     }
   });
 }
 
-(window as unknown as { render: (hex: string) => Promise<string> }).render = async (hex: string) => {
+(window as unknown as { render: (hex: string, rear?: string) => Promise<string> }).render = async (hex: string, rear?: string) => {
   await ready;
-  paint(hex);
+  paint(hex, rear);
   renderer.render(scene, camera);
   return canvas.toDataURL("image/png");
 };

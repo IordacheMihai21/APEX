@@ -1,3 +1,4 @@
+import { dateKey } from "../modes/schedule";
 import { useEffect, useState } from "react";
 import { BADGE_FRIENDS, COLOURS, ROAD_GOAL, fetchRoad, myInviteCode, refreshInvites, useCommunity } from "../community";
 import { shareOrCopy } from "./ShareDay";
@@ -30,7 +31,7 @@ export function RoadBand() {
   const pct = road ? Math.min(100, (road.today / ROAD_GOAL) * 100) : 0;
   const rewards: [number, string][] = [
     [1, t("{colour} line colour", { colour: "Magenta" })],
-    [3, t("Pick your car colour on the team grid")],
+    [3, dateKey() <= "2026-11-23" ? t("The Neon car on the team grid, this week only, or any colour") : t("Pick your car colour on the team grid")],
     [BADGE_FRIENDS, t("Gold star on the board")],
   ];
   return (
@@ -90,7 +91,7 @@ export function ColourPicker({ headingClass }: { headingClass: string }) {
     <>
       <p className={headingClass}>{t("Your colour")}</p>
       <div className="flex flex-wrap gap-2.5 px-5 py-3" role="radiogroup" aria-label={t("Your colour")}>
-        {COLOURS.map((x) => {
+        {COLOURS.filter((x) => !x.until || dateKey() <= x.until || c.colour.id === x.id).map((x) => {
           const open = x.id === "papaya" || c.colours.includes(x.id);
           const on = c.colour.id === x.id;
           return (
@@ -104,7 +105,7 @@ export function ColourPicker({ headingClass }: { headingClass: string }) {
               onClick={() => void import("../community").then((m) => m.setPlayerColour(x.id))}
               className={`grid h-9 w-9 place-items-center rounded-full border-2 ${on ? "border-paint" : "border-transparent"} disabled:opacity-35`}
             >
-              <span className="h-6 w-6 rounded-full" style={{ background: x.hex }} />
+              <span className="h-6 w-6 rounded-full" style={{ background: x.swatch ?? x.hex }} />
             </button>
           );
         })}

@@ -7,6 +7,15 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-14",
+    title: "Vice City week: Lapdle goes neon until 23 November",
+    body: [
+      "GTA 6 comes out on 19 November and the Las Vegas Grand Prix races on the 21st, so the neon look starts today instead of on the 19th: a violet night, a pastel sunset with palm trees behind the page, and your line in hot pink. The switch on the home page still keeps the classic look.",
+      "This week only, bring three friends who play from your link and your car on the team grid can go Neon, hot pink at the nose fading to turquoise. Whoever picks it keeps it after the week.",
+    ],
+    links: [["The team", "/team"]],
+  },
+  {
+    date: "2026-11-14",
     title: "The team: your car on the Road to 1,000 grid",
     body: [
       "A new page, The team, shows the Road to 1,000 as a starting grid. Every driver who plays a daily game puts one car on that day's grid, in the order they joined: named drivers with their name above the car, drivers without a name in grey. There's one grid for every day of the challenge, from Day 1 on 13 November.",

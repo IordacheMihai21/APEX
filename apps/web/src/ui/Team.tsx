@@ -145,7 +145,8 @@ export function Team() {
         {/* the places still free, and how to fill them */}
         <div className="mt-10 border border-dashed border-paint/25 p-5">
           <p className="wide text-[22px] leading-tight text-paint">{t("{n} places left on the grid", { n: left.toLocaleString() })}</p>
-          <p className="mt-2 max-w-[60ch] text-[14px] leading-snug text-steel">{t("Every friend who opens your link and plays is one more car. Bring three and you pick your car's colour; everyone else races Papaya.")}</p>
+          <p className="mt-2 max-w-[60ch] text-[14px] leading-snug text-steel">{t("Every friend who opens your link and plays is one more car. Bring three and you pick your car's colour; everyone else races Papaya.")}
+            {dateKey() <= "2026-11-23" && ` ${t("This week only: the Neon car, pink to turquoise.")}`}</p>
           <div className="mt-4 flex flex-wrap gap-2.5">
             <button className={`${primaryBtn} flex-1 basis-44`} onClick={invite}>
               {copied ? t("Link copied") : t("Invite friends")}
