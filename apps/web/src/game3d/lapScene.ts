@@ -120,6 +120,7 @@ export class LapScene {
     scene.scene.add(world.group);
     scene.disposables.push(world, photo);
     scene.stands = world.stands;
+    scene.worldUpdate = world.update;
     if (skyline) {
       const hills = buildSkyline(skyline, { wet: false, horizon: `#${scene.sky.horizon.getHexString()}`, sunDir: scene.sunDir });
       hills.group.scale.setScalar(2.6);
@@ -163,6 +164,8 @@ export class LapScene {
     await scene.car.ready;
     return scene;
   }
+
+  private worldUpdate: ((t: number) => void) | null = null;
 
   private constructor(canvas: HTMLCanvasElement, detail: "full" | "lite") {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
@@ -402,6 +405,7 @@ export class LapScene {
     });
 
     this.sky.update(this.camera, this.clock);
+    this.worldUpdate?.(this.clock);
     if (this.hills) this.hills.position.set(this.camera.position.x, this.hills.position.y, this.camera.position.z);
     this.sun.target.position.copy(this.car.car.position);
     this.sun.position.copy(this.car.car.position).addScaledVector(this.sunDir, 400);

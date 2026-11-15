@@ -221,6 +221,7 @@ drive.onclick = () => (driving = !driving);
 ui.append(drive, slider);
 (window as unknown as { place: typeof place; carObj: THREE.Object3D }).place = place;
 (window as unknown as { carObj: THREE.Object3D }).carObj = car.car;
+(window as unknown as { worldGroup: THREE.Object3D }).worldGroup = world.group;
 place(Number(params.get("s") ?? 30), (params.get("mode") as typeof mode) ?? "chase");
 
 // post: contact shadows (ambient occlusion) where things meet the ground, then a filmic grade a little cooler and
@@ -281,6 +282,7 @@ let clock = 0;
   frameDt = dt;
   place(at, "chase");
   daySky.update(camera, clock);
+  world.update(clock);
   if (hills) hills.position.set(camera.position.x, hills.position.y, camera.position.z);
   sun.target.position.copy(car.car.position);
   sun.position.copy(car.car.position).addScaledVector(sunDir, 400);
@@ -324,6 +326,23 @@ let manual = false;
   if (composer) composer.render(0.016);
   else renderer.render(scene, camera);
 };
+/** a camera in another object's frame (a marshal post, a tower), to look at the scenery close up */
+(window as unknown as { lookFrom: (o: THREE.Object3D, eye: number[], target: number[], fov: number, t?: number) => void }).lookFrom = (o, eye, target, fov, t = 0) => {
+  manual = true;
+  driving = false;
+  o.updateMatrixWorld();
+  camera.position.set(eye[0], eye[1], eye[2]).applyMatrix4(o.matrixWorld);
+  camera.lookAt(new THREE.Vector3(target[0], target[1], target[2]).applyMatrix4(o.matrixWorld));
+  camera.fov = fov;
+  camera.updateProjectionMatrix();
+  daySky.update(camera, 0);
+  world.update(t);
+  sun.target.position.copy(camera.position);
+  sun.position.copy(camera.position).addScaledVector(sunDir, 400);
+  blur?.reset();
+  if (composer) composer.render(0.016);
+  else renderer.render(scene, camera);
+};
 /**
  * The wheels at speed: really they turn about 6 rad a frame at 290 km/h, which a camera can't show (a wheel turning
  * nearly a whole round a frame looks still, or turning back). Show a visible forward turn of the sidewall markings,
@@ -352,6 +371,7 @@ renderer.setAnimationLoop((now) => {
   if (mode === "orbit") controls.update();
   // the sky, clouds and hills move with the camera; the sun's shadow follows the car
   daySky.update(camera, now / 1000);
+  world.update(now / 1000);
   if (hills) hills.position.set(camera.position.x, hills.position.y, camera.position.z);
   sun.target.position.copy(car.car.position);
   sun.position.copy(car.car.position).addScaledVector(sunDir, 400);

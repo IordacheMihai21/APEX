@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import type { GameTrack } from "@apex/engine";
+import { CONDITION_CARS, type GameTrack, prepareTrack, resolveLine, simulateLap } from "@apex/engine";
 import type { SceneryData } from "../game/surroundings";
 import { FLORA_BY_TRACK, type Species, pickSpecies } from "../game/trees";
 import { type StandParts, buildCrowd, buildGrandstand } from "./grandstand";
@@ -108,6 +108,8 @@ export interface CircuitWorld {
   group: THREE.Group;
   /** each side's barrier line (track metres), round the lap */
   barriers: [number, number][][];
+  /** move what moves (the marshals' flags) to time t (s) */
+  update(t: number): void;
   /** where the grandstands are (three's world coordinates, their crowd's middle), for the crowd's sound */
   stands: THREE.Vector3[];
   /** the centre line with its heights, for placing the car (track metres, metres up) */
@@ -435,7 +437,9 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
   const st = (ax: number, ay: number, bx: number, by: number, ha: number, hb: number, v: number): Station => ({ a: [ax, ay, ha], b: [bx, by, hb], v });
   const loop = <T>(f: (i: number, k: number) => T) => Array.from({ length: N + 1 }, (_, k) => f(k % N, k));
   mesh(strip(loop((i, k) => st(L[i][0], L[i][1], R[i][0], R[i][1], 0.03, 0.03, sAt(k)))), asphaltMat);
-  // the rubbered racing line: a darker band along the middle (the real line comes with the lap)
+  // the rubbered racing line: where the cars really run (the day's perfect line, resolved by the game's engine), a
+  // darker band with the two tyre tracks darker still, heavier where they brake; and braking marks before the hard
+  // stops: pairs of black streaks at the tyres' width, some longer and darker (a lock-up)
   const lineNormal = (i: number): [number, number] => {
     const a = cl[(i - 1 + N) % N];
     const b = cl[(i + 1) % N];
@@ -444,16 +448,51 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
     const d = Math.hypot(dx, dy) || 1;
     return [-dy / d, dx / d];
   };
-  mesh(
+  const pt = prepareTrack(track);
+  const optimal = track.optimalLine ?? { knotOffsets: new Array(pt.k).fill(0) };
+  const resolved = resolveLine(pt, optimal, CONDITION_CARS[o.wet ? "wet" : "dry"]);
+  const lapSim = simulateLap({ track: pt, line: optimal, car: CONDITION_CARS[o.wet ? "wet" : "dry"] });
+  const off = resolved.offsets;
+  const onLine = (i: number, lateral: number): [number, number] => {
+    const [nx, ny] = lineNormal(i);
+    return [cl[i][0] + nx * (off[i] + lateral), cl[i][1] + ny * (off[i] + lateral)];
+  };
+  const lineBand = (from: number, to: number, h: number, keepAt: (i: number) => boolean) =>
     strip(
       loop((i, k) => {
-        const [nx, ny] = lineNormal(i);
-        return st(cl[i][0] - nx * 1.1, cl[i][1] - ny * 1.1, cl[i][0] + nx * 1.1, cl[i][1] + ny * 1.1, 0.031, 0.031, sAt(k));
+        if (!keepAt(i)) return null;
+        const a = onLine(i, from);
+        const b = onLine(i, to);
+        return st(a[0], a[1], b[0], b[1], h, h, sAt(k));
       }),
-    ),
-    rubberMat,
-    { order: 1 },
-  );
+    );
+  mesh(lineBand(-1.25, 1.25, 0.031, () => true), rubberMat, { order: 1 });
+  const tracksMat = keep(new THREE.MeshBasicMaterial({ color: "#070707", alphaMap: band, transparent: true, opacity: 0.11, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3.5 }));
+  for (const lat of [-0.8, 0.8]) mesh(lineBand(lat - 0.28, lat + 0.28, 0.0315, () => true), tracksMat, { order: 2 });
+  // braking: where the perfect lap slows hard
+  const v = lapSim.samples.speed;
+  const braking = new Uint8Array(N);
+  for (let i = 0; i < N; i++) {
+    const ahead = v[(i + 4) % N];
+    if (v[i] - ahead > 4 * (step / 2.5)) braking[i] = 1;
+  }
+  const markTex = keep(bandAlpha());
+  markTex.repeat.set(1 / 0.3, 1);
+  markTex.wrapS = THREE.RepeatWrapping;
+  const brakeMat = keep(new THREE.MeshBasicMaterial({ color: "#050505", alphaMap: markTex, transparent: true, opacity: 0.32, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+  let r0 = 3;
+  const rr = () => ((r0 = (r0 * 16807) % 2147483647) / 2147483647);
+  for (let set = 0; set < 3; set++) {
+    // a few cars' worth of marks, each a little to one side of the line
+    const shift = (rr() - 0.5) * 1.2;
+    const lockUp = rr() < 0.4;
+    for (const lat of [-0.8, 0.8])
+      mesh(
+        lineBand(lat + shift - 0.15, lat + shift + 0.15, 0.032 + set * 0.0003, (i) => braking[i] === 1 && (lockUp || ((i * 7 + set * 13) % 9) < 6)),
+        brakeMat,
+        { order: 3 },
+      );
+  }
 
   // ---- where the corners are: each corner's stretch, its direction (+1 left), and what's inside or outside
   const turn = new Int8Array(N); // +1 a left-hander, -1 a right-hander, 0 a straight
@@ -786,6 +825,11 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
     group.add(g);
   }
 
+  // the flags wave: one clock for all of them, set by update()
+  const flagUniforms = { uTime: { value: 0 } };
+  const ledMat = keep(new THREE.MeshStandardMaterial({ color: "#062b10", emissive: "#2aff6a", emissiveIntensity: 1.6, roughness: 0.4 }));
+  const marshalMats = { suit: keep(new THREE.MeshStandardMaterial({ color: "#ff7a1a", roughness: 0.85 })), skin: keep(new THREE.MeshStandardMaterial({ color: "#d9a07a", roughness: 0.7 })), flag: keep(new THREE.MeshStandardMaterial({ color: "#1f5fd6", roughness: 0.8, side: THREE.DoubleSide })) };
+  const operatorMats = { suit: keep(new THREE.MeshStandardMaterial({ color: "#23262c", roughness: 0.85 })), skin: marshalMats.skin, flag: marshalMats.flag };
   // ---- marshal posts: a white cabin on legs behind the barrier on the outside of every corner, with its number
   if (!o.street) {
     const cabinMat = keep(new THREE.MeshStandardMaterial({ color: "#eceae4", roughness: 0.8 }));
@@ -821,8 +865,111 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
       });
       g.position.copy(toWorld(px, py, 0));
       // its front (+z) towards the track
+      // the light panel on a pole at the barrier (green: the track is clear) and a marshal in orange, a blue flag
+      // waving for the car behind
+      // over the advertising boards, so the driver sees them
+      const panel = new THREE.Mesh(keep(new THREE.BoxGeometry(1.0, 0.7, 0.12)), ledMat);
+      panel.position.set(3.6, 3.6, 0.9);
+      const pole = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.05, 0.05, 3.3, 6)), legMat);
+      pole.position.set(3.6, 1.65, 0.9);
+      g.add(panel, pole);
+      // the marshal on the cabin's steps, raised above the boards
+      const step = new THREE.Mesh(keep(new THREE.BoxGeometry(1.1, 1.3, 1.1)), legMat);
+      step.position.set(-3.6, 0.65, 0.6);
+      g.add(step);
+      const marshal = buildMarshal(marshalMats, keep, flagUniforms, k);
+      marshal.position.set(-3.6, 1.3, 0.6);
+      g.add(marshal);
       g.rotation.y = Math.atan2(-sd.nx[i], sd.ny[i]);
       group.add(g);
+    });
+  }
+
+  // ---- TV camera towers: scaffolding with a platform, a camera and its operator, on the inside of every third corner
+  if (!o.street) {
+    const scaffMat = keep(new THREE.MeshStandardMaterial({ color: "#a7abb0", metalness: 0.6, roughness: 0.45 }));
+    const camMat = keep(new THREE.MeshStandardMaterial({ color: "#1b1c20", roughness: 0.5 }));
+    track.corners.forEach((c, k) => {
+      if (k % 3 !== 1) return;
+      const inside = sides.find((x) => x.sign === (c.direction === "left" ? 1 : -1))!;
+      const i = (c.apexIndex + 8) % N;
+      const line = barriers[sides.indexOf(inside)];
+      const [bx, by] = line[i];
+      const px = bx + inside.nx[i] * 4;
+      const py = by + inside.ny[i] * 4;
+      const g = new THREE.Group();
+      const H = 6;
+      for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const leg = new THREE.Mesh(keep(new THREE.BoxGeometry(0.08, H, 0.08)), scaffMat);
+        leg.position.set(lx * 0.9, H / 2, lz * 0.9);
+        g.add(leg);
+      }
+      for (let y = 1.5; y < H; y += 1.5)
+        for (const r of [0, Math.PI / 2]) {
+          const brace = new THREE.Mesh(keep(new THREE.BoxGeometry(1.9, 0.05, 0.05)), scaffMat);
+          brace.position.set(0, y, 0);
+          brace.rotation.y = r;
+          const b2 = brace.clone();
+          brace.position.z = 0.9;
+          b2.position.z = -0.9;
+          if (r) {
+            brace.position.set(0.9, y, 0);
+            b2.position.set(-0.9, y, 0);
+          }
+          g.add(brace, b2);
+        }
+      const deck = new THREE.Mesh(keep(new THREE.BoxGeometry(2.2, 0.12, 2.2)), scaffMat);
+      deck.position.y = H;
+      const cam = new THREE.Mesh(keep(new THREE.BoxGeometry(0.35, 0.35, 0.7)), camMat);
+      cam.position.set(0, H + 1.35, 0.3);
+      const lens = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.1, 0.12, 0.5, 12).rotateX(Math.PI / 2)), camMat);
+      lens.position.set(0, H + 1.35, 0.85);
+      const op = buildMarshal(operatorMats, keep, null, k);
+      op.position.set(0, H + 0.06, -0.4);
+      g.add(deck, cam, lens, op);
+      g.traverse((m) => {
+        if (m instanceof THREE.Mesh) m.castShadow = true;
+      });
+      g.position.copy(toWorld(px, py, 0));
+      // the camera looks at the track
+      g.rotation.y = Math.atan2(-inside.nx[i], inside.ny[i]);
+      group.add(g);
+    });
+  }
+
+  // ---- painted logos on the tarmac run-off outside the corners, as circuits paint their sponsors there
+  if (!o.street) {
+    const logoTex = keep(paintedLogo());
+    const logoMat = keep(new THREE.MeshStandardMaterial({ map: logoTex, transparent: true, roughness: 0.75, polygonOffset: true, polygonOffsetFactor: -2, depthWrite: false }));
+    track.corners.forEach((c) => {
+      const outside = sides.find((x) => x.sign === (c.direction === "left" ? -1 : 1))!;
+      const i = (c.apexIndex + 10) % N;
+      const [bx, by] = barriers[sides.indexOf(outside)][i];
+      const room = Math.hypot(bx - outside.px[i], by - outside.py[i]);
+      if (room < 9) return;
+      const d = Math.min(room - 3, 5.5);
+      const cx = outside.px[i] + outside.nx[i] * d;
+      const cy = outside.py[i] + outside.ny[i] * d;
+      // the logo along the track, its letters readable from the car: draped on the ground
+      const [nx, ny] = [outside.nx[i], outside.ny[i]];
+      const tx = -ny;
+      const ty = nx;
+      const W = 15;
+      const Hh = 3.4;
+      const g = new THREE.PlaneGeometry(W, Hh, 12, 3);
+      const p = g.getAttribute("position");
+      for (let k = 0; k < p.count; k++) {
+        const u = p.getX(k);
+        const w = p.getY(k);
+        const x = cx + tx * u - nx * w;
+        const y = cy + ty * u - ny * w;
+        p.setXYZ(k, x, groundAt(x, y) + 0.034, -y);
+      }
+      g.computeVertexNormals();
+      const m = new THREE.Mesh(keep(g), logoMat);
+      m.receiveShadow = true;
+      m.renderOrder = 2;
+      group.add(m);
     });
   }
 
@@ -1036,6 +1183,9 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
     group,
     barriers,
     stands: standSpots,
+    update(t: number) {
+      flagUniforms.uTime.value = t;
+    },
     line,
     dispose() {
       for (const d of disposables) d.dispose();
@@ -1143,5 +1293,87 @@ function numberPlate(n: number): THREE.CanvasTexture {
   g.fillText(String(n), 64, 70);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/**
+ * A marshal (or a camera operator): a person in overalls standing, and, with `flag`, a flag on a short pole held up and
+ * waving (the cloth bends in the vertex shader on the shared clock).
+ */
+function buildMarshal(
+  mats: { suit: THREE.Material; skin: THREE.Material; flag: THREE.Material },
+  keep: <T extends { dispose(): void }>(x: T) => T,
+  flag: { uTime: { value: number } } | null,
+  seed: number,
+): THREE.Group {
+  const g = new THREE.Group();
+  const legs = new THREE.Mesh(keep(new THREE.CapsuleGeometry(0.13, 0.75, 3, 8)), mats.suit);
+  legs.position.y = 0.52;
+  legs.scale.set(1.15, 1, 0.8);
+  const torso = new THREE.Mesh(keep(new THREE.CapsuleGeometry(0.19, 0.42, 3, 10)), mats.suit);
+  torso.position.y = 1.28;
+  torso.scale.set(1.1, 1, 0.75);
+  const head = new THREE.Mesh(keep(new THREE.SphereGeometry(0.11, 10, 8)), mats.skin);
+  head.position.y = 1.72;
+  g.add(legs, torso, head);
+  if (flag) {
+    const arm = new THREE.Mesh(keep(new THREE.CapsuleGeometry(0.05, 0.5, 2, 6)), mats.suit);
+    arm.position.set(0.24, 1.62, 0.05);
+    arm.rotation.z = -0.5;
+    const pole = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.015, 0.015, 1.1, 6)), mats.skin);
+    pole.position.set(0.42, 2.25, 0.05);
+    const cloth = new THREE.PlaneGeometry(0.9, 0.62, 10, 4);
+    cloth.translate(0.45, 0, 0);
+    const m = (mats.flag as THREE.MeshStandardMaterial).clone();
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uTime = flag.uTime;
+      sh.vertexShader = sh.vertexShader
+        .replace("#include <common>", "#include <common>\nuniform float uTime;")
+        .replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
+          float k = position.x / 0.9;
+          transformed.z += sin(position.x * 7.0 - uTime * 9.0 + ${(seed * 1.7).toFixed(2)}) * 0.09 * k + sin(uTime * 3.1 + ${seed.toFixed(1)}) * 0.12 * k;
+          transformed.y -= k * k * 0.06;`,
+        );
+    };
+    m.customProgramCacheKey = () => "lapdle-flag";
+    keep(m);
+    const f = new THREE.Mesh(keep(cloth), m);
+    f.position.set(0.43, 2.55, 0.05);
+    f.rotation.y = Math.PI / 2;
+    g.add(arm, pole, f);
+  }
+  g.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.castShadow = true;
+  });
+  return g;
+}
+
+/** The run-off's painted logo: Lapdle's name in white and orange, worn a little by the cars that ran over it. */
+function paintedLogo(): THREE.CanvasTexture {
+  const c = document.createElement("canvas");
+  c.width = 1024;
+  c.height = 256;
+  const g = c.getContext("2d")!;
+  g.clearRect(0, 0, 1024, 256);
+  g.font = "900 190px Archivo, Arial, sans-serif";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillStyle = "rgba(255,255,255,0.86)";
+  g.fillText("LAPDLE", 512, 138);
+  g.fillStyle = "rgba(255,106,19,0.9)";
+  g.fillRect(150, 214, 724, 16);
+  // wear: tyre-coloured scuffs
+  g.globalCompositeOperation = "destination-out";
+  let s = 9;
+  const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  for (let k = 0; k < 900; k++) {
+    g.fillStyle = `rgba(0,0,0,${0.15 + r() * 0.35})`;
+    g.fillRect(r() * 1024, r() * 256, 2 + r() * 30, 1 + r() * 3);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
   return t;
 }
