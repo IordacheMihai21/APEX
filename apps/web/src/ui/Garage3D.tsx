@@ -51,8 +51,10 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
       const h = el.clientHeight;
       renderer.setSize(w, h, false);
       camera.aspect = w / Math.max(1, h);
-      // the whole car in frame, nearer on a wide screen
-      camera.position.set(0, 2.4, camera.aspect > 1.2 ? 9 : 11.5);
+      // the whole car in frame (about 6 m long, turning) whatever the shape of the screen
+      const half = Math.atan(Math.tan(THREE.MathUtils.degToRad(15)) * Math.min(1, camera.aspect));
+      const dist = 3.3 / Math.tan(half);
+      camera.position.set(0, dist * 0.22, dist);
       camera.lookAt(0, 0.35, 0);
       camera.updateProjectionMatrix();
     };
@@ -95,7 +97,7 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
   const bad = typed !== "" && !validNumber(Number(typed));
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-night text-paint" role="dialog" aria-modal="true" aria-label={t("Garage")}>
+    <div className="fixed inset-0 z-50 flex flex-col bg-night text-paint" style={{ background: "#0a0b0d" }} role="dialog" aria-modal="true" aria-label={t("Garage")}>
       <div className="flex items-center justify-between px-4 pt-4">
         <h2 className="text-[20px] font-black tracking-tight uppercase">{t("Garage")}</h2>
         <button className="border border-paint/25 px-3 py-1.5 text-[13px] font-semibold" onClick={onClose}>
