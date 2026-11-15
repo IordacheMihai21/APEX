@@ -21,8 +21,8 @@ addEventListener("resize", resize);
 resize();
 
 // the cameras through the lap (seconds): chase, then TV, cockpit and back
-const CUTS: [number, LapCamera][] = [[0, "chase"], [13, "tv"], [24, "cockpit"], [38, "chase"], [52, "tv"], [64, "cockpit"], [78, "chase"], [88, "tv"]];
-const NAME: Record<LapCamera, string> = { chase: "Chase", cockpit: "Cockpit", tv: "TV" };
+const CUTS: [number, LapCamera][] = [[0, "chase"], [13, "tv"], [24, "tcam"], [34, "cockpit"], [44, "chase"], [56, "tv"], [66, "tcam"], [76, "chase"], [88, "tv"]];
+const NAME: Record<LapCamera, string> = { chase: "Chase", tcam: "T-cam", cockpit: "Cockpit", tv: "TV" };
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
 const lapMs = sim.rawLapTimeMs;
 const fmt = (ms: number) => `${Math.floor(ms / 60000)}:${((ms % 60000) / 1000).toFixed(3).padStart(6, "0")}`;

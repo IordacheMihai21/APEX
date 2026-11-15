@@ -18,7 +18,7 @@ import { loadTreeAtlases } from "./treeImpostors";
  * 3D view always agree. Cameras: chase (behind, on a boom that rides with the car), cockpit, and TV (trackside cameras
  * on long lenses that cut from one to the next as the car passes).
  */
-export type LapCamera = "chase" | "cockpit" | "tv";
+export type LapCamera = "chase" | "tcam" | "cockpit" | "tv";
 
 /** One simulated lap, laid on the 3D road: lookups by distance and by time. */
 class LapPath {
@@ -100,6 +100,8 @@ export class LapScene {
   private boomDir = new THREE.Vector3(0, 0, -1);
   private boomPitch = 0;
   private steerNow = 0;
+  /** the car's attitude on its suspension and its rear flap, eased */
+  private att = { pitch: 0, roll: 0, heave: 0, aero: 0 };
   private lastD = 0;
   private lastT = -1;
   private clock = 0;
@@ -289,6 +291,32 @@ export class LapScene {
     const lights: RearLights = tMs <= 0 ? "off" : decel > 4 ? "harvest" : v > this.vMax * 0.96 ? "clip" : "off";
     this.car.setRearLights(lights);
     this.car.updateLights(this.clock);
+    // the suspension, from the lap's accelerations: the nose dives under braking and lifts on the throttle, the body
+    // leans out of a bend, and it squats with speed (downforce) and in compressions; an F1 car is stiff, so a degree
+    // at most
+    const ds = Math.max(2, v * 0.12);
+    const v1 = path.speed(d - ds);
+    const v2 = path.speed(d + ds);
+    const along = tMs <= 0 ? 0 : (v2 * v2 - v1 * v1) / (2 * 2 * ds);
+    const lateralG = tMs <= 0 ? 0 : (v * v * kappa) / 9.81;
+    const hA = path.point(d - 8).y;
+    const hB = path.point(d + 8).y;
+    const vertical = tMs <= 0 ? 0 : ((hA + hB - 2 * p.y) / 64) * v * v / 9.81;
+    const target = {
+      pitch: THREE.MathUtils.clamp((-along / 9.81) * 0.0036, -0.006, 0.019),
+      roll: THREE.MathUtils.clamp(lateralG * 0.0022, -0.011, 0.011),
+      heave: THREE.MathUtils.clamp(-0.012 * (v / 90) ** 2 - 0.01 * vertical, -0.03, 0.01),
+      // 2026 active aero: the flap opens on a straight at speed, and closes before the braking
+      aero: tMs > 0 && Math.abs(kappa) < 1 / 700 && Math.abs(path.curvature(d + v * 0.6)) < 1 / 700 && v > 50 && path.speed(d + v * 0.8) >= v - 2 ? 1 : 0,
+    };
+    const k = jumped ? 1 : 1 - Math.pow(0.85, dt * 60);
+    this.att.pitch += (target.pitch - this.att.pitch) * k;
+    this.att.roll += (target.roll - this.att.roll) * k;
+    this.att.heave += (target.heave - this.att.heave) * k;
+    this.att.aero += THREE.MathUtils.clamp(target.aero - this.att.aero, -dt * 4, dt * 3);
+    this.car.setAttitude(this.att.pitch, this.att.roll, this.att.heave);
+    this.car.setAero(this.att.aero);
+    this.car.setDriverVisible(this.cameraMode !== "cockpit");
     this.lastD = d;
     // the ghost at the pace target's lap time
     if (this.ghost && this.ghostPath) {
@@ -315,6 +343,14 @@ export class LapScene {
       this.camera.lookAt(p.clone().addScaledVector(this.boomDir, 9).add(new THREE.Vector3(0, 0.55 + 9 * Math.sin(this.boomPitch), 0)));
       this.camera.fov = 56;
       this.camera.near = 0.3;
+    } else if (this.cameraMode === "tcam") {
+      // the T-cam over the airbox, as on the broadcasts: the helmet just below and ahead, the track beyond
+      const eye = this.car.cameras.tcam ?? [-0.09, 1.06, 0.16];
+      this.car.car.updateMatrixWorld();
+      this.camera.position.set(0, eye[1] + 0.02, eye[2]).applyMatrix4(this.car.car.matrixWorld);
+      this.camera.lookAt(new THREE.Vector3(0, eye[1] - 0.55, eye[2] - 10).applyMatrix4(this.car.car.matrixWorld));
+      this.camera.fov = 62;
+      this.camera.near = 0.08;
     } else if (this.cameraMode === "cockpit") {
       const eye = this.car.cameras.cockpit ?? [0, 0.74, -0.2];
       this.car.car.updateMatrixWorld();

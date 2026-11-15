@@ -72,13 +72,16 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
     uCarbon: { value: new THREE.Color("#0d0e10") },
     uInterior: { value: new THREE.Color("#09090a") },
     uMid: { value: -0.1955 },
-    uZone: { value: new THREE.Matrix4() },
   };
   // a glossy clear coat over a satin base, so the sky slides over the bodywork like on a real car; the zones are
   // drawn per pixel (ZONE_GLSL)
+  // one material per body mesh (the body, the rear flap): the colours are shared, each has its own place in the car
+  const bodyMats: THREE.MeshPhysicalMaterial[] = [];
+  const makeBodyMat = (zone: THREE.Matrix4) => {
   const bodyMat = new THREE.MeshPhysicalMaterial({ name: "body", metalness: 0.05, roughness: 0.42, clearcoat: 1, clearcoatRoughness: 0.06, envMapIntensity: 0.8 });
+  bodyMats.push(bodyMat);
   bodyMat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, uniforms);
+    Object.assign(sh.uniforms, uniforms, { uZone: { value: zone } });
     sh.vertexShader = sh.vertexShader
       .replace("#include <common>", "#include <common>\nuniform mat4 uZone;\nvarying vec3 vZonePos;\nvarying vec3 vZoneNrm;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvZonePos = (uZone * vec4(position, 1.0)).xyz;\nvZoneNrm = mat3(uZone) * normal;");
@@ -97,7 +100,18 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
       .replace("#include <lights_physical_fragment>", "#include <lights_physical_fragment>\nif (zone == 4) material.clearcoat = 0.0; else if (zone == 3) material.clearcoat = 0.7;");
   };
   bodyMat.customProgramCacheKey = () => "lapdle-car-zones";
-  const bodyMeshes: THREE.Mesh[] = [];
+  return bodyMat;
+  };
+  const bodyMeshes: { mesh: THREE.Mesh; zone: THREE.Matrix4 }[] = [];
+  /** the sprung part of the car (everything but the wheels), which pitches, rolls and heaves on its suspension */
+  const sprung = new THREE.Group();
+  const sprungInner = new THREE.Group();
+  const SPRUNG_PIVOT = 0.3;
+  sprung.position.y = SPRUNG_PIVOT;
+  sprungInner.position.y = -SPRUNG_PIVOT;
+  sprung.add(sprungInner);
+  let flap: THREE.Object3D | null = null;
+  let helmet: THREE.Group | null = null;
   const tyreMeshes: THREE.Mesh[] = [];
   const rearLamps: THREE.MeshBasicMaterial[] = [];
   const disposables: { dispose(): void }[] = [];
@@ -124,8 +138,8 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const ready = loader.loadAsync(detail === "full" ? fullUrl : liteUrl).then((gltf) => {
     if (disposed) return;
-    const root = gltf.scene.getObjectByName("car") ?? gltf.scene;
-    cameras = (root.userData.cameras as typeof cameras) ?? {};
+    const gRoot = gltf.scene.getObjectByName("car") ?? gltf.scene;
+    cameras = (gRoot.userData.cameras as typeof cameras) ?? {};
     gltf.scene.traverse((o) => {
       if (o instanceof THREE.Mesh) {
         geos.add(o.geometry);
@@ -133,8 +147,9 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
         const name = m.name;
         if (name === "body") {
           m.dispose();
-          o.material = m = bodyMat;
-          bodyMeshes.push(o);
+          const zone = new THREE.Matrix4();
+          o.material = m = makeBodyMat(zone);
+          bodyMeshes.push({ mesh: o, zone });
         } else if (name === "light") {
           m.emissiveIntensity = 0.4;
           rainLight = m;
@@ -156,14 +171,39 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
         o.rotation.order = "YXZ";
       }
       if (o.name === "steer") steer = o;
+      if (o.name === "rear-flap") flap = o;
     });
-    if (typeof root.userData.rigMid === "number") uniforms.uMid.value = root.userData.rigMid;
+    if (typeof gRoot.userData.rigMid === "number") uniforms.uMid.value = gRoot.userData.rigMid;
     car.add(gltf.scene);
     // the zones are drawn in the car's own frame: the body mesh's place in the car (the compressed file scales and
     // shifts each mesh)
     car.updateMatrixWorld(true);
     const inv = car.matrixWorld.clone().invert();
-    if (bodyMeshes[0]) uniforms.uZone.value.multiplyMatrices(inv, bodyMeshes[0].matrixWorld);
+    for (const b of bodyMeshes) b.zone.multiplyMatrices(inv, b.mesh.matrixWorld);
+    // everything but the wheels rides on the suspension (the zones were taken at rest, so the paint moves with it)
+    const root = gltf.scene.getObjectByName("car") ?? gltf.scene;
+    for (const c of [...root.children]) if (!c.name.startsWith("wheel-")) sprungInner.add(c);
+    root.add(sprung);
+    // the driver: a helmet in the cockpit, gloves on the steering wheel
+    helmet = buildHelmet(look.paint ?? DEFAULT_LOOK.paint, mats, geos);
+    helmet.position.set(0, 0.748, -0.14);
+    sprungInner.add(helmet);
+    // gloves on the steering wheel's grips (its frame: x across the wheel, z along the column, the driver at -z); they
+    // turn with it
+    if (steer) {
+      const gloveMat = new THREE.MeshStandardMaterial({ color: "#16171a", roughness: 0.9 });
+      mats.add(gloveMat);
+      // a fist round each grip: a short rounded shape along the grip, the knuckles towards the driver
+      const fist = new THREE.CapsuleGeometry(0.026, 0.045, 4, 10);
+      geos.add(fist);
+      for (const side of [-1, 1]) {
+        const hand = new THREE.Mesh(fist, gloveMat);
+        hand.position.set(side * 0.133, -0.01, -0.012);
+        hand.rotation.z = side * 0.18;
+        hand.scale.set(1, 1, 0.85);
+        (steer as THREE.Object3D).add(hand);
+      }
+    }
     // each tyre gets the compound's coloured band on its sidewalls, drawn in the frame of its own hub
     for (const o of tyreMeshes) {
       // the model's tyre has its sidewalls curved in towards the rim, so from behind the tread and the sidewall read as
@@ -261,7 +301,7 @@ float lettering(float a, float r) {
       const ledMat = new THREE.MeshBasicMaterial({ map: tex, color: "#ff1a10", toneMapped: false, side: THREE.DoubleSide });
       const led = new THREE.Mesh(new THREE.PlaneGeometry(width, height), ledMat);
       led.position.set(x, y, z);
-      car.add(led);
+      sprungInner.add(led);
       geos.add(led.geometry);
       mats.add(ledMat);
       disposables.push(tex);
@@ -270,7 +310,7 @@ float lettering(float a, float r) {
       const glow = new THREE.Sprite(glowMat);
       glow.position.set(x, y, z + 0.03);
       glow.scale.set(Math.max(width, height * 0.35) * halo, height * halo * 0.9, 1);
-      car.add(glow);
+      sprungInner.add(glow);
       mats.add(glowMat);
       rearGlows.push(glowMat);
     }
@@ -335,6 +375,22 @@ float lettering(float a, float r) {
       }
       if (steer) (steer as THREE.Object3D).rotation.z = d * STEER_RATIO;
     },
+    /**
+     * The car on its suspension: pitch (rad, + nose down, under braking), roll (rad, + leaning right, in a left-hander)
+     * and heave (m, + up). An F1 car is stiff: about a degree of pitch under the hardest braking, half a degree of roll.
+     */
+    setAttitude(pitch: number, roll: number, heave: number) {
+      sprung.rotation.set(-pitch, 0, -roll);
+      sprung.position.y = SPRUNG_PIVOT + heave;
+    },
+    /** 2026 active aero: the rear wing's flap opens on the straights (1 open, 0 closed for the corners) */
+    setAero(open: number) {
+      if (flap) (flap as THREE.Object3D).rotation.x = 0.42 * Math.max(0, Math.min(1, open));
+    },
+    /** the driver's helmet, hidden from the cockpit camera (it sits where the camera is) */
+    setDriverVisible(on: boolean) {
+      if (helmet) helmet.visible = on;
+    },
     /** set what the rear lights do (see RearLights) */
     setRearLights(mode: RearLights) {
       lightMode = mode;
@@ -364,7 +420,7 @@ float lettering(float a, float r) {
       for (const g of geos) g.dispose();
       for (const m of mats) m.dispose();
       rearGlowTexture?.dispose();
-      bodyMat.dispose();
+      for (const m of bodyMats) m.dispose();
       for (const d of disposables) d.dispose();
     },
   };
@@ -449,5 +505,45 @@ function tyreGeometry(radius: number, x0: number, x1: number): THREE.BufferGeome
   // the lathe turns about y: lay it about x, the axle
   g.rotateZ(-Math.PI / 2);
   g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * The driver's helmet, as plain geometry (after LibreCorsa's driver-helmet.ts, MIT): a shell a little longer than wide
+ * in the car's colour, a dark band and chin, a white stripe over the crown, a mirrored visor facing forward (-z), and
+ * the HANS collar on the shoulders.
+ */
+function buildHelmet(colour: string, mats: Set<THREE.Material>, geos: Set<THREE.BufferGeometry>): THREE.Group {
+  const g = new THREE.Group();
+  const R = 0.134;
+  const paint = (hex: string) => {
+    const m = new THREE.MeshPhysicalMaterial({ color: hex, roughness: 0.35, clearcoat: 1, clearcoatRoughness: 0.08 });
+    mats.add(m);
+    return m;
+  };
+  const add = (geo: THREE.BufferGeometry, mat: THREE.Material) => {
+    geos.add(geo);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.scale.set(0.95, 1, 1.1);
+    mesh.castShadow = true;
+    g.add(mesh);
+    return mesh;
+  };
+  add(new THREE.SphereGeometry(R, 32, 24, 0, Math.PI * 2, 0, Math.PI * 0.78), paint(colour));
+  add(new THREE.SphereGeometry(R * 1.004, 8, 24, Math.PI * 0.5 - 0.09, 0.18, 0, Math.PI * 0.62), paint("#f2f2ee"));
+  add(new THREE.SphereGeometry(R * 1.003, 32, 6, 0, Math.PI * 2, Math.PI * 0.6, Math.PI * 0.16), paint("#141518"));
+  const visorMat = new THREE.MeshPhysicalMaterial({ color: "#101418", metalness: 0.9, roughness: 0.06, clearcoat: 1 });
+  mats.add(visorMat);
+  // the visor: a window towards the front; three's sphere faces +z at phi = pi/2, and the car's front is -z
+  const visor = add(new THREE.SphereGeometry(R * 1.008, 24, 10, Math.PI * 0.18, Math.PI * 0.64, Math.PI * 0.36, Math.PI * 0.19), visorMat);
+  visor.rotation.y = Math.PI;
+  const collarMat = new THREE.MeshStandardMaterial({ color: "#141414", roughness: 0.8 });
+  mats.add(collarMat);
+  const collarGeo = new THREE.TorusGeometry(0.105, 0.03, 10, 28, Math.PI * 1.4);
+  geos.add(collarGeo);
+  const collar = new THREE.Mesh(collarGeo, collarMat);
+  collar.rotation.set(Math.PI / 2, 0, Math.PI * 0.8 + Math.PI);
+  collar.position.y = -0.11;
+  g.add(collar);
   return g;
 }

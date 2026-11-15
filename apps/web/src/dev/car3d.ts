@@ -78,7 +78,10 @@ function setView(pos: number[], target: number[], fov: number) {
   controls.update();
 }
 (window as unknown as { view: (n: string) => void }).view = (n) => VIEWS[n]?.();
+(window as unknown as { built: typeof built }).built = built;
 (window as unknown as { steer: (r: number) => void }).steer = (r) => built.setSteer(r);
+(window as unknown as { aero: (o: number) => void }).aero = (o) => built.setAero(o);
+(window as unknown as { attitude: (p: number, r: number, h: number) => void }).attitude = (p, r, h) => built.setAttitude(p, r, h);
 (window as unknown as { cam: (p: number[], t: number[], fov: number) => void }).cam = setView;
 (window as unknown as { paint: (h: string, h2?: string, a?: string) => void }).paint = (paint, paint2, accent) => built.setLook({ paint, paint2, accent });
 const ui = document.getElementById("ui") as HTMLElement;

@@ -192,8 +192,16 @@ const lightTris = new Set<number>();
   }
 }
 
-const zones: Record<"body" | "light", number[]> = { body: [], light: [] };
-for (const t of body.tris) zones[lightTris.has(t) ? "light" : "body"].push(t);
+// the rear wing's upper flap, its own piece so the game can open it on the straights (2026 active aero): above the main
+// plane (from 0.795 m up) and behind it (rig z below -2.40), between the endplates
+const isFlap = (t: number) => {
+  const c = centroid(t);
+  return c[1] >= 0.795 && c[2] <= -2.4 && Math.abs(c[0]) < 0.5;
+};
+/** where the flap turns: its trailing edge, at the top (rig), as the real flaps pivot near it */
+const FLAP_PIVOT_RIG: [number, number, number] = [0, 0.9, -2.55];
+const zones: Record<"body" | "light" | "flap", number[]> = { body: [], light: [], flap: [] };
+for (const t of body.tris) zones[lightTris.has(t) ? "light" : isFlap(t) ? "flap" : "body"].push(t);
 for (const p of other) zones.body.push(...p.tris);
 console.log(Object.entries(zones).map(([k, v]) => `${k} ${v.length}`).join(", "));
 
@@ -345,6 +353,12 @@ async function build(file: string, lite: boolean) {
   const bodyKeep = lite ? Math.min(1, LITE.body / bodyTris) : 1;
   for (const [z, tris] of Object.entries(zones)) {
     if (!tris.length) continue;
+    if (z === "flap") {
+      // about its pivot, so the game turns it there
+      const pivot = game(...FLAP_PIVOT_RIG);
+      car.addChild(doc.createNode("rear-flap").setTranslation(pivot).setMesh(meshOf("rear-flap", tris, M.body, pivot, bodyKeep)));
+      continue;
+    }
     // small zones (the light, the interior) keep their shape
     const keep = z === "light" ? 1 : bodyKeep;
     car.addChild(doc.createNode(z).setMesh(meshOf(z, tris, M[z], [0, 0, 0], keep)));

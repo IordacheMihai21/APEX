@@ -3,8 +3,8 @@ import { t } from "../i18n";
 import type { Game } from "../game/game";
 import { type LapCamera, LapScene } from "../game3d/lapScene";
 
-const CAMERAS: LapCamera[] = ["chase", "cockpit", "tv"];
-const CAMERA_NAME: Record<LapCamera, string> = { chase: "Chase", cockpit: "Cockpit", tv: "TV" };
+const CAMERAS: LapCamera[] = ["chase", "tcam", "cockpit", "tv"];
+const CAMERA_NAME: Record<LapCamera, string> = { chase: "Chase", tcam: "T-cam", cockpit: "Cockpit", tv: "TV" };
 
 /**
  * The Daily Quali lap in 3D, over the map while the lap runs: game3d/lapScene.ts draws the circuit and the car on the
