@@ -10,10 +10,10 @@ import { loadScenery, loadTrack } from "../game/catalog";
 import { CONDITION_CARS, prepareTrack, simulateLap } from "@apex/engine";
 import { groundAt } from "../game3d/geometry";
 import { type RearLights, buildCarF1 } from "../game3d/carF1";
-import { buildCircuitWorld, loadCircuitGround } from "../game3d/circuitWorld";
+import { CITY_CIRCUITS, buildCircuitWorld, loadCircuitGround } from "../game3d/circuitWorld";
 import { loadSurfaces } from "../game3d/textures";
 import { loadTreeAtlases } from "../game3d/treeImpostors";
-import { buildSkyline, loadSkyline } from "../game3d/skyline";
+import { buildSkyline, loadTrackSkyline } from "../game3d/skyline";
 import { buildDaySky } from "../game3d/daySky";
 import { BrightnessContrastEffect, EffectComposer, EffectPass, HueSaturationEffect, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
 import { N8AOPostPass } from "n8ao";
@@ -60,8 +60,8 @@ scene.add(sun, sun.target);
 
 // ---- the circuit and the car
 const t0 = performance.now();
-const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadSkyline(`${trackId}-0`), loadTreeAtlases()]);
-const world = buildCircuitWorld(track, ground, osm, photo, { wet: false, street: false, detail, maxTrees: params.has("trees") ? Number(params.get("trees")) : undefined, treeAtlases });
+const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadTrackSkyline(trackId), loadTreeAtlases()]);
+const world = buildCircuitWorld(track, ground, osm, photo, { wet: false, street: false, detail, city: CITY_CIRCUITS.has(trackId), maxTrees: params.has("trees") ? Number(params.get("trees")) : undefined, treeAtlases });
 scene.add(world.group);
 let hills: THREE.Group | null = null;
 if (skyline) {

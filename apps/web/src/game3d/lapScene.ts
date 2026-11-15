@@ -3,12 +3,12 @@ import { BloomEffect, BrightnessContrastEffect, EffectComposer, EffectPass, HueS
 import type { Condition, SimulationResult } from "@apex/engine";
 import { loadScenery, loadTrack } from "../game/catalog";
 import { DEFAULT_LOOK, type RearLights, buildCarF1, carDetail } from "./carF1";
-import { buildCircuitWorld, loadCircuitGround } from "./circuitWorld";
+import { CITY_CIRCUITS, buildCircuitWorld, loadCircuitGround } from "./circuitWorld";
 import { HeatHazeEffect, LapEffects, LensFlareEffect, RainField } from "./lapEffects";
 import { buildDaySky } from "./daySky";
 import { groundAt } from "./geometry";
 import { MotionBlurEffect } from "./motionBlur";
-import { buildSkyline, loadSkyline } from "./skyline";
+import { buildSkyline, loadTrackSkyline } from "./skyline";
 import { loadSurfaces } from "./textures";
 import { loadTreeAtlases } from "./treeImpostors";
 
@@ -125,9 +125,9 @@ export class LapScene {
 
   static async create(canvas: HTMLCanvasElement, trackId: string, condition: Condition, hour = 16.8, look: { paint: string; paint2: string } | null = null): Promise<LapScene> {
     const detail = carDetail();
-    const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadSkyline(`${trackId}-0`), loadTreeAtlases()]);
+    const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadTrackSkyline(trackId), loadTreeAtlases()]);
     const scene = new LapScene(canvas, detail, condition === "wet", hour);
-    const world = buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street: false, detail, treeAtlases });
+    const world = buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street: false, detail, treeAtlases, city: CITY_CIRCUITS.has(trackId) });
     scene.scene.add(world.group);
     scene.disposables.push(world, photo);
     scene.stands = world.stands;

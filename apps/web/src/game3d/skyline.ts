@@ -10,6 +10,12 @@ import * as THREE from "three";
 export type SkylineData = { near: number[]; far: number[] };
 
 const files = import.meta.glob<SkylineData>("../game/skyline/*.json", { import: "default" });
+/** A circuit's skyline for the whole lap: its first corner's, or any corner's it has one for (null: none). */
+export async function loadTrackSkyline(trackId: string): Promise<SkylineData | null> {
+  const keys = Object.keys(files).filter((k) => new RegExp(`/${trackId}-\\d+\\.json$`).test(k)).sort((a, b) => Number(a.match(/-(\d+)\.json$/)![1]) - Number(b.match(/-(\d+)\.json$/)![1]));
+  return keys.length ? files[keys[0]]() : null;
+}
+
 export async function loadSkyline(cornerId: string): Promise<SkylineData | null> {
   const load = files[`../game/skyline/${cornerId}.json`];
   return load ? load() : null;

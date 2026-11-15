@@ -102,7 +102,12 @@ export interface CircuitWorldOptions {
   maxTrees?: number;
   /** the trees' impostor atlases (game3d/treeImpostors.ts); no trees without them */
   treeAtlases?: Record<TreeKind, THREE.Texture>;
+  /** a city round the circuit (Interlagos in São Paulo): blocks fill the land the map leaves empty beyond the track */
+  city?: boolean;
 }
+
+/** the circuits in the middle of a city, whose map stops at the circuit's edge */
+export const CITY_CIRCUITS = new Set(["interlagos"]);
 
 export interface CircuitWorld {
   group: THREE.Group;
@@ -1126,6 +1131,56 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
           }
         }
       }
+    }
+    // ---- the city round the circuit: on every plot the map leaves empty, well away from the track, a block of flats or
+    // an office (taller further out), or low houses packed on the slopes, as round Interlagos
+    if (o.city && ground) {
+      const { x0, y0, step, nx, ny } = ground.meta;
+      const crnd = (() => {
+        let q = 777;
+        return () => ((q = (q * 16807) % 2147483647) / 2147483647);
+      })();
+      const busy = [...blockers, ...(osm.areas.wood ?? []), ...(osm.areas.grass ?? [])];
+      const boxes = busy.map((p) => {
+        let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+        for (let i = 0; i < p.length; i += 2) {
+          a = Math.min(a, p[i]); c = Math.max(c, p[i]);
+          b = Math.min(b, p[i + 1]); d = Math.max(d, p[i + 1]);
+        }
+        return [a, b, c, d];
+      });
+      const taken = (x: number, y: number) => busy.some((p, k) => x >= boxes[k][0] - 6 && x <= boxes[k][2] + 6 && y >= boxes[k][1] - 6 && y <= boxes[k][3] + 6 && inside(p, x, y));
+      const PLOT = 34;
+      const cityGroundMat = keep(new THREE.MeshStandardMaterial({ map: tex.paving, color: "#9a9a96", roughness: 0.95 }));
+      let blocks = 0;
+      const limit = o.detail === "full" ? 6000 : 2500;
+      for (let y = y0 + PLOT / 2; y < y0 + (ny - 1) * step; y += PLOT)
+        for (let x = x0 + PLOT / 2; x < x0 + (nx - 1) * step; x += PLOT) {
+          if (blocks >= limit) break;
+          const far = trackDist(x, y);
+          if (far < 150 || crnd() < 0.18) continue;
+          const px = x + (crnd() - 0.5) * 8;
+          const py = y + (crnd() - 0.5) * 8;
+          if (taken(px, py)) continue;
+          // further out, taller: low houses near the circuit's edge, towers of flats beyond
+          const k = Math.min(1, (far - 150) / 600);
+          const tower = crnd() < 0.12 + 0.35 * k;
+          const w = tower ? 16 + crnd() * 10 : 9 + crnd() * 12;
+          const dpt = tower ? 16 + crnd() * 10 : 8 + crnd() * 12;
+          const h = tower ? 22 + crnd() * (30 + 40 * k) : 4 + crnd() * 6;
+          const a = crnd() * Math.PI;
+          const ca = Math.cos(a), sa = Math.sin(a);
+          const flat: number[] = [];
+          for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) flat.push(px + (u * w * ca - v * dpt * sa) / 2, py + (u * w * sa + v * dpt * ca) / 2);
+          const e = extrude(flat, () => h);
+          if (!e) continue;
+          // the plot paved round it (streets and yards), not mown grass
+          const plot = polygon([x - PLOT / 2, y - PLOT / 2, x + PLOT / 2, y - PLOT / 2, x + PLOT / 2, y + PLOT / 2, x - PLOT / 2, y + PLOT / 2], 0.7, false);
+          if (plot) bucket(cityGroundMat, plot);
+          bucket(h >= 7 ? officeMat : wallMats[Math.floor(crnd() * wallMats.length)], e.walls);
+          bucket(roofMat, e.roof);
+          blocks++;
+        }
     }
     for (const [m, geos] of buckets) {
       const flat = geos.map((g) => (g.index ? g.toNonIndexed() : g));
