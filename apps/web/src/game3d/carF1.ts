@@ -373,7 +373,8 @@ float lettering(float a, float r) {
         const inside = (w.name.endsWith("L") && d > 0) || (w.name.endsWith("R") && d < 0);
         w.rotation.y = d * (inside ? 1.08 : 0.93);
       }
-      if (steer) (steer as THREE.Object3D).rotation.z = d * STEER_RATIO;
+      // the wheel's node faces the driver: a turn to the left is a negative turn about its axis
+      if (steer) (steer as THREE.Object3D).rotation.z = -d * STEER_RATIO;
     },
     /**
      * The car on its suspension: pitch (rad, + nose down, under braking), roll (rad, + leaning right, in a left-hander)
