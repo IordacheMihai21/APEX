@@ -34,6 +34,7 @@ uniform vec3 uSunDir;
 uniform vec3 uCamera;
 uniform vec3 uHorizon;
 uniform float uCoverage;
+uniform float uGrey;
 varying vec3 vWorld;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) {
@@ -63,6 +64,8 @@ void main() {
   float thick = smoothstep(0.0, 1.0, d);
   float lit = 0.72 + 0.28 * clamp(dot(normalize(vec3(fbm(p + 0.05) - base, 0.35, fbm(p + vec2(0.0, 0.05)) - base)), uSunDir), 0.0, 1.0);
   vec3 col = mix(vec3(0.97, 0.97, 0.96), vec3(0.7, 0.72, 0.74), thick * 0.55) * lit;
+  // rain clouds: a low, dark grey lid, darker where it's thick
+  col = mix(col, mix(vec3(0.62, 0.64, 0.67), vec3(0.36, 0.38, 0.41), thick) * (0.9 + 0.1 * lit), uGrey);
   // far clouds sink into the haze at the horizon
   vec3 dir = normalize(vWorld - uCamera);
   float fade = smoothstep(0.02, 0.22, dir.y);
@@ -72,16 +75,18 @@ void main() {
 }
 `;
 
-export function buildDaySky(renderer: THREE.WebGLRenderer, sunDir: THREE.Vector3, opts: { coverage?: number } = {}): DaySky {
+export function buildDaySky(renderer: THREE.WebGLRenderer, sunDir: THREE.Vector3, opts: { coverage?: number; overcast?: boolean } = {}): DaySky {
+  const grey = !!opts.overcast;
   const group = new THREE.Group();
   const sky = new Sky();
   sky.scale.setScalar(15000);
   const u = sky.material.uniforms;
   // a clear, slightly hazy summer day in the Ardennes
-  u.turbidity.value = 3.2;
-  u.rayleigh.value = 1.15;
-  u.mieCoefficient.value = 0.004;
-  u.mieDirectionalG.value = 0.82;
+  // or a wet one: a thick grey sky, the sun only a brighter patch in it
+  u.turbidity.value = grey ? 14 : 3.2;
+  u.rayleigh.value = grey ? 0.25 : 1.15;
+  u.mieCoefficient.value = grey ? 0.03 : 0.004;
+  u.mieDirectionalG.value = grey ? 0.6 : 0.82;
   u.sunPosition.value.copy(sunDir).multiplyScalar(1000);
   group.add(sky);
 
@@ -97,7 +102,8 @@ export function buildDaySky(renderer: THREE.WebGLRenderer, sunDir: THREE.Vector3
       uSunDir: { value: sunDir.clone().normalize() },
       uCamera: { value: new THREE.Vector3() },
       uHorizon: { value: new THREE.Color() },
-      uCoverage: { value: opts.coverage ?? 0.5 },
+      uCoverage: { value: opts.coverage ?? (grey ? 0.12 : 0.5) },
+      uGrey: { value: grey ? 1 : 0 },
     },
   });
   const cloudGeo = new THREE.PlaneGeometry(40000, 40000, 1, 1).rotateX(-Math.PI / 2);
@@ -115,7 +121,10 @@ export function buildDaySky(renderer: THREE.WebGLRenderer, sunDir: THREE.Vector3
   for (const k of ["turbidity", "rayleigh", "mieCoefficient", "mieDirectionalG"] as const) envSky.material.uniforms[k].value = u[k].value;
   envSky.material.uniforms.sunPosition.value.copy(u.sunPosition.value);
   envScene.add(envSky);
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(900, 32), new THREE.MeshBasicMaterial({ color: "#3f4a33" }));
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(900, 32), new THREE.MeshBasicMaterial({ color: grey ? "#33392f" : "#3f4a33" }));
+  // under the rain clouds the light comes from all round, grey
+  const lid = grey ? new THREE.Mesh(new THREE.SphereGeometry(60, 24, 12), new THREE.MeshBasicMaterial({ color: "#7a8086", side: THREE.BackSide })) : null;
+  if (lid) envScene.add(lid);
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -5;
   envScene.add(ground);
@@ -124,10 +133,12 @@ export function buildDaySky(renderer: THREE.WebGLRenderer, sunDir: THREE.Vector3
   envSky.geometry.dispose();
   envSky.material.dispose();
   ground.geometry.dispose();
+  lid?.geometry.dispose();
+  (lid?.material as THREE.Material | undefined)?.dispose();
   (ground.material as THREE.Material).dispose();
 
   // the horizon's colour, as the sky draws it a little above the horizon away from the sun
-  const horizon = new THREE.Color("#c3d0dc");
+  const horizon = new THREE.Color(grey ? "#9aa1a7" : "#c3d0dc");
   cloudMat.uniforms.uHorizon.value.copy(horizon);
 
   return {

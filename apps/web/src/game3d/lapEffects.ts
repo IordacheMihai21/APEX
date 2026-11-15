@@ -13,7 +13,7 @@ import { BlendFunction, Effect } from "postprocessing";
  */
 
 const SPARKS = 420;
-const PUFFS = 90;
+const PUFFS = 320;
 
 const SPARK_VERT = /* glsl */ `
 attribute vec3 iPos;
@@ -59,12 +59,14 @@ attribute vec2 iLife;
 attribute float iSize;
 varying vec2 vUv;
 varying float vAge;
+varying float iSizeV;
 void main() {
+  iSizeV = iSize;
   float k = clamp(iLife.x / max(iLife.y, 0.001), 0.0, 1.0);
   vAge = k;
   vUv = position.xy;
   // a billboard that grows as it spreads
-  float s = iSize * (0.45 + 1.6 * sqrt(k));
+  float s = abs(iSize) * (0.45 + 1.6 * sqrt(k));
   vec4 v = viewMatrix * vec4(iPos + vec3(0.0, 0.35 * k, 0.0), 1.0);
   v.xy += position.xy * s;
   gl_Position = projectionMatrix * v;
@@ -74,6 +76,7 @@ void main() {
 const PUFF_FRAG = /* glsl */ `
 varying vec2 vUv;
 varying float vAge;
+varying float iSizeV;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
 float noise(vec2 p) {
   vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
@@ -84,7 +87,9 @@ void main() {
   // a soft, lumpy ball of smoke
   float n = noise(vUv * 3.0 + vAge * 2.0) * 0.5 + noise(vUv * 7.0 - vAge) * 0.25;
   float a = smoothstep(1.0, 0.15, r + (n - 0.35) * 0.6);
-  a *= (1.0 - smoothstep(0.25, 1.0, vAge)) * smoothstep(0.0, 0.06, vAge) * 0.55;
+  // spray (a negative size) is thinner and fades sooner than smoke
+  float spray = step(iSizeV, 0.0);
+  a *= (1.0 - smoothstep(mix(0.25, 0.1, spray), 1.0, vAge)) * smoothstep(0.0, 0.06, vAge) * mix(0.55, 0.11, spray);
   vec3 col = mix(vec3(0.86, 0.88, 0.92), vec3(0.7, 0.72, 0.76), n);
   gl_FragColor = vec4(col, a);
 }`;
@@ -110,6 +115,8 @@ export interface EffectInput {
   turn: number;
   /** a lock-up wanted here (decided per braking zone by the scene) */
   lockup: boolean;
+  /** a wet track: the tyres throw up spray */
+  wet?: boolean;
 }
 
 export class LapEffects {
@@ -122,6 +129,7 @@ export class LapEffects {
   private readonly puffMat: THREE.ShaderMaterial;
   private sparkDebt = 0;
   private puffDebt = 0;
+  private sprayDebt = 0;
   private rnd = 1;
   private readonly tmp = new THREE.Vector3();
 
@@ -242,6 +250,32 @@ export class LapEffects {
         pf.size[i] = 0.45 + this.random() * 0.3;
       }
     }
+    // spray: on a wet track each tyre lifts a plume of water, the rears most, growing with the speed
+    if (e.wet && e.v > 12) {
+      const k = Math.min(1, (e.v - 12) / 60);
+      this.sprayDebt += 95 * k * dt;
+      while (this.sprayDebt >= 1) {
+        this.sprayDebt -= 1;
+        const w = wheels[Math.floor(this.random() * wheels.length)];
+        if (!w) break;
+        const rear = !w.name.startsWith("wheel-F");
+        if (!rear && this.random() < 0.6) continue;
+        const i = pf.next;
+        pf.next = (pf.next + 1) % PUFFS;
+        this.tmp.set(w.position.x * 1.05, 0.3, w.position.z + 0.45).applyMatrix4(car.matrixWorld);
+        pf.pos[i * 3] = this.tmp.x;
+        pf.pos[i * 3 + 1] = groundY + 0.3 + this.random() * 0.3;
+        pf.pos[i * 3 + 2] = this.tmp.z;
+        // the water leaves the tyre at about half the car's speed and rises into a cloud behind it
+        const keep = 0.35 + this.random() * 0.25;
+        pf.vel[i * 3] = e.velocity.x * keep + (this.random() - 0.5) * 3;
+        pf.vel[i * 3 + 1] = 1.2 + this.random() * 2.2 * k;
+        pf.vel[i * 3 + 2] = e.velocity.z * keep + (this.random() - 0.5) * 3;
+        pf.life[i * 2] = 0;
+        pf.life[i * 2 + 1] = 0.6 + this.random() * 0.6;
+        pf.size[i] = -(rear ? 0.55 + 0.6 * k : 0.35) * (0.8 + this.random() * 0.4);
+      }
+    }
     const air = Math.pow(0.25, dt);
     for (let i = 0; i < PUFFS; i++) {
       if (pf.life[i * 2] >= pf.life[i * 2 + 1]) continue;
@@ -329,5 +363,90 @@ export class HeatHazeEffect extends Effect {
     const radius = (0.35 / Math.max(0.5, dist)) / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) / 2;
     (u.get("uRadius") as THREE.Uniform).value = radius;
     (u.get("uStrength") as THREE.Uniform).value = behind || radius < 0.002 ? 0 : strength;
+  }
+}
+
+const RAIN_VERT = /* glsl */ `
+attribute vec3 iSeed;
+uniform float uTime;
+uniform vec3 uCam;
+uniform vec3 uBox;
+uniform vec3 uFall;
+uniform vec2 uRes;
+uniform float uNear;
+varying float vA;
+void main() {
+  // each drop falls through a box that moves with the camera, wrapping round, so the rain is everywhere
+  vec3 o = fract(iSeed - (uCam + uFall * uTime) / uBox) - 0.5;
+  vec3 top = uCam + o * uBox;
+  vec3 bottom = top + normalize(uFall) * 0.55;
+  vec4 a = viewMatrix * vec4(top, 1.0);
+  vec4 b = viewMatrix * vec4(bottom, 1.0);
+  vec4 ca = projectionMatrix * a;
+  vec4 cb = projectionMatrix * b;
+  vec4 p = mix(ca, cb, position.x);
+  vec2 d = (cb.xy / cb.w - ca.xy / ca.w) * uRes;
+  d = length(d) > 1e-4 ? normalize(d) : vec2(0.0, 1.0);
+  // a pixel or so wide however long the lens
+  p.xy += vec2(-d.y, d.x) * position.y * 1.1 / uRes * p.w;
+  // none right at the lens (out of focus; further out on a long lens), fainter far off
+  float z = -a.z;
+  vA = smoothstep(uNear, uNear * 2.5, z) * (1.0 - smoothstep(uNear * 6.0, uNear * 9.0, z));
+  gl_Position = p;
+}`;
+
+const RAIN_FRAG = /* glsl */ `
+varying float vA;
+uniform float uOpacity;
+void main() {
+  gl_FragColor = vec4(0.82, 0.85, 0.9, vA * uOpacity);
+}`;
+
+/** Rain falling round the camera: thin streaks, a little slanted by the wind, drawn in one call. */
+export class RainField {
+  readonly mesh: THREE.Mesh;
+  private readonly geo = new THREE.InstancedBufferGeometry();
+  private readonly mat: THREE.ShaderMaterial;
+
+  constructor(count: number) {
+    this.geo.setAttribute("position", new THREE.Float32BufferAttribute([0, -1, 0, 1, -1, 0, 1, 1, 0, 0, 1, 0], 3));
+    this.geo.setIndex([0, 1, 2, 0, 2, 3]);
+    const seed = new Float32Array(count * 3);
+    for (let i = 0; i < seed.length; i++) seed[i] = Math.random();
+    this.geo.setAttribute("iSeed", new THREE.InstancedBufferAttribute(seed, 3));
+    this.geo.instanceCount = count;
+    this.mat = new THREE.ShaderMaterial({
+      vertexShader: RAIN_VERT,
+      fragmentShader: RAIN_FRAG,
+      uniforms: {
+        uTime: { value: 0 },
+        uCam: { value: new THREE.Vector3() },
+        uBox: { value: new THREE.Vector3(36, 18, 36) },
+        uFall: { value: new THREE.Vector3(1.2, -9, 0.6) },
+        uOpacity: { value: 0.32 },
+        uRes: { value: new THREE.Vector2(1280, 720) },
+        uNear: { value: 1.2 },
+      },
+      transparent: true,
+      depthWrite: false,
+    });
+    this.mesh = new THREE.Mesh(this.geo, this.mat);
+    this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = 7;
+  }
+
+  update(camera: THREE.PerspectiveCamera, time: number, w: number, h: number) {
+    this.mat.uniforms.uTime.value = time;
+    (this.mat.uniforms.uRes.value as THREE.Vector2).set(w, h);
+    // a long lens looks far down the track: its rain starts further out, and the box grows with it
+    const near = THREE.MathUtils.clamp(1.2 * (56 / camera.fov), 1.2, 14);
+    this.mat.uniforms.uNear.value = near;
+    (this.mat.uniforms.uBox.value as THREE.Vector3).set(near * 20, Math.max(18, near * 6), near * 20);
+    (this.mat.uniforms.uCam.value as THREE.Vector3).copy(camera.position);
+  }
+
+  dispose() {
+    this.geo.dispose();
+    this.mat.dispose();
   }
 }

@@ -2,9 +2,9 @@ import * as THREE from "three";
 import { BrightnessContrastEffect, EffectComposer, EffectPass, HueSaturationEffect, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
 import type { Condition, SimulationResult } from "@apex/engine";
 import { loadScenery, loadTrack } from "../game/catalog";
-import { type RearLights, buildCarF1, carDetail } from "./carF1";
+import { DEFAULT_LOOK, type RearLights, buildCarF1, carDetail } from "./carF1";
 import { buildCircuitWorld, loadCircuitGround } from "./circuitWorld";
-import { HeatHazeEffect, LapEffects } from "./lapEffects";
+import { HeatHazeEffect, LapEffects, RainField } from "./lapEffects";
 import { buildDaySky } from "./daySky";
 import { groundAt } from "./geometry";
 import { MotionBlurEffect } from "./motionBlur";
@@ -116,7 +116,7 @@ export class LapScene {
   static async create(canvas: HTMLCanvasElement, trackId: string, condition: Condition): Promise<LapScene> {
     const detail = carDetail();
     const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadSkyline(`${trackId}-0`), loadTreeAtlases()]);
-    const scene = new LapScene(canvas, detail);
+    const scene = new LapScene(canvas, detail, condition === "wet");
     const world = buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street: false, detail, treeAtlases });
     scene.scene.add(world.group);
     scene.disposables.push(world, photo);
@@ -132,6 +132,14 @@ export class LapScene {
     // TV cameras: every 220 m round the lap, 26 m out from the centre line, 9 m up (over the barriers and the
     // nearer stands), on whichever side has no building in the way
     const blocks = (osm?.buildings ?? []).map((b) => b.p);
+    scene.blocks = blocks.map((p) => {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (let i = 0; i < p.length; i += 2) {
+        x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]);
+        y0 = Math.min(y0, p[i + 1]); y1 = Math.max(y1, p[i + 1]);
+      }
+      return { p, box: [x0, y0, x1, y1] as const };
+    });
     const inBuilding = (x: number, y: number) =>
       blocks.some((p) => {
         let hit = false;
@@ -157,9 +165,12 @@ export class LapScene {
       }
       const x = cl[k][0] + (-dy / d) * 26 * side;
       const y = cl[k][1] + (dx / d) * 26 * side;
+      // nor by a grandstand, whose roof would fill the shot
+      if (scene.stands.some((st) => Math.hypot(st.x - x, -st.z - y) < 55)) continue;
       scene.tvCams.push(new THREE.Vector3(x, groundAt(x, y) + 9, -y));
     }
-    scene.car = buildCarF1(detail);
+    // on a wet day the car is on full wets (the blue band)
+    scene.car = buildCarF1(detail, condition === "wet" ? { ...DEFAULT_LOOK, tyreBand: "#2f8be6" } : DEFAULT_LOOK);
     scene.scene.add(scene.car.car);
     scene.disposables.push(scene.car);
     await scene.car.ready;
@@ -172,7 +183,37 @@ export class LapScene {
   /** the braking zones so far this lap, and until when (ms into the lap) the inside front tyre is locked */
   private brakeZone = { on: false, n: 0, lockUntil: -1 };
 
-  private constructor(canvas: HTMLCanvasElement, detail: "full" | "lite") {
+  private rain: RainField | null = null;
+  private blocks: { p: number[]; box: readonly [number, number, number, number] }[] = [];
+
+  /** whether a trackside camera sees the car: no building or grandstand on the line between them */
+  private sightClear(c: THREE.Vector3, p: THREE.Vector3) {
+    // every 2 m along the line (a stand's footprint can be narrow), a stand's roof reaching a few metres past it
+    const n = Math.max(8, Math.ceil(c.distanceTo(p) / 2));
+    for (let k = 1; k < n - 2; k++) {
+      const t = k / n;
+      const x = c.x + (p.x - c.x) * t;
+      const y = -(c.z + (p.z - c.z) * t);
+      for (const { p: poly, box } of this.blocks) {
+        if (x < box[0] - 4 || x > box[2] + 4 || y < box[1] - 4 || y > box[3] + 4) continue;
+        let hit = false;
+        for (let i = 0, j = poly.length - 2; i < poly.length; j = i, i += 2) {
+          if (poly[i + 1] > y !== poly[j + 1] > y && x < ((poly[j] - poly[i]) * (y - poly[i + 1])) / (poly[j + 1] - poly[i + 1]) + poly[i]) hit = !hit;
+        }
+        if (hit) return false;
+        // within the reach of its roof or rake: near an edge counts too
+        for (let i = 0, j = poly.length - 2; i < poly.length; j = i, i += 2) {
+          const ex = poly[i] - poly[j];
+          const ey = poly[i + 1] - poly[j + 1];
+          const u = Math.max(0, Math.min(1, ((x - poly[j]) * ex + (y - poly[j + 1]) * ey) / (ex * ex + ey * ey || 1)));
+          if (Math.hypot(x - poly[j] - ex * u, y - poly[j + 1] - ey * u) < 4) return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  private constructor(canvas: HTMLCanvasElement, detail: "full" | "lite", private readonly wet = false) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, detail === "full" ? 2 : 1.5));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -180,14 +221,16 @@ export class LapScene {
     this.renderer.toneMappingExposure = 0.82;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.sky = buildDaySky(this.renderer, this.sunDir);
+    this.sky = buildDaySky(this.renderer, this.sunDir, { overcast: wet });
     this.scene.add(this.sky.group);
     this.disposables.push(this.sky);
-    this.scene.fog = new THREE.Fog(this.sky.horizon, 260, 5200);
+    // in the rain the air is thick with spray and drizzle: the far side of the circuit greys out
+    this.scene.fog = new THREE.Fog(this.sky.horizon, wet ? 60 : 260, wet ? 1500 : 5200);
     this.scene.environment = this.sky.environment;
-    this.scene.environmentIntensity = 0.42;
-    this.scene.add(new THREE.HemisphereLight("#dce9f7", "#55603f", 1.1));
-    this.sun = new THREE.DirectionalLight("#fff1dc", 3.2);
+    this.scene.environmentIntensity = wet ? 0.5 : 0.42;
+    this.scene.add(wet ? new THREE.HemisphereLight("#c9cfd5", "#4a5046", 2.1) : new THREE.HemisphereLight("#dce9f7", "#55603f", 1.1));
+    // under rain clouds the sun is weak and its shadows faint
+    this.sun = new THREE.DirectionalLight(wet ? "#e4e8ec" : "#fff1dc", wet ? 0.5 : 3.2);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(detail === "full" ? 4096 : 2048, detail === "full" ? 4096 : 2048);
     Object.assign(this.sun.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 1, far: 800 });
@@ -204,6 +247,11 @@ export class LapScene {
       composer.addPass(new EffectPass(this.camera, this.haze));
     }
     this.scene.add(this.fx.group);
+    if (wet) {
+      this.rain = new RainField(detail === "full" ? 9000 : 4000);
+      this.scene.add(this.rain.mesh);
+      this.disposables.push(this.rain);
+    }
     this.disposables.push(this.fx);
     composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: SMAAPreset.HIGH })));
     composer.addPass(
@@ -305,7 +353,7 @@ export class LapScene {
     // rear lights: harvesting under braking, super clipping near top speed
     const ahead = path.speed(d + Math.max(1, v) * 0.25);
     const decel = (v - ahead) / 0.25;
-    const lights: RearLights = tMs <= 0 ? "off" : decel > 4 ? "harvest" : v > this.vMax * 0.96 ? "clip" : "off";
+    const lights: RearLights = tMs <= 0 ? (this.wet ? "on" : "off") : decel > 4 ? "harvest" : v > this.vMax * 0.96 ? "clip" : this.wet ? "on" : "off";
     this.car.setRearLights(lights);
     this.car.updateLights(this.clock);
     // the suspension, from the lap's accelerations: the nose dives under braking and lifts on the throttle, the body
@@ -379,12 +427,12 @@ export class LapScene {
     } else {
       // the nearest trackside camera ahead of the car, held until the car is past it
       let best = this.tvAt;
-      if (best < 0 || this.tvCams[best].distanceTo(p) > 170) {
+      if (best < 0 || this.tvCams[best].distanceTo(p) > 170 || !this.sightClear(this.tvCams[best], p)) {
         let bd = Infinity;
         this.tvCams.forEach((c, i) => {
           const dd = c.distanceTo(p);
           const toCam = c.clone().sub(p).setY(0).normalize();
-          if (dd < bd && toCam.dot(flat) > -0.2) {
+          if (dd < bd && dd < 220 && toCam.dot(flat) > -0.2 && this.sightClear(c, p)) {
             bd = dd;
             best = i;
           }
@@ -417,6 +465,7 @@ export class LapScene {
     });
 
     this.sky.update(this.camera, this.clock);
+    this.rain?.update(this.camera, this.clock, this.size.w * this.renderer.getPixelRatio(), this.size.h * this.renderer.getPixelRatio());
     this.worldUpdate?.(this.clock);
     if (this.hills) this.hills.position.set(this.camera.position.x, this.hills.position.y, this.camera.position.z);
     this.sun.target.position.copy(this.car.car.position);
@@ -438,11 +487,13 @@ export class LapScene {
     this.car.car.updateMatrixWorld();
     this.fx.update(dt, this.car.car, this.car.wheels, p.y, {
       v,
-      vertical,
+      // on a wet track the cars run higher and the water cools the blocks: hardly any sparks
+      vertical: this.wet ? vertical * 0.6 : vertical,
       decel,
       velocity: flat.clone().multiplyScalar(v),
       turn: path.curvature(d + 20),
-      lockup: tMs > 0 && tMs < this.brakeZone.lockUntil,
+      lockup: !this.wet && tMs > 0 && tMs < this.brakeZone.lockUntil,
+      wet: this.wet,
     });
     this.haze?.place(this.car.car, this.camera, this.cameraMode === "cockpit" ? 0 : v < 1 ? 1 : 0.5, this.clock);
     this.composer?.render(dt);

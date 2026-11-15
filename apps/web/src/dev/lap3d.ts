@@ -11,10 +11,11 @@ import { LapSound } from "../game3d/lapSound";
 const params = new URLSearchParams(location.search);
 const trackId = params.get("track") ?? "spa";
 const canvas = document.getElementById("c") as HTMLCanvasElement;
-const scene = await LapScene.create(canvas, trackId, "dry");
+const condition = params.get("wet") === "1" ? "wet" : "dry";
+const scene = await LapScene.create(canvas, trackId, condition);
 const track = await loadTrack(trackId);
 const pt = prepareTrack(track);
-const sim = simulateLap({ track: pt, line: track.optimalLine!, car: CONDITION_CARS.dry });
+const sim = simulateLap({ track: pt, line: track.optimalLine!, car: CONDITION_CARS[condition] });
 // the ghost: the same perfect line at Gold pace, about 1.5% slower
 scene.setLap(sim, sim, 1.015);
 const resize = () => scene.resize(innerWidth, innerHeight);

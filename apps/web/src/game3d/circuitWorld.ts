@@ -385,8 +385,8 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
       map: photo.asphalt.map,
       normalMap: photo.asphalt.normal,
       normalScale: new THREE.Vector2(o.wet ? 0.35 : 0.8, o.wet ? 0.35 : 0.8),
-      roughness: o.wet ? 0.32 : 0.86,
-      envMapIntensity: o.wet ? 0.9 : 0.4,
+      roughness: o.wet ? 0.4 : 0.86,
+      envMapIntensity: o.wet ? 0.8 : 0.4,
       color: new THREE.Color().setScalar(o.wet ? 2.6 : 7),
     }),
   );
