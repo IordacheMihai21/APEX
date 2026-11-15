@@ -69,13 +69,16 @@ void main() {
   // far clouds sink into the haze at the horizon
   vec3 dir = normalize(vWorld - uCamera);
   float fade = smoothstep(0.02, 0.22, dir.y);
+  // towards the sun the thin clouds shine (light scattered forward through them) instead of standing dark on the glare
+  float toSun = max(dot(dir, normalize(uSunDir)), 0.0);
+  col += vec3(1.0, 0.95, 0.85) * (pow(toSun, 6.0) * 1.6 + pow(toSun, 40.0) * 3.0) * (1.0 - thick * 0.7) * (1.0 - uGrey);
   gl_FragColor = vec4(mix(uHorizon, col, fade), d * fade * 0.92);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }
 `;
 
-export function buildDaySky(renderer: THREE.WebGLRenderer, sunDir: THREE.Vector3, opts: { coverage?: number; overcast?: boolean } = {}): DaySky {
+export function buildDaySky(renderer: THREE.WebGLRenderer, sunDir: THREE.Vector3, opts: { coverage?: number; overcast?: boolean; horizon?: string } = {}): DaySky {
   const grey = !!opts.overcast;
   const group = new THREE.Group();
   const sky = new Sky();
@@ -125,6 +128,15 @@ export function buildDaySky(renderer: THREE.WebGLRenderer, sunDir: THREE.Vector3
   // under the rain clouds the light comes from all round, grey
   const lid = grey ? new THREE.Mesh(new THREE.SphereGeometry(60, 24, 12), new THREE.MeshBasicMaterial({ color: "#7a8086", side: THREE.BackSide })) : null;
   if (lid) envScene.add(lid);
+  // the sun's disc in the sky is thousands of times brighter than the sky, and every glossy surface turned to a mirror of
+  // it (a car seen against a low sun went white): in the reflections it's a bright patch, the sunlight itself comes from
+  // the scene's sun
+  const disc = grey ? null : new THREE.Mesh(new THREE.CircleGeometry(2.2, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 3.0, 2.7) }));
+  if (disc) {
+    disc.position.copy(sunDir).normalize().multiplyScalar(50);
+    disc.lookAt(0, 0, 0);
+    envScene.add(disc);
+  }
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -5;
   envScene.add(ground);
@@ -134,11 +146,13 @@ export function buildDaySky(renderer: THREE.WebGLRenderer, sunDir: THREE.Vector3
   envSky.material.dispose();
   ground.geometry.dispose();
   lid?.geometry.dispose();
+  disc?.geometry.dispose();
+  (disc?.material as THREE.Material | undefined)?.dispose();
   (lid?.material as THREE.Material | undefined)?.dispose();
   (ground.material as THREE.Material).dispose();
 
   // the horizon's colour, as the sky draws it a little above the horizon away from the sun
-  const horizon = new THREE.Color(grey ? "#9aa1a7" : "#c3d0dc");
+  const horizon = new THREE.Color(grey ? "#9aa1a7" : (opts.horizon ?? "#c3d0dc"));
   cloudMat.uniforms.uHorizon.value.copy(horizon);
 
   return {

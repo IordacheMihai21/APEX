@@ -23,7 +23,11 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
   useEffect(() => {
     let live = true;
     let made: LapScene | null = null;
-    LapScene.create(canvas.current!, game.track.id, game.condition)
+    // the session's hour changes from day to day (the same for everyone on a day): midday, afternoon, qualifying
+    // time or the golden evening light
+    const day = Math.floor(Date.now() / 86400000);
+    const hour = [12, 15, 16.8, 18.6][day % 4];
+    LapScene.create(canvas.current!, game.track.id, game.condition, hour)
       .then((s) => {
         if (!live) return s.dispose();
         made = s;

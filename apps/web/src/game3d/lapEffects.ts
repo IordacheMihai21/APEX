@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { BlendFunction, Effect } from "postprocessing";
+import { BlendFunction, Effect, EffectAttribute } from "postprocessing";
 
 /**
  * What a broadcast catches round the car beyond the car itself:
@@ -448,5 +448,73 @@ export class RainField {
   dispose() {
     this.geo.dispose();
     this.mat.dispose();
+  }
+}
+
+const FLARE_FRAG = /* glsl */ `
+uniform vec2 uSun;
+uniform float uOn;
+uniform float uAspect;
+uniform vec3 uTint;
+float sky(vec2 uv) {
+  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return 0.0;
+  return step(0.99999, readDepth(uv));
+}
+float disc(vec2 p, vec2 c, float r) {
+  vec2 d = p - c;
+  d.x *= uAspect;
+  return smoothstep(r, r * 0.55, length(d));
+}
+void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
+  outputColor = vec4(0.0);
+  if (uOn <= 0.0) return;
+  // how much of the sun is clear of the trees and the buildings: a few depth taps round it
+  float o = 0.006;
+  float vis = (sky(uSun) * 2.0 + sky(uSun + vec2(o, 0.0)) + sky(uSun - vec2(o, 0.0)) + sky(uSun + vec2(0.0, o)) + sky(uSun - vec2(0.0, o))) / 6.0;
+  vis *= uOn;
+  if (vis <= 0.0) return;
+  vec2 p = uv;
+  vec2 d = p - uSun;
+  d.x *= uAspect;
+  float r = length(d);
+  // the glare round the sun and a faint horizontal streak (the lens's coating)
+  vec3 col = uTint * (exp(-r * 10.0) * 0.38 + exp(-r * 3.0) * 0.035);
+  col += uTint * exp(-abs(d.y) * 260.0) * exp(-abs(d.x) * 2.2) * 0.18;
+  // ghosts: the lens's reflections, strung along the line through the middle of the picture
+  vec2 axis = vec2(0.5) - uSun;
+  col += vec3(0.55, 0.75, 1.0) * disc(p, uSun + axis * 0.55, 0.035) * 0.08;
+  col += vec3(1.0, 0.75, 0.45) * disc(p, uSun + axis * 0.9, 0.06) * 0.06;
+  col += vec3(0.6, 1.0, 0.7) * disc(p, uSun + axis * 1.3, 0.025) * 0.1;
+  col += vec3(0.75, 0.6, 1.0) * disc(p, uSun + axis * 1.7, 0.09) * 0.045;
+  col += vec3(1.0, 0.85, 0.6) * disc(p, uSun + axis * 2.05, 0.04) * 0.07;
+  outputColor = vec4(col * vis, 1.0);
+}`;
+
+/** The sun in the lens: a glare, a streak and the lens's ghosts, while the sun is in the picture and not hidden. */
+export class LensFlareEffect extends Effect {
+  private readonly v = new THREE.Vector3();
+
+  constructor() {
+    super("LensFlareEffect", FLARE_FRAG, {
+      blendFunction: BlendFunction.ADD,
+      attributes: EffectAttribute.DEPTH,
+      uniforms: new Map<string, THREE.Uniform>([
+        ["uSun", new THREE.Uniform(new THREE.Vector2())],
+        ["uOn", new THREE.Uniform(0)],
+        ["uAspect", new THREE.Uniform(1)],
+        ["uTint", new THREE.Uniform(new THREE.Color("#fff1dc"))],
+      ]),
+    });
+  }
+
+  /** Where the sun is for this camera; `strength` grows as the sun sinks (a low sun flares most). */
+  place(camera: THREE.PerspectiveCamera, sunDir: THREE.Vector3, tint: THREE.Color, strength: number) {
+    this.v.copy(camera.position).addScaledVector(sunDir, 1000).project(camera);
+    const u = this.uniforms;
+    (u.get("uSun") as THREE.Uniform<THREE.Vector2>).value.set(this.v.x * 0.5 + 0.5, this.v.y * 0.5 + 0.5);
+    (u.get("uAspect") as THREE.Uniform).value = camera.aspect;
+    (u.get("uTint") as THREE.Uniform<THREE.Color>).value.copy(tint);
+    const inFrame = this.v.z < 1 && Math.abs(this.v.x) < 1.05 && Math.abs(this.v.y) < 1.05;
+    (u.get("uOn") as THREE.Uniform).value = inFrame ? strength : 0;
   }
 }

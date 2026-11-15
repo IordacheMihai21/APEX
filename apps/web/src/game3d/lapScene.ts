@@ -1,10 +1,10 @@
 import * as THREE from "three";
-import { BrightnessContrastEffect, EffectComposer, EffectPass, HueSaturationEffect, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
+import { BloomEffect, BrightnessContrastEffect, EffectComposer, EffectPass, HueSaturationEffect, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
 import type { Condition, SimulationResult } from "@apex/engine";
 import { loadScenery, loadTrack } from "../game/catalog";
 import { DEFAULT_LOOK, type RearLights, buildCarF1, carDetail } from "./carF1";
 import { buildCircuitWorld, loadCircuitGround } from "./circuitWorld";
-import { HeatHazeEffect, LapEffects, RainField } from "./lapEffects";
+import { HeatHazeEffect, LapEffects, LensFlareEffect, RainField } from "./lapEffects";
 import { buildDaySky } from "./daySky";
 import { groundAt } from "./geometry";
 import { MotionBlurEffect } from "./motionBlur";
@@ -86,7 +86,10 @@ export class LapScene {
   private readonly camera = new THREE.PerspectiveCamera(56, 1, 0.3, 20000);
   private composer: EffectComposer | null = null;
   private blur: MotionBlurEffect | null = null;
-  private readonly sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 38), THREE.MathUtils.degToRad(215));
+  private readonly sunDir: THREE.Vector3;
+  private readonly sunTint: THREE.Color;
+  private readonly sunElevation: number;
+  private flare: LensFlareEffect | null = null;
   private readonly sun: THREE.DirectionalLight;
   private readonly sky: ReturnType<typeof buildDaySky>;
   private hills: THREE.Group | null = null;
@@ -113,10 +116,10 @@ export class LapScene {
   /** what the sound follows: the car's speed and acceleration, the camera's distance, how near the crowd is */
   readonly telemetry = { v: 0, along: 0, vertical: 0, decel: 0, cameraDistance: 0, onboard: false, crowdNear: 0, racing: false };
 
-  static async create(canvas: HTMLCanvasElement, trackId: string, condition: Condition): Promise<LapScene> {
+  static async create(canvas: HTMLCanvasElement, trackId: string, condition: Condition, hour = 16.8): Promise<LapScene> {
     const detail = carDetail();
     const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadSkyline(`${trackId}-0`), loadTreeAtlases()]);
-    const scene = new LapScene(canvas, detail, condition === "wet");
+    const scene = new LapScene(canvas, detail, condition === "wet", hour);
     const world = buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street: false, detail, treeAtlases });
     scene.scene.add(world.group);
     scene.disposables.push(world, photo);
@@ -213,7 +216,13 @@ export class LapScene {
     return true;
   }
 
-  private constructor(canvas: HTMLCanvasElement, detail: "full" | "lite", private readonly wet = false) {
+  private constructor(canvas: HTMLCanvasElement, detail: "full" | "lite", private readonly wet = false, hour = 16.8) {
+    // the sun at this hour of a summer's day in the Ardennes: high at midday, low and golden in the evening, moving
+    // round from the south-east to the west
+    const sun = sunAt(hour);
+    this.sunElevation = sun.elevation;
+    this.sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - sun.elevation), THREE.MathUtils.degToRad(sun.azimuth));
+    this.sunTint = sun.tint;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, detail === "full" ? 2 : 1.5));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -221,16 +230,16 @@ export class LapScene {
     this.renderer.toneMappingExposure = 0.82;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.sky = buildDaySky(this.renderer, this.sunDir, { overcast: wet });
+    this.sky = buildDaySky(this.renderer, this.sunDir, { overcast: wet, horizon: wet ? undefined : sun.horizon });
     this.scene.add(this.sky.group);
     this.disposables.push(this.sky);
     // in the rain the air is thick with spray and drizzle: the far side of the circuit greys out
     this.scene.fog = new THREE.Fog(this.sky.horizon, wet ? 60 : 260, wet ? 1500 : 5200);
     this.scene.environment = this.sky.environment;
     this.scene.environmentIntensity = wet ? 0.5 : 0.42;
-    this.scene.add(wet ? new THREE.HemisphereLight("#c9cfd5", "#4a5046", 2.1) : new THREE.HemisphereLight("#dce9f7", "#55603f", 1.1));
+    this.scene.add(wet ? new THREE.HemisphereLight("#c9cfd5", "#4a5046", 2.1) : new THREE.HemisphereLight(sun.skyLight, "#55603f", 1.1 * sun.fill));
     // under rain clouds the sun is weak and its shadows faint
-    this.sun = new THREE.DirectionalLight(wet ? "#e4e8ec" : "#fff1dc", wet ? 0.5 : 3.2);
+    this.sun = new THREE.DirectionalLight(wet ? "#e4e8ec" : sun.tint, wet ? 0.5 : sun.intensity);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(detail === "full" ? 4096 : 2048, detail === "full" ? 4096 : 2048);
     Object.assign(this.sun.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 1, far: 800 });
@@ -254,9 +263,17 @@ export class LapScene {
     }
     this.disposables.push(this.fx);
     composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: SMAAPreset.HIGH })));
+    // a low sun in the lens flares (computers only; never in the rain)
+    if (detail === "full" && !wet) {
+      this.flare = new LensFlareEffect();
+      composer.addPass(new EffectPass(this.camera, this.flare));
+    }
     composer.addPass(
       new EffectPass(
         this.camera,
+        // the brightest things (the sun's glare, the lights, the sparks, a wet road's sheen) glow a little, as through
+        // a real lens
+        new BloomEffect({ luminanceThreshold: 4.5, luminanceSmoothing: 0.5, intensity: detail === "full" ? 0.45 : 0.3, mipmapBlur: true, radius: 0.55 }),
         new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL }),
         new HueSaturationEffect({ saturation: -0.14 }),
         new BrightnessContrastEffect({ brightness: 0.02, contrast: -0.04 }),
@@ -496,6 +513,7 @@ export class LapScene {
       wet: this.wet,
     });
     this.haze?.place(this.car.car, this.camera, this.cameraMode === "cockpit" ? 0 : v < 1 ? 1 : 0.5, this.clock);
+    this.flare?.place(this.camera, this.sunDir, this.sunTint, THREE.MathUtils.clamp(1.25 - this.sunElevation / 40, 0.35, 1));
     this.composer?.render(dt);
   }
 
@@ -509,4 +527,26 @@ export class LapScene {
     for (const d of this.disposables) d.dispose();
     this.renderer.dispose();
   }
+}
+
+/**
+ * The sun at an hour (local, 0-24) of a summer's day at about 50 degrees north: its height and bearing, its colour
+ * (white at midday, golden low down), how strong it is, the sky's light and the haze at the horizon.
+ */
+export function sunAt(hour: number) {
+  const k = THREE.MathUtils.clamp((hour - 5.5) / 15, 0, 1);
+  const elevation = Math.max(5, 60 * Math.sin(Math.PI * k));
+  // the scene's south-west is the old fixed sun's bearing; round from there by 15 degrees an hour
+  const azimuth = 215 - (hour - 14) * 15;
+  const low = THREE.MathUtils.clamp(1 - (elevation - 8) / 30, 0, 1);
+  const tint = new THREE.Color("#fff1dc").lerp(new THREE.Color("#ffb066"), low * 0.85);
+  return {
+    elevation,
+    azimuth,
+    tint,
+    intensity: 3.2 - 1.0 * low,
+    fill: 1 - 0.25 * low,
+    skyLight: `#${new THREE.Color("#dce9f7").lerp(new THREE.Color("#e7d9c8"), low * 0.6).getHexString()}`,
+    horizon: `#${new THREE.Color("#c3d0dc").lerp(new THREE.Color("#e3c9ac"), low * 0.8).getHexString()}`,
+  };
 }
