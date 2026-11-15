@@ -4,6 +4,7 @@ import type { Condition, SimulationResult } from "@apex/engine";
 import { loadScenery, loadTrack } from "../game/catalog";
 import { type RearLights, buildCarF1, carDetail } from "./carF1";
 import { buildCircuitWorld, loadCircuitGround } from "./circuitWorld";
+import { HeatHazeEffect, LapEffects } from "./lapEffects";
 import { buildDaySky } from "./daySky";
 import { groundAt } from "./geometry";
 import { MotionBlurEffect } from "./motionBlur";
@@ -110,7 +111,7 @@ export class LapScene {
   private size = { w: 1, h: 1 };
   private stands: THREE.Vector3[] = [];
   /** what the sound follows: the car's speed and acceleration, the camera's distance, how near the crowd is */
-  readonly telemetry = { v: 0, along: 0, cameraDistance: 0, onboard: false, crowdNear: 0, racing: false };
+  readonly telemetry = { v: 0, along: 0, vertical: 0, decel: 0, cameraDistance: 0, onboard: false, crowdNear: 0, racing: false };
 
   static async create(canvas: HTMLCanvasElement, trackId: string, condition: Condition): Promise<LapScene> {
     const detail = carDetail();
@@ -166,6 +167,10 @@ export class LapScene {
   }
 
   private worldUpdate: ((t: number) => void) | null = null;
+  private readonly fx = new LapEffects();
+  private haze: HeatHazeEffect | null = null;
+  /** the braking zones so far this lap, and until when (ms into the lap) the inside front tyre is locked */
+  private brakeZone = { on: false, n: 0, lockUntil: -1 };
 
   private constructor(canvas: HTMLCanvasElement, detail: "full" | "lite") {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
@@ -195,7 +200,11 @@ export class LapScene {
     if (detail === "full") {
       this.blur = new MotionBlurEffect(this.camera, { shutter: 0.4 });
       composer.addPass(new EffectPass(this.camera, this.blur));
+      this.haze = new HeatHazeEffect();
+      composer.addPass(new EffectPass(this.camera, this.haze));
     }
+    this.scene.add(this.fx.group);
+    this.disposables.push(this.fx);
     composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: SMAAPreset.HIGH })));
     composer.addPass(
       new EffectPass(
@@ -251,6 +260,7 @@ export class LapScene {
     this.size = { w, h };
     this.renderer.setSize(w, h, false);
     this.composer?.setSize(w, h, false);
+    this.fx.setResolution(w * this.renderer.getPixelRatio(), h * this.renderer.getPixelRatio());
     this.camera.aspect = w / Math.max(1, h);
     this.camera.updateProjectionMatrix();
   }
@@ -398,6 +408,8 @@ export class LapScene {
     Object.assign(this.telemetry, {
       v,
       along,
+      vertical,
+      decel,
       cameraDistance: this.camera.position.distanceTo(p),
       onboard: this.cameraMode === "cockpit" || this.cameraMode === "tcam",
       crowdNear: Math.max(0, 1 - nearest / 160),
@@ -410,6 +422,29 @@ export class LapScene {
     this.sun.target.position.copy(this.car.car.position);
     this.sun.position.copy(this.car.car.position).addScaledVector(this.sunDir, 400);
     this.blur?.setCar(this.car.car);
+    // sparks from the floor in compressions, a lock-up's smoke in some of the hardest stops, the exhaust's shimmer
+    if (jumped) {
+      this.fx.reset();
+      this.brakeZone = { on: false, n: 0, lockUntil: -1 };
+    }
+    const hard = decel > 40;
+    if (hard && !this.brakeZone.on) {
+      this.brakeZone.n++;
+      // two stops in five, the same ones every time the lap plays (picked by where on the lap the stop is)
+      const h = Math.sin(Math.round(d / 40) * 12.9898 + 4.1) * 43758.5453;
+      if (h - Math.floor(h) < 0.4) this.brakeZone.lockUntil = tMs + 520;
+    }
+    this.brakeZone.on = decel > 25 && (hard || this.brakeZone.on);
+    this.car.car.updateMatrixWorld();
+    this.fx.update(dt, this.car.car, this.car.wheels, p.y, {
+      v,
+      vertical,
+      decel,
+      velocity: flat.clone().multiplyScalar(v),
+      turn: path.curvature(d + 20),
+      lockup: tMs > 0 && tMs < this.brakeZone.lockUntil,
+    });
+    this.haze?.place(this.car.car, this.camera, this.cameraMode === "cockpit" ? 0 : v < 1 ? 1 : 0.5, this.clock);
     this.composer?.render(dt);
   }
 

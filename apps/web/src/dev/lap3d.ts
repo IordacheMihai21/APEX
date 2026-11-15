@@ -48,6 +48,7 @@ function demoFrame(tMs: number) {
 }
 (window as unknown as { demoFrame: typeof demoFrame; demoReady: boolean; lapMs: number }).demoFrame = demoFrame;
 (window as unknown as { lapMs: number }).lapMs = lapMs;
+(window as unknown as { lapScene: LapScene }).lapScene = scene;
 /**
  * The sound of the lap from t0 to t1 (s), rendered offline at 30 frames a second with the cameras as demoFrame cuts
  * them, as a WAV (base64), for putting under a recording.
