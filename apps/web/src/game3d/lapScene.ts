@@ -121,7 +121,17 @@ export class LapScene {
       scene.scene.add(hills.group);
       scene.disposables.push(hills);
     }
-    // TV cameras: every 220 m round the lap, 26 m out from the centre line on alternate sides, 5 m up
+    // TV cameras: every 220 m round the lap, 26 m out from the centre line, 9 m up (over the barriers and the
+    // nearer stands), on whichever side has no building in the way
+    const blocks = (osm?.buildings ?? []).map((b) => b.p);
+    const inBuilding = (x: number, y: number) =>
+      blocks.some((p) => {
+        let hit = false;
+        for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
+          if (p[i + 1] > y !== p[j + 1] > y && x < ((p[j] - p[i]) * (y - p[i + 1])) / (p[j + 1] - p[i + 1]) + p[i]) hit = !hit;
+        }
+        return hit;
+      });
     const cl = track.centerline;
     const step = track.lengthMeters / cl.length;
     for (let k = 0; k < cl.length; k += Math.round(220 / step)) {
@@ -130,10 +140,16 @@ export class LapScene {
       const dx = b[0] - a[0];
       const dy = b[1] - a[1];
       const d = Math.hypot(dx, dy) || 1;
-      const side = (k / Math.round(220 / step)) % 2 ? 1 : -1;
+      let side = (k / Math.round(220 / step)) % 2 ? 1 : -1;
+      // a building on this side, or between it and the track: the other side
+      const clear = (sd: number) => [8, 14, 20, 26].every((r) => !inBuilding(cl[k][0] + (-dy / d) * r * sd, cl[k][1] + (dx / d) * r * sd));
+      if (!clear(side)) {
+        if (!clear(-side)) continue;
+        side = -side;
+      }
       const x = cl[k][0] + (-dy / d) * 26 * side;
       const y = cl[k][1] + (dx / d) * 26 * side;
-      scene.tvCams.push(new THREE.Vector3(x, groundAt(x, y) + 5, -y));
+      scene.tvCams.push(new THREE.Vector3(x, groundAt(x, y) + 9, -y));
     }
     scene.car = buildCarF1(detail);
     scene.scene.add(scene.car.car);
@@ -212,6 +228,7 @@ export class LapScene {
   }
 
   setCamera(mode: LapCamera) {
+    if (mode === this.cameraMode) return;
     this.cameraMode = mode;
     this.tvAt = -1;
     this.blur?.reset();
@@ -275,9 +292,12 @@ export class LapScene {
     this.lastD = d;
     // the ghost at the pace target's lap time
     if (this.ghost && this.ghostPath) {
+      // on the grid the ghost would sit inside the car: it shows once the lap is under way
       const gt = tMs / this.ghostScale;
       const gd = this.ghostPath.at(gt);
-      this.placeCar(this.ghost, this.ghostPath, gd, this.ghostPath.speed(gd));
+      const gp = this.placeCar(this.ghost, this.ghostPath, gd, this.ghostPath.speed(gd)).p;
+      // a ghost inside the car only washes it out: it shows once the two are a car's length apart
+      this.ghost.car.visible = tMs > 1500 && gp.distanceTo(p) > 6;
     }
 
     // the camera
