@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { buildCarF1, carDetail } from "../game3d/carF1";
-import { type Garage, PAINTS, PAINTS2, isChampion, loadGarage, numberToday, saveGarage, validNumber } from "../game3d/garage";
+import { unlocks } from "../community";
+import { type Garage, NEON_LIVERY, PAINTS, PAINTS2, isChampion, loadGarage, numberToday, saveGarage, validNumber } from "../game3d/garage";
 import { t } from "../i18n";
 
 /**
@@ -15,6 +16,8 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
   const [champion, setChampion] = useState(false);
   const [typed, setTyped] = useState(() => (g.number ? String(g.number) : ""));
   const car = useRef<ReturnType<typeof buildCarF1> | null>(null);
+  const neonOn = unlocks().friends >= 3;
+  const neonPicked = g.paint === NEON_LIVERY.paint && g.paint2 === NEON_LIVERY.paint2;
 
   useEffect(() => {
     let live = true;
@@ -134,6 +137,27 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
                 aria-pressed={g.paint2 === c}
               />
             ))}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend className="mb-2 text-[12px] font-semibold text-steel uppercase">{t("Special livery")}</legend>
+          <div className="flex items-center gap-3">
+            <button
+              className={`h-9 w-16 border-2 ${neonPicked ? "border-paint" : "border-transparent"} disabled:opacity-35`}
+              style={{ background: `linear-gradient(90deg, ${NEON_LIVERY.paint} 55%, ${NEON_LIVERY.paint2} 55%)` }}
+              disabled={!neonOn}
+              onClick={() => setG((x) => ({ ...x, ...NEON_LIVERY }))}
+              aria-label={t("Neon livery")}
+              aria-pressed={neonPicked}
+            />
+            <p className="text-[13px] text-steel">
+              {neonOn ? t("Neon: yours for bringing three friends.") : (
+                <>
+                  {t("Bring three friends who play from your link to unlock it.")}{" "}
+                  <a className="underline" href="/team">{t("Invite friends")}</a>
+                </>
+              )}
+            </p>
           </div>
         </fieldset>
         <div>
