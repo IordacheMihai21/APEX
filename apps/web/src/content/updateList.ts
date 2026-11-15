@@ -7,12 +7,10 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-16",
-    title: "100 drivers in a day: Daily Quali goes 3D",
+    title: "100 drivers in a day: Daily Quali 3D is on its way",
     body: [
-      "On 15 November 100 of you played Lapdle in a single day, so the promise holds: from today your Daily Quali lap plays in 3D at the circuits whose 3D world is built, Spa and Interlagos for now, with the rest to follow one by one. Draw your line as before, then watch it driven from the cockpit, the T-cam, the chase camera or the TV cameras round the circuit, with sparks, rain on wet days and the light of the hour.",
-      "Once your laps are done, Watch your lap vs the leader replays your best lap against the day's fastest as a ghost. The Garage button by the 3D switch sets your car's paint, second colour and race number; number 1 is only for whoever set yesterday's fastest lap. Bring three friends who play from your link and the Neon livery is yours. The 2D view is still one tap away.",
+      "On 15 November 101 of you played Lapdle in a single day. Thank you. Daily Quali in 3D comes with this update: your line driven on a real circuit. It isn't switched on yet; we'll say here when it is.",
     ],
-    links: [["The team", "/team"]],
   },
   {
     date: "2026-11-14",
