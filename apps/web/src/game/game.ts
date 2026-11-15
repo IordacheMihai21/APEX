@@ -141,6 +141,8 @@ export interface Snapshot {
   mapViews: MapView[];
   /** Running the perfect lap as a demo (after the daily is over): nothing counts. */
   demo: boolean;
+  /** the demo is your lap against the day's leader (watchVsLeader), not the perfect lap */
+  vsLeader: boolean;
   /** The perfect line has been revealed and is drawn under yours. */
   perfectShown: boolean;
   drive: DriveState;
@@ -320,7 +322,9 @@ export class Game {
     if (this.sim && (this.phase === "race" || this.phase === "result")) {
       speed = this.sampleAt(this.sim, this.raceT).speed * 3.6;
       const i = this.indexAt(this.sim, this.raceT);
-      liveDelta = this.sim.samples.elapsedMs[i] - this.reference.samples.elapsedMs[i] * this.pace.scale;
+      // against the leader while watching your lap against theirs, else the pace target
+      const against = this.demo && this.leaderGhost ? this.leaderGhost.sim.samples.elapsedMs : null;
+      liveDelta = against && i < against.length ? this.sim.samples.elapsedMs[i] - against[i] : this.sim.samples.elapsedMs[i] - this.reference.samples.elapsedMs[i] * this.pace.scale;
     }
     return {
       phase: this.phase,
@@ -348,6 +352,7 @@ export class Game {
       paceLabel: this.pace.label,
       challengeMs: this.challengeMs,
       demo: this.demo,
+      vsLeader: this.demo && !!this.leaderGhost,
       mapView: this.mapView,
       mapViews: this.mapViews(),
       perfectShown: this.perfectXY !== null,
@@ -784,9 +789,55 @@ export class Game {
    * The lap now, for the 3D view: the simulated lap, the race clock (ms; 0 on the grid while the lights come on), and the
    * pace target's lap with how much slower it runs; null outside a lap.
    */
-  lapView(): { sim: SimulationResult; tMs: number; phase: Phase; ghost: SimulationResult; ghostScale: number } | null {
+  lapView(): { sim: SimulationResult; tMs: number; phase: Phase; ghost: SimulationResult; ghostScale: number; ghostName: string | null } | null {
     if (!this.sim || (this.phase !== "lights" && this.phase !== "race" && this.phase !== "result")) return null;
-    return { sim: this.sim, tMs: this.phase === "lights" ? 0 : this.raceT, phase: this.phase, ghost: this.reference, ghostScale: this.pace.scale };
+    const leader = this.demo ? this.leaderGhost : null;
+    return { sim: this.sim, tMs: this.phase === "lights" ? 0 : this.raceT, phase: this.phase, ghost: leader?.sim ?? this.reference, ghostScale: leader ? 1 : this.pace.scale, ghostName: leader ? (leader.name ?? "") : null };
+  }
+
+  /** the leader's lap while watching your own against it (watchVsLeader) */
+  private leaderGhost: { sim: SimulationResult; name: string | null } | null = null;
+
+  /**
+   * Replay your best lap with the day's leader as the ghost (their line, their time), for the 3D view. Only once the
+   * session is over, like the perfect lap, so it can't help a lap still to be driven. Nothing it does is recorded.
+   */
+  watchVsLeader(ownKnots: number[], leaderKnots: number[], leaderName: string | null) {
+    if (!this.locked || (this.phase !== "setup" && this.phase !== "result")) return;
+    const sim = simulateLap({ track: this.pt, line: { knotOffsets: ownKnots }, car: this.car });
+    const lead = simulateLap({ track: this.pt, line: { knotOffsets: leaderKnots }, car: this.car });
+    this.leaderGhost = { sim: lead, name: leaderName };
+    this.demo = true;
+    this.sim = sim;
+    this.result = null;
+    this.grades = this.computeGrades(sim);
+    // your sectors against the leader's: purple where you matched them, yellow where you lost time
+    this.sectorPlan = sim.sectors.map((sec, k) => {
+      const deltaMs = sec.timeMs - (lead.sectors[k]?.timeMs ?? sec.timeMs);
+      return {
+        ms: sec.timeMs,
+        tone: (deltaMs <= 50 ? "purple" : "yellow") as SectorTone,
+        doneAtMs: k === sim.sectors.length - 1 || sec.endIndex <= sec.startIndex ? sim.rawLapTimeMs : sim.samples.elapsedMs[sec.endIndex],
+        deltaMs,
+      };
+    });
+    this.pace = { label: "Leader", medal: "perfect", scale: 1 };
+    this.ownXY ??= this.lineXY;
+    this.raceT = 0;
+    this.phase = "lights";
+    this.lightsT0 = performance.now();
+    this.lightsLit = 0;
+    this.lightsHold = 300;
+    this.lightMs = LIGHT_MS_REPEAT;
+    this.skids = [];
+    this.spray = [];
+    this.sprayFrom = null;
+    this.prevWheels = null;
+    this.sparks = [];
+    this.prevSpeed = 0;
+    this.camera.animateTo(sim.samples.x[0], sim.samples.y[0], RACE_TRACK_PX_SLOW / this.track.widthMeters, this.headingAt(0) - Math.PI / 2, 450);
+    logEvent("leader_watched", { track: this.track.id });
+    this.emit();
   }
 
   skip() {
@@ -860,6 +911,7 @@ export class Game {
   /** After the demo: back to the circuit with the perfect line drawn under your own. */
   private finishDemo() {
     this.demo = false;
+    this.leaderGhost = null;
     this.lineXY = this.ownXY ?? this.lineXY;
     this.phase = "setup";
     this.sim = null;

@@ -1237,4 +1237,10 @@ export const ES: Record<string, string> = {
   "From 2 to 99. Number 1 belongs to yesterday's fastest lap.": "Del 2 al 99. El número 1 es de la vuelta más rápida de ayer.",
   "You set yesterday's fastest lap: run number 1 today": "Hiciste la vuelta más rápida de ayer: lleva el número 1 hoy",
   "Garage: your car's colours and number": "Garaje: los colores y el número de tu coche",
+  "Watch your lap vs the leader": "Mira tu vuelta contra el líder",
+  "Loading the leader's lap…": "Cargando la vuelta del líder…",
+  "The leader's lap isn't available": "La vuelta del líder no está disponible",
+  "Ghost: {name}, the day's fastest": "Fantasma: {name}, el más rápido del día",
+  "the leader": "el líder",
+  "Your lap vs the leader": "Tu vuelta contra el líder",
 };

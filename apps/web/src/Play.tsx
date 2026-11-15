@@ -28,7 +28,7 @@ import { delta, lapTime } from "./ui/format";
 import { ChevronDown, ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, Undo, WholeTrack } from "./ui/icons";
 import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 import { Loading, ShareButton, StandingLine, boardOf, dailyShare, dayHeadline, useCountdown } from "./Dialogs";
-import { recordGame, submitDailyLine } from "./online";
+import { fetchLeaderLap, recordGame, submitDailyLine } from "./online";
 import { dateKey as dateKeyNow } from "./modes/schedule";
 import { roadPlayed } from "./community";
 import { CORNER_MEDAL_MS, type CornerWeek, cornerMedal, cornerShare, daysLeft, loadCornerWeek, recordCornerRun, weekNumber, weeklyCorner } from "./modes/corner";
@@ -140,6 +140,8 @@ export function Play({
           };
         }
         setGame(g);
+        // dev only: the game on the window, for checking it by hand
+        if (import.meta.env.DEV) (window as unknown as { __game: Game }).__game = g;
         if (watch) setTimeout(() => g.watchPerfect(), 600);
       })
       .catch((e: Error) => alive && setError(e.message));
@@ -798,6 +800,7 @@ function ResultSheet({
         <button className={secondaryBtn} onClick={() => game.watchPerfect()}>
           {t("Watch perfect lap")}
         </button>
+        <WatchLeader game={game} daily={daily} />
         <button className={secondaryBtn} onClick={() => onNext(null)}>
           {daily.archive ? t("Archive") : t("Grid")}
         </button>
@@ -1021,6 +1024,31 @@ function EndDayButton({ onEnd }: { onEnd: () => void }) {
   );
 }
 
+/**
+ * Your lap against the day's leader, in 3D (their line as the ghost): once your laps are done, on a circuit built in
+ * 3D. The leader's line comes from the server only to a device that has raced the board.
+ */
+function WatchLeader({ game, daily }: { game: Game; daily: DailyRecord }) {
+  const [state, setState] = useState<"idle" | "loading" | "none">("idle");
+  const board = boardOf(daily);
+  if (!SHOW_3D || !has3D(game.track.id) || !daily.bestKnots || !board) return null;
+  return (
+    <button
+      className={secondaryBtn}
+      disabled={state !== "idle"}
+      onClick={async () => {
+        setState("loading");
+        const lead = await fetchLeaderLap(board);
+        if (!lead) return setState("none");
+        setState("idle");
+        game.watchVsLeader(daily.bestKnots!, lead.knots, lead.nickname);
+      }}
+    >
+      {state === "none" ? t("The leader's lap isn't available") : state === "loading" ? t("Loading the leader's lap…") : t("Watch your lap vs the leader")}
+    </button>
+  );
+}
+
 /** Daily already finished today: the circuit stays visible, with the result and a way out. */
 function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; onHub: () => void }) {
   const countdown = useCountdown();
@@ -1030,6 +1058,7 @@ function LockedNote({ daily, game, onHub }: { daily: DailyRecord; game: Game; on
       <button className={secondaryBtn} onClick={() => game.watchPerfect()}>
         {t("Watch the perfect lap")}
       </button>
+      <WatchLeader game={game} daily={daily} />
       <ShareButton {...dailyShare(daily)} />
       {!daily.archive && <NextToday />}
       <button className={secondaryBtn} onClick={onHub}>

@@ -110,7 +110,7 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
         <div className="border border-line bg-night/88">
           <div className="label flex justify-between border-b border-line px-2 py-1 min-[720px]:py-1.5">
             <span className={s.demo ? "text-purple" : "text-paint"}>
-              {s.demo ? t("Perfect lap") : `${t("Lap")} ${s.lapsUsed + 1}${s.lapLimit !== null ? `/${s.lapLimit}` : ""}`}
+              {s.demo ? (s.vsLeader ? t("Your lap vs the leader") : t("Perfect lap")) : `${t("Lap")} ${s.lapsUsed + 1}${s.lapLimit !== null ? `/${s.lapLimit}` : ""}`}
             </span>
             <span>×4</span>
           </div>

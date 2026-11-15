@@ -352,6 +352,27 @@ export async function recordGame(day: string, game: string): Promise<void> {
   await rpc<null>("record_game", { p_day: day, p_device: id, p_game: game });
 }
 
+// ---- the leader's ghost ----------------------------------------------------------------------------------------------
+
+export interface LeaderLap {
+  nickname: string | null;
+  lapMs: number;
+  knots: number[];
+  physics: string;
+}
+
+/**
+ * The day's fastest lap on a board, to watch your own against in 3D: only for a device that has a lap on that board
+ * (null: none yet, unreachable, or this device hasn't raced it).
+ */
+export async function fetchLeaderLap(b: Board): Promise<LeaderLap | null> {
+  const id = existingDeviceId();
+  if (!id) return null;
+  const rows = await rpc<{ nickname: string | null; lap_ms: number; knots: number[]; physics_version: string }[]>("daily_leader", { p_day: b.day, p_track: b.trackId, p_condition: b.condition, p_device: id });
+  const r = rows?.[0];
+  return r && Array.isArray(r.knots) ? { nickname: r.nickname, lapMs: r.lap_ms, knots: r.knots, physics: r.physics_version } : null;
+}
+
 // ---- the team grid (/team) -----------------------------------------------------------------------------------------
 
 export interface GridCar {

@@ -20,6 +20,7 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
   const [failed, setFailed] = useState(false);
   const sound = useRef<LapSound | null>(null);
   const [muted, setMuted] = useState(false);
+  const [ghostName, setGhostName] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -64,6 +65,7 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
       if (lv.sim !== lapOf) {
         lapOf = lv.sim;
         scene.setLap(lv.sim, lv.ghost, lv.ghostScale);
+        setGhostName(lv.ghostName);
         // the sound starts with the lap (the race button was the tap browsers need)
         if (!sound.current) {
           sound.current = new LapSound();
@@ -90,6 +92,11 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
     <div className={`absolute inset-0 ${visible ? "" : "pointer-events-none invisible"}`} aria-hidden={!visible}>
       <canvas ref={canvas} className="h-full w-full" aria-label={t("The lap in 3D")} />
       {!scene && !failed && visible && <p className="absolute inset-0 grid place-items-center bg-night/70 text-[14px] text-steel">{t("Loading the circuit in 3D…")}</p>}
+      {scene && visible && ghostName !== null && (
+        <p className="absolute bottom-[calc(max(120px,22%)+96px)] right-3 border border-paint/25 bg-night/70 px-3 py-1.5 text-[13px] font-semibold text-paint backdrop-blur-sm">
+          {t("Ghost: {name}, the day's fastest", { name: ghostName || t("the leader") })}
+        </p>
+      )}
       {scene && visible && (
         <button
           className="absolute right-3 bottom-[calc(max(120px,22%)+48px)] border border-paint/25 bg-night/70 px-3 py-2 text-[13px] font-semibold text-paint backdrop-blur-sm"
