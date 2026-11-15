@@ -12,6 +12,9 @@ import { buildSkyline, loadSkyline } from "./skyline";
 import { loadSurfaces } from "./textures";
 import { loadTreeAtlases } from "./treeImpostors";
 
+/** top speed in each gear (m/s): eight gears, as the lap's sound has them */
+const GEAR_TOP = [100, 135, 168, 200, 232, 265, 300, 345].map((k) => k / 3.6);
+
 /**
  * The Daily Quali lap in 3D: the whole circuit (circuitWorld), a day sky, the player's car driving the lap the game
  * simulated (where the line runs, at the physics' speed, steering, the nose into the bends, the 2026 rear lights) and a
@@ -61,6 +64,10 @@ class LapPath {
   }
   curvature(d: number) {
     return this.lerp(this.sim.samples.curvature, d);
+  }
+  /** ms into the lap at d metres along the line */
+  timeAt(d: number) {
+    return this.lerp(this.sim.samples.elapsedMs, Math.max(0, Math.min(this.length - 0.01, d)));
   }
   /** metres along the line at tMs into the lap (clamped to the lap) */
   at(tMs: number) {
@@ -181,6 +188,9 @@ export class LapScene {
   }
 
   private worldUpdate: ((t: number) => void) | null = null;
+  private dashAt = -1;
+  private dashGear = 0;
+  private ers = 0.9;
   private readonly fx = new LapEffects();
   private haze: HeatHazeEffect | null = null;
   /** the braking zones so far this lap, and until when (ms into the lap) the inside front tyre is locked */
@@ -518,6 +528,26 @@ export class LapScene {
       wet: this.wet,
     });
     this.haze?.place(this.car.car, this.camera, this.cameraMode === "cockpit" ? 0 : v < 1 ? 1 : 0.5, this.clock);
+    // the steering wheel's screen, a dozen times a second while it's in view
+    this.ers = THREE.MathUtils.clamp(this.ers + dt * (decel > 4 ? 0.09 : v > 60 && along > -1 ? -0.022 : 0), 0, 1);
+    if (jumped) this.ers = 0.9;
+    if ((this.cameraMode === "cockpit" || this.cameraMode === "tcam") && (jumped || this.clock - this.dashAt > 0.08)) {
+      this.dashAt = this.clock;
+      const top = GEAR_TOP;
+      const rpmIn = (g: number) => (v / top[g]) * 12500;
+      if (jumped) this.dashGear = Math.max(0, top.findIndex((t) => v < t * 0.97));
+      if (rpmIn(this.dashGear) > 12100 && this.dashGear < 7) this.dashGear++;
+      else if (rpmIn(this.dashGear) < 8800 && this.dashGear > 0) this.dashGear--;
+      const ghostMs = this.ghostPath ? this.ghostPath.timeAt((d / path.length) * this.ghostPath.length) * this.ghostScale : null;
+      this.car.setDash({
+        gear: this.dashGear + 1,
+        kmh: v * 3.6,
+        rpm: Math.min(1, Math.max(0, rpmIn(this.dashGear) / 12500)),
+        lapMs: Math.max(0, Math.min(tMs, path.lapMs)),
+        deltaMs: ghostMs != null && tMs > 500 ? path.timeAt(d) - ghostMs : null,
+        ers: this.ers,
+      });
+    }
     this.flare?.place(this.camera, this.sunDir, this.sunTint, THREE.MathUtils.clamp(1.25 - this.sunElevation / 40, 0.35, 1));
     this.composer?.render(dt);
   }

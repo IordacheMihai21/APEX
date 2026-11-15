@@ -63,6 +63,8 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
   const mats = new Set<THREE.Material>();
   const geos = new Set<THREE.BufferGeometry>();
   let steer: THREE.Object3D | null = null;
+  let lcd: THREE.Mesh | null = null;
+  const revMats = new Set<THREE.MeshStandardMaterial>();
   let rainLight: THREE.MeshStandardMaterial | null = null;
   let cameras: Record<string, [number, number, number]> = {};
 
@@ -172,6 +174,8 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
         o.rotation.order = "YXZ";
       }
       if (o.name === "steer") steer = o;
+      if (o.name === "steering_wheel_generic_lcd_0") lcd = o as THREE.Mesh;
+      if (o instanceof THREE.Mesh && (o.material as THREE.Material).name === "vehicle_revs_type1") revMats.add(o.material as THREE.MeshStandardMaterial);
       if (o.name === "rear-flap") flap = o;
     });
     if (typeof gRoot.userData.rigMid === "number") uniforms.uMid.value = gRoot.userData.rigMid;
@@ -405,11 +409,77 @@ float lettering(float a, float r) {
     },
   });
 
+  // ---- the steering wheel's screen: the model's display has no texture coordinates, so a screen of our own lies on
+  // it, the same size and facing the driver, drawn from a canvas as the lap goes
+  let dash: { canvas: HTMLCanvasElement; tex: THREE.CanvasTexture; mesh: THREE.Mesh } | null = null;
+  const makeDash = () => {
+    if (dash || !lcd || !steer) return dash;
+    car.updateMatrixWorld(true);
+    const g = lcd.geometry;
+    g.computeBoundingBox();
+    const bb = g.boundingBox!;
+    const toSteer = new THREE.Matrix4().copy(steer.matrixWorld).invert().multiply(lcd.matrixWorld);
+    const box = new THREE.Box3();
+    for (const x of [bb.min.x, bb.max.x]) for (const y of [bb.min.y, bb.max.y]) for (const z of [bb.min.z, bb.max.z]) box.expandByPoint(new THREE.Vector3(x, y, z).applyMatrix4(toSteer));
+    const size = box.getSize(new THREE.Vector3());
+    const centre = box.getCenter(new THREE.Vector3());
+    // the thinnest side is the screen's facing; it faces the driver
+    const axes = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)];
+    const ext = [size.x, size.y, size.z];
+    const thin = ext.indexOf(Math.min(...ext));
+    const eye = new THREE.Vector3(...(cameras.cockpit ?? [0, 0.74, -0.2]));
+    const eyeInSteer = steer.worldToLocal(car.localToWorld(eye.clone()));
+    const normal = axes[thin].clone().multiplyScalar(Math.sign(eyeInSteer.getComponent(thin) - centre.getComponent(thin)) || 1);
+    const others = [0, 1, 2].filter((k) => k !== thin);
+    // its width the longer of the other two sides
+    const wide = ext[others[0]] >= ext[others[1]] ? others[0] : others[1];
+    const tall = wide === others[0] ? others[1] : others[0];
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 320;
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(ext[wide], ext[tall]), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+    // the plane's x along the screen's width, its y up the screen, its face towards the driver
+    const xAxis = axes[wide].clone();
+    let yAxis = axes[tall].clone();
+    if (new THREE.Vector3().crossVectors(xAxis, yAxis).dot(normal) < 0) yAxis = yAxis.negate();
+    // the screen's top is the side away from the wheel's bottom: up in the car
+    const upCar = steer.worldToLocal(car.localToWorld(new THREE.Vector3(0, 1, 0))).sub(steer.worldToLocal(car.localToWorld(new THREE.Vector3())));
+    if (yAxis.dot(upCar) < 0) {
+      yAxis.negate();
+      xAxis.negate();
+    }
+    mesh.matrix.makeBasis(xAxis, yAxis, normal).setPosition(centre.clone().addScaledVector(normal, ext[thin] / 2 + 0.0015));
+    mesh.matrixAutoUpdate = false;
+    mesh.renderOrder = 2;
+    steer.add(mesh);
+    geos.add(mesh.geometry);
+    mats.add(mesh.material as THREE.Material);
+    disposables.push(tex);
+    dash = { canvas, tex, mesh };
+    return dash;
+  };
+
   return {
     car,
     wheels,
     front,
     detail,
+    /**
+     * What the steering wheel's screen shows: the gear, the speed, the revs (0-1, as lights across the top), the lap
+     * time and the gap to the ghost (ms, minus ahead; null: none), and the battery (0-1).
+     */
+    setDash(d: { gear: number; kmh: number; rpm: number; lapMs: number; deltaMs: number | null; ers: number }) {
+      const ds = makeDash();
+      if (!ds) return;
+      drawDash(ds.canvas, d);
+      ds.tex.needsUpdate = true;
+      // the wheel's own lights glow with the revs, and flash at the limit
+      const flash = d.rpm > 0.97 ? (performance.now() % 160 < 80 ? 3 : 0.3) : 0.3 + 2.2 * Math.max(0, (d.rpm - 0.55) / 0.42);
+      for (const m of revMats) m.emissiveIntensity = flash;
+    },
     /** the race number on the car (null: none); drawn once the model is in */
     setNumber(n: number | null) {
       wantNumber = n;
@@ -638,4 +708,66 @@ function numberTexture(n: number, paint: THREE.Color): THREE.CanvasTexture {
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
   return t;
+}
+
+/** The steering wheel's screen, as on a 2026 car: the rev lights across the top, the gear big in the middle, the speed,
+ * the lap time and the gap to the ghost (green ahead, red behind), the battery's charge. */
+function drawDash(c: HTMLCanvasElement, d: { gear: number; kmh: number; rpm: number; lapMs: number; deltaMs: number | null; ers: number }) {
+  const g = c.getContext("2d")!;
+  const W = c.width;
+  const H = c.height;
+  g.fillStyle = "#050607";
+  g.fillRect(0, 0, W, H);
+  // rev lights: green, red, blue, filling with the revs
+  const n = 15;
+  for (let i = 0; i < n; i++) {
+    const on = d.rpm > 0.55 + (i / n) * 0.42;
+    const col = i < 5 ? "#27e05a" : i < 10 ? "#ff2a2a" : "#3a7bff";
+    g.fillStyle = on ? col : "#16181b";
+    g.beginPath();
+    g.arc(28 + i * ((W - 56) / (n - 1)), 26, 12, 0, Math.PI * 2);
+    g.fill();
+  }
+  const font = (w: number, px: number) => `${w} ${px}px Archivo, 'Arial Narrow', Arial, sans-serif`;
+  g.textBaseline = "middle";
+  // the gear
+  g.textAlign = "center";
+  g.fillStyle = "#ffffff";
+  g.font = font(900, 150);
+  g.fillText(d.kmh < 2 ? "N" : String(d.gear), W / 2, 150);
+  // the speed, left
+  g.textAlign = "left";
+  g.fillStyle = "#e9edf2";
+  g.font = font(800, 64);
+  g.fillText(String(Math.round(d.kmh)), 20, 128);
+  g.fillStyle = "#7f8893";
+  g.font = font(700, 24);
+  g.fillText("KM/H", 22, 172);
+  // the gap to the ghost, right
+  g.textAlign = "right";
+  if (d.deltaMs != null) {
+    const ahead = d.deltaMs < 0;
+    g.fillStyle = ahead ? "#27e05a" : "#ff3b3b";
+    g.font = font(800, 54);
+    g.fillText(`${ahead ? "-" : "+"}${(Math.abs(d.deltaMs) / 1000).toFixed(2)}`, W - 18, 128);
+    g.fillStyle = "#7f8893";
+    g.font = font(700, 24);
+    g.fillText("DELTA", W - 20, 172);
+  }
+  // the lap time along the bottom
+  const m = Math.floor(d.lapMs / 60000);
+  const sec = ((d.lapMs % 60000) / 1000).toFixed(3).padStart(6, "0");
+  g.textAlign = "left";
+  g.fillStyle = "#e9edf2";
+  g.font = font(800, 46);
+  g.fillText(`${m}:${sec}`, 20, 262);
+  // the battery: a bar, bottom right
+  g.fillStyle = "#16181b";
+  g.fillRect(W - 190, 246, 170, 30);
+  g.fillStyle = "#f5c518";
+  g.fillRect(W - 190, 246, 170 * Math.max(0, Math.min(1, d.ers)), 30);
+  g.fillStyle = "#7f8893";
+  g.font = font(700, 22);
+  g.textAlign = "right";
+  g.fillText("ERS", W - 200, 262);
 }
