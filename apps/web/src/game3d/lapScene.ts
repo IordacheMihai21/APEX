@@ -108,6 +108,9 @@ export class LapScene {
   private tvCams: THREE.Vector3[] = [];
   private tvAt = -1;
   private size = { w: 1, h: 1 };
+  private stands: THREE.Vector3[] = [];
+  /** what the sound follows: the car's speed and acceleration, the camera's distance, how near the crowd is */
+  readonly telemetry = { v: 0, along: 0, cameraDistance: 0, onboard: false, crowdNear: 0, racing: false };
 
   static async create(canvas: HTMLCanvasElement, trackId: string, condition: Condition): Promise<LapScene> {
     const detail = carDetail();
@@ -116,6 +119,7 @@ export class LapScene {
     const world = buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street: false, detail, treeAtlases });
     scene.scene.add(world.group);
     scene.disposables.push(world, photo);
+    scene.stands = world.stands;
     if (skyline) {
       const hills = buildSkyline(skyline, { wet: false, horizon: `#${scene.sky.horizon.getHexString()}`, sunDir: scene.sunDir });
       hills.group.scale.setScalar(2.6);
@@ -384,6 +388,18 @@ export class LapScene {
     }
     this.camera.updateProjectionMatrix();
     if (jumped) this.blur?.reset();
+
+    // what the sound needs
+    let nearest = Infinity;
+    for (const st of this.stands) nearest = Math.min(nearest, st.distanceTo(p));
+    Object.assign(this.telemetry, {
+      v,
+      along,
+      cameraDistance: this.camera.position.distanceTo(p),
+      onboard: this.cameraMode === "cockpit" || this.cameraMode === "tcam",
+      crowdNear: Math.max(0, 1 - nearest / 160),
+      racing: tMs > 0 && tMs < path.lapMs,
+    });
 
     this.sky.update(this.camera, this.clock);
     if (this.hills) this.hills.position.set(this.camera.position.x, this.hills.position.y, this.camera.position.z);

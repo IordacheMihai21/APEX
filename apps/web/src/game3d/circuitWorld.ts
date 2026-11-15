@@ -108,6 +108,8 @@ export interface CircuitWorld {
   group: THREE.Group;
   /** each side's barrier line (track metres), round the lap */
   barriers: [number, number][][];
+  /** where the grandstands are (three's world coordinates, their crowd's middle), for the crowd's sound */
+  stands: THREE.Vector3[];
   /** the centre line with its heights, for placing the car (track metres, metres up) */
   line: { x: number[]; y: number[]; h: number[]; s: number[] };
   dispose(): void;
@@ -841,6 +843,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
     trees.push({ x, y, s, h, tint: rnd(), d: trackDist(x, y) });
   };
   const blockers: number[][] = [];
+  const standSpots: THREE.Vector3[] = [];
   if (osm) {
     const waterMat = keep(new THREE.MeshStandardMaterial({ color: o.wet ? "#2c3d47" : "#24506a", roughness: 0.08, metalness: 0.3, envMapIntensity: 1.1 }));
     const pavingMat = keep(new THREE.MeshStandardMaterial({ map: tex.paving, roughness: 0.9 }));
@@ -988,6 +991,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
     // stand culled on its own; the same seed for both, so nobody changes clothes as the camera comes closer
     let people = 0;
     crowdStands.forEach((list, k) => {
+      standSpots.push(new THREE.Vector3(list.reduce((a, p) => a + p.x, 0) / list.length, list[0].h, -list.reduce((a, p) => a + p.y, 0) / list.length));
       people += list.length;
       const c = new THREE.Vector3();
       for (const p of list) c.add(new THREE.Vector3(p.x, p.h, -p.y));
@@ -1031,6 +1035,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
   return {
     group,
     barriers,
+    stands: standSpots,
     line,
     dispose() {
       for (const d of disposables) d.dispose();
