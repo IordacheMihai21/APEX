@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { DecalGeometry } from "three/examples/jsm/geometries/DecalGeometry.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import fullUrl from "./car-f1.glb?url";
@@ -346,11 +347,76 @@ float lettering(float a, float r) {
     for (const w of wheels) decal(w.position.x, w.position.z, 0.62, 0.95, 0.85);
   });
 
+  // ---- the race number: on the nose (read from in front) and on both sides of the engine cover, as the rules want it
+  let numberDecals: THREE.Mesh[] = [];
+  let numberTex: THREE.CanvasTexture | null = null;
+  let numberMat: THREE.MeshStandardMaterial | null = null;
+  let wantNumber: number | null = null;
+  const placeNumber = () => {
+    for (const d of numberDecals) {
+      d.removeFromParent();
+      d.geometry.dispose();
+    }
+    numberDecals = [];
+    numberTex?.dispose();
+    numberMat?.dispose();
+    numberTex = null;
+    numberMat = null;
+    if (wantNumber == null || !bodyMeshes.length) return;
+    numberTex = numberTexture(wantNumber, new THREE.Color(uniforms.uPaint.value));
+    numberMat = new THREE.MeshStandardMaterial({ map: numberTex, transparent: true, roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -4, depthWrite: false });
+    car.updateMatrixWorld(true);
+    const ray = new THREE.Raycaster();
+    const targets = bodyMeshes.map((b) => b.mesh);
+    // where: a ray onto the body from outside (in the car's frame: +x left, +y up, -z forward), the decal's size, and
+    // which way the number reads
+    const spots: { from: [number, number, number]; dir: [number, number, number]; size: number; turn: number }[] = [
+      { from: [0, 2, -2.12], dir: [0, -1, 0], size: 0.25, turn: 0 },
+      { from: [1.6, 0.8, 0.95], dir: [-1, 0, 0], size: 0.42, turn: 1 },
+      { from: [-1.6, 0.8, 0.95], dir: [1, 0, 0], size: 0.42, turn: -1 },
+    ];
+    for (const sp of spots) {
+      const o = car.localToWorld(new THREE.Vector3(...sp.from));
+      const d = new THREE.Vector3(...sp.dir).transformDirection(car.matrixWorld);
+      ray.set(o, d);
+      const hit = ray.intersectObjects(targets, false)[0];
+      if (!hit) continue;
+      const mesh = hit.object as THREE.Mesh;
+      // the projector looks along -d; on the nose the top of the number points back (it reads from in front), on the
+      // sides it stands upright
+      const look = new THREE.Object3D();
+      look.position.copy(hit.point);
+      look.up.copy(sp.turn === 0 ? new THREE.Vector3(0, 0, 1).transformDirection(car.matrixWorld) : new THREE.Vector3(0, 1, 0).transformDirection(car.matrixWorld));
+      look.lookAt(hit.point.clone().sub(d));
+      const g = new DecalGeometry(mesh, hit.point, look.rotation, new THREE.Vector3(sp.size, sp.size, 0.25));
+      // into the body's own frame, so it rides with it
+      g.applyMatrix4(mesh.matrixWorld.clone().invert());
+      const dm = new THREE.Mesh(g, numberMat);
+      dm.renderOrder = 3;
+      mesh.add(dm);
+      numberDecals.push(dm);
+    }
+  };
+  disposables.push({
+    dispose() {
+      for (const d of numberDecals) d.geometry.dispose();
+      numberTex?.dispose();
+      numberMat?.dispose();
+    },
+  });
+
   return {
     car,
     wheels,
     front,
     detail,
+    /** the race number on the car (null: none); drawn once the model is in */
+    setNumber(n: number | null) {
+      wantNumber = n;
+      void ready.then(() => {
+        if (!disposed && wantNumber === n) placeNumber();
+      });
+    },
     /** resolves once the model is in */
     ready,
     /** the steering wheel (turns about its own column), once loaded */
@@ -415,6 +481,7 @@ float lettering(float a, float r) {
       if (next.paint2) uniforms.uPaint2.value.set(next.paint2);
       if (next.accent) uniforms.uAccent.value.set(next.accent);
       if (next.tyreBand) tyreBand.value.set(next.tyreBand);
+      if (next.paint && numberDecals.length) placeNumber();
     },
     dispose() {
       disposed = true;
@@ -547,4 +614,28 @@ function buildHelmet(colour: string, mats: Set<THREE.Material>, geos: Set<THREE.
   collar.position.y = -0.11;
   g.add(collar);
   return g;
+}
+
+/**
+ * A race number as a decal: bold italic figures in white with a dark edge on a dark car... and dark with a white edge
+ * on a pale one, so it reads on any paint.
+ */
+function numberTexture(n: number, paint: THREE.Color): THREE.CanvasTexture {
+  const c = document.createElement("canvas");
+  c.width = c.height = 256;
+  const g = c.getContext("2d")!;
+  const pale = paint.r * 0.3 + paint.g * 0.59 + paint.b * 0.11 > 0.3;
+  g.font = "italic 900 190px Archivo, 'Arial Black', Arial, sans-serif";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.lineJoin = "round";
+  g.lineWidth = 16;
+  g.strokeStyle = pale ? "#ffffff" : "#101114";
+  g.fillStyle = pale ? "#101114" : "#ffffff";
+  g.strokeText(String(n), 128, 136);
+  g.fillText(String(n), 128, 136);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
 }

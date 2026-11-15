@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { isChampion, loadGarage, numberToday } from "../game3d/garage";
 import { t } from "../i18n";
 import type { Game } from "../game/game";
 import { type LapCamera, LapScene } from "../game3d/lapScene";
@@ -27,10 +28,14 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
     // time or the golden evening light
     const day = Math.floor(Date.now() / 86400000);
     const hour = [12, 15, 16.8, 18.6][day % 4];
-    LapScene.create(canvas.current!, game.track.id, game.condition, hour)
+    const mine = loadGarage();
+    LapScene.create(canvas.current!, game.track.id, game.condition, hour, mine)
       .then((s) => {
         if (!live) return s.dispose();
         made = s;
+        // your number; number 1 if you set yesterday's fastest lap (and want it)
+        s.setCarNumber(numberToday(mine, false));
+        void isChampion().then((c) => live && c && s.setCarNumber(numberToday(mine, true)));
         setScene(s);
       })
       .catch(() => live && setFailed(true));

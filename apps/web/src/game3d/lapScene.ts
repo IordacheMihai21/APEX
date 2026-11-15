@@ -116,7 +116,7 @@ export class LapScene {
   /** what the sound follows: the car's speed and acceleration, the camera's distance, how near the crowd is */
   readonly telemetry = { v: 0, along: 0, vertical: 0, decel: 0, cameraDistance: 0, onboard: false, crowdNear: 0, racing: false };
 
-  static async create(canvas: HTMLCanvasElement, trackId: string, condition: Condition, hour = 16.8): Promise<LapScene> {
+  static async create(canvas: HTMLCanvasElement, trackId: string, condition: Condition, hour = 16.8, look: { paint: string; paint2: string } | null = null): Promise<LapScene> {
     const detail = carDetail();
     const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadSkyline(`${trackId}-0`), loadTreeAtlases()]);
     const scene = new LapScene(canvas, detail, condition === "wet", hour);
@@ -173,7 +173,7 @@ export class LapScene {
       scene.tvCams.push(new THREE.Vector3(x, groundAt(x, y) + 9, -y));
     }
     // on a wet day the car is on full wets (the blue band)
-    scene.car = buildCarF1(detail, condition === "wet" ? { ...DEFAULT_LOOK, tyreBand: "#2f8be6" } : DEFAULT_LOOK);
+    scene.car = buildCarF1(detail, { ...DEFAULT_LOOK, ...(look ?? {}), ...(condition === "wet" ? { tyreBand: "#2f8be6" } : {}) });
     scene.scene.add(scene.car.car);
     scene.disposables.push(scene.car);
     await scene.car.ready;
@@ -308,6 +308,11 @@ export class LapScene {
       });
     }
     if (this.ghost) this.ghost.car.visible = !!ghost;
+  }
+
+  /** the player's race number on the car (null: none) */
+  setCarNumber(n: number | null) {
+    this.car.setNumber(n);
   }
 
   setCamera(mode: LapCamera) {

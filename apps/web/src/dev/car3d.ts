@@ -79,6 +79,7 @@ function setView(pos: number[], target: number[], fov: number) {
 }
 (window as unknown as { view: (n: string) => void }).view = (n) => VIEWS[n]?.();
 (window as unknown as { built: typeof built }).built = built;
+(window as unknown as { num: (n: number | null) => void }).num = (n) => built.setNumber(n);
 (window as unknown as { steer: (r: number) => void }).steer = (r) => built.setSteer(r);
 (window as unknown as { aero: (o: number) => void }).aero = (o) => built.setAero(o);
 (window as unknown as { attitude: (p: number, r: number, h: number) => void }).attitude = (p, r, h) => built.setAttitude(p, r, h);
