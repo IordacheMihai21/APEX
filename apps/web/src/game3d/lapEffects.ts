@@ -3,7 +3,7 @@ import { BlendFunction, Effect } from "postprocessing";
 
 /**
  * What a broadcast catches round the car beyond the car itself:
- * - Sparks: the titanium skid blocks under the floor scrape the track where the car bottoms out (the compression at
+ * - Sparks: the titanium skid blocks under the plank (no more than 3 mm proud of it) scrape the track where the car bottoms out (the compression at
  *   the foot of Eau Rouge, a bump at top speed), throwing white-hot streaks that trail behind it, bounce on the
  *   tarmac and die orange.
  * - Lock-up smoke: on the hardest stops the inside front tyre locks for a moment and leaves a puff of blue-white
@@ -186,7 +186,7 @@ export class LapEffects {
     const { sp, pf } = this;
     // sparks: hard in a compression, a few at top speed on a bump; none slow
     const fast = Math.max(0, (e.v - 62) / 30);
-    const rate = e.v < 45 ? 0 : 1500 * THREE.MathUtils.clamp((e.vertical - 0.45) / 0.8, 0, 1) + (this.random() < 0.02 ? 900 : 0) * fast;
+    const rate = e.v < 45 ? 0 : 380 * THREE.MathUtils.clamp((e.vertical - 0.55) / 0.7, 0, 1) + (this.random() < 0.012 ? 300 : 0) * fast;
     this.sparkDebt += rate * dt;
     while (this.sparkDebt >= 1) {
       this.sparkDebt -= 1;
@@ -199,11 +199,12 @@ export class LapEffects {
       sp.pos[i * 3 + 2] = this.tmp.z;
       // they leave at most of the car's speed (the track drags them back), fanning out and up
       const keep = 0.55 + this.random() * 0.3;
-      sp.vel[i * 3] = e.velocity.x * keep + (this.random() - 0.5) * 7;
-      sp.vel[i * 3 + 1] = 0.6 + this.random() * 2.8;
-      sp.vel[i * 3 + 2] = e.velocity.z * keep + (this.random() - 0.5) * 7;
+      // low over the tarmac in a narrow fan: they skim the ground, few rise above the tyres
+      sp.vel[i * 3] = e.velocity.x * keep + (this.random() - 0.5) * 2.6;
+      sp.vel[i * 3 + 1] = 0.1 + this.random() * this.random() * 1.4;
+      sp.vel[i * 3 + 2] = e.velocity.z * keep + (this.random() - 0.5) * 2.6;
       sp.life[i * 2] = this.random() * 0.02;
-      sp.life[i * 2 + 1] = 0.22 + this.random() * 0.38;
+      sp.life[i * 2 + 1] = 0.15 + this.random() * 0.25;
     }
     const drag = Math.pow(0.35, dt);
     for (let i = 0; i < SPARKS; i++) {
@@ -218,7 +219,7 @@ export class LapEffects {
       // a bounce on the tarmac, losing most of it
       if (sp.pos[i * 3 + 1] < groundY + 0.01 && sp.vel[i * 3 + 1] < 0) {
         sp.pos[i * 3 + 1] = groundY + 0.01;
-        sp.vel[i * 3 + 1] *= -0.35;
+        sp.vel[i * 3 + 1] *= -0.2;
       }
     }
     // smoke: from the inside front tyre while it's locked
