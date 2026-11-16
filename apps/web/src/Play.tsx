@@ -34,6 +34,7 @@ import { roadPlayed } from "./community";
 import { CORNER_MEDAL_MS, type CornerWeek, cornerMedal, cornerShare, daysLeft, loadCornerWeek, recordCornerRun, weekNumber, weeklyCorner } from "./modes/corner";
 import { shareLink } from "./shareLink";
 import { has3D, lap3DOn, setLap3D } from "./game3d/available";
+import { loadGarage } from "./game3d/garage";
 
 // the 3D view of a corner (three.js and the corner's surroundings) loads only when it is opened
 const Corner3D = lazy(() => import("./ui/Corner3D"));
@@ -327,22 +328,33 @@ function useInset(game: Game, side: "bottom" | "right") {
 }
 
 function ViewControls({ game, view3D, onToggle3D, onGarage }: { game: Game; view3D: boolean | null; onToggle3D: () => void; onGarage: () => void }) {
+  const car = loadGarage();
   return (
-    <div className="absolute top-[140px] right-2 flex flex-col">
+    <div className="absolute top-[140px] right-2 flex flex-col items-end">
       {view3D !== null && (
-        <button
-          className={`${iconBtn} mb-2 w-auto px-2 text-[12px] font-bold ${view3D ? "text-ink" : "text-steel"}`}
-          onClick={onToggle3D}
-          aria-pressed={view3D}
-          title={view3D ? t("Watch the lap in 3D: on") : t("Watch the lap in 3D: off")}
-        >
-          3D
-        </button>
-      )}
-      {view3D !== null && (
-        <button className={`${iconBtn} mb-2 w-auto px-2 text-[12px] font-bold text-ink`} onClick={onGarage} title={t("Garage: your car's colours and number")}>
-          {t("Garage")}
-        </button>
+        <>
+          {/* the lap's view as a broadcast-style switch: the lit side is the one you'll watch */}
+          <div className="mb-2 flex items-stretch border border-line bg-night/90" role="radiogroup" aria-label={t("View")}>
+            <span className="label flex items-center px-2 text-[10px] text-steel">{t("View")}</span>
+            {([false, true] as const).map((on) => (
+              <button
+                key={String(on)}
+                role="radio"
+                aria-checked={view3D === on}
+                onClick={() => view3D !== on && onToggle3D()}
+                className={`wide px-2.5 py-1.5 text-[15px] italic ${view3D === on ? "bg-ink text-night" : "text-steel hover:text-paint"}`}
+              >
+                {on ? "3D" : "2D"}
+              </button>
+            ))}
+          </div>
+          {/* the garage, wearing your car: its colours and its number */}
+          <button className="mb-2 flex items-center gap-2 border border-line bg-night/90 py-1.5 pr-2 pl-2.5 text-paint hover:border-paint/40" onClick={onGarage} title={t("Garage: your car's colours and number")}>
+            <span className="label text-[10px] text-steel">{t("Garage")}</span>
+            <span className="wide text-[15px] italic">{car.number ? `#${car.number}` : "#"}</span>
+            <span className="h-4 w-4 border border-paint/30" style={{ background: `linear-gradient(135deg, ${car.paint} 55%, ${car.paint2} 55%)` }} aria-hidden="true" />
+          </button>
+        </>
       )}
       <button className={`${iconBtn} border-b-0`} onClick={() => game.zoom(1.4)} aria-label={t("Zoom in")} title={t("Zoom in")}>
         <Plus />

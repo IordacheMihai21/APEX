@@ -134,49 +134,44 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
     <div className={`absolute inset-0 ${visible ? "" : "pointer-events-none invisible"}`} aria-hidden={!visible}>
       <canvas ref={canvas} className="h-full w-full" aria-label={t("The lap in 3D")} />
       {!scene && !failed && visible && <p className="absolute inset-0 grid place-items-center bg-night/70 text-[14px] text-steel">{t("Loading the circuit in 3D…")}</p>}
-      {scene && visible && ghostName !== null && (
-        <p className="absolute bottom-[calc(max(120px,22%)+144px)] right-3 border border-paint/25 bg-night/70 px-3 py-1.5 text-[13px] font-semibold text-paint backdrop-blur-sm">
-          {t("Ghost: {name}, the day's fastest", { name: ghostName || t("the leader") })}
-        </p>
-      )}
+      {/* one column above the Skip button (RaceHud: 112 px up on a phone, 12 px on a computer), so nothing overlaps */}
       {scene && visible && (
-        <button
-          className="absolute right-3 bottom-[calc(max(120px,22%)+96px)] border border-paint/25 bg-night/70 px-3 py-2 text-[13px] font-semibold text-paint backdrop-blur-sm"
-          onClick={() => {
-            const next = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
-            setSpeed(next);
-            try {
-              localStorage.setItem(SPEED_KEY, String(next));
-            } catch {
-              // private mode: the choice lasts the visit
-            }
-          }}
-          aria-label={t("Change speed")}
-        >
-          {t("Speed")}: {speed === 1 ? t("real time") : `${speed}×`}
-        </button>
-      )}
-      {scene && visible && (
-        <button
-          className="absolute right-3 bottom-[calc(max(120px,22%)+48px)] border border-paint/25 bg-night/70 px-3 py-2 text-[13px] font-semibold text-paint backdrop-blur-sm"
-          onClick={() => {
-            const next = !muted;
-            sound.current?.setMuted(next);
-            setMuted(next);
-          }}
-          aria-pressed={!muted}
-        >
-          {muted ? t("Sound: off") : t("Sound: on")}
-        </button>
-      )}
-      {scene && visible && (
-        <button
-          className="absolute right-3 bottom-[max(120px,22%)] border border-paint/25 bg-night/70 px-3 py-2 text-[13px] font-semibold text-paint backdrop-blur-sm"
-          onClick={() => setCam((c) => CAMERAS[(CAMERAS.indexOf(c) + 1) % CAMERAS.length])}
-          aria-label={t("Change camera")}
-        >
-          {t("Camera")}: {t(CAMERA_NAME[cam])}
-        </button>
+        <div className="absolute right-3 bottom-[calc(max(12px,env(safe-area-inset-bottom))+56px)] flex flex-col items-end gap-2 max-[520px]:bottom-[164px]">
+          {ghostName !== null && (
+            <p className="border border-paint/25 bg-night/70 px-3 py-1.5 text-[13px] font-semibold text-paint backdrop-blur-sm">
+              {t("Ghost: {name}, the day's fastest", { name: ghostName || t("the leader") })}
+            </p>
+          )}
+          <button
+            className="border border-paint/25 bg-night/70 px-3 py-2 text-[13px] font-semibold text-paint backdrop-blur-sm"
+            onClick={() => {
+              const next = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
+              setSpeed(next);
+              try {
+                localStorage.setItem(SPEED_KEY, String(next));
+              } catch {
+                // private mode: the choice lasts the visit
+              }
+            }}
+            aria-label={t("Change speed")}
+          >
+            {t("Speed")}: {speed === 1 ? t("real time") : `${speed}×`}
+          </button>
+          <button
+            className="border border-paint/25 bg-night/70 px-3 py-2 text-[13px] font-semibold text-paint backdrop-blur-sm"
+            onClick={() => {
+              const next = !muted;
+              sound.current?.setMuted(next);
+              setMuted(next);
+            }}
+            aria-pressed={!muted}
+          >
+            {muted ? t("Sound: off") : t("Sound: on")}
+          </button>
+          <button className="border border-paint/25 bg-night/70 px-3 py-2 text-[13px] font-semibold text-paint backdrop-blur-sm" onClick={() => setCam((c) => CAMERAS[(CAMERAS.indexOf(c) + 1) % CAMERAS.length])} aria-label={t("Change camera")}>
+            {t("Camera")}: {t(CAMERA_NAME[cam])}
+          </button>
+        </div>
       )}
     </div>
   );

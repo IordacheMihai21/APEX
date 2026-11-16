@@ -356,6 +356,29 @@ float lettering(float a, float r) {
   let numberTex: THREE.CanvasTexture | null = null;
   let numberMat: THREE.MeshStandardMaterial | null = null;
   let wantNumber: number | null = null;
+  /** keep a decal's triangles whose normal faces against `d` (the projector's direction, world space) */
+  const facing = (g: THREE.BufferGeometry, d: THREE.Vector3) => {
+    const nrm = g.getAttribute("normal");
+    const keep: number[] = [];
+    for (let t = 0; t < nrm.count; t += 3) {
+      const nx = nrm.getX(t) + nrm.getX(t + 1) + nrm.getX(t + 2);
+      const ny = nrm.getY(t) + nrm.getY(t + 1) + nrm.getY(t + 2);
+      const nz = nrm.getZ(t) + nrm.getZ(t + 1) + nrm.getZ(t + 2);
+      if (nx * d.x + ny * d.y + nz * d.z < 0) keep.push(t, t + 1, t + 2);
+    }
+    const out = new THREE.BufferGeometry();
+    for (const name of Object.keys(g.attributes)) {
+      const a = g.getAttribute(name);
+      const arr = new Float32Array(keep.length * a.itemSize);
+      keep.forEach((v, i) => {
+        for (let c = 0; c < a.itemSize; c++) arr[i * a.itemSize + c] = a.array[v * a.itemSize + c];
+      });
+      out.setAttribute(name, new THREE.BufferAttribute(arr, a.itemSize));
+    }
+    g.dispose();
+    return out;
+  };
+
   const placeNumber = () => {
     for (const d of numberDecals) {
       d.removeFromParent();
@@ -375,9 +398,12 @@ float lettering(float a, float r) {
     // where: a ray onto the body from outside (in the car's frame: +x left, +y up, -z forward), the decal's size, and
     // which way the number reads
     const spots: { from: [number, number, number]; dir: [number, number, number]; size: number; turn: number }[] = [
+      // as on an F1 car: on the nose, high on the engine cover's fin either side, and on both rear wing endplates
       { from: [0, 2, -2.12], dir: [0, -1, 0], size: 0.25, turn: 0 },
-      { from: [1.6, 0.8, 0.95], dir: [-1, 0, 0], size: 0.42, turn: 1 },
-      { from: [-1.6, 0.8, 0.95], dir: [1, 0, 0], size: 0.42, turn: -1 },
+      { from: [1.6, 0.9, 0.5], dir: [-1, 0, 0], size: 0.34, turn: 1 },
+      { from: [-1.6, 0.9, 0.5], dir: [1, 0, 0], size: 0.34, turn: -1 },
+      { from: [1.6, 0.62, 2.2], dir: [-1, 0, 0], size: 0.32, turn: 1 },
+      { from: [-1.6, 0.62, 2.2], dir: [1, 0, 0], size: 0.32, turn: -1 },
     ];
     for (const sp of spots) {
       const o = car.localToWorld(new THREE.Vector3(...sp.from));
@@ -392,7 +418,9 @@ float lettering(float a, float r) {
       look.position.copy(hit.point);
       look.up.copy(sp.turn === 0 ? new THREE.Vector3(0, 0, 1).transformDirection(car.matrixWorld) : new THREE.Vector3(0, 1, 0).transformDirection(car.matrixWorld));
       look.lookAt(hit.point.clone().sub(d));
-      const g = new DecalGeometry(mesh, hit.point, look.rotation, new THREE.Vector3(sp.size, sp.size, 0.25));
+      // only the faces turned towards the projector: through a thin part (an endplate) the number would also land,
+      // mirrored, on the far face
+      const g = facing(new DecalGeometry(mesh, hit.point, look.rotation, new THREE.Vector3(sp.size, sp.size, 0.25)), d);
       // into the body's own frame, so it rides with it
       g.applyMatrix4(mesh.matrixWorld.clone().invert());
       const dm = new THREE.Mesh(g, numberMat);

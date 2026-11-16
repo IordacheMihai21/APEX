@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { buildPaddock } from "../game3d/paddock";
 import { buildCarF1, carDetail } from "../game3d/carF1";
 import { unlocks } from "../community";
 import { type Garage, NEON_LIVERY, PAINTS, PAINTS2, isChampion, loadGarage, numberToday, saveGarage, validNumber } from "../game3d/garage";
 import { t } from "../i18n";
 
 /**
- * The garage: your car turning slowly on a stand, its paint, its second colour and its race number. Kept on this
+ * The garage: your car in an F1 pit garage (game3d/paddock.ts), turning slowly until you drag it round, its paint, its
+ * second colour and its race number. Kept on this
  * device (others see it once cars are shared, later). Number 1 is only on offer to yesterday's fastest driver.
  */
 export function Garage3D({ onClose }: { onClose: () => void }) {
@@ -16,6 +18,7 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
   const [champion, setChampion] = useState(false);
   const [typed, setTyped] = useState(() => (g.number ? String(g.number) : ""));
   const car = useRef<ReturnType<typeof buildCarF1> | null>(null);
+  const look = useRef<((paint: string, number: number | null) => void) | null>(null);
   const neonOn = unlocks().friends >= 3;
   const neonPicked = g.paint === NEON_LIVERY.paint && g.paint2 === NEON_LIVERY.paint2;
 
@@ -27,67 +30,118 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
     };
   }, []);
 
-  // the stand: the car turning under soft studio light
+  // the pit garage: the car on its floor under the strip lights, turning slowly until you drag it round yourself
   useEffect(() => {
     const el = canvas.current!;
-    const renderer = new THREE.WebGLRenderer({ canvas: el, antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ canvas: el, antialias: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.NeutralToneMapping;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color("#15171b");
     const pmrem = new THREE.PMREMGenerator(renderer);
     const room = new RoomEnvironment();
     const env = pmrem.fromScene(room, 0.04).texture;
     room.dispose();
     pmrem.dispose();
     scene.environment = env;
-    scene.environmentIntensity = 0.8;
-    const key = new THREE.DirectionalLight("#ffffff", 2.2);
-    key.position.set(3, 6, 4);
-    scene.add(key);
+    scene.environmentIntensity = 0.55;
+    // the strip lights' downlight, casting the car's shadow on the epoxy
+    const key = new THREE.DirectionalLight("#fff6ea", 2.4);
+    key.position.set(1.5, 8, 2.5);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    Object.assign(key.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 20 });
+    key.shadow.bias = -0.0005;
+    scene.add(key, new THREE.HemisphereLight("#f4f6fa", "#3a3d42", 0.6));
+    const paddock = buildPaddock();
+    paddock.setLook(g.paint, numberToday(g, false));
+    scene.add(paddock.group);
+    look.current = paddock.setLook;
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
     const built = buildCarF1(carDetail(), { paint: g.paint, paint2: g.paint2, accent: "#f2f2ee", tyreBand: "#f5c518" });
+    built.car.rotation.y = 0.75;
+    void built.ready.then(() => built.car.traverse((o) => ((o as THREE.Mesh).isMesh ? ((o.castShadow = true), (o.receiveShadow = true)) : null)));
     car.current = built;
     scene.add(built.car);
+    // drag the car round on its spot, like a turntable (the camera stays in the garage); up and down tilts the view.
+    // It turns slowly by itself until you take it, and again a few seconds after you let go
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let tilt = 0.32;
+    let held: { x: number; y: number } | null = null;
+    let letGo = -1e9;
+    const down = (e: PointerEvent) => {
+      held = { x: e.clientX, y: e.clientY };
+      el.setPointerCapture(e.pointerId);
+    };
+    const move = (e: PointerEvent) => {
+      if (!held) return;
+      built.car.rotation.y += (e.clientX - held.x) * 0.012;
+      tilt = THREE.MathUtils.clamp(tilt + (e.clientY - held.y) * 0.003, 0.08, 0.75);
+      held = { x: e.clientX, y: e.clientY };
+    };
+    const up = () => {
+      held = null;
+      letGo = performance.now();
+    };
+    el.addEventListener("pointerdown", down);
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    let dist = 8;
+    const place = () => {
+      camera.position.set(0, 0.45 + dist * Math.sin(tilt), dist * Math.cos(tilt));
+      camera.lookAt(0, 0.45, 0);
+    };
     const resize = () => {
       const w = el.clientWidth;
       const h = el.clientHeight;
       renderer.setSize(w, h, false);
       camera.aspect = w / Math.max(1, h);
-      // the whole car in frame (about 6 m long, turning) whatever the shape of the screen
-      const half = Math.atan(Math.tan(THREE.MathUtils.degToRad(15)) * Math.min(1, camera.aspect));
-      const dist = 3.3 / Math.tan(half);
-      camera.position.set(0, dist * 0.22, dist);
-      camera.lookAt(0, 0.35, 0);
+      // the car (about 6 m long, turning) across the frame's width, and its height inside the frame's height
+      const tan = Math.tan(THREE.MathUtils.degToRad(15));
+      dist = Math.max(3.3 / (tan * camera.aspect), 1.6 / tan);
       camera.updateProjectionMatrix();
+      place();
     };
     const ro = new ResizeObserver(resize);
     ro.observe(el);
     resize();
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
     let raf = 0;
-    const t0 = performance.now();
+    let last = performance.now();
     const loop = () => {
       raf = requestAnimationFrame(loop);
-      built.car.rotation.y = still ? 0.75 : 0.75 + ((performance.now() - t0) / 1000) * 0.35;
+      const now = performance.now();
+      if (!held && !still && now - letGo > 4000) built.car.rotation.y += ((now - last) / 1000) * 0.3;
+      last = now;
+      place();
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(loop);
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      el.removeEventListener("pointerdown", down);
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", up);
       built.dispose();
+      paddock.dispose();
       env.dispose();
       renderer.dispose();
       car.current = null;
+      look.current = null;
     };
-    // the stand is built once; changes are applied below
+    // the garage is built once; changes are applied below
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     car.current?.setLook({ paint: g.paint, paint2: g.paint2 });
     car.current?.setNumber(numberToday(g, champion));
+    look.current?.(g.paint, numberToday(g, champion));
     saveGarage(g);
   }, [g, champion]);
 
@@ -107,8 +161,11 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
           {t("Done")}
         </button>
       </div>
-      <canvas ref={canvas} className="min-h-0 w-full flex-1" aria-label={t("Your car")} />
-      <div className="mx-auto w-full max-w-[520px] space-y-4 px-4 pb-6">
+      <div className="relative min-h-[42vh] w-full flex-1">
+        <canvas ref={canvas} className="h-full w-full cursor-grab touch-none active:cursor-grabbing" aria-label={t("Your car")} />
+        <p className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-[12px] text-steel">{t("Drag to turn the car")}</p>
+      </div>
+      <div className="mx-auto w-full max-w-[520px] shrink-0 space-y-4 overflow-y-auto px-4 pb-6 max-h-[52vh]">
         <fieldset>
           <legend className="mb-2 text-[12px] font-semibold text-steel uppercase">{t("Paint")}</legend>
           <div className="flex flex-wrap gap-2">
