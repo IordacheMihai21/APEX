@@ -13,6 +13,8 @@ const trackId = params.get("track") ?? "spa";
 const canvas = document.getElementById("c") as HTMLCanvasElement;
 const condition = params.get("wet") === "1" ? "wet" : "dry";
 const scene = await LapScene.create(canvas, trackId, condition, Number(params.get("hour") ?? 16.8));
+// recordings step frames slowly: keep the full resolution
+scene.adaptive = false;
 const track = await loadTrack(trackId);
 const pt = prepareTrack(track);
 const sim = simulateLap({ track: pt, line: track.optimalLine!, car: CONDITION_CARS[condition] });

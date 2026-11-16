@@ -236,8 +236,11 @@ export class LapScene {
     this.sunElevation = sun.elevation;
     this.sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - sun.elevation), THREE.MathUtils.degToRad(sun.azimuth));
     this.sunTint = sun.tint;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+    // no canvas antialiasing: every frame goes through the post chain, whose SMAA does it (the canvas's own MSAA was
+    // paid for at full resolution and thrown away)
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, detail === "full" ? 2 : 1.5));
+    this.adapt.max = this.adapt.ratio = this.renderer.getPixelRatio();
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.toneMappingExposure = 0.82;
@@ -367,6 +370,32 @@ export class LapScene {
     return this.cameraMode;
   }
 
+  /**
+   * Resolution that follows the frame rate: below about 52 fps for a second it steps down (a quarter of the screen's
+   * pixel ratio at a time, to 1), and back up after a few seconds well above 60, so a slower computer stays smooth.
+   */
+  private adapt = { max: 1, ratio: 1, ema: 16.7, last: 0, slowFor: 0, fastFor: 0 };
+  /** off for recordings, which draw their frames slowly one by one */
+  adaptive = true;
+  private adaptResolution() {
+    if (!this.adaptive) return;
+    const a = this.adapt;
+    const now = performance.now();
+    const ms = a.last ? Math.min(100, now - a.last) : 16.7;
+    a.last = now;
+    a.ema += (ms - a.ema) * 0.1;
+    a.slowFor = a.ema > 19 ? a.slowFor + ms : 0;
+    a.fastFor = a.ema < 13 ? a.fastFor + ms : 0;
+    let next = a.ratio;
+    if (a.slowFor > 1000 && a.ratio > 1) next = Math.max(1, a.ratio - 0.25);
+    else if (a.fastFor > 4000 && a.ratio < a.max) next = Math.min(a.max, a.ratio + 0.25);
+    if (next === a.ratio) return;
+    a.ratio = next;
+    a.slowFor = a.fastFor = 0;
+    this.renderer.setPixelRatio(next);
+    this.resize(this.size.w, this.size.h);
+  }
+
   resize(w: number, h: number) {
     this.size = { w, h };
     this.renderer.setSize(w, h, false);
@@ -403,6 +432,7 @@ export class LapScene {
    */
   frame(tMs: number) {
     if (!this.path) return;
+    this.adaptResolution();
     const dtMs = this.lastT < 0 ? 16 : Math.max(0, tMs - this.lastT);
     const dt = Math.min(0.25, dtMs / 1000);
     const jumped = this.lastT < 0 || tMs < this.lastT || dtMs > 1500;
