@@ -397,7 +397,10 @@ export class LapScene {
     return { p, flat, pitch, kappa };
   }
 
-  /** Draw the lap at tMs (the game's race clock); before the start the car waits on the grid. */
+  /**
+   * Draw the lap at tMs (the game's race clock). It's a flying lap: before 0 (under the lights) the car is on the end of
+   * the lap, coming up to the line at speed, and crosses it at 0.
+   */
   frame(tMs: number) {
     if (!this.path) return;
     const dtMs = this.lastT < 0 ? 16 : Math.max(0, tMs - this.lastT);
@@ -406,8 +409,8 @@ export class LapScene {
     this.lastT = tMs;
     this.clock += dt;
     const path = this.path;
-    const d = path.at(tMs);
-    const v = tMs <= 0 ? 0 : path.speed(d);
+    const d = tMs < 0 ? path.at(path.lapMs + tMs) - path.length : path.at(tMs);
+    const v = path.speed(d);
     const { p, flat, pitch, kappa } = this.placeCar(this.car, path, d, v, dt, jumped);
     // the front wheels steer into the bend, eased; the wheels turn with the speed (shown below a strobing rate)
     const want = Math.atan(3.4 * kappa) * 1.15;
@@ -420,7 +423,7 @@ export class LapScene {
     // rear lights: harvesting under braking, super clipping near top speed
     const ahead = path.speed(d + Math.max(1, v) * 0.25);
     const decel = (v - ahead) / 0.25;
-    const lights: RearLights = tMs <= 0 ? (this.wet ? "on" : "off") : decel > 4 ? "harvest" : v > this.vMax * 0.96 ? "clip" : this.wet ? "on" : "off";
+    const lights: RearLights = decel > 4 ? "harvest" : v > this.vMax * 0.96 ? "clip" : this.wet ? "on" : "off";
     this.car.setRearLights(lights);
     this.car.updateLights(this.clock);
     // the suspension, from the lap's accelerations: the nose dives under braking and lifts on the throttle, the body
@@ -429,11 +432,11 @@ export class LapScene {
     const ds = Math.max(2, v * 0.12);
     const v1 = path.speed(d - ds);
     const v2 = path.speed(d + ds);
-    const along = tMs <= 0 ? 0 : (v2 * v2 - v1 * v1) / (2 * 2 * ds);
-    const lateralG = tMs <= 0 ? 0 : (v * v * kappa) / 9.81;
+    const along = (v2 * v2 - v1 * v1) / (2 * 2 * ds);
+    const lateralG = (v * v * kappa) / 9.81;
     const hA = path.point(d - 8).y;
     const hB = path.point(d + 8).y;
-    const vertical = tMs <= 0 ? 0 : ((hA + hB - 2 * p.y) / 64) * v * v / 9.81;
+    const vertical = ((hA + hB - 2 * p.y) / 64) * v * v / 9.81;
     const target = {
       pitch: THREE.MathUtils.clamp((-along / 9.81) * 0.0036, -0.006, 0.019),
       roll: THREE.MathUtils.clamp(lateralG * 0.0022, -0.011, 0.011),

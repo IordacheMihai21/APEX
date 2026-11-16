@@ -327,9 +327,22 @@ export class Game {
     this.listeners.forEach((l) => l());
   }
 
+  /**
+   * A flying lap in 3D: under the lights the clock counts up to 0 (minus the time until they go out, at playback
+   * speed), so the 3D car comes up to the line at speed and crosses it as the timing starts. 0 on the map, where the
+   * car waits on the grid.
+   */
+  private runUpMs(): number {
+    if (this.phase !== "lights" || !this.covered) return 0;
+    const lightsOut = this.lightsT0 + 5 * this.lightMs + this.lightsHold;
+    return Math.min(0, (performance.now() - lightsOut) * this.speed);
+  }
+
   private buildSnapshot(): Snapshot {
     let speed = 0;
     let liveDelta = 0;
+    const runUp = this.runUpMs();
+    if (this.sim && runUp < 0) speed = this.sampleAt(this.sim, this.sim.rawLapTimeMs + runUp).speed * 3.6;
     if (this.sim && (this.phase === "race" || this.phase === "result")) {
       speed = this.sampleAt(this.sim, this.raceT).speed * 3.6;
       const i = this.indexAt(this.sim, this.raceT);
@@ -373,7 +386,7 @@ export class Game {
             ? this.sectorPlan
             : this.sectorPlan.filter((x) => x.doneAtMs <= this.raceT)
           : [],
-      drive: driveState(this.phase === "lights" ? 0 : speed),
+      drive: driveState(speed),
       lapsUsed: this.lapsUsed,
       lapLimit: this.opts.lapLimit,
       locked: this.locked,
@@ -803,7 +816,8 @@ export class Game {
   lapView(): { sim: SimulationResult; tMs: number; phase: Phase; ghost: SimulationResult; ghostScale: number; ghostName: string | null } | null {
     if (!this.sim || (this.phase !== "lights" && this.phase !== "race" && this.phase !== "result")) return null;
     const leader = this.demo ? this.leaderGhost : null;
-    return { sim: this.sim, tMs: this.phase === "lights" ? 0 : this.raceT, phase: this.phase, ghost: leader?.sim ?? this.reference, ghostScale: leader ? 1 : this.pace.scale, ghostName: leader ? (leader.name ?? "") : null };
+    const tMs = this.phase === "lights" ? this.runUpMs() : this.raceT;
+    return { sim: this.sim, tMs, phase: this.phase, ghost: leader?.sim ?? this.reference, ghostScale: leader ? 1 : this.pace.scale, ghostName: leader ? (leader.name ?? "") : null };
   }
 
   /** the leader's lap while watching your own against it (watchVsLeader) */
@@ -1425,6 +1439,10 @@ export class Game {
       const lit = Math.min(5, Math.floor(t / this.lightMs));
       if (lit !== this.lightsLit) {
         this.lightsLit = lit;
+        this.emit();
+      } else if (this.covered && now - this.lastEmit > 50) {
+        // the 3D run-up's speed and gear on the dash
+        this.lastEmit = now;
         this.emit();
       }
       if (t >= 5 * this.lightMs + this.lightsHold) {

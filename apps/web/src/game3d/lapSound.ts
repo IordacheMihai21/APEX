@@ -158,6 +158,8 @@ export class LapSound {
     if (this.master && at === undefined) this.master.gain.setTargetAtTime(this.muted ? 0 : 0.75, t, 0.1);
     // the gearbox: up at the top of the revs, down as the car slows, one gear at a time
     const rpmIn = (g: number) => Math.max(6000, Math.min(RPM_MAX, (v / GEAR_TOP[g]) * RPM_MAX));
+    // joined at speed (the flying lap's run-up): straight into the gear it's in, without a shift heard for each
+    while (this.gear < GEAR_TOP.length - 1 && v > GEAR_TOP[this.gear] * 1.05) this.gear++;
     let shifted = 0;
     if (rpmIn(this.gear) > UPSHIFT && this.gear < GEAR_TOP.length - 1) {
       this.gear++;

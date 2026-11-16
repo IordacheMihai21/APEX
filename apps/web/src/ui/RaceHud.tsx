@@ -101,7 +101,9 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
 
   const racing = s.phase === "race";
   const d = s.liveDeltaMs;
-  const speed = racing ? Math.round(s.raceSpeedKmh) : 0;
+  // moving: the race, or the 3D run-up to the line under the lights (on the map the car waits on the grid)
+  const moving = racing || (s.phase === "lights" && s.raceSpeedKmh > 0);
+  const speed = moving ? Math.round(s.raceSpeedKmh) : 0;
 
   return (
     <>
@@ -158,10 +160,10 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
       {/* onboard cluster, bottom centre */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center px-3 pb-[max(12px,env(safe-area-inset-bottom))]">
         <div className="w-full max-w-[320px] border border-line bg-night/90 px-3 pt-2.5 pb-2">
-          <RevLights leds={racing ? s.drive.leds : 0} shift={racing && s.drive.shift} />
+          <RevLights leds={moving ? s.drive.leds : 0} shift={moving && s.drive.shift} />
           <div className="mt-2 flex items-end justify-between">
             <div className="flex items-end gap-2.5">
-              <span className="wide num w-8 text-[44px] leading-[0.85] text-paint">{racing ? s.drive.gear : "N"}</span>
+              <span className="wide num w-8 text-[44px] leading-[0.85] text-paint">{moving ? s.drive.gear : "N"}</span>
               <span className="label pb-0.5">{t("Gear")}</span>
             </div>
             <div className="flex items-end gap-2">
