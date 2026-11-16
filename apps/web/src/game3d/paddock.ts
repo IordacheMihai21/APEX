@@ -1,10 +1,13 @@
 import * as THREE from "three";
 
 /**
- * An F1 pit garage round the car, built in code: a glossy grey epoxy floor with the box's painted lines, a back wall of
- * white panels with a band in the car's paint and its number big on it, strip lights overhead, tyre sets in their
- * blankets on racks to the sides, a tool trolley and a timing monitor. No team's livery or logos copied.
- * setLook() repaints the band and the wall number with the car.
+ * An F1 pit garage round the car, built in code after photos of real ones (no team's marks copied): a white epoxy
+ * floor polished like glass with the car's bay painted on it (a long outline in black with an inner line in the car's
+ * paint, pointed towards the pit lane, the name in the middle), the red pit-lane line along the front, white walls with
+ * a band of the paint at their foot, a beam over the opening in the paint with the number on it, a ceiling of square
+ * light panels, workbenches with monitors at the back, and tyre sets on the softs, some in their blankets.
+ * The car stands at the origin, nose to +z (towards the pit lane). setLook() repaints everything that wears the paint.
+ * Cheap on purpose: no real-time shadows (a soft painted one under the car), few draw calls.
  */
 export function buildPaddock() {
   const group = new THREE.Group();
@@ -13,88 +16,145 @@ export function buildPaddock() {
     disposables.push(x);
     return x;
   };
-  const box = (w: number, h: number, d: number, mat: THREE.Material, x: number, y: number, z: number) => {
-    const m = new THREE.Mesh(keep(new THREE.BoxGeometry(w, h, d)), mat);
-    m.position.set(x, y, z);
-    m.castShadow = m.receiveShadow = true;
-    group.add(m);
-    return m;
+  const mat = (o: THREE.MeshStandardMaterialParameters) => keep(new THREE.MeshStandardMaterial(o));
+  const box = (w: number, h: number, d: number, m: THREE.Material, x: number, y: number, z: number) => {
+    const b = new THREE.Mesh(keep(new THREE.BoxGeometry(w, h, d)), m);
+    b.position.set(x, y, z);
+    group.add(b);
+    return b;
   };
+  const canvasTex = (w: number, h: number) => {
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const tex = keep(new THREE.CanvasTexture(c));
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    return { c, g: c.getContext("2d")!, tex };
+  };
+  const W = 3.8; // half the garage's width
+  const BACK = -6.5;
+  const FRONT = 4.2;
+  const H = 3.4;
 
-  // the floor: grey epoxy with a clear coat, reflecting the lights
-  const floorMat = keep(new THREE.MeshPhysicalMaterial({ color: "#3d4147", roughness: 0.32, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08 }));
-  const floor = new THREE.Mesh(keep(new THREE.PlaneGeometry(14, 12)), floorMat);
+  // the floor: white epoxy with a clear coat, mirroring the light panels
+  const floorMat = keep(new THREE.MeshPhysicalMaterial({ color: "#e4e6e8", roughness: 0.18, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04 }));
+  const floor = new THREE.Mesh(keep(new THREE.PlaneGeometry(2 * W, FRONT - BACK + 2)), floorMat);
   floor.rotation.x = -Math.PI / 2;
-  floor.receiveShadow = true;
+  floor.position.z = (FRONT + BACK) / 2 + 1;
   group.add(floor);
-  // the box's lines: white round the car's bay, yellow where the crew stands
-  const lineMat = keep(new THREE.MeshStandardMaterial({ color: "#e9eae6", roughness: 0.5 }));
-  const yellowMat = keep(new THREE.MeshStandardMaterial({ color: "#f2c21b", roughness: 0.5 }));
-  const line = (w: number, d: number, x: number, z: number, mat: THREE.Material) => {
-    const m = new THREE.Mesh(keep(new THREE.PlaneGeometry(w, d)), mat);
-    m.rotation.x = -Math.PI / 2;
-    m.position.set(x, 0.002, z);
-    m.receiveShadow = true;
-    group.add(m);
-  };
-  line(3.4, 0.07, 0, -3.4, lineMat);
-  line(3.4, 0.07, 0, 3.4, lineMat);
-  line(0.07, 6.8, -1.7, 0, lineMat);
-  line(0.07, 6.8, 1.7, 0, lineMat);
-  for (const x of [-2.4, 2.4]) line(0.05, 6.8, x, 0, yellowMat);
 
-  // the back wall: white panels, a darker plinth, and a band in the car's paint carrying its number
-  const wallMat = keep(new THREE.MeshStandardMaterial({ color: "#d9dce0", roughness: 0.7 }));
-  const plinthMat = keep(new THREE.MeshStandardMaterial({ color: "#23262b", roughness: 0.6 }));
-  for (let i = -3; i <= 3; i++) box(1.96, 3.6, 0.08, wallMat, i * 2, 1.8, -5.2);
-  box(14, 0.5, 0.12, plinthMat, 0, 0.25, -5.13);
-  const bandCanvas = document.createElement("canvas");
-  bandCanvas.width = 2048;
-  bandCanvas.height = 256;
-  const bandTex = keep(new THREE.CanvasTexture(bandCanvas));
-  bandTex.colorSpace = THREE.SRGBColorSpace;
-  const bandMat = keep(new THREE.MeshStandardMaterial({ map: bandTex, roughness: 0.55 }));
-  box(14, 0.9, 0.04, bandMat, 0, 2.3, -5.1);
-  // the side walls, plain, so the room closes in the camera's view
-  for (const x of [-6.6, 6.6]) {
-    const side = box(0.08, 3.6, 10.4, wallMat, x, 1.8, 0);
-    side.receiveShadow = true;
+  // the bay painted on the floor, and the car's soft shadow on it
+  const bay = canvasTex(512, 1024);
+  const bayMesh = new THREE.Mesh(keep(new THREE.PlaneGeometry(3.6, 7.2)), keep(new THREE.MeshStandardMaterial({ map: bay.tex, transparent: true, roughness: 0.3 })));
+  bayMesh.rotation.x = -Math.PI / 2;
+  bayMesh.position.set(0, 0.003, 0.2);
+  group.add(bayMesh);
+  const shadow = canvasTex(256, 512);
+  {
+    const grd = shadow.g.createRadialGradient(128, 256, 10, 128, 256, 128);
+    grd.addColorStop(0, "rgba(0,0,0,0.55)");
+    grd.addColorStop(1, "rgba(0,0,0,0)");
+    shadow.g.setTransform(1, 0, 0, 2, 0, -256);
+    shadow.g.fillStyle = grd;
+    shadow.g.fillRect(0, 0, 256, 1024);
   }
+  const shadowMesh = new THREE.Mesh(keep(new THREE.PlaneGeometry(2.6, 6.4)), keep(new THREE.MeshBasicMaterial({ map: shadow.tex, transparent: true, depthWrite: false })));
+  shadowMesh.rotation.x = -Math.PI / 2;
+  shadowMesh.position.y = 0.006;
+  group.add(shadowMesh);
 
-  // strip lights overhead, and their glow
-  const stripMat = keep(new THREE.MeshStandardMaterial({ color: "#ffffff", emissive: "#fff6ea", emissiveIntensity: 3 }));
-  for (const z of [-3, 0, 3]) {
-    const s = new THREE.Mesh(keep(new THREE.BoxGeometry(5, 0.05, 0.25)), stripMat);
-    s.position.set(0, 3.55, z);
+  // the pit-lane line along the front of the garage
+  const lane = canvasTex(2048, 128);
+  lane.g.fillStyle = "#d4131b";
+  lane.g.fillRect(0, 0, 2048, 128);
+  lane.g.fillStyle = "#ffffff";
+  lane.g.font = "italic 900 84px Archivo, 'Arial Black', Arial, sans-serif";
+  lane.g.textAlign = "center";
+  lane.g.textBaseline = "middle";
+  lane.g.translate(1024, 64);
+  lane.g.rotate(Math.PI); // it reads from the pit lane, as on the real line
+  lane.g.fillText("PIT-LANE", 0, 4);
+  const laneMesh = new THREE.Mesh(keep(new THREE.PlaneGeometry(2 * W, 0.3)), keep(new THREE.MeshStandardMaterial({ map: lane.tex, roughness: 0.45 })));
+  laneMesh.rotation.x = -Math.PI / 2;
+  laneMesh.position.set(0, 0.004, FRONT);
+  group.add(laneMesh);
+
+  // the walls: white, a band of the paint at their foot, a dark recess of screens along the left
+  const white = mat({ color: "#eceef0", roughness: 0.55 });
+  const paintMat = mat({ color: "#ff6a13", roughness: 0.45 });
+  box(0.1, H, FRONT - BACK, white, -W, H / 2, (FRONT + BACK) / 2);
+  box(0.1, H, FRONT - BACK, white, W, H / 2, (FRONT + BACK) / 2);
+  box(2 * W, H, 0.1, white, 0, H / 2, BACK);
+  for (const x of [-W + 0.06, W - 0.06]) box(0.04, 0.22, FRONT - BACK, paintMat, x, 0.11, (FRONT + BACK) / 2);
+  box(2 * W, 0.22, 0.04, paintMat, 0, 0.11, BACK + 0.06);
+  const glass = mat({ color: "#0d0f12", roughness: 0.15, metalness: 0.2 });
+  box(0.05, 0.9, 4.2, glass, -W + 0.08, 1.75, -1.4);
+
+  // the beam over the opening, in the paint, carrying the number
+  const beam = canvasTex(2048, 160);
+  const beamMesh = new THREE.Mesh(keep(new THREE.BoxGeometry(2 * W, 0.42, 0.3)), [paintMat, paintMat, paintMat, paintMat, keep(new THREE.MeshStandardMaterial({ map: beam.tex, roughness: 0.45 })), paintMat]);
+  beamMesh.position.set(0, H - 0.21, FRONT - 0.15);
+  group.add(beamMesh);
+  // the ceiling and its square light panels
+  box(2 * W, 0.06, FRONT - BACK, mat({ color: "#2a2d32", roughness: 0.8 }), 0, H, (FRONT + BACK) / 2);
+  const panel = mat({ color: "#ffffff", emissive: "#fffaf2", emissiveIntensity: 2.6 });
+  for (let z = BACK + 1; z < FRONT - 0.6; z += 1.5) for (const x of [-2.2, 0, 2.2]) box(1.0, 0.03, 1.0, panel, x, H - 0.04, z);
+
+  // workbenches with monitors along the back wall
+  const bench = mat({ color: "#f4f5f6", roughness: 0.4 });
+  const drawer = mat({ color: "#2b2f35", roughness: 0.5 });
+  box(5.4, 0.95, 0.75, bench, -0.6, 0.475, BACK + 0.5);
+  for (let k = 0; k < 6; k++) box(0.82, 0.03, 0.02, drawer, -3 + k * 0.9, 0.62, BACK + 0.88);
+  const screen = canvasTex(512, 288);
+  screen.g.fillStyle = "#06080b";
+  screen.g.fillRect(0, 0, 512, 288);
+  screen.g.lineWidth = 3;
+  for (const [color, phase] of [
+    ["#22d3d3", 0],
+    ["#ffffff", 1.7],
+    ["#a855f7", 3.1],
+  ] as const) {
+    screen.g.strokeStyle = color;
+    screen.g.beginPath();
+    for (let x = 0; x <= 512; x += 6) screen.g.lineTo(x, 144 + Math.sin(x / 38 + phase) * 52 * Math.cos(x / 130));
+    screen.g.stroke();
+  }
+  const screenMat = keep(new THREE.MeshBasicMaterial({ map: screen.tex, toneMapped: false }));
+  for (const x of [-2.4, -0.6, 1.2]) {
+    box(1.2, 0.7, 0.05, drawer, x, 1.45, BACK + 0.32);
+    const s = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.1, 0.62)), screenMat);
+    s.position.set(x, 1.45, BACK + 0.35);
     group.add(s);
   }
 
-  // tyre sets in their blankets on two racks, four high
-  const tyreMat = keep(new THREE.MeshStandardMaterial({ color: "#16171a", roughness: 0.85 }));
-  const blanketMat = keep(new THREE.MeshStandardMaterial({ color: "#8f1d1d", roughness: 0.9 }));
-  const bandYellow = keep(new THREE.MeshStandardMaterial({ color: "#f5c518", roughness: 0.6 }));
-  const tyreGeo = keep(new THREE.CylinderGeometry(0.36, 0.36, 0.34, 28));
-  const blanketGeo = keep(new THREE.CylinderGeometry(0.375, 0.375, 0.26, 28, 1, true));
-  const stripeGeo = keep(new THREE.TorusGeometry(0.33, 0.012, 6, 32));
+  // tyre sets on the softs, stacked four high, some in their blankets
+  const rubber = mat({ color: "#141518", roughness: 0.85 });
+  const soft = mat({ color: "#e8121b", roughness: 0.5 });
+  const blanket = mat({ color: "#1c1f24", roughness: 0.9 });
+  const tyre = keep(new THREE.CylinderGeometry(0.36, 0.36, 0.34, 28));
+  const wrap = keep(new THREE.CylinderGeometry(0.378, 0.378, 0.27, 28, 1, true));
+  const stripe = keep(new THREE.TorusGeometry(0.31, 0.014, 6, 32));
   for (const [x, z, wrapped] of [
-    [-5.4, -2.2, true],
-    [-5.4, -0.9, false],
-    [5.4, -2.2, true],
-    [5.4, -0.9, true],
+    [2.95, -4.6, true],
+    [2.95, -3.7, false],
+    [2.95, -2.8, true],
   ] as const) {
     for (let k = 0; k < 4; k++) {
       const y = 0.17 + k * 0.35;
-      const t = new THREE.Mesh(tyreGeo, tyreMat);
+      const t = new THREE.Mesh(tyre, rubber);
       t.position.set(x, y, z);
-      t.castShadow = t.receiveShadow = true;
       group.add(t);
       if (wrapped) {
-        const b = new THREE.Mesh(blanketGeo, blanketMat);
+        const b = new THREE.Mesh(wrap, blanket);
         b.position.set(x, y, z);
         group.add(b);
+        // the blankets' band in the paint
+        const s = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.381, 0.381, 0.05, 28, 1, true)), paintMat);
+        s.position.set(x, y, z);
+        group.add(s);
       } else {
-        // the compound's band on the sidewall, seen on the bare set
-        const s = new THREE.Mesh(stripeGeo, bandYellow);
+        const s = new THREE.Mesh(stripe, soft);
         s.rotation.x = Math.PI / 2;
         s.position.set(x, y + 0.172, z);
         group.add(s);
@@ -102,63 +162,52 @@ export function buildPaddock() {
     }
   }
 
-  // a tool trolley, drawers and all
-  const trolleyMat = keep(new THREE.MeshStandardMaterial({ color: "#2b2f35", roughness: 0.45, metalness: 0.4 }));
-  const handleMat = keep(new THREE.MeshStandardMaterial({ color: "#a7adb5", roughness: 0.3, metalness: 0.9 }));
-  box(1.2, 1.0, 0.6, trolleyMat, -3.6, 0.55, -4.2);
-  for (let k = 0; k < 4; k++) box(1.0, 0.02, 0.02, handleMat, -3.6, 0.25 + k * 0.22, -3.89);
-  box(1.2, 0.04, 0.6, handleMat, -3.6, 1.07, -4.2);
-
-  // a timing monitor on its stand, its screen lit with the lap's traces
-  const screenCanvas = document.createElement("canvas");
-  screenCanvas.width = 512;
-  screenCanvas.height = 300;
-  const sc = screenCanvas.getContext("2d")!;
-  sc.fillStyle = "#07090c";
-  sc.fillRect(0, 0, 512, 300);
-  sc.lineWidth = 3;
-  for (const [color, phase, amp] of [
-    ["#22d3d3", 0, 60],
-    ["#ff6a13", 1.7, 45],
-    ["#a855f7", 3.1, 35],
-  ] as const) {
-    sc.strokeStyle = color;
-    sc.beginPath();
-    for (let x = 0; x <= 512; x += 6) {
-      const y = 150 + Math.sin(x / 38 + phase) * amp * Math.cos(x / 120);
-      if (x === 0) sc.moveTo(x, y);
-      else sc.lineTo(x, y);
-    }
-    sc.stroke();
-  }
-  const screenTex = keep(new THREE.CanvasTexture(screenCanvas));
-  screenTex.colorSpace = THREE.SRGBColorSpace;
-  box(0.08, 1.4, 0.08, handleMat, 3.6, 0.7, -4.3);
-  box(1.1, 0.68, 0.06, trolleyMat, 3.6, 1.6, -4.3);
-  const screen = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.0, 0.58)), keep(new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false })));
-  screen.position.set(3.6, 1.6, -4.26);
-  group.add(screen);
-
-  let shown = { paint: "", number: null as number | null };
+  let shown = "";
   return {
     group,
-    /** the band on the wall in the car's paint, with its number */
+    /** everything that wears the car's paint: the wall bands, the beam, the blankets' bands, the bay's inner line */
     setLook(paint: string, number: number | null) {
-      if (paint === shown.paint && number === shown.number) return;
-      shown = { paint, number };
-      const g = bandCanvas.getContext("2d")!;
-      g.fillStyle = paint;
-      g.fillRect(0, 0, 2048, 256);
-      g.fillStyle = "rgba(0,0,0,0.18)";
-      g.fillRect(0, 200, 2048, 56);
+      const key = `${paint}|${number}`;
+      if (key === shown) return;
+      shown = key;
+      paintMat.color.set(paint);
       const c = new THREE.Color(paint);
-      g.fillStyle = c.r * 0.299 + c.g * 0.587 + c.b * 0.114 > 0.55 ? "#141518" : "#f2f2ee";
-      g.font = "italic 900 170px Archivo, system-ui, sans-serif";
-      g.textBaseline = "middle";
-      g.fillText(number ? String(number) : "", 940, 120);
-      g.font = "italic 800 64px Archivo, system-ui, sans-serif";
-      g.fillText("LAPDLE", 120, 110);
-      bandTex.needsUpdate = true;
+      const ink = c.r * 0.299 + c.g * 0.587 + c.b * 0.114 > 0.55 ? "#141518" : "#ffffff";
+      // the beam
+      beam.g.fillStyle = paint;
+      beam.g.fillRect(0, 0, 2048, 160);
+      beam.g.fillStyle = ink;
+      beam.g.font = "italic 900 92px Archivo, 'Arial Black', Arial, sans-serif";
+      beam.g.textAlign = "center";
+      beam.g.textBaseline = "middle";
+      beam.g.fillText(number ? `LAPDLE  ·  ${number}` : "LAPDLE", 1024, 84);
+      beam.tex.needsUpdate = true;
+      // the bay: a long outline pointed at the pit lane, black outside and the paint inside, the name in the middle
+      const g = bay.g;
+      g.clearRect(0, 0, 512, 1024);
+      const outline = (inset: number) => {
+        g.beginPath();
+        g.moveTo(40 + inset, 40 + inset);
+        g.lineTo(472 - inset, 40 + inset);
+        g.lineTo(472 - inset, 840 - inset * 0.6);
+        g.lineTo(256, 990 - inset * 1.6);
+        g.lineTo(40 + inset, 840 - inset * 0.6);
+        g.closePath();
+      };
+      g.lineJoin = "miter";
+      g.lineWidth = 46;
+      g.strokeStyle = "#16171a";
+      outline(0);
+      g.stroke();
+      g.lineWidth = 16;
+      g.strokeStyle = paint;
+      outline(34);
+      g.stroke();
+      g.fillStyle = "rgba(22,23,26,0.85)";
+      g.font = "italic 900 64px Archivo, 'Arial Black', Arial, sans-serif";
+      g.textAlign = "center";
+      g.fillText("LAPDLE", 256, 660);
+      bay.tex.needsUpdate = true;
     },
     dispose() {
       for (const d of disposables) d.dispose();

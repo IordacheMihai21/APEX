@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { buildPaddock } from "../game3d/paddock";
-import { buildCarF1, carDetail } from "../game3d/carF1";
+import { SOFT_RED, buildCarF1, carDetail } from "../game3d/carF1";
 import { unlocks } from "../community";
 import { type Garage, NEON_LIVERY, PAINTS, PAINTS2, isChampion, loadGarage, numberToday, saveGarage, validNumber } from "../game3d/garage";
 import { t } from "../i18n";
@@ -37,10 +37,8 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.NeutralToneMapping;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#15171b");
+    scene.background = new THREE.Color("#1d2025");
     const pmrem = new THREE.PMREMGenerator(renderer);
     const room = new RoomEnvironment();
     const env = pmrem.fromScene(room, 0.04).texture;
@@ -48,22 +46,17 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
     pmrem.dispose();
     scene.environment = env;
     scene.environmentIntensity = 0.55;
-    // the strip lights' downlight, casting the car's shadow on the epoxy
-    const key = new THREE.DirectionalLight("#fff6ea", 2.4);
+    // the light panels' downlight (no real-time shadows: the paddock paints a soft one under the car)
+    const key = new THREE.DirectionalLight("#fff6ea", 2.2);
     key.position.set(1.5, 8, 2.5);
-    key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048);
-    Object.assign(key.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 20 });
-    key.shadow.bias = -0.0005;
-    scene.add(key, new THREE.HemisphereLight("#f4f6fa", "#3a3d42", 0.6));
+    scene.add(key, new THREE.HemisphereLight("#f4f6fa", "#8a8f96", 0.8));
     const paddock = buildPaddock();
     paddock.setLook(g.paint, numberToday(g, false));
     scene.add(paddock.group);
     look.current = paddock.setLook;
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-    const built = buildCarF1(carDetail(), { paint: g.paint, paint2: g.paint2, accent: "#f2f2ee", tyreBand: "#f5c518" });
+    const built = buildCarF1(carDetail(), { paint: g.paint, paint2: g.paint2, accent: "#f2f2ee", tyreBand: SOFT_RED });
     built.car.rotation.y = 0.75;
-    void built.ready.then(() => built.car.traverse((o) => ((o as THREE.Mesh).isMesh ? ((o.castShadow = true), (o.receiveShadow = true)) : null)));
     car.current = built;
     scene.add(built.car);
     // drag the car round on its spot, like a turntable (the camera stays in the garage); up and down tilts the view.

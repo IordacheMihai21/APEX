@@ -53,7 +53,9 @@ export interface CarLook {
   tyreBand?: string;
 }
 
-export const DEFAULT_LOOK: Required<CarLook> = { paint: "#ff6a13", paint2: "#141518", accent: "#f2f2ee", tyreBand: "#f5c518" };
+/** the soft tyre's red band, as the softs F1 cars qualify on */
+export const SOFT_RED = "#e8121b";
+export const DEFAULT_LOOK: Required<CarLook> = { paint: "#ff6a13", paint2: "#141518", accent: "#f2f2ee", tyreBand: SOFT_RED };
 
 export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFAULT_LOOK) {
   const car = new THREE.Group();
@@ -129,6 +131,9 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
   const tyreBand = { value: new THREE.Color(look.tyreBand ?? DEFAULT_LOOK.tyreBand) };
   /** how far (rad) the wheels turn in one frame, for blurring the sidewall's lettering round the tyre */
   const spinBlur = { value: 0 };
+  /** the sidewall lettering: LAPDLE twice round the tyre, in the band's colour, as a tyre maker's name */
+  const label = { value: sidewallLabel() };
+  disposables.push(label.value);
 
   /** the lights' brightness now: 0 dark lens, 1 lit */
   const applyLights = (level: number) => {
@@ -229,6 +234,7 @@ export function buildCarF1(detail: CarDetail = carDetail(), look: CarLook = DEFA
         sh.uniforms.uHub = { value: hub };
         sh.uniforms.uBand = tyreBand;
         sh.uniforms.uSpin = spinBlur;
+        sh.uniforms.uLabel = label;
         sh.vertexShader = sh.vertexShader
           .replace("#include <common>", "#include <common>\nuniform mat4 uHub;\nvarying vec3 vHubPos;\nvarying vec3 vHubNrm;")
           .replace("#include <begin_vertex>", "#include <begin_vertex>\nvHubPos = (uHub * vec4(position, 1.0)).xyz;\nvHubNrm = mat3(uHub) * normal;");
@@ -238,13 +244,14 @@ uniform vec3 uBand;
 uniform float uSpin;
 varying vec3 vHubPos;
 varying vec3 vHubNrm;
-// Two bright, broken-up sidewall labels, large enough to read as the tyre spins past the camera.
-float lettering(float a, float r) {
-  float ring = smoothstep(0.26, 0.267, r) * (1.0 - smoothstep(0.296, 0.304, r));
-  float ph = mod(a + 3.14159265, 6.2831853);
-  float labels = step(0.22, ph) * step(ph, 1.18) + step(3.55, ph) * step(ph, 4.26);
-  float gaps = step(0.19, fract(ph * 17.0));
-  return ring * min(labels, 1.0) * gaps;
+// The maker's name on the sidewall (a texture: LAPDLE twice round the tyre), large enough to read as it spins past.
+uniform sampler2D uLabel;
+float lettering(float a, float r, float flip) {
+  float v = (r - 0.258) / (0.293 - 0.258);
+  if (v < 0.0 || v > 1.0) return 0.0;
+  float u = fract((a + 3.14159265) / 6.2831853);
+  if (flip < 0.0) u = 1.0 - u;
+  return texture2D(uLabel, vec2(1.0 - u, 1.0 - v)).a; // the tops of the letters outwards
 }
 `)
           .replace(
@@ -258,13 +265,14 @@ float lettering(float a, float r) {
             // the lettering, smeared round the tyre by how far it turns in a frame (as a camera's shutter sees it)
             float ang = atan(vHubPos.z, vHubPos.y);
             float lt = 0.0;
-            for (int k = 0; k < 10; k++) lt += lettering(ang + uSpin * (float(k) / 9.0 - 0.5), r);
+            float flip = sign(normalize(vHubNrm).x);
+            for (int k = 0; k < 10; k++) lt += lettering(ang + uSpin * (float(k) / 9.0 - 0.5), r, flip);
             float sideFace = smoothstep(0.72, 0.9, abs(normalize(vHubNrm).x));
-            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.9), (lt / 10.0) * sideFace * 0.92);
+            diffuseColor.rgb = mix(diffuseColor.rgb, uBand, (lt / 10.0) * sideFace * 0.95);
 `,
           );
       };
-      m.customProgramCacheKey = () => "lapdle-tyre-band";
+      m.customProgramCacheKey = () => "lapdle-tyre-label";
       mats.add(m);
       o.material = m;
     }
@@ -356,6 +364,41 @@ float lettering(float a, float r) {
   let numberTex: THREE.CanvasTexture | null = null;
   let numberMat: THREE.MeshStandardMaterial | null = null;
   let wantNumber: number | null = null;
+  /**
+   * The triangles of a mesh within `r` metres of a point (world space), as a mesh of their own in the same place: the
+   * decal is cut from these instead of the whole body (hundreds of thousands of triangles on the full model, seconds).
+   */
+  const nearPart = (mesh: THREE.Mesh, point: THREE.Vector3, r: number) => {
+    const geo = mesh.geometry;
+    const pos = geo.getAttribute("position");
+    const nrm = geo.getAttribute("normal");
+    const idx = geo.index;
+    const c = mesh.worldToLocal(point.clone());
+    const rl = r / mesh.matrixWorld.getMaxScaleOnAxis();
+    const r2 = rl * rl;
+    const n = idx ? idx.count : pos.count;
+    const outP: number[] = [];
+    const outN: number[] = [];
+    for (let t = 0; t + 2 < n; t += 3) {
+      const a = idx ? idx.getX(t) : t;
+      const dx = pos.getX(a) - c.x;
+      const dy = pos.getY(a) - c.y;
+      const dz = pos.getZ(a) - c.z;
+      if (dx * dx + dy * dy + dz * dz > r2) continue;
+      for (let k = 0; k < 3; k++) {
+        const v = idx ? idx.getX(t + k) : t + k;
+        outP.push(pos.getX(v), pos.getY(v), pos.getZ(v));
+        outN.push(nrm.getX(v), nrm.getY(v), nrm.getZ(v));
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(outP, 3));
+    g.setAttribute("normal", new THREE.Float32BufferAttribute(outN, 3));
+    const part = new THREE.Mesh(g);
+    part.matrixWorld.copy(mesh.matrixWorld);
+    return part;
+  };
+
   /** keep a decal's triangles whose normal faces against `d` (the projector's direction, world space) */
   const facing = (g: THREE.BufferGeometry, d: THREE.Vector3) => {
     const nrm = g.getAttribute("normal");
@@ -379,6 +422,7 @@ float lettering(float a, float r) {
     return out;
   };
 
+  let placedKey = "";
   const placeNumber = () => {
     for (const d of numberDecals) {
       d.removeFromParent();
@@ -420,7 +464,9 @@ float lettering(float a, float r) {
       look.lookAt(hit.point.clone().sub(d));
       // only the faces turned towards the projector: through a thin part (an endplate) the number would also land,
       // mirrored, on the far face
-      const g = facing(new DecalGeometry(mesh, hit.point, look.rotation, new THREE.Vector3(sp.size, sp.size, 0.25)), d);
+      const part = nearPart(mesh, hit.point, sp.size * 0.9 + 0.12);
+      const g = facing(new DecalGeometry(part, hit.point, look.rotation, new THREE.Vector3(sp.size, sp.size, 0.25)), d);
+      part.geometry.dispose();
       // into the body's own frame, so it rides with it
       g.applyMatrix4(mesh.matrixWorld.clone().invert());
       const dm = new THREE.Mesh(g, numberMat);
@@ -512,7 +558,12 @@ float lettering(float a, float r) {
     setNumber(n: number | null) {
       wantNumber = n;
       void ready.then(() => {
-        if (!disposed && wantNumber === n) placeNumber();
+        if (disposed || wantNumber !== n) return;
+        // the decals are cut from the whole body (costly on the full model): only again for a new number or ink
+        const key = `${n}|${inkOf(new THREE.Color(uniforms.uPaint.value))}`;
+        if (key === placedKey) return;
+        placedKey = key;
+        placeNumber();
       });
     },
     /** resolves once the model is in */
@@ -579,7 +630,18 @@ float lettering(float a, float r) {
       if (next.paint2) uniforms.uPaint2.value.set(next.paint2);
       if (next.accent) uniforms.uAccent.value.set(next.accent);
       if (next.tyreBand) tyreBand.value.set(next.tyreBand);
-      if (next.paint && numberDecals.length) placeNumber();
+      // the number's shape doesn't change with the paint, only its ink (dark on a pale paint, white on a dark one):
+      // swap the texture, never cut the decals from the body again (seconds on the full model)
+      if (next.paint && numberMat && wantNumber != null) {
+        const key = `${wantNumber}|${inkOf(new THREE.Color(next.paint))}`;
+        if (key !== placedKey) {
+          placedKey = key;
+          numberTex?.dispose();
+          numberTex = numberTexture(wantNumber, new THREE.Color(next.paint));
+          numberMat.map = numberTex;
+          numberMat.needsUpdate = true;
+        }
+      }
     },
     dispose() {
       disposed = true;
@@ -718,11 +780,34 @@ function buildHelmet(colour: string, mats: Set<THREE.Material>, geos: Set<THREE.
  * A race number as a decal: bold italic figures in white with a dark edge on a dark car... and dark with a white edge
  * on a pale one, so it reads on any paint.
  */
+/** whether a paint is pale enough to carry a dark number (a white one otherwise) */
+const inkOf = (paint: THREE.Color) => paint.r * 0.3 + paint.g * 0.59 + paint.b * 0.11 > 0.3;
+
+/**
+ * The sidewall's lettering as a mask: LAPDLE twice round the tyre (u along the circumference, v from the inner edge of
+ * the lettering ring to the outer), the tops of the letters outwards, as a tyre maker's name.
+ */
+function sidewallLabel(): THREE.CanvasTexture {
+  const c = document.createElement("canvas");
+  c.width = 2048;
+  c.height = 128;
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#fff";
+  g.font = "italic 900 104px Archivo, 'Arial Black', Arial, sans-serif";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  for (const x of [512, 1536]) g.fillText("LAPDLE", x, 68, 560);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  return t;
+}
+
 function numberTexture(n: number, paint: THREE.Color): THREE.CanvasTexture {
   const c = document.createElement("canvas");
   c.width = c.height = 256;
   const g = c.getContext("2d")!;
-  const pale = paint.r * 0.3 + paint.g * 0.59 + paint.b * 0.11 > 0.3;
+  const pale = inkOf(paint);
   g.font = "italic 900 190px Archivo, 'Arial Black', Arial, sans-serif";
   g.textAlign = "center";
   g.textBaseline = "middle";
