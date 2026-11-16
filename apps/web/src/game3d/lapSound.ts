@@ -61,6 +61,7 @@ export class LapSound {
   private wind: { gain: GainNode; filter: BiquadFilterNode } | null = null;
   private crowd: { gain: GainNode } | null = null;
   private gear = 0;
+  private onThrottle = true;
   private muted = soundMuted();
   private ready: Promise<void> | null = null;
 
@@ -171,7 +172,12 @@ export class LapSound {
     // on the grid a steady 6,000; pulling away the revs climb with the car through first gear, as it gathers speed
     // from rest (held high from the start, it sounded flat out at 300 km/h before the car had moved)
     const rpm = v < 1 ? 6000 + 120 * Math.sin(t * 5) : rpmIn(this.gear);
-    const onPower = (along > -3 && v > 2) || v < 1;
+    // on or off the throttle, with a gap between: at the end of a straight a 2026 car tails off a little (clipping) and
+    // the sound flicked between the throttle's loops and the overrun's, as if changing into the same gear; only real
+    // braking (well past -8 m/s²) takes it off
+    if (along < -8) this.onThrottle = false;
+    else if (along > -1.5) this.onThrottle = true;
+    const onPower = (this.onThrottle && v > 2) || v < 1;
     // and the engine louder as the revs rise: quiet on the grid, full voice near the top
     const revs01 = Math.min(1, Math.max(0, (rpm - 6000) / 6000));
     // from far off the car is quieter, and duller (the air takes the highs)

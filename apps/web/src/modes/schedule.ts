@@ -95,6 +95,11 @@ const NO_REPEATS_FROM = "2026-11-03";
 
 const scheduled = new Map<string, string>();
 /**
+ * Days set by hand to a circuit, ahead of the rotation (which then carries on from the next day): 17 Nov 2026 to Spa,
+ * one of the circuits with its 3D world, the day after Daily Quali went 3D. Only ever add days still to come.
+ */
+export const PINNED_DAYS: Record<string, string> = { "2026-11-17": "spa" };
+/**
  * Every circuit once per 12-day cycle, in a shuffled order that changes each cycle; race-weekend Saturdays go to
  * that circuit (which then sits out the rest of its cycle). Each day takes the next circuit of its cycle's order that
  * isn't yesterday's, nor tomorrow's race Saturday's: the cycle's circuits are all different, so only the first day of a
@@ -118,8 +123,8 @@ export function dailyTrack(key = dateKey()): string {
       const i = left.indexOf(track);
       if (i >= 0) left.splice(i, 1);
     } else {
-      const special = qualifyingDay(day);
-      if (special) track = special.trackId;
+      const special = qualifyingDay(day)?.trackId ?? PINNED_DAYS[day];
+      if (special) track = special;
       else {
         const saturday = qualifyingDay(addDays(day, 1))?.trackId;
         const i = Math.max(0, left.findIndex((t) => t !== yesterday && t !== saturday));

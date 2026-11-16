@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { LAUNCH, archiveDays, dailyCondition, dailyStats, dailyTrack, endDay, loadDaily, qualifyingDay, raceWeek, recordLap } from "./daily";
 import { medalFor, medalTimes, realPole } from "./medals";
+import { PINNED_DAYS } from "./schedule";
 
 /** Day n of the game, counting launch day as 0. */
 const dayAt = (n: number) => {
@@ -53,7 +54,10 @@ describe("the rotation", () => {
 
   it("gives every circuit at most one day in a cycle, a race Saturday included", () => {
     for (let c = 3; c < 60; c++) {
-      const cycle = Array.from({ length: 12 }, (_, i) => dailyTrack(dayAt(c * 12 + i)));
+      // a day pinned by hand (PINNED_DAYS) may repeat a circuit its cycle already had
+      const keys = Array.from({ length: 12 }, (_, i) => dayAt(c * 12 + i));
+      if (keys.some((k) => k in PINNED_DAYS)) continue;
+      const cycle = keys.map((k) => dailyTrack(k));
       expect(new Set(cycle).size, `cycle ${c}`).toBeGreaterThanOrEqual(11);
       const counts = new Map<string, number>();
       for (const t of cycle) counts.set(t, (counts.get(t) ?? 0) + 1);
