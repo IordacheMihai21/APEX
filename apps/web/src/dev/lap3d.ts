@@ -39,8 +39,9 @@ const speedAt = (ms: number) => {
 };
 const gearOf = (kmh: number) => (kmh < 2 ? "N" : String([0, 95, 130, 165, 200, 235, 270, 300].filter((g) => kmh >= g).length));
 function demoFrame(tMs: number) {
-  const t = Math.max(0, Math.min(lapMs, tMs));
-  const cam = (params.get("cam") as LapCamera | null) ?? [...CUTS].reverse().find(([at]) => t / 1000 >= at)![1];
+  // before 0: the flying lap's run-up to the line, as under the lights in the game
+  const t = Math.max(-lapMs / 2, Math.min(lapMs, tMs));
+  const cam = (params.get("cam") as LapCamera | null) ?? [...CUTS].reverse().find(([at]) => Math.max(0, t) / 1000 >= at)![1];
   scene.setCamera(cam);
   scene.frame(t);
   const kmh = Math.round(speedAt(t) * 3.6);
