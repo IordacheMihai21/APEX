@@ -53,6 +53,7 @@ for (const { route, path, lang, renderPage } of jobs) {
   const url = `${site}${path}`;
   let page = template;
   if (path !== "/") {
+    page = page.replace(/\s*<script type="application\/ld\+json" id="lapdle-site-identity">[\s\S]*?<\/script>/, "");
     page = page.replace(/<title>[^<]*<\/title>/, `<title>${text(title)}</title>`);
     page = set(page, /(<meta name="description" content=")[^"]*/, attr(description));
     page = set(page, /(<link rel="canonical" href=")[^"]*/, url);
