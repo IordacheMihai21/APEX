@@ -1,4 +1,5 @@
 import loopUrl from "./assets/v8-loop.wav?url";
+import workletUrl from "./engineWorklet.js?url&no-inline";
 import { soundMuted } from "./engineSound";
 
 /**
@@ -25,7 +26,7 @@ const LOOP_RPM = 15500;
 export class LapSound {
   private ctx: BaseAudioContext | null = null;
   private master: GainNode | null = null;
-  private engine: { src: AudioBufferSourceNode; gain: GainNode; filter: BiquadFilterNode } | null = null;
+  private engine: { synth?: AudioWorkletNode; src?: AudioBufferSourceNode; gain: GainNode; filter: BiquadFilterNode } | null = null;
   private wind: { gain: GainNode; filter: BiquadFilterNode } | null = null;
   private crowd: { gain: GainNode } | null = null;
   private gear = 0;
@@ -83,24 +84,37 @@ export class LapSound {
       this.crowd = { gain };
     }
     if (ctx instanceof AudioContext && ctx.state === "suspended") void ctx.resume().catch(() => {});
-    this.ready = fetch(loopUrl)
-      .then((r) => r.arrayBuffer())
-      .then((buf) => ctx.decodeAudioData(buf))
-      .then((buffer) => {
-        if (this.ctx !== ctx) return;
-        const src = ctx.createBufferSource();
-        src.buffer = buffer;
-        src.loop = true;
-        const filter = ctx.createBiquadFilter();
-        filter.type = "lowpass";
-        filter.frequency.value = 6000;
-        filter.Q.value = 0.5;
-        const gain = ctx.createGain();
-        gain.gain.value = 0;
-        src.connect(filter).connect(gain).connect(master);
-        src.start();
-        this.engine = { src, gain, filter };
-      })
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 6000;
+    filter.Q.value = 0.5;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    filter.connect(gain).connect(master);
+    // the V6 made live (engineWorklet.js); where audio worklets are missing, the old recorded loop, pitched
+    const synth = ctx.audioWorklet
+      ? ctx.audioWorklet.addModule(workletUrl).then(() => {
+          if (this.ctx !== ctx) return;
+          const node = new AudioWorkletNode(ctx, "lapdle-engine");
+          node.connect(filter);
+          this.engine = { synth: node, gain, filter };
+        })
+      : Promise.reject(new Error("no audio worklet"));
+    this.ready = synth
+      .catch(() =>
+        fetch(loopUrl)
+          .then((r) => r.arrayBuffer())
+          .then((buf) => ctx.decodeAudioData(buf))
+          .then((buffer) => {
+            if (this.ctx !== ctx) return;
+            const src = ctx.createBufferSource();
+            src.buffer = buffer;
+            src.loop = true;
+            src.connect(filter);
+            src.start();
+            this.engine = { src, gain, filter };
+          }),
+      )
       .catch(() => {});
     return this.ready;
   }
@@ -130,10 +144,16 @@ export class LapSound {
     const near = camera.onboard ? 1.15 : 0.85;
     if (this.engine) {
       const e = this.engine;
-      e.src.playbackRate.setTargetAtTime(rpm / LOOP_RPM, t, 0.025);
-      const level = (v < 1 ? 0.25 : onPower ? 0.85 : 0.42) * far * near;
+      const revs = e.synth?.parameters.get("rpm");
+      if (revs) {
+        revs.setValueAtTime(rpm, t);
+        e.synth!.parameters.get("throttle")!.setValueAtTime(onPower ? 1 : 0, t);
+      }
+      e.src?.playbackRate.setTargetAtTime(rpm / LOOP_RPM, t, 0.025);
+      // off the throttle a hybrid V6 stays full-voiced on the overrun (the reference onboard): less of a drop for the synth
+      const level = (v < 1 ? 0.25 : onPower ? 0.85 : e.synth ? 0.6 : 0.42) * far * near;
       e.gain.gain.setTargetAtTime(level, t, onPower ? 0.04 : 0.1);
-      e.filter.frequency.setTargetAtTime((onPower ? 7000 : 2200) * (0.35 + 0.65 * far), t, 0.06);
+      e.filter.frequency.setTargetAtTime((onPower ? 7000 : e.synth ? 3800 : 2200) * (0.35 + 0.65 * far), t, 0.06);
       if (shifted > 0) {
         // the upshift: a cut in the power for a few hundredths
         e.gain.gain.cancelScheduledValues(t);
@@ -141,9 +161,15 @@ export class LapSound {
         e.gain.gain.setTargetAtTime(level, t + 0.04, 0.03);
       } else if (shifted < 0 && !onPower) {
         // the downshift under braking: a blip of the revs
-        e.src.playbackRate.cancelScheduledValues(t);
-        e.src.playbackRate.setValueAtTime((rpm * 1.12) / LOOP_RPM, t);
-        e.src.playbackRate.setTargetAtTime(rpm / LOOP_RPM, t + 0.05, 0.04);
+        if (revs) {
+          revs.cancelScheduledValues(t);
+          revs.setValueAtTime(rpm * 1.12, t);
+          revs.setValueAtTime(rpm, t + 0.07);
+        } else if (e.src) {
+          e.src.playbackRate.cancelScheduledValues(t);
+          e.src.playbackRate.setValueAtTime((rpm * 1.12) / LOOP_RPM, t);
+          e.src.playbackRate.setTargetAtTime(rpm / LOOP_RPM, t + 0.05, 0.04);
+        }
       }
     }
     if (this.wind) {
@@ -186,7 +212,8 @@ export class LapSound {
   }
 
   dispose() {
-    this.engine?.src.stop();
+    this.engine?.src?.stop();
+    this.engine?.synth?.disconnect();
     if (this.ctx instanceof AudioContext) void this.ctx.close().catch(() => {});
     this.ctx = null;
   }
