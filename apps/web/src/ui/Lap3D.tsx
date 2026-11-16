@@ -38,6 +38,15 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
         s.setCarNumber(numberToday(mine, false));
         void isChampion().then((c) => live && c && s.setCarNumber(numberToday(mine, true)));
         setScene(s);
+        // compile and upload while the line is being drawn, so the lap starts without a freeze
+        void s.warm().catch(() => {});
+        // the audio context too: opening the audio device can hold the page for most of a second, so it's made
+        // now, silent until the race button (a tap) lets it play
+        if (!sound.current) {
+          sound.current = new LapSound();
+          void sound.current.start();
+          setMuted(sound.current.isMuted);
+        }
       })
       .catch(() => live && setFailed(true));
     return () => {
@@ -67,11 +76,7 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
         scene.setLap(lv.sim, lv.ghost, lv.ghostScale);
         setGhostName(lv.ghostName);
         // the sound starts with the lap (the race button was the tap browsers need)
-        if (!sound.current) {
-          sound.current = new LapSound();
-          void sound.current.start();
-          setMuted(sound.current.isMuted);
-        } else sound.current.resume();
+        sound.current?.resume();
       }
       scene.frame(lv.tMs);
       const tele = scene.telemetry;
@@ -84,9 +89,24 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
       ro.disconnect();
     };
   }, [scene, game, visible]);
-  useEffect(() => () => sound.current?.dispose(), []);
+  useEffect(() => {
+    // browsers that only let audio start inside a tap (Safari): the race button's tap wakes it
+    const wake = () => sound.current?.resume();
+    document.addEventListener("pointerup", wake, true);
+    return () => {
+      document.removeEventListener("pointerup", wake, true);
+      sound.current?.dispose();
+    };
+  }, []);
 
   useEffect(() => scene?.setCamera(cam), [scene, cam]);
+
+  // while the 3D lap is on screen, the map underneath needn't be drawn
+  useEffect(() => {
+    if (!scene || !visible) return;
+    game.setCovered(true);
+    return () => game.setCovered(false);
+  }, [scene, visible, game]);
 
   return (
     <div className={`absolute inset-0 ${visible ? "" : "pointer-events-none invisible"}`} aria-hidden={!visible}>

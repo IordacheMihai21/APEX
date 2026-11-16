@@ -304,23 +304,51 @@ export class LapScene {
     this.ghostScale = ghostScale;
     this.lastT = -1;
     this.blur?.reset();
-    if (ghost && !this.ghost) {
-      const g = buildCarF1("lite", { paint: "#cfd4da", paint2: "#7d838b", accent: "#ffffff" });
-      this.ghost = g;
-      this.scene.add(g.car);
-      this.disposables.push(g);
-      void g.ready.then(() => {
-        g.car.traverse((o) => {
-          const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
-          for (const mat of m ? (Array.isArray(m) ? m : [m]) : []) {
-            mat.transparent = true;
-            mat.opacity = 0.32;
-            mat.depthWrite = false;
-          }
-        });
-      });
-    }
+    if (ghost) this.makeGhost();
     if (this.ghost) this.ghost.car.visible = !!ghost;
+  }
+
+  private makeGhost() {
+    if (this.ghost) return this.ghost;
+    const g = buildCarF1("lite", { paint: "#cfd4da", paint2: "#7d838b", accent: "#ffffff" });
+    this.ghost = g;
+    g.car.visible = false;
+    this.scene.add(g.car);
+    this.disposables.push(g);
+    void g.ready.then(() => {
+      g.car.traverse((o) => {
+        const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+        for (const mat of m ? (Array.isArray(m) ? m : [m]) : []) {
+          mat.transparent = true;
+          mat.opacity = 0.32;
+          mat.depthWrite = false;
+        }
+      });
+    });
+    return g;
+  }
+
+  /**
+   * Get the GPU ready before the lap: compile every shader (in parallel where the browser can), upload every texture
+   * and draw one frame, while the player is still drawing their line. Otherwise the first frame of the lap does it
+   * all at once and freezes the page for seconds on a phone. Safe to skip; the lap then just starts slower.
+   */
+  async warm() {
+    const ghost = this.makeGhost();
+    await Promise.all([this.car.ready, ghost.ready]);
+    const wasGhost = ghost.car.visible;
+    ghost.car.visible = true;
+    await this.renderer.compileAsync(this.scene, this.camera);
+    const seen = new Set<THREE.Texture>();
+    this.scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      for (const mat of m ? (Array.isArray(m) ? m : [m]) : [])
+        for (const v of Object.values(mat)) if (v instanceof THREE.Texture && !seen.has(v)) seen.add(v);
+    });
+    for (const tex of seen) this.renderer.initTexture(tex);
+    await new Promise((r) => setTimeout(r, 0));
+    this.composer?.render(0.016);
+    ghost.car.visible = wasGhost;
   }
 
   /** the player's race number on the car (null: none) */

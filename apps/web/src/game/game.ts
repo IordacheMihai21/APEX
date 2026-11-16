@@ -206,6 +206,12 @@ export class Game {
   private lastFrame = 0;
   private lastEmit = 0;
   private dirty = true;
+  /** the 3D lap is over the map: the map's frames go undrawn (on a phone they'd halve the 3D's frame rate) */
+  private covered = false;
+  setCovered(on: boolean) {
+    this.covered = on;
+    if (!on) this.dirty = true;
+  }
   private listeners = new Set<() => void>();
   private snap: Snapshot;
   private cleanup: (() => void)[] = [];
@@ -1466,7 +1472,7 @@ export class Game {
     if (this.phase !== "race") this.streaks = [];
     if (this.condition === "wet" && this.phase === "race") this.updateRain(dt);
     else this.rain = [];
-    if (!animating && !this.dirty) return;
+    if (this.covered || (!animating && !this.dirty)) return;
     this.dirty = false;
     this.render();
   }
