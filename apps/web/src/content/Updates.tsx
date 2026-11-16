@@ -31,6 +31,9 @@ export function Updates() {
                 <p key={i}>{p}</p>
               ))}
             </div>
+            {u.video && (
+              <video className="mt-4 aspect-[9/16] w-full max-w-[320px] bg-night" src={`${u.video}.mp4`} poster={`${u.video}.jpg`} controls playsInline preload="none" aria-label={u.title} />
+            )}
             {u.links && (
               <p className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[15px]">
                 {u.links.map(([label, href]) => (

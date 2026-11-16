@@ -2,15 +2,16 @@
  * What's new in Lapdle, newest first: what changed for players, written from the change history (the git log), at
  * /updates. A new entry goes at the top when an update players can see goes live.
  */
-export type Update = { date: string; title: string; body: string[]; links?: [string, string][] };
+export type Update = { date: string; title: string; body: string[]; links?: [string, string][]; /** a clip under the text: /media/<name>.mp4 with its .jpg poster */ video?: string };
 
 export const UPDATES: Update[] = [
   {
     date: "2026-11-16",
     title: "100 drivers in a day: Daily Quali 3D is on its way",
     body: [
-      "On 15 November 101 of you played Lapdle in a single day. Thank you. Daily Quali in 3D comes with this update: your line driven on a real circuit. It isn't switched on yet; we'll say here when it is.",
+      "On 15 November 101 of you played Lapdle in a single day. Thank you. Daily Quali in 3D comes with this update: your line driven on a real circuit. It isn't switched on yet; we'll say here when it is. Here's a first look.",
     ],
+    video: "/media/daily-quali-3d-teaser",
   },
   {
     date: "2026-11-14",
