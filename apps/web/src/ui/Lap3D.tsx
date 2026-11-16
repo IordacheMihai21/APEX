@@ -1,12 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { isChampion, loadGarage, numberToday } from "../game3d/garage";
 import { t } from "../i18n";
-import type { Game } from "../game/game";
+import { type Game, PLAYBACK_SPEED } from "../game/game";
 import { type LapCamera, LapScene } from "../game3d/lapScene";
 import { LapSound } from "../game3d/lapSound";
 
 const CAMERAS: LapCamera[] = ["chase", "tcam", "cockpit", "tv"];
 const CAMERA_NAME: Record<LapCamera, string> = { chase: "Chase", tcam: "T-cam", cockpit: "Cockpit", tv: "TV" };
+/** the 3D lap's playback: real time, or twice as fast (the map's own replay runs at PLAYBACK_SPEED) */
+const SPEEDS = [1, 2];
+const SPEED_KEY = "apex.lap3d.speed";
+const savedSpeed = () => {
+  try {
+    const x = Number(localStorage.getItem(SPEED_KEY));
+    return SPEEDS.includes(x) ? x : 1;
+  } catch {
+    return 1;
+  }
+};
 
 /**
  * The Daily Quali lap in 3D, over the map while the lap runs: game3d/lapScene.ts draws the circuit and the car on the
@@ -21,6 +32,7 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
   const sound = useRef<LapSound | null>(null);
   const [muted, setMuted] = useState(false);
   const [ghostName, setGhostName] = useState<string | null>(null);
+  const [speed, setSpeed] = useState(savedSpeed);
 
   useEffect(() => {
     let live = true;
@@ -108,14 +120,38 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
     return () => game.setCovered(false);
   }, [scene, visible, game]);
 
+  // the 3D lap plays at the speed picked here (real time by default); the map goes back to its fast replay
+  useEffect(() => {
+    if (!scene || !visible) return;
+    game.setSpeed(speed);
+    return () => game.setSpeed(PLAYBACK_SPEED);
+  }, [scene, visible, game, speed]);
+
   return (
     <div className={`absolute inset-0 ${visible ? "" : "pointer-events-none invisible"}`} aria-hidden={!visible}>
       <canvas ref={canvas} className="h-full w-full" aria-label={t("The lap in 3D")} />
       {!scene && !failed && visible && <p className="absolute inset-0 grid place-items-center bg-night/70 text-[14px] text-steel">{t("Loading the circuit in 3D…")}</p>}
       {scene && visible && ghostName !== null && (
-        <p className="absolute bottom-[calc(max(120px,22%)+96px)] right-3 border border-paint/25 bg-night/70 px-3 py-1.5 text-[13px] font-semibold text-paint backdrop-blur-sm">
+        <p className="absolute bottom-[calc(max(120px,22%)+144px)] right-3 border border-paint/25 bg-night/70 px-3 py-1.5 text-[13px] font-semibold text-paint backdrop-blur-sm">
           {t("Ghost: {name}, the day's fastest", { name: ghostName || t("the leader") })}
         </p>
+      )}
+      {scene && visible && (
+        <button
+          className="absolute right-3 bottom-[calc(max(120px,22%)+96px)] border border-paint/25 bg-night/70 px-3 py-2 text-[13px] font-semibold text-paint backdrop-blur-sm"
+          onClick={() => {
+            const next = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
+            setSpeed(next);
+            try {
+              localStorage.setItem(SPEED_KEY, String(next));
+            } catch {
+              // private mode: the choice lasts the visit
+            }
+          }}
+          aria-label={t("Change speed")}
+        >
+          {t("Speed")}: {speed === 1 ? t("real time") : `${speed}×`}
+        </button>
       )}
       {scene && visible && (
         <button

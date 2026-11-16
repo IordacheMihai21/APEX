@@ -34,4 +34,20 @@ describe("3D stretch of a corner group", () => {
     expect(end.done).toBe(true);
     expect(end.x).toBe(c.x[c.x.length - 1]);
   });
+
+  it("turns the car smoothly through the bend, without jumps from one sample to the next", () => {
+    const cx = controls.complexes[0];
+    const c = stretchOf(track, pt, { corners: cx.corners, direction: cx.direction, index: cx.id, name: cx.name }, lap.samples)!;
+    let prev = poseAt(c, 0).heading;
+    let worst = 0;
+    for (let t = 1 / 60; !poseAt(c, t).done; t += 1 / 60) {
+      const h = poseAt(c, t).heading;
+      let d = h - prev;
+      d -= Math.round(d / (2 * Math.PI)) * 2 * Math.PI;
+      worst = Math.max(worst, Math.abs(d));
+      prev = h;
+    }
+    // a 60 Hz frame through a slow corner turns the car well under 2 degrees
+    expect(worst).toBeLessThan((2 * Math.PI) / 180);
+  });
 });

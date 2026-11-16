@@ -79,6 +79,13 @@ export function stretchOf(
   };
 }
 
+/** The line's direction at sample k: from the sample before to the one after (one-sided at the ends). */
+function headingAt(c: CornerData, k: number): number {
+  const a = Math.max(0, k - 1);
+  const b = Math.min(c.s.length - 1, k + 1);
+  return Math.atan2(c.y[b] - c.y[a], c.x[b] - c.x[a]);
+}
+
 /** Where the car is at time t (s) along a stretch driven at its speeds: position, heading, curvature, distance. */
 export function poseAt(c: CornerData, t: number): { x: number; y: number; heading: number; kappa: number; s: number; speed: number; braking: boolean; done: boolean } {
   const v = c.conditions.dry.speed;
@@ -88,12 +95,17 @@ export function poseAt(c: CornerData, t: number): { x: number; y: number; headin
     const dt = ds / Math.max(1, (v[k] + v[k - 1]) / 2);
     if (time + dt >= t) {
       const f = dt > 0 ? (t - time) / dt : 0;
-      const heading = Math.atan2(c.y[k] - c.y[k - 1], c.x[k] - c.x[k - 1]);
+      // heading and curvature eased between the samples: one segment's heading held for its length turns the car
+      // (and the camera behind it) in jerks through a bend
+      const h0 = headingAt(c, k - 1);
+      let dh = headingAt(c, k) - h0;
+      dh -= Math.round(dh / (2 * Math.PI)) * 2 * Math.PI;
+      const kap = c.conditions.dry.kappa;
       return {
         x: c.x[k - 1] + (c.x[k] - c.x[k - 1]) * f,
         y: c.y[k - 1] + (c.y[k] - c.y[k - 1]) * f,
-        heading,
-        kappa: c.conditions.dry.kappa[k],
+        heading: h0 + dh * f,
+        kappa: kap[k - 1] + (kap[k] - kap[k - 1]) * f,
         s: c.s[k - 1] + ds * f,
         speed: v[k - 1] + (v[k] - v[k - 1]) * f,
         braking: v[k] < v[k - 1] - 0.05,

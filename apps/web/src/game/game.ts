@@ -212,6 +212,11 @@ export class Game {
     this.covered = on;
     if (!on) this.dirty = true;
   }
+  /** how many times real time the lap plays: the map's own fast replay, or what the 3D view picks (1x real time) */
+  private speed = PLAYBACK_SPEED;
+  setSpeed(x: number) {
+    this.speed = x;
+  }
   private listeners = new Set<() => void>();
   private snap: Snapshot;
   private cleanup: (() => void)[] = [];
@@ -1427,7 +1432,7 @@ export class Game {
       }
       animating = true;
     } else if (this.phase === "race" && this.sim) {
-      this.raceT += dt * 1000 * PLAYBACK_SPEED;
+      this.raceT += dt * 1000 * this.speed;
       const p = this.sampleAt(this.sim, this.raceT);
       const kmh = p.speed * 3.6;
       const speed01 = Math.min(1, kmh / 340);
@@ -1500,7 +1505,7 @@ export class Game {
     const rear = (lat: number): [number, number] => [p.x - c * 1.6 - s * lat, p.y - s * 1.6 + c * lat];
     const [lx, ly] = rear(0.8);
     const [rx, ry] = rear(-0.8);
-    const simDt = dt * PLAYBACK_SPEED;
+    const simDt = dt * this.speed;
     const decel = simDt > 0 ? (this.prevSpeed - p.speed) / simDt : 0;
     if (this.prevWheels && decel > 22 && this.skids.length < 12000) {
       const [plx, ply, prx, pry] = this.prevWheels;
@@ -1722,7 +1727,7 @@ export class Game {
       if (this.phase === "race" && !REDUCED_MOTION && this.frameDt > 0) {
         // motion blur: echoes along the path driven during this frame (the car covers
         // several metres per frame at playback speed), faintest furthest back
-        const span = this.frameDt * 1000 * PLAYBACK_SPEED;
+        const span = this.frameDt * 1000 * this.speed;
         const n = Math.min(4, Math.floor((p.speed * span) / 1000 / 0.9));
         for (let k = n; k >= 1; k--) {
           const e = this.sampleAt(this.sim, this.raceT - (span * k) / (n + 1));
