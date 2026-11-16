@@ -154,8 +154,10 @@ export class LapSound {
     const ctx = this.ctx;
     if (!ctx) return;
     const t = at ?? ctx.currentTime;
+    // the lap is running: the sound is up (whatever faded it a moment ago)
+    if (this.master && at === undefined) this.master.gain.setTargetAtTime(this.muted ? 0 : 0.75, t, 0.1);
     // the gearbox: up at the top of the revs, down as the car slows, one gear at a time
-    const rpmIn = (g: number) => Math.max(5500, Math.min(RPM_MAX, (v / GEAR_TOP[g]) * RPM_MAX));
+    const rpmIn = (g: number) => Math.max(6000, Math.min(RPM_MAX, (v / GEAR_TOP[g]) * RPM_MAX));
     let shifted = 0;
     if (rpmIn(this.gear) > UPSHIFT && this.gear < GEAR_TOP.length - 1) {
       this.gear++;
@@ -164,11 +166,12 @@ export class LapSound {
       this.gear--;
       shifted = -1;
     }
-    // on the grid the driver holds the revs up (about 9,500), and pulling away in first the clutch slips at about
-    // 10,500 until the car catches up with it; the gearbox alone would have it grumbling at 5,500
-    const launch = this.gear === 0 && along > -3;
-    const rpm = v < 1 ? 9500 + 300 * Math.sin(t * 7) : launch ? Math.max(rpmIn(0), 10500) : rpmIn(this.gear);
+    // on the grid a steady 6,000; pulling away the revs climb with the car through first gear, as it gathers speed
+    // from rest (held high from the start, it sounded flat out at 300 km/h before the car had moved)
+    const rpm = v < 1 ? 6000 + 120 * Math.sin(t * 5) : rpmIn(this.gear);
     const onPower = (along > -3 && v > 2) || v < 1;
+    // and the engine louder as the revs rise: quiet on the grid, full voice near the top
+    const revs01 = Math.min(1, Math.max(0, (rpm - 6000) / 6000));
     // from far off the car is quieter, and duller (the air takes the highs)
     const far = camera.onboard ? 1 : Math.min(1, 14 / Math.max(14, camera.distance));
     const near = camera.onboard ? 1.15 : 0.85;
@@ -184,7 +187,7 @@ export class LapSound {
         l.gain.gain.setTargetAtTime(weights[i], t, 0.15);
       });
       // off the throttle the V6 stays full-voiced on the overrun
-      const level = (v < 1 ? 0.5 : onPower ? 0.85 : 0.65) * far * near;
+      const level = (v < 1 ? 0.35 : onPower ? 0.5 + 0.35 * revs01 : 0.45 + 0.2 * revs01) * far * near;
       e.gain.gain.setTargetAtTime(level, t, onPower ? 0.04 : 0.1);
       e.filter.frequency.setTargetAtTime(9000 * (0.35 + 0.65 * far), t, 0.06);
       // an upshift is seamless (no cut in the sound, only the revs dropping); a downshift under braking blips

@@ -58,6 +58,7 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
           sound.current = new LapSound();
           void sound.current.start();
           setMuted(sound.current.isMuted);
+          if (import.meta.env.DEV) (window as unknown as { __lapSound: LapSound }).__lapSound = sound.current;
         }
       })
       .catch(() => live && setFailed(true));
@@ -92,7 +93,9 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
       }
       scene.frame(lv.tMs);
       const tele = scene.telemetry;
-      if (tele.racing || lv.phase === "lights") sound.current?.update(tele.v, tele.along, { distance: tele.cameraDistance, onboard: tele.onboard }, tele.crowdNear);
+      // by the game's phase, not the scene's lap clock: on the first frame of the race that clock still reads 0, and
+      // fading then silenced the whole lap until the next tap
+      if (lv.phase === "race" || lv.phase === "lights") sound.current?.update(tele.v, tele.along, { distance: tele.cameraDistance, onboard: tele.onboard }, tele.crowdNear);
       else sound.current?.fade();
     };
     raf = requestAnimationFrame(loop);

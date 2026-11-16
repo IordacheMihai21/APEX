@@ -377,7 +377,7 @@ export class LapScene {
   }
 
   /** Place a car on a path at d metres: on the road, nose along the line, pitched with the slope, into the bend. */
-  private placeCar(car: ReturnType<typeof buildCarF1>, path: LapPath, d: number, v: number) {
+  private placeCar(car: ReturnType<typeof buildCarF1>, path: LapPath, d: number, v: number, dt = 0, jumped = true) {
     const p = path.point(d);
     const ahead = path.point(d + 6);
     const behind = path.point(d - 6);
@@ -386,10 +386,14 @@ export class LapScene {
     const dir = flat.clone().multiplyScalar(Math.cos(pitch)).setY(Math.sin(pitch));
     car.car.position.copy(p);
     car.car.position.y -= 0.012;
-    car.car.quaternion.setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(), dir, new THREE.Vector3(0, 1, 0)));
+    const want = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(), dir, new THREE.Vector3(0, 1, 0)));
     const kappa = path.curvature(d);
     const slip = THREE.MathUtils.clamp((0.018 * v * v * kappa) / 9.81, -0.09, 0.09);
-    car.car.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), slip));
+    want.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), slip));
+    // eased over a few hundredths: the line's samples and the ground's grid turn the car in tiny steps, which the
+    // smoothed chase camera showed as a tremble
+    if (jumped) car.car.quaternion.copy(want);
+    else car.car.quaternion.slerp(want, 1 - Math.pow(0.72, dt * 60));
     return { p, flat, pitch, kappa };
   }
 
@@ -404,7 +408,7 @@ export class LapScene {
     const path = this.path;
     const d = path.at(tMs);
     const v = tMs <= 0 ? 0 : path.speed(d);
-    const { p, flat, pitch, kappa } = this.placeCar(this.car, path, d, v);
+    const { p, flat, pitch, kappa } = this.placeCar(this.car, path, d, v, dt, jumped);
     // the front wheels steer into the bend, eased; the wheels turn with the speed (shown below a strobing rate)
     const want = Math.atan(3.4 * kappa) * 1.15;
     this.steerNow += (want - this.steerNow) * (jumped ? 1 : 1 - Math.pow(0.8, dt * 60));
@@ -451,7 +455,7 @@ export class LapScene {
       // on the grid the ghost would sit inside the car: it shows once the lap is under way
       const gt = tMs / this.ghostScale;
       const gd = this.ghostPath.at(gt);
-      const gp = this.placeCar(this.ghost, this.ghostPath, gd, this.ghostPath.speed(gd)).p;
+      const gp = this.placeCar(this.ghost, this.ghostPath, gd, this.ghostPath.speed(gd), dt, jumped).p;
       // a ghost inside the car only washes it out: it shows once the two are a car's length apart
       this.ghost.car.visible = tMs > 1500 && gp.distanceTo(p) > 6;
     }
