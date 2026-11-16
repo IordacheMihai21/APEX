@@ -1,13 +1,46 @@
-import loopUrl from "./assets/v8-loop.wav?url";
-import workletUrl from "./engineWorklet.js?url&no-inline";
 import { soundMuted } from "./engineSound";
 
 /**
+ * The engine loops (assets/engine/<on|off>-<rpm>.wav): short seamless loops cut from an onboard recording, each held at
+ * one engine speed (its pitch flattened to that rpm), on the throttle and off it (the overrun under braking).
+ */
+interface Loop {
+  url: string;
+  rpm: number;
+  on: boolean;
+}
+const LOOPS: Loop[] = Object.entries(import.meta.glob<string>("./assets/engine/*.wav", { query: "?url", import: "default", eager: true }))
+  .map(([path, url]) => {
+    const [, mode, rpm] = /(on|off)-(\d+)\.wav$/.exec(path)!;
+    return { url, rpm: Number(rpm), on: mode === "on" };
+  })
+  .sort((a, b) => a.rpm - b.rpm);
+
+/**
+ * How loud each loop plays at these revs: within the set for the throttle (on or off), the two loops either side of
+ * the revs crossfaded with equal power (the nearest alone beyond the ends); every other loop silent.
+ */
+export function layerWeights(layers: { rpm: number; on: boolean }[], rpm: number, on: boolean): number[] {
+  const w = layers.map(() => 0);
+  const set = layers.map((l, i) => ({ ...l, i })).filter((l) => l.on === on);
+  if (!set.length) return w;
+  if (rpm <= set[0].rpm) w[set[0].i] = 1;
+  else if (rpm >= set[set.length - 1].rpm) w[set[set.length - 1].i] = 1;
+  else {
+    const k = set.findIndex((l) => l.rpm > rpm);
+    const a = set[k - 1];
+    const b = set[k];
+    const x = (rpm - a.rpm) / (b.rpm - a.rpm);
+    w[a.i] = Math.cos((x * Math.PI) / 2);
+    w[b.i] = Math.sin((x * Math.PI) / 2);
+  }
+  return w;
+}
+
+/**
  * The 3D lap's sound: the engine, the wind and the tyres, and the crowd.
- * - The engine: a 2026 power unit is a 1.6-litre V6 hybrid revving to about 12,500 rpm, deeper than the old V8s. The
- *   engine loop (game3d/assets/v8-loop.wav, our own) is played lower, through an eight-speed gearbox, with a cut on
- *   each upshift and a blip on each downshift under braking; on the throttle it's loud and bright, off it it drops
- *   back and goes duller.
+ * - The engine: a 1.6-litre V6 hybrid revving to about 12,500 rpm, from the loops above, through an eight-speed
+ *   gearbox, with a cut on each upshift and a blip on each downshift under braking.
  * - The wind and the tyres: filtered noise that rises with the speed.
  * - The crowd: a low roar of voices (filtered noise, swelling now and then), louder by the grandstands.
  * Heard from the camera: in the cockpit and on the T-cam the engine fills it, from the chase camera it's a little
@@ -20,13 +53,11 @@ const GEAR_TOP = [100, 135, 168, 200, 232, 265, 300, 345].map((k) => k / 3.6);
 const RPM_MAX = 12500;
 const UPSHIFT = 12100;
 const DOWNSHIFT = 8800;
-/** the loop's own pitch as an engine speed, for a V6 a touch deeper than the V8 it was cut from */
-const LOOP_RPM = 15500;
 
 export class LapSound {
   private ctx: BaseAudioContext | null = null;
   private master: GainNode | null = null;
-  private engine: { synth?: AudioWorkletNode; src?: AudioBufferSourceNode; gain: GainNode; filter: BiquadFilterNode } | null = null;
+  private engine: { layers: (Loop & { src: AudioBufferSourceNode; gain: GainNode })[]; gain: GainNode; filter: BiquadFilterNode } | null = null;
   private wind: { gain: GainNode; filter: BiquadFilterNode } | null = null;
   private crowd: { gain: GainNode } | null = null;
   private gear = 0;
@@ -91,30 +122,26 @@ export class LapSound {
     const gain = ctx.createGain();
     gain.gain.value = 0;
     filter.connect(gain).connect(master);
-    // the V6 made live (engineWorklet.js); where audio worklets are missing, the old recorded loop, pitched
-    const synth = ctx.audioWorklet
-      ? ctx.audioWorklet.addModule(workletUrl).then(() => {
-          if (this.ctx !== ctx) return;
-          const node = new AudioWorkletNode(ctx, "lapdle-engine");
-          node.connect(filter);
-          this.engine = { synth: node, gain, filter };
-        })
-      : Promise.reject(new Error("no audio worklet"));
-    this.ready = synth
-      .catch(() =>
-        fetch(loopUrl)
-          .then((r) => r.arrayBuffer())
-          .then((buf) => ctx.decodeAudioData(buf))
-          .then((buffer) => {
-            if (this.ctx !== ctx) return;
-            const src = ctx.createBufferSource();
-            src.buffer = buffer;
-            src.loop = true;
-            src.connect(filter);
-            src.start();
-            this.engine = { src, gain, filter };
-          }),
-      )
+    // the engine: every loop playing at once, each through its own gain, crossfaded by the revs in update()
+    const load = (url: string) =>
+      fetch(url)
+        .then((r) => r.arrayBuffer())
+        .then((buf) => ctx.decodeAudioData(buf));
+    this.ready = Promise.all(LOOPS.map((l) => load(l.url)))
+      .then((buffers) => {
+        if (this.ctx !== ctx) return;
+        const layers = buffers.map((buffer, i) => {
+          const src = ctx.createBufferSource();
+          src.buffer = buffer;
+          src.loop = true;
+          const g = ctx.createGain();
+          g.gain.value = 0;
+          src.connect(g).connect(filter);
+          src.start();
+          return { ...LOOPS[i], src, gain: g };
+        });
+        this.engine = { layers, gain, filter };
+      })
       .catch(() => {});
     return this.ready;
   }
@@ -144,16 +171,17 @@ export class LapSound {
     const near = camera.onboard ? 1.15 : 0.85;
     if (this.engine) {
       const e = this.engine;
-      const revs = e.synth?.parameters.get("rpm");
-      if (revs) {
-        revs.setValueAtTime(rpm, t);
-        e.synth!.parameters.get("throttle")!.setValueAtTime(onPower ? 1 : 0, t);
-      }
-      e.src?.playbackRate.setTargetAtTime(rpm / LOOP_RPM, t, 0.025);
-      // off the throttle a hybrid V6 stays full-voiced on the overrun (the reference onboard): less of a drop for the synth
-      const level = (v < 1 ? 0.25 : onPower ? 0.85 : e.synth ? 0.6 : 0.42) * far * near;
+      // each loop pitched to the revs; the two nearest the revs in the set for the throttle (on or off) heard,
+      // crossfaded with equal power, the rest silent
+      const weights = layerWeights(e.layers, rpm, onPower);
+      e.layers.forEach((l, i) => {
+        l.src.playbackRate.setTargetAtTime(rpm / l.rpm, t, 0.02);
+        l.gain.gain.setTargetAtTime(weights[i], t, 0.05);
+      });
+      // off the throttle the V6 stays full-voiced on the overrun
+      const level = (v < 1 ? 0.25 : onPower ? 0.85 : 0.65) * far * near;
       e.gain.gain.setTargetAtTime(level, t, onPower ? 0.04 : 0.1);
-      e.filter.frequency.setTargetAtTime((onPower ? 7000 : e.synth ? 3800 : 2200) * (0.35 + 0.65 * far), t, 0.06);
+      e.filter.frequency.setTargetAtTime(9000 * (0.35 + 0.65 * far), t, 0.06);
       if (shifted > 0) {
         // the upshift: a cut in the power for a few hundredths
         e.gain.gain.cancelScheduledValues(t);
@@ -161,14 +189,10 @@ export class LapSound {
         e.gain.gain.setTargetAtTime(level, t + 0.04, 0.03);
       } else if (shifted < 0 && !onPower) {
         // the downshift under braking: a blip of the revs
-        if (revs) {
-          revs.cancelScheduledValues(t);
-          revs.setValueAtTime(rpm * 1.12, t);
-          revs.setValueAtTime(rpm, t + 0.07);
-        } else if (e.src) {
-          e.src.playbackRate.cancelScheduledValues(t);
-          e.src.playbackRate.setValueAtTime((rpm * 1.12) / LOOP_RPM, t);
-          e.src.playbackRate.setTargetAtTime(rpm / LOOP_RPM, t + 0.05, 0.04);
+        for (const l of e.layers) {
+          l.src.playbackRate.cancelScheduledValues(t);
+          l.src.playbackRate.setValueAtTime((rpm * 1.12) / l.rpm, t);
+          l.src.playbackRate.setTargetAtTime(rpm / l.rpm, t + 0.05, 0.04);
         }
       }
     }
@@ -212,8 +236,7 @@ export class LapSound {
   }
 
   dispose() {
-    this.engine?.src?.stop();
-    this.engine?.synth?.disconnect();
+    for (const l of this.engine?.layers ?? []) l.src.stop();
     if (this.ctx instanceof AudioContext) void this.ctx.close().catch(() => {});
     this.ctx = null;
   }
