@@ -6,7 +6,7 @@ import { DEFAULT_LOOK, type RearLights, buildCarF1, carDetail } from "./carF1";
 import { CITY_CIRCUITS, buildCircuitWorld, loadCircuitGround } from "./circuitWorld";
 import { HeatHazeEffect, LapEffects, LensFlareEffect, RainField } from "./lapEffects";
 import { buildDaySky } from "./daySky";
-import { groundAt } from "./geometry";
+import { currentGround } from "./geometry";
 import { MotionBlurEffect } from "./motionBlur";
 import { buildSkyline, loadTrackSkyline } from "./skyline";
 import { loadSurfaces } from "./textures";
@@ -30,10 +30,10 @@ class LapPath {
   readonly length: number;
   readonly lapMs: number;
   private readonly h: Float64Array;
-  constructor(readonly sim: SimulationResult) {
+  constructor(readonly sim: SimulationResult, ground: (x: number, y: number) => number) {
     const s = sim.samples;
     this.n = s.x.length;
-    this.h = Float64Array.from(s.x, (x, i) => groundAt(x, s.y[i]) + 0.03);
+    this.h = Float64Array.from(s.x, (x, i) => ground(x, s.y[i]) + 0.03);
     this.length = s.distance[this.n - 1] + Math.hypot(s.x[0] - s.x[this.n - 1], s.y[0] - s.y[this.n - 1]);
     this.lapMs = sim.rawLapTimeMs;
   }
@@ -103,6 +103,7 @@ export class LapScene {
   private readonly disposables: { dispose(): void }[] = [];
   private car!: ReturnType<typeof buildCarF1>;
   private ghost: ReturnType<typeof buildCarF1> | null = null;
+  private ground: (x: number, y: number) => number = () => 0;
   private path: LapPath | null = null;
   private ghostPath: LapPath | null = null;
   private ghostScale = 1;
@@ -129,6 +130,8 @@ export class LapScene {
     const scene = new LapScene(canvas, detail, condition === "wet", hour);
     const world = buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street: false, detail, treeAtlases, city: CITY_CIRCUITS.has(trackId) });
     scene.scene.add(world.group);
+    // this circuit's ground, kept: the corner view sets the shared one to its own corner when it opens
+    scene.ground = currentGround();
     scene.disposables.push(world, photo);
     scene.stands = world.stands;
     scene.worldUpdate = world.update;
@@ -177,7 +180,7 @@ export class LapScene {
       const y = cl[k][1] + (dx / d) * 26 * side;
       // nor by a grandstand, whose roof would fill the shot
       if (scene.stands.some((st) => Math.hypot(st.x - x, -st.z - y) < 55)) continue;
-      scene.tvCams.push(new THREE.Vector3(x, groundAt(x, y) + 9, -y));
+      scene.tvCams.push(new THREE.Vector3(x, scene.ground(x, y) + 9, -y));
     }
     // on a wet day the car is on full wets (the blue band)
     scene.car = buildCarF1(detail, { ...DEFAULT_LOOK, ...(look ?? {}), ...(condition === "wet" ? { tyreBand: "#2f8be6" } : {}) });
@@ -295,9 +298,9 @@ export class LapScene {
 
   /** The lap to show, and the ghost's (the pace target's lap, run at `ghostScale` of its time), or none. */
   setLap(sim: SimulationResult, ghost: SimulationResult | null, ghostScale = 1) {
-    this.path = new LapPath(sim);
+    this.path = new LapPath(sim, this.ground);
     this.vMax = Math.max(...sim.samples.speed);
-    this.ghostPath = ghost ? new LapPath(ghost) : null;
+    this.ghostPath = ghost ? new LapPath(ghost, this.ground) : null;
     this.ghostScale = ghostScale;
     this.lastT = -1;
     this.blur?.reset();

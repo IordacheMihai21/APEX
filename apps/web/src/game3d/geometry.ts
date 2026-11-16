@@ -12,6 +12,8 @@ export function setGround(fn: (x: number, y: number) => number) {
   ground = fn;
 }
 export const groundAt = (x: number, y: number) => ground(x, y);
+/** The ground function in force now: a scene that outlives its build keeps its own (another scene may set a new one). */
+export const currentGround = () => ground;
 
 /** A point `h` metres above the ground. */
 export const toWorld = (x: number, y: number, h = 0) => new THREE.Vector3(x, h + ground(x, y), -y);
