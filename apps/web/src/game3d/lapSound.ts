@@ -164,8 +164,11 @@ export class LapSound {
       this.gear--;
       shifted = -1;
     }
-    const rpm = rpmIn(this.gear);
-    const onPower = along > -3 && v > 2;
+    // on the grid the driver holds the revs up (about 9,500), and pulling away in first the clutch slips at about
+    // 10,500 until the car catches up with it; the gearbox alone would have it grumbling at 5,500
+    const launch = this.gear === 0 && along > -3;
+    const rpm = v < 1 ? 9500 + 300 * Math.sin(t * 7) : launch ? Math.max(rpmIn(0), 10500) : rpmIn(this.gear);
+    const onPower = (along > -3 && v > 2) || v < 1;
     // from far off the car is quieter, and duller (the air takes the highs)
     const far = camera.onboard ? 1 : Math.min(1, 14 / Math.max(14, camera.distance));
     const near = camera.onboard ? 1.15 : 0.85;
@@ -181,7 +184,7 @@ export class LapSound {
         l.gain.gain.setTargetAtTime(weights[i], t, 0.15);
       });
       // off the throttle the V6 stays full-voiced on the overrun
-      const level = (v < 1 ? 0.25 : onPower ? 0.85 : 0.65) * far * near;
+      const level = (v < 1 ? 0.5 : onPower ? 0.85 : 0.65) * far * near;
       e.gain.gain.setTargetAtTime(level, t, onPower ? 0.04 : 0.1);
       e.filter.frequency.setTargetAtTime(9000 * (0.35 + 0.65 * far), t, 0.06);
       // an upshift is seamless (no cut in the sound, only the revs dropping); a downshift under braking blips

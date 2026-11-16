@@ -1412,7 +1412,9 @@ export class Game {
 
   // ------------------------------------------------------------ frame
   private frame(now: number) {
-    const dt = this.lastFrame ? Math.min(0.05, (now - this.lastFrame) / 1000) : 0;
+    // capped at a quarter second (a tab coming back), not lower: on a slow phone a lower cap would play the lap in
+    // slow motion (at 10 fps a 0.05 s cap ran it at half speed)
+    const dt = this.lastFrame ? Math.min(0.25, (now - this.lastFrame) / 1000) : 0;
     this.lastFrame = now;
     this.frameDt = dt;
     let animating = this.camera.tick(now);

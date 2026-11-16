@@ -397,8 +397,8 @@ export class LapScene {
   frame(tMs: number) {
     if (!this.path) return;
     const dtMs = this.lastT < 0 ? 16 : Math.max(0, tMs - this.lastT);
-    const dt = Math.min(0.1, dtMs / 1000);
-    const jumped = this.lastT < 0 || tMs < this.lastT || dtMs > 400;
+    const dt = Math.min(0.25, dtMs / 1000);
+    const jumped = this.lastT < 0 || tMs < this.lastT || dtMs > 1500;
     this.lastT = tMs;
     this.clock += dt;
     const path = this.path;
@@ -466,10 +466,18 @@ export class LapScene {
         this.boomDir.lerp(flat, k).normalize();
         this.boomPitch += (pitch - this.boomPitch) * k;
       }
-      const back = this.boomDir.clone().multiplyScalar(-6.2 * Math.cos(this.boomPitch)).setY(-6.2 * Math.sin(this.boomPitch));
-      this.camera.position.copy(p).add(back).add(new THREE.Vector3(0, 1.55, 0));
-      this.camera.lookAt(p.clone().addScaledVector(this.boomDir, 9).add(new THREE.Vector3(0, 0.55 + 9 * Math.sin(this.boomPitch), 0)));
-      this.camera.fov = 56;
+      // low and close, as in the F1 games, with the lens opening up and a buzz coming in with the speed: at a fixed
+      // narrow lens from higher up, 300 km/h looked like 30
+      const fast = THREE.MathUtils.clamp(v / 90, 0, 1);
+      const boom = 5.3 - 0.4 * fast;
+      const back = this.boomDir.clone().multiplyScalar(-boom * Math.cos(this.boomPitch)).setY(-boom * Math.sin(this.boomPitch));
+      const buzz = fast * fast * 0.025;
+      this.camera.position
+        .copy(p)
+        .add(back)
+        .add(new THREE.Vector3(Math.sin(this.clock * 41) * buzz, 1.25 + Math.sin(this.clock * 57 + 1) * buzz, 0));
+      this.camera.lookAt(p.clone().addScaledVector(this.boomDir, 9).add(new THREE.Vector3(0, 0.5 + 9 * Math.sin(this.boomPitch), 0)));
+      this.camera.fov = 64 + 10 * fast;
       this.camera.near = 0.3;
     } else if (this.cameraMode === "tcam") {
       // the T-cam over the airbox, as on the broadcasts: the helmet just below and ahead, the track beyond
@@ -477,7 +485,7 @@ export class LapScene {
       this.car.car.updateMatrixWorld();
       this.camera.position.set(0, eye[1] + 0.02, eye[2]).applyMatrix4(this.car.car.matrixWorld);
       this.camera.lookAt(new THREE.Vector3(0, eye[1] - 0.55, eye[2] - 10).applyMatrix4(this.car.car.matrixWorld));
-      this.camera.fov = 62;
+      this.camera.fov = 64 + 8 * THREE.MathUtils.clamp(v / 90, 0, 1);
       this.camera.near = 0.08;
     } else if (this.cameraMode === "cockpit") {
       const eye = this.car.cameras.cockpit ?? [0, 0.74, -0.2];
@@ -485,7 +493,7 @@ export class LapScene {
       this.camera.position.set(eye[0], eye[1], eye[2]).applyMatrix4(this.car.car.matrixWorld);
       const look = new THREE.Vector3(eye[0], eye[1] - 0.15, eye[2] - 10).applyMatrix4(this.car.car.matrixWorld);
       this.camera.lookAt(look);
-      this.camera.fov = 68;
+      this.camera.fov = 70 + 6 * THREE.MathUtils.clamp(v / 90, 0, 1);
       this.camera.near = 0.05;
     } else {
       // the nearest trackside camera ahead of the car, held until the car is past it
