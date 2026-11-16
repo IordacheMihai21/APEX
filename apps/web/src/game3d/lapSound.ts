@@ -173,21 +173,19 @@ export class LapSound {
       const e = this.engine;
       // each loop pitched to the revs; the two nearest the revs in the set for the throttle (on or off) heard,
       // crossfaded with equal power, the rest silent
+      // the pitch follows the revs at once and the mix slowly: a gearshift is heard as one sound dropping in pitch
+      // (as on the onboard), not as one loop cut over to another
       const weights = layerWeights(e.layers, rpm, onPower);
       e.layers.forEach((l, i) => {
-        l.src.playbackRate.setTargetAtTime(rpm / l.rpm, t, 0.02);
-        l.gain.gain.setTargetAtTime(weights[i], t, 0.05);
+        l.src.playbackRate.setTargetAtTime(rpm / l.rpm, t, 0.015);
+        l.gain.gain.setTargetAtTime(weights[i], t, 0.15);
       });
       // off the throttle the V6 stays full-voiced on the overrun
       const level = (v < 1 ? 0.25 : onPower ? 0.85 : 0.65) * far * near;
       e.gain.gain.setTargetAtTime(level, t, onPower ? 0.04 : 0.1);
       e.filter.frequency.setTargetAtTime(9000 * (0.35 + 0.65 * far), t, 0.06);
-      if (shifted > 0) {
-        // the upshift: a cut in the power for a few hundredths
-        e.gain.gain.cancelScheduledValues(t);
-        e.gain.gain.setValueAtTime(level * 0.35, t);
-        e.gain.gain.setTargetAtTime(level, t + 0.04, 0.03);
-      } else if (shifted < 0 && !onPower) {
+      // an upshift is seamless (no cut in the sound, only the revs dropping); a downshift under braking blips
+      if (shifted < 0 && !onPower) {
         // the downshift under braking: a blip of the revs
         for (const l of e.layers) {
           l.src.playbackRate.cancelScheduledValues(t);
@@ -198,7 +196,8 @@ export class LapSound {
     }
     if (this.wind) {
       const k = Math.min(1, v / 90);
-      this.wind.gain.gain.setTargetAtTime((camera.onboard ? 0.32 : 0.14) * k * k * (camera.onboard ? 1 : far), t, 0.1);
+      // the engine loops carry the onboard's own wind already: only a trace more, or it turns into a hoover
+      this.wind.gain.gain.setTargetAtTime((camera.onboard ? 0.06 : 0.04) * k * k * (camera.onboard ? 1 : far), t, 0.1);
       this.wind.filter.frequency.setTargetAtTime(400 + 900 * k, t, 0.1);
     }
     if (this.crowd) {
