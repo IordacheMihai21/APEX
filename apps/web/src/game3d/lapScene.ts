@@ -466,16 +466,12 @@ export class LapScene {
         this.boomDir.lerp(flat, k).normalize();
         this.boomPitch += (pitch - this.boomPitch) * k;
       }
-      // low and close, as in the F1 games, with the lens opening up and a buzz coming in with the speed: at a fixed
-      // narrow lens from higher up, 300 km/h looked like 30
+      // low and close, as in the F1 games, with the lens opening up with the speed: at a fixed narrow lens from
+      // higher up, 300 km/h looked like 30 (no shake: the car read as trembling)
       const fast = THREE.MathUtils.clamp(v / 90, 0, 1);
       const boom = 5.3 - 0.4 * fast;
       const back = this.boomDir.clone().multiplyScalar(-boom * Math.cos(this.boomPitch)).setY(-boom * Math.sin(this.boomPitch));
-      const buzz = fast * fast * 0.025;
-      this.camera.position
-        .copy(p)
-        .add(back)
-        .add(new THREE.Vector3(Math.sin(this.clock * 41) * buzz, 1.25 + Math.sin(this.clock * 57 + 1) * buzz, 0));
+      this.camera.position.copy(p).add(back).add(new THREE.Vector3(0, 1.25, 0));
       this.camera.lookAt(p.clone().addScaledVector(this.boomDir, 9).add(new THREE.Vector3(0, 0.5 + 9 * Math.sin(this.boomPitch), 0)));
       this.camera.fov = 64 + 10 * fast;
       this.camera.near = 0.3;
