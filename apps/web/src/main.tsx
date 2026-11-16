@@ -19,12 +19,6 @@ setColourBlind(colourBlind());
 applyVegas(vegasOn());
 // the player colour a friend invite unlocked, over the page's own
 applyPlayerColour();
-// ?3d=1 turns the unreleased 3D lap on for this device; read here, before the app tidies the address (Play reads it)
-try {
-  if (new URLSearchParams(location.search).get("3d") === "1") localStorage.setItem("lapdle.3d", "1");
-} catch {
-  // private mode: no 3D preview
-}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

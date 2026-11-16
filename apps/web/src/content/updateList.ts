@@ -7,6 +7,15 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-16",
+    title: "Daily Quali 3D is live",
+    body: [
+      "At the circuits with a 3D world, Spa and Interlagos for now, your lap now plays in 3D: draw your line as before, press Lights out, and watch it driven from the chase camera, the T-cam, the cockpit or the TV cameras round the track. It's a flying lap, as in qualifying: the car comes up to the line at speed and the timing starts as it crosses. It plays in real time, or twice as fast, and Skip still ends it. The engine sound changes gear with the car, and on wet days there's rain and spray.",
+      "Once your laps are done, Watch your lap vs the leader replays your best lap with the day's fastest as a ghost. The Garage button by the 3D switch sets your car's paint, second colour and race number; number 1 is for whoever set yesterday's fastest lap, and three friends who play from your link unlock the Neon livery. The 2D view is still one tap away. Daily Quali plays in 3D on the days it's at Spa or Interlagos, next on 24 November, and every circuit to come gets its 3D world in turn.",
+    ],
+    links: [["The team", "/team"]],
+  },
+  {
+    date: "2026-11-16",
     title: "100 drivers in a day: Daily Quali 3D is on its way",
     body: [
       "On 15 November 101 of you played Lapdle in a single day. Thank you. Daily Quali in 3D comes with this update: your line driven on a real circuit. It isn't switched on yet; we'll say here when it is. Here's a first look.",

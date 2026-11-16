@@ -39,15 +39,8 @@ import { has3D, lap3DOn, setLap3D } from "./game3d/available";
 const Corner3D = lazy(() => import("./ui/Corner3D"));
 const Lap3D = lazy(() => import("./ui/Lap3D"));
 const Garage3D = lazy(() => import("./ui/Garage3D").then((m) => ({ default: m.Garage3D })));
-/** The 3D view is hidden until it ships: on in development, or with ?3d=1 (main.tsx remembers it on this device). */
-const SHOW_3D = (() => {
-  if (import.meta.env.DEV) return true;
-  try {
-    return localStorage.getItem("lapdle.3d") === "1";
-  } catch {
-    return false;
-  }
-})();
+/** The 3D view, live since 16 Nov 2026 on the circuits whose 3D world is built (has3D). */
+const SHOW_3D = true;
 
 const GRADE_TEXT: Record<Grade, string> = { purple: "text-purple", green: "text-green", yellow: "text-yellow", red: "text-kerb" };
 
