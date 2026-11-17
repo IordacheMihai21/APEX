@@ -15,6 +15,8 @@ import { t } from "../i18n";
 export function Garage3D({ onClose }: { onClose: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [g, setG] = useState<Garage>(loadGarage);
+  // dev builds: set any look from a script (for recordings of liveries the palette doesn't offer)
+  if (import.meta.env.DEV) (window as unknown as { __garageSet: typeof setG }).__garageSet = setG;
   const [champion, setChampion] = useState(false);
   const [typed, setTyped] = useState(() => (g.number ? String(g.number) : ""));
   const car = useRef<ReturnType<typeof buildCarF1> | null>(null);
