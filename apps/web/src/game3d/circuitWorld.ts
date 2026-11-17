@@ -101,7 +101,7 @@ export interface CircuitWorldOptions {
   /** at most this many trees (default by detail) */
   maxTrees?: number;
   /** the trees' impostor atlases (game3d/treeImpostors.ts); no trees without them */
-  treeAtlases?: Record<TreeKind, THREE.Texture>;
+  treeAtlases?: Partial<Record<TreeKind, THREE.Texture>>;
   /** a city round the circuit (Interlagos in São Paulo): blocks fill the land the map leaves empty beyond the track */
   city?: boolean;
 }

@@ -126,7 +126,7 @@ export class LapScene {
 
   static async create(canvas: HTMLCanvasElement, trackId: string, condition: Condition, hour = 16.8, look: { paint: string; paint2: string } | null = null): Promise<LapScene> {
     const detail = carDetail();
-    const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadTrackSkyline(trackId), loadTreeAtlases()]);
+    const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadTrackSkyline(trackId), loadTreeAtlases(trackId)]);
     const scene = new LapScene(canvas, detail, condition === "wet", hour);
     const world = await buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street: false, detail, treeAtlases, city: CITY_CIRCUITS.has(trackId) });
     scene.scene.add(world.group);
@@ -348,7 +348,12 @@ export class LapScene {
       for (const mat of m ? (Array.isArray(m) ? m : [m]) : [])
         for (const v of Object.values(mat)) if (v instanceof THREE.Texture && !seen.has(v)) seen.add(v);
     });
-    for (const tex of seen) this.renderer.initTexture(tex);
+    let uploaded = 0;
+    for (const tex of seen) {
+      this.renderer.initTexture(tex);
+      // Uploading many textures in one task makes the setup map unresponsive.
+      if (++uploaded % 2 === 0) await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
     await new Promise((r) => setTimeout(r, 0));
     this.composer?.render(0.016);
     ghost.car.visible = wasGhost;
@@ -372,7 +377,7 @@ export class LapScene {
 
   /**
    * Resolution that follows the frame rate: below about 52 fps for a second it steps down (a quarter of the screen's
-   * pixel ratio at a time, to 1), and back up after a few seconds well above 60, so a slower computer stays smooth.
+   * pixel ratio at a time, to 1), and back up after sustained near-60 fps.
    */
   private adapt = { max: 1, ratio: 1, ema: 16.7, last: 0, slowFor: 0, fastFor: 0 };
   /** off for recordings, which draw their frames slowly one by one */
@@ -385,7 +390,9 @@ export class LapScene {
     a.last = now;
     a.ema += (ms - a.ema) * 0.1;
     a.slowFor = a.ema > 19 ? a.slowFor + ms : 0;
-    a.fastFor = a.ema < 13 ? a.fastFor + ms : 0;
+    // A 60 Hz screen reports ~16.7 ms between frames, so a 13 ms recovery
+    // threshold could never restore full resolution on those devices.
+    a.fastFor = a.ema < 17.2 ? a.fastFor + ms : 0;
     let next = a.ratio;
     if (a.slowFor > 1000 && a.ratio > 1) next = Math.max(1, a.ratio - 0.25);
     else if (a.fastFor > 4000 && a.ratio < a.max) next = Math.min(a.max, a.ratio + 0.25);

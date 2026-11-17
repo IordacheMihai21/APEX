@@ -4,6 +4,7 @@ import meta from "./assets/impostors/trees.json";
 import firA from "./assets/impostors/fir-a.webp?url";
 import firB from "./assets/impostors/fir-b.webp?url";
 import broadA from "./assets/impostors/broad-a.webp?url";
+import { FLORA_BY_TRACK } from "../game/trees";
 
 /**
  * Trees from real scanned models: "Fir Tree 01" and "Tree Small 02" from Poly Haven (CC0; photography Rob Tuytel,
@@ -30,10 +31,13 @@ export interface TreeInstance {
   tint: number;
 }
 
-export async function loadTreeAtlases(): Promise<Record<TreeKind, THREE.Texture>> {
-  const out = {} as Record<TreeKind, THREE.Texture>;
+export async function loadTreeAtlases(trackId: string): Promise<Partial<Record<TreeKind, THREE.Texture>>> {
+  // Tropical circuits have broadleaf and palm trees, both drawn by broad-a.
+  // Fetching fir atlases there wasted two large GPU textures without drawing a tree.
+  const kinds: TreeKind[] = FLORA_BY_TRACK[trackId] === "tropical" ? ["broad-a"] : ["fir-a", "fir-b", "broad-a"];
+  const out: Partial<Record<TreeKind, THREE.Texture>> = {};
   await Promise.all(
-    (Object.keys(URLS) as TreeKind[]).map(async (k) => {
+    kinds.map(async (k) => {
       const t = await loadPicture(URLS[k]);
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = 4;
@@ -136,7 +140,7 @@ void main() {
 `;
 
 /** One instanced mesh per kind of tree: a quad each, turned to the camera in the shader. */
-export function buildTreeImpostors(trees: TreeInstance[], atlases: Record<TreeKind, THREE.Texture>): { group: THREE.Group; dispose(): void } {
+export function buildTreeImpostors(trees: TreeInstance[], atlases: Partial<Record<TreeKind, THREE.Texture>>): { group: THREE.Group; dispose(): void } {
   const group = new THREE.Group();
   const disposables: { dispose(): void }[] = [];
   for (const kind of Object.keys(atlases) as TreeKind[]) {
@@ -172,7 +176,7 @@ export function buildTreeImpostors(trees: TreeInstance[], atlases: Record<TreeKi
       fog: true,
       side: THREE.DoubleSide,
     });
-    mat.uniforms.uMap.value = atlases[kind];
+    mat.uniforms.uMap.value = atlases[kind]!;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.frustumCulled = false;
     group.add(mesh);

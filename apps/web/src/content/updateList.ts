@@ -7,6 +7,14 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-17",
+    title: "Steadier 3D lap playback",
+    body: [
+      "The map stays in control at real-time lap speed until the 3D circuit has finished preparing its shaders, textures and sound. The lap switches over when the scene is ready, avoiding a stutter at the start.",
+      "Returning to the game after switching tabs no longer mistakes the pause for a slow device, and resolution can recover after performance improves. Interlagos also avoids downloading tree textures it never draws.",
+    ],
+  },
+  {
+    date: "2026-11-17",
     title: "Smoother setup on phones",
     body: [
       "The 3D circuit now waits for a pause and prepares its world in smaller steps, so drawing a racing line on the map stays responsive. Its ground textures are preloaded and phones use lighter scene effects. If you press Lights out first, the lap starts on the map and switches to 3D when the scene is ready.",

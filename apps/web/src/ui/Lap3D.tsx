@@ -34,8 +34,9 @@ export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visibl
   const [ghostName, setGhostName] = useState<string | null>(null);
   const [speed, setSpeed] = useState(savedSpeed);
 
-  // a device that freezes for seconds building the scene (a slow phone) is better off on the map
+  // a lap that freezes for seconds is better off continuing on the map
   useEffect(() => {
+    if (!scene || !visible) return;
     if (typeof PerformanceObserver === "undefined" || !PerformanceObserver.supportedEntryTypes?.includes("longtask")) return;
     const watch = new PerformanceObserver((list) => {
       if (list.getEntries().some((e) => e.duration > 6000)) {
@@ -45,7 +46,7 @@ export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visibl
     });
     watch.observe({ type: "longtask" });
     return () => watch.disconnect();
-  }, [onTooSlow]);
+  }, [scene, visible, onTooSlow]);
 
   useEffect(() => {
     let live = true;
@@ -56,23 +57,27 @@ export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visibl
     const hour = [12, 15, 16.8, 18.6][day % 4];
     const mine = loadGarage();
     LapScene.create(canvas.current!, game.track.id, game.condition, hour, mine)
-      .then((s) => {
+      .then(async (s) => {
         if (!live) return s.dispose();
         made = s;
         // your number; number 1 if you set yesterday's fastest lap (and want it)
         s.setCarNumber(numberToday(mine, false));
         void isChampion().then((c) => live && c && s.setCarNumber(numberToday(mine, true)));
-        setScene(s);
-        // compile and upload while the line is being drawn, so the lap starts without a freeze
-        void s.warm().catch(() => {});
         // the audio context too: opening the audio device can hold the page for most of a second, so it's made
-        // now, silent until the race button (a tap) lets it play
+        // before the 3D scene appears, silent until a tap lets it play
+        let audioReady: Promise<void> = Promise.resolve();
         if (!sound.current) {
           sound.current = new LapSound();
-          void sound.current.start();
+          audioReady = sound.current.start().catch(() => {});
           setMuted(sound.current.isMuted);
           if (import.meta.env.DEV) (window as unknown as { __lapSound: LapSound }).__lapSound = sound.current;
         }
+        // Keep the map visible until shaders, textures and audio are ready. A
+        // tap during preparation starts the lap without this work on its frames.
+        s.resize(canvas.current!.clientWidth, canvas.current!.clientHeight);
+        await Promise.all([s.warm().catch(() => {}), audioReady]);
+        if (!live) return;
+        setScene(s);
       })
       .catch(() => live && setFailed(true));
     return () => {
@@ -93,11 +98,14 @@ export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visibl
     let last = 0;
     let slowFor = 0;
     let gaveUp = false;
+    const resetTiming = () => { last = 0; slowFor = 0; };
+    document.addEventListener("visibilitychange", resetTiming);
+    window.addEventListener("pageshow", resetTiming);
     const loop = () => {
       raf = requestAnimationFrame(loop);
-      if (!visible) {
+      if (!visible || document.hidden) {
         sound.current?.fade();
-        last = 0;
+        resetTiming();
         return;
       }
       const now = performance.now();
@@ -130,6 +138,8 @@ export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visibl
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      document.removeEventListener("visibilitychange", resetTiming);
+      window.removeEventListener("pageshow", resetTiming);
     };
   }, [scene, game, visible]);
   useEffect(() => {
@@ -151,12 +161,13 @@ export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visibl
     return () => game.setCovered(false);
   }, [scene, visible, game]);
 
-  // the 3D lap plays at the speed picked here (real time by default); the map goes back to its fast replay
+  // Keep the chosen 3D pace even while its scene is preparing: the temporary
+  // map must not race through the lap at 4x before the 3D view can appear.
   useEffect(() => {
-    if (!scene || !visible) return;
+    if (!visible || failed) return;
     game.setSpeed(speed);
     return () => game.setSpeed(PLAYBACK_SPEED);
-  }, [scene, visible, game, speed]);
+  }, [visible, failed, game, speed]);
 
   return (
     <div className={`absolute inset-0 ${visible && scene ? "" : "pointer-events-none invisible"}`} aria-hidden={!visible || !scene}>
