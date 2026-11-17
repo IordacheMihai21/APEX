@@ -61,7 +61,7 @@ scene.add(sun, sun.target);
 // ---- the circuit and the car
 const t0 = performance.now();
 const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadTrackSkyline(trackId), loadTreeAtlases()]);
-const world = buildCircuitWorld(track, ground, osm, photo, { wet: false, street: false, detail, city: CITY_CIRCUITS.has(trackId), maxTrees: params.has("trees") ? Number(params.get("trees")) : undefined, treeAtlases });
+const world = await buildCircuitWorld(track, ground, osm, photo, { wet: false, street: false, detail, city: CITY_CIRCUITS.has(trackId), maxTrees: params.has("trees") ? Number(params.get("trees")) : undefined, treeAtlases });
 scene.add(world.group);
 let hills: THREE.Group | null = null;
 if (skyline) {

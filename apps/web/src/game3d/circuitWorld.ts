@@ -124,7 +124,9 @@ export interface CircuitWorld {
 
 const near2 = (ax: number, ay: number, bx: number, by: number) => (ax - bx) ** 2 + (ay - by) ** 2;
 
-export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null, osm: SceneryData | null, photo: Surfaces, o: CircuitWorldOptions): CircuitWorld {
+const yieldToPage = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null, osm: SceneryData | null, photo: Surfaces, o: CircuitWorldOptions): Promise<CircuitWorld> {
   const group = new THREE.Group();
   const disposables: { dispose(): void }[] = [];
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
@@ -261,6 +263,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
   {
     const r = Math.ceil(DFR / DF);
     for (let i = 0; i < N; i += 4) {
+      if (i > 0 && i % 128 === 0) await yieldToPage();
       const ci = Math.round((cl[i][0] - bx0) / DF);
       const cj = Math.round((cl[i][1] - by0) / DF);
       for (let b = Math.max(0, cj - r); b <= Math.min(dfy - 1, cj + r); b++)
@@ -288,6 +291,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
     return Math.min(d, N - d);
   };
 
+  await yieldToPage();
   // ---- the ground: the real terrain, a fine mesh along the track and a coarse one to the edge, and a plain beyond
   const grassMat = keep(new THREE.MeshStandardMaterial({ map: photo.grass.map, normalMap: photo.grass.normal, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 1, vertexColors: true, color: o.wet ? "#a0ae98" : "#e4ead5" }));
   // mown grass: as at a real circuit, the verges are cut in stripes that run with the track, light and dark by the way
@@ -345,6 +349,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
         for (let i = i0; i <= i1; i++) woods[j * dfx + i] = 1;
       }
     }
+    await yieldToPage();
   }
   const woodAt = (x: number, y: number) => {
     const fx = Math.min(dfx - 1.001, Math.max(0, (x - bx0) / DF));
@@ -412,6 +417,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
     land(coarseStep, null, (x, y) => (nearTrack(x, y, NEAR - 2 * coarseStep) ? 5 : 0));
   }
 
+  await yieldToPage();
   // ---- materials of the track
   const asphaltMat = keep(
     new THREE.MeshStandardMaterial({
@@ -527,6 +533,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
       );
   }
 
+  await yieldToPage();
   // ---- where the corners are: each corner's stretch, its direction (+1 left), and what's inside or outside
   const turn = new Int8Array(N); // +1 a left-hander, -1 a right-hander, 0 a straight
   const bites = new Uint8Array(N); // the kerbed part of a corner
@@ -787,6 +794,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
     }
   }
 
+  await yieldToPage();
   // ---- the start line and the grid: a white line across at the start, and twenty boxes behind it, staggered
   {
     const [nx, ny] = lineNormal(0);
@@ -1006,6 +1014,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
     });
   }
 
+  await yieldToPage();
   // ---- the surroundings (OpenStreetMap)
   const inBox = (x: number, y: number) => x > gx0 && x < gx1 && y > gy0 && y < gy1;
   const offTrack = (x: number, y: number, r = 30) => trackDist(x, y) > r;
@@ -1128,7 +1137,9 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
       if (l) l.push(g);
       else buckets.set(m, [g]);
     };
+    let buildingCount = 0;
     for (const b of osm.buildings) {
+      if (++buildingCount % 32 === 0) await yieldToPage();
       const flat = b.p;
       let cx = 0;
       let cy = 0;
@@ -1256,6 +1267,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
     void people;
   }
 
+  await yieldToPage();
   // ---- trees: impostors of real scanned trees (game3d/treeImpostors.ts), the nearest to the track first, up to what
   // the device draws easily
   trees.sort((a, b) => a.d - b.d);

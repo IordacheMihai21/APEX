@@ -9,7 +9,7 @@ export const UPDATES: Update[] = [
     date: "2026-11-17",
     title: "Smoother setup on phones",
     body: [
-      "The 3D circuit now waits for a pause before preparing, so drawing a racing line on the map stays responsive. Its ground textures are preloaded and phones use lighter scene effects. If you press Lights out first, the lap starts on the map and switches to 3D when the scene is ready.",
+      "The 3D circuit now waits for a pause and prepares its world in smaller steps, so drawing a racing line on the map stays responsive. Its ground textures are preloaded and phones use lighter scene effects. If you press Lights out first, the lap starts on the map and switches to 3D when the scene is ready.",
       "A tap after dragging the phone panel now reaches its button on the first try.",
     ],
   },

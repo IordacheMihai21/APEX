@@ -128,7 +128,7 @@ export class LapScene {
     const detail = carDetail();
     const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadTrackSkyline(trackId), loadTreeAtlases()]);
     const scene = new LapScene(canvas, detail, condition === "wet", hour);
-    const world = buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street: false, detail, treeAtlases, city: CITY_CIRCUITS.has(trackId) });
+    const world = await buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street: false, detail, treeAtlases, city: CITY_CIRCUITS.has(trackId) });
     scene.scene.add(world.group);
     // this circuit's ground, kept: the corner view sets the shared one to its own corner when it opens
     scene.ground = currentGround();
