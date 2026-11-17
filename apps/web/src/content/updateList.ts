@@ -6,6 +6,13 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-11-18",
+    title: "Imola's start straight looks more like Imola",
+    body: [
+      "The 3D start bridge now names the circuit, and its control tower has Imola's white floors, dark windows and red top. The track layout and driving stay the same.",
+    ],
+  },
+  {
     date: "2026-11-17",
     title: "Imola joins Daily Quali 3D",
     body: [

@@ -855,6 +855,36 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
     const beam = new THREE.Mesh(keep(new THREE.BoxGeometry(span * 2 + 0.6, 1.4, 0.8)), darkMat);
     beam.position.set(0, beamH + 0.7, 0);
     g.add(beam);
+    if (track.id === "imola") {
+      // The real start bridge names the circuit. One small sign on each face makes the straight recognisable
+      // from both the grid and the chase camera, without loading another 3D model or photo texture.
+      const canvas = document.createElement("canvas");
+      canvas.width = 1024;
+      canvas.height = 160;
+      const paint = canvas.getContext("2d")!;
+      paint.fillStyle = "#111417";
+      paint.fillRect(0, 0, canvas.width, canvas.height);
+      paint.fillStyle = "#168a55";
+      paint.fillRect(0, 0, 16, canvas.height);
+      paint.fillStyle = "#d32e2d";
+      paint.fillRect(canvas.width - 16, 0, 16, canvas.height);
+      paint.fillStyle = "#f2f1ec";
+      paint.textAlign = "center";
+      paint.textBaseline = "middle";
+      paint.font = "900 92px Archivo, Arial, sans-serif";
+      paint.fillText("IMOLA", 512, 69);
+      paint.font = "600 29px Archivo, Arial, sans-serif";
+      paint.fillText("AUTODROMO ENZO E DINO FERRARI", 512, 132);
+      const signTexture = keep(new THREE.CanvasTexture(canvas));
+      signTexture.colorSpace = THREE.SRGBColorSpace;
+      const signMaterial = keep(new THREE.MeshBasicMaterial({ map: signTexture, side: THREE.FrontSide }));
+      for (const facing of [-1, 1]) {
+        const sign = new THREE.Mesh(keep(new THREE.PlaneGeometry(span * 2, 1.32)), signMaterial);
+        sign.position.set(0, beamH + 0.72, facing * 0.405);
+        if (facing < 0) sign.rotation.y = Math.PI;
+        g.add(sign);
+      }
+    }
     for (let k = 0; k < 5; k++) {
       const pod = new THREE.Mesh(keep(new THREE.BoxGeometry(0.7, 1.6, 0.5)), darkMat);
       pod.position.set((k - 2) * 1.0, beamH - 0.8, 0.5);
@@ -1137,6 +1167,9 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
     const ventMat = keep(new THREE.MeshStandardMaterial({ color: "#717b80", metalness: 0.45, roughness: 0.55 }));
     // the bigger blocks (hospitality, offices) have their storeys of glazing; sheds and kiosks stay plain
     const officeMat = keep(new THREE.MeshStandardMaterial({ map: keep(glazingTexture()), color: "#e6e4de", roughness: 0.75, side: THREE.DoubleSide }));
+    const imolaTowerWall = track.id === "imola" ? keep(new THREE.MeshStandardMaterial({ map: photo.architecture.concrete, color: "#f0f0ea", roughness: 0.83, side: THREE.DoubleSide })) : null;
+    const imolaTowerGlass = track.id === "imola" ? keep(new THREE.MeshStandardMaterial({ color: "#293b43", roughness: 0.28, metalness: 0.22, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 })) : null;
+    const imolaTowerRed = track.id === "imola" ? keep(new THREE.MeshStandardMaterial({ color: "#af2d2b", roughness: 0.62, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 })) : null;
     const standWallMat = keep(new THREE.MeshStandardMaterial({ map: photo.architecture.concrete, color: "#c8cbca", roughness: 0.9, side: THREE.DoubleSide }));
     const seatMat = keep(new THREE.MeshStandardMaterial({ color: "#284a86", roughness: 0.6 }));
     const crowdStands: StandParts["people"][] = [];
@@ -1181,11 +1214,17 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
         const h = Math.max(3, b.h);
         const e = extrude(flat, () => h);
         if (!e) continue;
-        bucket(b.k === "pits" ? pitsMat : h >= 7 ? officeMat : wallMats[Math.floor(Math.abs(cx * 7 + cy * 13)) % wallMats.length], e.walls);
+        const imolaTower = track.id === "imola" && h > 20 && Math.hypot(cx - cl[0][0], cy - cl[0][1]) < 350;
+        bucket(imolaTower ? imolaTowerWall! : b.k === "pits" ? pitsMat : h >= 7 ? officeMat : wallMats[Math.floor(Math.abs(cx * 7 + cy * 13)) % wallMats.length], e.walls);
         bucket(roofMat, e.roof);
         if (h >= 7) {
           const base = Math.min(...Array.from({ length: flat.length / 2 }, (_, k) => groundAt(flat[2 * k], flat[2 * k + 1])));
           bucket(fasciaMat, buildingFascia(flat, base + h - 0.45, base + h + 0.35));
+          if (imolaTower) {
+            // White floor slabs, dark horizontal glazing and a red top echo Imola's control tower.
+            for (let floor = 0; floor < 5; floor++) bucket(imolaTowerGlass!, buildingFascia(flat, base + 2.3 + floor * 3.4, base + 3.55 + floor * 3.4));
+            bucket(imolaTowerRed!, buildingFascia(flat, base + h + 0.36, base + h + 1.18));
+          }
           if (inside(flat, cx, cy)) {
             for (const [dx, dy] of [[0, 0], [4.5, 2.5], [-4.5, -2.5]]) {
               if (!inside(flat, cx + dx, cy + dy)) continue;
