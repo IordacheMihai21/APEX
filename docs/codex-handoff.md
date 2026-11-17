@@ -54,6 +54,18 @@ Done so far (commits f7e7da6, 5cc559b): long-task total 25 s to 16 s, worst 12 s
 - Safety net: `Lap3D` `onTooSlow` (a long task over 6 s, or under ~15 fps for 2 s) hands the lap to the 2D map for
   this visit only, with a note (`Play.tsx`).
 
+New reports from the owner's Samsung S24 (after the above), fix these FIRST:
+- Dragging the map before Lights out lags (delays). Likely the 3D scene building/warming while the player is still
+  on the map (`Lap3D` mounts with the game in setup: `LapScene.create`, `warm()`, `LapSound.start`, plus Play's
+  2D materials). Make that work yield (chunks between frames, `requestIdleCallback`) or start it only after the
+  first interaction settles; keep the map's own render loop smooth.
+- Lights out needs two taps. Check whether the first tap lands during a long task, or is eaten by the document
+  `pointerup` capture listener in `Lap3D.tsx` (it resumes audio), or by the `[&>*]:pointer-events-auto` controls column
+  in `Play.tsx` ViewControls, or by the bottom sheet's drag handling. Reproduce with a Playwright touch tap on an
+  emulated phone and fix the root cause.
+- During the lap, the 3D still stutters on the S24: measure fps on the emulated phone with the CPU throttled and cut
+  per-frame cost on `detail === "lite"` (post passes, shadow map size, rain count, tree impostors).
+
 Remaining, in order of expected gain:
 1. The 2D map's procedural materials (`apps/web/src/game/materials.ts`: grass, asphalt, gravel, concrete, water,
    macro, cloudShadows, roofTiles, roofMembrane; fbm value noise at 512 px) cost ~4.5 s at 6x on every game load (2D and 3D).
