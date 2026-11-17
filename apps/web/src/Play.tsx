@@ -239,6 +239,12 @@ function GameView({
     setLap3D(!view3D);
     setView3D(!view3D);
   };
+  // the 3D view froze the page or crawled: the lap carries on on the map, for this visit only (the next tries 3D again)
+  const [slow3D, setSlow3D] = useState(false);
+  const tooSlow = useCallback(() => {
+    setView3D(false);
+    setSlow3D(true);
+  }, []);
   const showGrades = s.grades && (s.phase === "result" || s.phase === "setup");
   const rows = names.map((name, i) => {
     const g = s.grades?.[i];
@@ -253,8 +259,13 @@ function GameView({
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-label={t("{circuit} circuit", { circuit: game.track.name })} />
       {view3D && (
         <Suspense fallback={null}>
-          <Lap3D game={game} visible={racing} />
+          <Lap3D game={game} visible={racing} onTooSlow={tooSlow} />
         </Suspense>
+      )}
+      {slow3D && (
+        <p className="absolute top-14 left-1/2 z-10 w-[min(92%,420px)] -translate-x-1/2 border border-line bg-night/90 px-3 py-2 text-center text-[13px] text-paint" role="status">
+          {t("3D was too slow on this device just now, so this lap plays on the map. Your time isn't affected.")}
+        </p>
       )}
       {/* ODbL: the credit stays visible whenever the map is on screen */}
       {game.scenery.hasOsm && (

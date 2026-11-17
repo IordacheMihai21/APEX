@@ -1247,6 +1247,7 @@ export const ES: Record<string, string> = {
   View: "Vista",
   Cam: "Cám",
   Sound: "Sonido",
+  "3D was too slow on this device just now, so this lap plays on the map. Your time isn't affected.": "El 3D iba demasiado lento en este dispositivo, así que esta vuelta se ve en el mapa. Tu tiempo no cambia.",
   "Drag to turn the car": "Arrastra para girar el coche",
   "real time": "tiempo real",
   "Special livery": "Decoración especial",
