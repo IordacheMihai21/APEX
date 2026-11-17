@@ -83,7 +83,8 @@ export function Play({
 
   useEffect(() => {
     let alive = true;
-    Promise.all([loadTrack(trackId), loadScenery(trackId).catch(() => null)])
+    const materials = import("./game/bakedMaterials").then((m) => m.loadBakedMaterials(trackId, mode === "daily" ? conditionOf(loadDaily(day, !!day)) === "wet" : condition === "wet"));
+    Promise.all([loadTrack(trackId), loadScenery(trackId).catch(() => null), materials])
       .then(([t, scenery]) => {
         if (!alive) return;
         let g: Game;
@@ -234,6 +235,7 @@ function GameView({
   // the lap in 3D, where the circuit has been built for it: loaded with the game, shown while the lap runs
   const can3D = SHOW_3D && has3D(game.track.id);
   const [view3D, setView3D] = useState(() => can3D && lap3DOn());
+  const [prepare3D, setPrepare3D] = useState(false);
   const [garage, setGarage] = useState(false);
   const toggle3D = () => {
     setLap3D(!view3D);
@@ -245,6 +247,34 @@ function GameView({
     setView3D(false);
     setSlow3D(true);
   }, []);
+  // Scene construction can hold the main thread for seconds on a phone. Wait until the
+  // player has stopped touching the map before starting it; a race tap still starts
+  // the game at once, with the map visible until the 3D scene is ready.
+  useEffect(() => {
+    if (!can3D || !view3D || prepare3D || racing) return;
+    let timer = 0;
+    let idle = 0;
+    const schedule = () => {
+      clearTimeout(timer);
+      if (idle) window.cancelIdleCallback?.(idle);
+      timer = window.setTimeout(() => {
+        if (window.requestIdleCallback) idle = window.requestIdleCallback(() => setPrepare3D(true), { timeout: 2000 });
+        else setPrepare3D(true);
+      }, 1500);
+    };
+    window.addEventListener("pointerdown", schedule, true);
+    const onPointerMove = (event: PointerEvent) => { if (event.buttons) schedule(); };
+    window.addEventListener("pointermove", onPointerMove, true);
+    window.addEventListener("keydown", schedule, true);
+    schedule();
+    return () => {
+      clearTimeout(timer);
+      if (idle) window.cancelIdleCallback?.(idle);
+      window.removeEventListener("pointerdown", schedule, true);
+      window.removeEventListener("pointermove", onPointerMove, true);
+      window.removeEventListener("keydown", schedule, true);
+    };
+  }, [can3D, view3D, prepare3D, racing]);
   const showGrades = s.grades && (s.phase === "result" || s.phase === "setup");
   const rows = names.map((name, i) => {
     const g = s.grades?.[i];
@@ -257,7 +287,7 @@ function GameView({
   return (
     <>
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-label={t("{circuit} circuit", { circuit: game.track.name })} />
-      {view3D && (
+      {view3D && (prepare3D || racing) && (
         <Suspense fallback={null}>
           <Lap3D game={game} visible={racing} onTooSlow={tooSlow} />
         </Suspense>

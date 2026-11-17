@@ -159,7 +159,7 @@ export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visibl
   }, [scene, visible, game, speed]);
 
   return (
-    <div className={`absolute inset-0 ${visible ? "" : "pointer-events-none invisible"}`} aria-hidden={!visible}>
+    <div className={`absolute inset-0 ${visible && scene ? "" : "pointer-events-none invisible"}`} aria-hidden={!visible || !scene}>
       <canvas ref={canvas} className="h-full w-full" aria-label={t("The lap in 3D")} />
       {!scene && !failed && visible && <p className="absolute inset-0 grid place-items-center bg-night/70 text-[14px] text-steel">{t("Loading the circuit in 3D…")}</p>}
       {/* broadcast-style: a slim row of chips just above the Skip button (bottom right), so the picture stays the show */}

@@ -30,7 +30,7 @@ export function DragSheet({
   const [dragH, setDragH] = useState<number | null>(null);
   const [h, setH] = useState({ min: 0, max: 0 });
   const gesture = useRef<{ y: number; h: number; t: number; moved: boolean } | null>(null);
-  const swallowClick = useRef(false);
+  const draggedPointerUp = useRef<number | null>(null);
 
   // the two ends: the head alone, and the head with everything under it (or the whole screen)
   useLayoutEffect(() => {
@@ -81,7 +81,9 @@ export function DragSheet({
       const g = gesture.current;
       gesture.current = null;
       if (!g || !g.moved) return setDragH(null);
-      swallowClick.current = true;
+      // A touch drag may produce no click at all. Keep the release time so a later,
+      // deliberate tap is never consumed as the drag's missing click.
+      draggedPointerUp.current = ev.timeStamp;
       const dy = ev.clientY - g.y;
       const v = dy / Math.max(1, performance.now() - g.t); // px per ms, down is positive
       const now = Math.max(h.min, Math.min(h.max, g.h - dy));
@@ -99,8 +101,10 @@ export function DragSheet({
       ref={root}
       onClickCapture={(e) => {
         // the click that ends a drag is not a tap on whatever button it ended over
-        if (swallowClick.current) {
-          swallowClick.current = false;
+        const release = draggedPointerUp.current;
+        draggedPointerUp.current = null;
+        const sinceRelease = release === null ? Infinity : e.nativeEvent.timeStamp - release;
+        if (sinceRelease >= 0 && sinceRelease < 150) {
           e.stopPropagation();
           e.preventDefault();
         }

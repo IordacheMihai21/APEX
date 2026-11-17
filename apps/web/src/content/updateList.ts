@@ -7,6 +7,14 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-17",
+    title: "Smoother setup on phones",
+    body: [
+      "The 3D circuit now waits for a pause before preparing, so drawing a racing line on the map stays responsive. Its ground textures are preloaded and phones use lighter scene effects. If you press Lights out first, the lap starts on the map and switches to 3D when the scene is ready.",
+      "A tap after dragging the phone panel now reaches its button on the first try.",
+    ],
+  },
+  {
+    date: "2026-11-17",
     title: "A cleaner 3D lap on phones, and the map answers your finger everywhere",
     body: [
       "On a phone the 3D lap now looks more like a broadcast: the corner list folds away while the lap runs, the camera, speed and sound controls are a slim row of chips, and the speed and gear sit in a compact graphic with Skip beside it, so the car fills the screen.",

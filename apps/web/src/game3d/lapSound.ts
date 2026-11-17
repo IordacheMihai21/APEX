@@ -78,7 +78,9 @@ export class LapSound {
     master.connect(ctx.destination);
     this.master = master;
     // noise for the wind and the crowd
-    const noise = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate);
+    // A second of filtered noise loops without an audible seam, and avoids filling
+    // a three-second buffer on the main thread while the 3D scene is opening.
+    const noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const data = noise.getChannelData(0);
     let b = 0;
     for (let i = 0; i < data.length; i++) {

@@ -257,7 +257,7 @@ export class LapScene {
     // under rain clouds the sun is weak and its shadows faint
     this.sun = new THREE.DirectionalLight(wet ? "#e4e8ec" : sun.tint, wet ? 0.5 : sun.intensity);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(detail === "full" ? 4096 : 2048, detail === "full" ? 4096 : 2048);
+    this.sun.shadow.mapSize.set(detail === "full" ? 4096 : 1024, detail === "full" ? 4096 : 1024);
     Object.assign(this.sun.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 1, far: 800 });
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.04;
@@ -273,12 +273,12 @@ export class LapScene {
     }
     this.scene.add(this.fx.group);
     if (wet) {
-      this.rain = new RainField(detail === "full" ? 9000 : 4000);
+      this.rain = new RainField(detail === "full" ? 9000 : 2000);
       this.scene.add(this.rain.mesh);
       this.disposables.push(this.rain);
     }
     this.disposables.push(this.fx);
-    composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: SMAAPreset.HIGH })));
+    composer.addPass(new EffectPass(this.camera, new SMAAEffect({ preset: detail === "full" ? SMAAPreset.HIGH : SMAAPreset.LOW })));
     // a low sun in the lens flares (computers only; never in the rain)
     if (detail === "full" && !wet) {
       this.flare = new LensFlareEffect();
@@ -289,7 +289,7 @@ export class LapScene {
         this.camera,
         // the brightest things (the sun's glare, the lights, the sparks, a wet road's sheen) glow a little, as through
         // a real lens
-        new BloomEffect({ luminanceThreshold: 4.5, luminanceSmoothing: 0.5, intensity: detail === "full" ? 0.45 : 0.3, mipmapBlur: true, radius: 0.55 }),
+        ...(detail === "full" ? [new BloomEffect({ luminanceThreshold: 4.5, luminanceSmoothing: 0.5, intensity: 0.45, mipmapBlur: true, radius: 0.55 })] : []),
         new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL }),
         new HueSaturationEffect({ saturation: -0.14 }),
         new BrightnessContrastEffect({ brightness: 0.02, contrast: -0.04 }),

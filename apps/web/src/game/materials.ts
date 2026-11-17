@@ -351,14 +351,16 @@ function cloudShadowsGen(seed = 111): HTMLCanvasElement {
  * and reused by every later session (a new circuit or a retry starts instantly).
  * Callers only read the canvases, as pattern sources.
  */
-function memo<A extends unknown[]>(gen: (...a: A) => HTMLCanvasElement): (...a: A) => HTMLCanvasElement {
+function memo<A extends unknown[]>(gen: (...a: A) => HTMLCanvasElement): ((...a: A) => HTMLCanvasElement) & { seed: (args: A, image: HTMLCanvasElement) => void } {
   const made = new Map<string, HTMLCanvasElement>();
-  return (...a: A) => {
+  const get = (...a: A) => {
     const key = JSON.stringify(a);
     let c = made.get(key);
     if (!c) made.set(key, (c = gen(...a)));
     return c;
   };
+  get.seed = (args: A, image: HTMLCanvasElement) => made.set(JSON.stringify(args), image);
+  return get;
 }
 
 export const grass = memo(grassGen);
@@ -370,3 +372,34 @@ export const roofTiles = memo(roofTilesGen);
 export const roofMembrane = memo(roofMembraneGen);
 export const macro = memo(macroGen);
 export const cloudShadows = memo(cloudShadowsGen);
+
+/** Static variants used by the 2D map and 3D world. Keep this list in sync with their callers. */
+export function bakedMaterialJobs(wet: boolean) {
+  const w = wet ? "wet" : "dry";
+  return [
+    { name: `grass-41-${w}`, make: () => grass(41, wet), put: (c: HTMLCanvasElement) => grass.seed([41, wet], c) },
+    { name: `grass-43-${w}`, make: () => grass(43, wet), put: (c: HTMLCanvasElement) => grass.seed([43, wet], c) },
+    { name: `asphalt-track-${w}`, make: () => asphalt([46, 49, 54], 51, wet), put: (c: HTMLCanvasElement) => asphalt.seed([[46, 49, 54], 51, wet], c) },
+    { name: `asphalt-runoff-${w}`, make: () => asphalt([78, 82, 88], 52, wet), put: (c: HTMLCanvasElement) => asphalt.seed([[78, 82, 88], 52, wet], c) },
+    { name: `asphalt-road-${w}`, make: () => asphalt([68, 71, 75], 53, wet), put: (c: HTMLCanvasElement) => asphalt.seed([[68, 71, 75], 53, wet], c) },
+    { name: `asphalt-3d-${w}`, make: () => asphalt([58, 60, 64], 51, wet), put: (c: HTMLCanvasElement) => asphalt.seed([[58, 60, 64], 51, wet], c) },
+    { name: `asphalt-3d-runoff-${w}`, make: () => asphalt([82, 85, 90], 57, wet), put: (c: HTMLCanvasElement) => asphalt.seed([[82, 85, 90], 57, wet], c) },
+    { name: `gravel-${w}`, make: () => gravel(61, wet), put: (c: HTMLCanvasElement) => gravel.seed([61, wet], c) },
+    { name: `water-${w}`, make: () => water(wet ? [34, 54, 66] : [32, 66, 84], 81, false), put: (c: HTMLCanvasElement) => water.seed([wet ? [34, 54, 66] : [32, 66, 84], 81, false], c) },
+  ];
+}
+
+export function sharedBakedMaterialJobs() {
+  return [
+    { name: "concrete-track", make: () => concrete([88, 87, 82], 71), put: (c: HTMLCanvasElement) => concrete.seed([[88, 87, 82], 71], c) },
+    { name: "concrete-paving", make: () => concrete([91, 89, 84], 72, 48), put: (c: HTMLCanvasElement) => concrete.seed([[91, 89, 84], 72, 48], c) },
+    { name: "concrete-3d", make: () => concrete([150, 148, 140], 71, 64), put: (c: HTMLCanvasElement) => concrete.seed([[150, 148, 140], 71, 64], c) },
+    { name: "concrete-3d-paving", make: () => concrete([96, 95, 90], 73, 48), put: (c: HTMLCanvasElement) => concrete.seed([[96, 95, 90], 73, 48], c) },
+    { name: "macro", make: () => macro(), put: (c: HTMLCanvasElement) => macro.seed([], c) },
+    { name: "clouds", make: () => cloudShadows(), put: (c: HTMLCanvasElement) => cloudShadows.seed([], c) },
+    { name: "roof-tiles", make: () => roofTiles(), put: (c: HTMLCanvasElement) => roofTiles.seed([], c) },
+    { name: "roof-membrane", make: () => roofMembrane(), put: (c: HTMLCanvasElement) => roofMembrane.seed([], c) },
+    { name: "water-monaco", make: () => water([26, 74, 98], 81, false), put: (c: HTMLCanvasElement) => water.seed([[26, 74, 98], 81, false], c) },
+    { name: "wet-sheen", make: () => water([150, 160, 172], 83, true), put: (c: HTMLCanvasElement) => water.seed([[150, 160, 172], 83, true], c) },
+  ];
+}

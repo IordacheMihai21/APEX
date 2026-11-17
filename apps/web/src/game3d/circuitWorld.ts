@@ -358,7 +358,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
   const tint = (x: number, y: number) => 0.86 + 0.13 * Math.sin(x * 0.013 + Math.sin(y * 0.021) * 2) * Math.sin(y * 0.011 + x * 0.004) + 0.07 * Math.sin(x * 0.07 + y * 0.05);
   if (ground) {
     const NEAR = 160;
-    const fineStep = o.detail === "full" ? 5 : 10;
+    const fineStep = o.detail === "full" ? 5 : 16;
     const coarseStep = 20;
     // the coarse mesh over the whole grid, sunk out of sight where the fine one lies
     const land = (stepM: number, only: ((x: number, y: number) => boolean) | null, sink: (x: number, y: number) => number) => {
@@ -1147,7 +1147,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
         const d = Math.hypot(tx, ty) || 1;
         let base = Infinity;
         for (let i = 0; i < flat.length; i += 2) base = Math.min(base, groundAt(flat[i], flat[i + 1]));
-        const stand = buildGrandstand(flat, [-tx / d, -ty / d], Math.max(6, b.h), base, rnd, o.detail === "full" ? 0.74 : 0.45);
+        const stand = buildGrandstand(flat, [-tx / d, -ty / d], Math.max(6, b.h), base, rnd, o.detail === "full" ? 0.74 : 0.3);
         if (!stand) continue;
         for (const g of stand.concrete) bucket(standWallMat, g);
         for (const g of stand.seats) bucket(seatMat, g);
@@ -1195,7 +1195,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
       const PLOT = 34;
       const cityGroundMat = keep(new THREE.MeshStandardMaterial({ map: tex.paving, color: "#9a9a96", roughness: 0.95 }));
       let blocks = 0;
-      const limit = o.detail === "full" ? 6000 : 2500;
+      const limit = o.detail === "full" ? 6000 : 1200;
       for (let y = y0 + PLOT / 2; y < y0 + (ny - 1) * step; y += PLOT)
         for (let x = x0 + PLOT / 2; x < x0 + (nx - 1) * step; x += PLOT) {
           if (blocks >= limit) break;
@@ -1259,7 +1259,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
   // ---- trees: impostors of real scanned trees (game3d/treeImpostors.ts), the nearest to the track first, up to what
   // the device draws easily
   trees.sort((a, b) => a.d - b.d);
-  trees.length = Math.min(trees.length, o.maxTrees ?? (o.detail === "full" ? 30000 : 10000));
+  trees.length = Math.min(trees.length, o.maxTrees ?? (o.detail === "full" ? 30000 : 6000));
   if (o.treeAtlases) {
     const list: TreeInstance[] = trees.map((t) => {
       const conifer = t.s === "conifer";
