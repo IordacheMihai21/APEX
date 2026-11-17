@@ -28,7 +28,7 @@ import { delta, lapTime } from "./ui/format";
 import { ChevronDown, ChevronRight, Frame, Minus, NudgeLeft, NudgeRight, Plus, Undo, WholeTrack } from "./ui/icons";
 import { iconBtn, primaryBtn, secondaryBtn } from "./ui/styles";
 import { Loading, ShareButton, StandingLine, boardOf, dailyShare, dayHeadline, useCountdown } from "./Dialogs";
-import { fetchLeaderLap, recordGame, submitDailyLine } from "./online";
+import { cachedStanding, fetchLeaderLap, recordGame, submitDailyLine } from "./online";
 import { dateKey as dateKeyNow } from "./modes/schedule";
 import { roadPlayed } from "./community";
 import { CORNER_MEDAL_MS, type CornerWeek, cornerMedal, cornerShare, daysLeft, loadCornerWeek, recordCornerRun, weekNumber, weeklyCorner } from "./modes/corner";
@@ -90,6 +90,9 @@ export function Play({
         if (mode === "daily") {
           const rec = loadDaily(day, !!day);
           setDaily(rec);
+          // a best line the board never took (the server turned it away, or the network failed): send it again
+          const recBoard = boardOf(rec);
+          if (recBoard && rec.bestKnots && !cachedStanding(recBoard)) void submitDailyLine(recBoard, rec.bestKnots);
           g = new Game(t, { scenery, mode, lapLimit: DAILY_LAPS, lapsUsed: rec.laps.length, startKnots: rec.knots, locked: rec.status !== "playing", condition: conditionOf(rec) });
           g.onLap = (lap) => {
             const before = loadDaily(day, !!day);

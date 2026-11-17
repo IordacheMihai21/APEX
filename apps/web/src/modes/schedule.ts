@@ -97,6 +97,8 @@ const scheduled = new Map<string, string>();
 /**
  * Days set by hand to a circuit, ahead of the rotation (which then carries on from the next day): 17 Nov 2026 to Spa,
  * one of the circuits with its 3D world, the day after Daily Quali went 3D. Only ever add days still to come.
+ * The board's server function bundles this schedule: after any change here, `npm run deploy:functions`, or it turns
+ * away every lap of the changed day as "not that day's daily".
  */
 export const PINNED_DAYS: Record<string, string> = { "2026-11-17": "spa" };
 /**
