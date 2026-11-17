@@ -10,6 +10,7 @@ import { Championship } from "./Championship";
 import type { GameTrack } from "@apex/engine";
 import { CATALOG } from "../game/catalog";
 import { OUTLINES, type Outline, type OutlineDetail, loadOutlineDetail } from "../game/outlines";
+import { cachedStanding, submitDailyLine } from "../online";
 import { CONDITION_NOTE, DAILY_LAPS, CONDITION_NAME, bestMedal, conditionOf, dailyNumber, qualifyingDay, raceWeek, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
 import { type Grade, bestPerGroup } from "../modes/grading";
 import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
@@ -679,6 +680,12 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   }, []);
   const today = dateKey(new Date(now));
   const daily = useMemo(() => loadDaily(today), [today]);
+  // a best line of today's the board never took (turned away, or the network failed): send it again on any visit
+  useEffect(() => {
+    if (daily.archive || !daily.bestKnots) return;
+    const board = { day: daily.key, trackId: daily.trackId, condition: conditionOf(daily) };
+    if (!cachedStanding(board)) void submitDailyLine(board, daily.bestKnots);
+  }, [daily]);
   const stats = useMemo(() => dailyStats(), []);
   const season = useMemo(() => loadSeason(), []);
 
