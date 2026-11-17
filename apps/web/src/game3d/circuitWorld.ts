@@ -147,32 +147,60 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
   const step = track.lengthMeters / N;
   const sAt = (i: number) => i * step;
 
-  // the centre line in 25 m cells, for "how far from the track" and "which part of the lap is this"
+  // the centre line in 25 m cells, for "how far from the track" and "which part of the lap is this": a dense grid over
+  // the line's box (numbers, not string keys: this is asked tens of thousands of times while the world builds)
   const CELL = 25;
-  const cells = new Map<string, number[]>();
-  for (let i = 0; i < N; i++) {
-    const key = `${Math.floor(cl[i][0] / CELL)},${Math.floor(cl[i][1] / CELL)}`;
-    const l = cells.get(key);
-    if (l) l.push(i);
-    else cells.set(key, [i]);
+  let cx0 = Infinity, cy0 = Infinity, cx1 = -Infinity, cy1 = -Infinity;
+  for (const [x, y] of cl) {
+    cx0 = Math.min(cx0, Math.floor(x / CELL));
+    cy0 = Math.min(cy0, Math.floor(y / CELL));
+    cx1 = Math.max(cx1, Math.floor(x / CELL));
+    cy1 = Math.max(cy1, Math.floor(y / CELL));
   }
-  /** the nearest centre-line point within `r` metres, and its squared distance, or [-1, Infinity] */
+  const GW = cx1 - cx0 + 1;
+  const GH = cy1 - cy0 + 1;
+  const cells: number[][] = Array.from({ length: GW * GH }, () => []);
+  for (let i = 0; i < N; i++) cells[(Math.floor(cl[i][1] / CELL) - cy0) * GW + Math.floor(cl[i][0] / CELL) - cx0].push(i);
+  const cellAt = (gx: number, gy: number) => (gx < cx0 || gx > cx1 || gy < cy0 || gy > cy1 ? null : cells[(gy - cy0) * GW + gx - cx0]);
+  /**
+   * The nearest centre-line point within `r` metres, and its squared distance, or [-1, Infinity]. Searched in rings
+   * of cells outwards, stopping once a ring can't hold anything nearer than the best so far.
+   */
   const nearestIndex = (x: number, y: number, r: number, skip?: (i: number) => boolean): [number, number] => {
     const gx = Math.floor(x / CELL);
     const gy = Math.floor(y / CELL);
     const k = Math.ceil(r / CELL);
     let best = -1;
     let bd = r * r;
-    for (let a = -k; a <= k; a++)
-      for (let b = -k; b <= k; b++)
-        for (const i of cells.get(`${gx + a},${gy + b}`) ?? []) {
-          if (skip?.(i)) continue;
-          const d = near2(cl[i][0], cl[i][1], x, y);
-          if (d < bd) {
-            bd = d;
-            best = i;
-          }
+    const visit = (a: number, b: number) => {
+      const list = cellAt(gx + a, gy + b);
+      if (!list) return;
+      for (const i of list) {
+        if (skip?.(i)) continue;
+        const d = near2(cl[i][0], cl[i][1], x, y);
+        if (d < bd) {
+          bd = d;
+          best = i;
         }
+      }
+    };
+    for (let ring = 0; ring <= k; ring++) {
+      // every point in this ring is at least (ring - 1) cells away
+      const nearest = (ring - 1) * CELL;
+      if (ring > 1 && nearest * nearest > bd) break;
+      if (ring === 0) {
+        visit(0, 0);
+        continue;
+      }
+      for (let a = -ring; a <= ring; a++) {
+        visit(a, -ring);
+        visit(a, ring);
+      }
+      for (let b = -ring + 1; b <= ring - 1; b++) {
+        visit(-ring, b);
+        visit(ring, b);
+      }
+    }
     return [best, best < 0 ? Infinity : bd];
   };
   // ---- the road's height: the lap's profile, smoothed once more (Gaussian, sigma 15 m), followed along the line
@@ -232,7 +260,7 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
   const dfield = new Float32Array(dfx * dfy).fill(DFR * DFR);
   {
     const r = Math.ceil(DFR / DF);
-    for (let i = 0; i < N; i += 2) {
+    for (let i = 0; i < N; i += 4) {
       const ci = Math.round((cl[i][0] - bx0) / DF);
       const cj = Math.round((cl[i][1] - by0) / DF);
       for (let b = Math.max(0, cj - r); b <= Math.min(dfy - 1, cj + r); b++)
@@ -1035,12 +1063,26 @@ export function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null
         minY = Math.min(minY, area[i + 1]);
         maxY = Math.max(maxY, area[i + 1]);
       }
-      for (let x = minX; x < maxX; x += 11)
-        for (let y = minY; y < maxY; y += 11) {
+      // row by row: where the row crosses the area's edge, once, then the points between the crossings (testing each
+      // point against a forest of thousands of vertices held a phone for seconds)
+      for (let y = minY; y < maxY; y += 11) {
+        const yr = y + 4;
+        const xs: number[] = [];
+        for (let i = 0, j = area.length - 2; i < area.length; j = i, i += 2) {
+          const yi = area[i + 1];
+          const yj = area[j + 1];
+          if (yi > yr !== yj > yr) xs.push(area[i] + ((yr - yi) * (area[j] - area[i])) / (yj - yi));
+        }
+        if (xs.length < 2) continue;
+        xs.sort((a, b) => a - b);
+        for (let x = minX; x < maxX; x += 11) {
           const px = x + rnd() * 8;
           const py = y + rnd() * 8;
-          if (inside(area, px, py)) plant(px, py);
+          let inSpan = false;
+          for (let k = 0; k + 1 < xs.length && xs[k] <= px; k += 2) if (px <= xs[k + 1]) inSpan = true;
+          if (inSpan) plant(px, py);
         }
+      }
     }
     for (const area of osm.areas.scrub ?? []) for (let i = 0; i < area.length; i += 8) plant(area[i], area[i + 1]);
     for (let i = 0; i < osm.trees.length; i += 2) plant(osm.trees[i], osm.trees[i + 1]);

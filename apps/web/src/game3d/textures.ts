@@ -284,10 +284,27 @@ export interface Surfaces {
  * photographs of whole trees on white (generated with Gemini on our Google Cloud project), cut out to see-through
  * WebP, about 440 KB.
  */
+/**
+ * A picture as a texture, decoded off the main thread (an ImageBitmap) where the browser can: an <img> is decoded only
+ * when it's first uploaded, on the main thread, one after another, which held a phone for seconds at the first frame.
+ */
+export async function loadPicture(url: string): Promise<THREE.Texture> {
+  if (typeof createImageBitmap !== "function") return new THREE.TextureLoader().loadAsync(url);
+  try {
+    const bitmap = await new THREE.ImageBitmapLoader().setOptions({ imageOrientation: "flipY", premultiplyAlpha: "none" }).loadAsync(url);
+    const t = new THREE.Texture(bitmap);
+    // the bitmap is already the right way up (an ImageBitmap ignores flipY)
+    t.flipY = false;
+    t.needsUpdate = true;
+    return t;
+  } catch {
+    return new THREE.TextureLoader().loadAsync(url);
+  }
+}
+
 export async function loadSurfaces(): Promise<Surfaces> {
-  const loader = new THREE.TextureLoader();
   const load = async (url: string, metres: number, colour: boolean) => {
-    const t = await loader.loadAsync(url);
+    const t = await loadPicture(url);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.repeat.set(1 / metres, 1 / metres);
     if (colour) t.colorSpace = THREE.SRGBColorSpace;
@@ -305,7 +322,7 @@ export async function loadSurfaces(): Promise<Surfaces> {
     load(corrugatedRoof, 5, true),
   ]);
   const tree = async (url: string): Promise<TreePicture> => {
-    const t = await loader.loadAsync(url);
+    const t = await loadPicture(url);
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 4;
     const img = t.image as { width: number; height: number };

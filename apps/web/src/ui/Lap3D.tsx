@@ -24,7 +24,7 @@ const savedSpeed = () => {
  * game's own race clock, so the timing tower and the sectors above stay in step. A button cycles the cameras.
  * Loaded only when the player watches in 3D, with three.js.
  */
-export default function Lap3D({ game, visible }: { game: Game; visible: boolean }) {
+export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visible: boolean; onTooSlow?: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [scene, setScene] = useState<LapScene | null>(null);
   const [cam, setCam] = useState<LapCamera>("chase");
@@ -33,6 +33,19 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
   const [muted, setMuted] = useState(false);
   const [ghostName, setGhostName] = useState<string | null>(null);
   const [speed, setSpeed] = useState(savedSpeed);
+
+  // a device that freezes for seconds building the scene (a slow phone) is better off on the map
+  useEffect(() => {
+    if (typeof PerformanceObserver === "undefined" || !PerformanceObserver.supportedEntryTypes?.includes("longtask")) return;
+    const watch = new PerformanceObserver((list) => {
+      if (list.getEntries().some((e) => e.duration > 6000)) {
+        watch.disconnect();
+        onTooSlow?.();
+      }
+    });
+    watch.observe({ type: "longtask" });
+    return () => watch.disconnect();
+  }, [onTooSlow]);
 
   useEffect(() => {
     let live = true;
@@ -76,12 +89,27 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
     scene.resize(el.clientWidth, el.clientHeight);
     let raf = 0;
     let lapOf: unknown = null;
+    // too slow to watch: under about 15 frames a second for two seconds of the lap, or one frame held 3 s
+    let last = 0;
+    let slowFor = 0;
+    let gaveUp = false;
     const loop = () => {
       raf = requestAnimationFrame(loop);
       if (!visible) {
         sound.current?.fade();
+        last = 0;
         return;
       }
+      const now = performance.now();
+      if (last) {
+        const dt = now - last;
+        slowFor = dt > 66 ? slowFor + dt : Math.max(0, slowFor - dt);
+        if (!gaveUp && (slowFor > 2000 || dt > 3000)) {
+          gaveUp = true;
+          onTooSlow?.();
+        }
+      }
+      last = now;
       const lv = game.lapView();
       if (!lv) return;
       if (lv.sim !== lapOf) {

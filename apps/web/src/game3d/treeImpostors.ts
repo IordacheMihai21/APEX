@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { loadPicture } from "./textures";
 import meta from "./assets/impostors/trees.json";
 import firA from "./assets/impostors/fir-a.webp?url";
 import firB from "./assets/impostors/fir-b.webp?url";
@@ -30,11 +31,10 @@ export interface TreeInstance {
 }
 
 export async function loadTreeAtlases(): Promise<Record<TreeKind, THREE.Texture>> {
-  const loader = new THREE.TextureLoader();
   const out = {} as Record<TreeKind, THREE.Texture>;
   await Promise.all(
     (Object.keys(URLS) as TreeKind[]).map(async (k) => {
-      const t = await loader.loadAsync(URLS[k]);
+      const t = await loadPicture(URLS[k]);
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = 4;
       t.generateMipmaps = true;

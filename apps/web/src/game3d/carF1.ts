@@ -2,6 +2,9 @@ import * as THREE from "three";
 import { DecalGeometry } from "three/examples/jsm/geometries/DecalGeometry.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+
+// the car's geometry decoded on two background threads, not the page's (CSP: worker-src blob:)
+MeshoptDecoder.useWorkers?.(2);
 import fullUrl from "./car-f1.glb?url";
 import liteUrl from "./car-f1-lite.glb?url";
 
