@@ -199,6 +199,8 @@ export class LapScene {
   private worldUpdate: ((t: number) => void) | null = null;
   private dashAt = -1;
   private dashGear = 0;
+  /** Same one-based gear shown on the steering wheel. */
+  get wheelGear() { return this.dashGear + 1; }
   private ers = 0.9;
   private readonly fx = new LapEffects();
   private haze: HeatHazeEffect | null = null;
@@ -312,6 +314,8 @@ export class LapScene {
     this.ghostPath = ghost ? new LapPath(ghost, this.ground) : null;
     this.ghostScale = ghostScale;
     this.lastT = -1;
+    this.dashAt = -1;
+    this.dashGear = 0;
     this.blur?.reset();
     if (ghost) this.makeGhost();
     if (this.ghost) this.ghost.car.visible = !!ghost;
@@ -619,19 +623,20 @@ export class LapScene {
       wet: this.wet,
     });
     this.haze?.place(this.car.car, this.camera, this.cameraMode === "cockpit" ? 0 : v < 1 ? 1 : 0.5, this.clock);
-    // the steering wheel's screen, a dozen times a second while it's in view
+    // Calculate the gear every frame, so the steering wheel and race HUD change with the engine's shift.
+    // The other steering-wheel readouts still refresh only a dozen times a second while in view.
     this.ers = THREE.MathUtils.clamp(this.ers + dt * (decel > 4 ? 0.09 : v > 60 && along > -1 ? -0.022 : 0), 0, 1);
     if (jumped) this.ers = 0.9;
-    if ((this.cameraMode === "cockpit" || this.cameraMode === "tcam") && (jumped || this.clock - this.dashAt > 0.08)) {
+    const rpmIn = (g: number) => (v / GEAR_TOP[g]) * 12500;
+    const previousGear = this.dashGear;
+    if (jumped) this.dashGear = Math.max(0, GEAR_TOP.findIndex((t) => v < t * 0.97));
+    if (rpmIn(this.dashGear) > 12100 && this.dashGear < 7) this.dashGear++;
+    else if (rpmIn(this.dashGear) < 8800 && this.dashGear > 0) this.dashGear--;
+    if ((this.cameraMode === "cockpit" || this.cameraMode === "tcam") && (jumped || this.dashGear !== previousGear || this.clock - this.dashAt > 0.08)) {
       this.dashAt = this.clock;
-      const top = GEAR_TOP;
-      const rpmIn = (g: number) => (v / top[g]) * 12500;
-      if (jumped) this.dashGear = Math.max(0, top.findIndex((t) => v < t * 0.97));
-      if (rpmIn(this.dashGear) > 12100 && this.dashGear < 7) this.dashGear++;
-      else if (rpmIn(this.dashGear) < 8800 && this.dashGear > 0) this.dashGear--;
       const ghostMs = this.ghostPath ? this.ghostPath.timeAt((d / path.length) * this.ghostPath.length) * this.ghostScale : null;
       this.car.setDash({
-        gear: this.dashGear + 1,
+        gear: this.wheelGear,
         kmh: v * 3.6,
         rpm: Math.min(1, Math.max(0, rpmIn(this.dashGear) / 12500)),
         lapMs: Math.max(0, Math.min(tMs, path.lapMs)),

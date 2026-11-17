@@ -208,6 +208,13 @@ export class Game {
   private dirty = true;
   /** the 3D lap is over the map: the map's frames go undrawn (on a phone they'd halve the 3D's frame rate) */
   private covered = false;
+  private wheelGear: number | null = null;
+  /** Use the 3D steering wheel's gear for the race HUD while that view is active. */
+  setWheelGear(gear: number | null) {
+    if (this.wheelGear === gear) return;
+    this.wheelGear = gear;
+    this.emit();
+  }
   setCovered(on: boolean) {
     this.covered = on;
     if (!on) this.dirty = true;
@@ -386,7 +393,7 @@ export class Game {
             ? this.sectorPlan
             : this.sectorPlan.filter((x) => x.doneAtMs <= this.raceT)
           : [],
-      drive: driveState(speed),
+      drive: { ...driveState(speed), ...(this.wheelGear === null ? {} : { gear: this.wheelGear }) },
       lapsUsed: this.lapsUsed,
       lapLimit: this.opts.lapLimit,
       locked: this.locked,
