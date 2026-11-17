@@ -45,6 +45,16 @@ export function CircuitsIndex() {
           Thirteen real circuits, traced from map data and raced in Lapdle: twelve every day, and Las Vegas in its race week. Each guide covers the circuit's facts and famous corners, how to drive it, and the perfect lap to chase in the dry, the wet and with
           low downforce.
         </p>
+        <p className="mt-3 text-[16px] leading-relaxed text-paint/85">
+          Every circuit is drawn from the real track: its centre line and width come from OpenStreetMap, its corners keep their real names and its
+          kerbs, run-off and grandstands sit where they do on race day. The game's physics drives your line round it, braking, turning and
+          accelerating as a Formula 1 car would, so a good line on the map is a good line on the real circuit too.
+        </p>
+        <p className="mt-3 text-[16px] leading-relaxed text-paint/85">
+          The twelve daily circuits come round once every twelve days, in a new order each time, and each visit brings the next condition: dry,
+          then wet, then low downforce. A guide is the place to read up before your turn: where the lap is won, which corners punish a late
+          apex, how the wet changes the braking points. Spa and Interlagos can also be watched in 3D, with more circuits to follow.
+        </p>
       </header>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {GUIDE_CIRCUITS.map((c) => (

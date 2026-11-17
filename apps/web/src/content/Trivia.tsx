@@ -28,6 +28,16 @@ export function TriviaIndex() {
         <p className="mt-4 text-[16px] leading-relaxed text-paint/85">
           A quick quiz on each of the twelve real circuits in Lapdle: where it is, how long a lap is, how many corners, its first Grand Prix, its famous corners and its pole lap. Eight questions or so, a minute each.
         </p>
+        <p className="mt-3 text-[16px] leading-relaxed text-paint/85">
+          Each answer comes with the fact behind it, taken from the same circuit data the games are built on, so a round is a short lesson as much
+          as a test. Pick an answer and you see straight away whether it was right and why; at the end you get your score, and your best score for
+          each circuit is kept on this device, so you can come back and beat it.
+        </p>
+        <p className="mt-3 text-[16px] leading-relaxed text-paint/85">
+          The quizzes go well with the daily games. Knowing that La Source is the slowest corner at Spa, or that Monaco's hairpin is the slowest corner of
+          the year, helps when you set a line at Spa or guess a mystery circuit from its outline. For the full story of each track, its corners and
+          its perfect lap, read the circuit guides.
+        </p>
       </header>
       <ul className="divide-y divide-line border-y border-line">
         {CIRCUITS.map((c) => {
