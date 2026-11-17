@@ -1,0 +1,32 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "apps/web/src/index.css"
+        ],
+        "createdAt": "2026-11-17T15:25:10.330Z",
+        "reason": "Agent: these inset yellow stripes depict F1 tyre sidewall bands, not card accents"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(0.2, 0.9, 0.3, 1.15)",
+        "createdAt": "2026-11-17T15:25:10.427Z",
+        "reason": "Agent: the speed gauge needle intentionally settles with a small mechanical overshoot"
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "apps/web/src/ui/PhoneSheet.tsx"
+        ],
+        "createdAt": "2026-11-17T15:25:10.502Z",
+        "reason": "Agent: the measured bottom sheet height follows the finger and settles to its open or closed stop"
+      }
+    ]
+  }
+}
