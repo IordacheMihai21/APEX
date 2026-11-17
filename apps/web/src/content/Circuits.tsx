@@ -53,7 +53,7 @@ export function CircuitsIndex() {
         <p className="mt-3 text-[16px] leading-relaxed text-paint/85">
           The twelve daily circuits come round once every twelve days, in a new order each time, and each visit brings the next condition: dry,
           then wet, then low downforce. A guide is the place to read up before your turn: where the lap is won, which corners punish a late
-          apex, how the wet changes the braking points. Spa and Interlagos can also be watched in 3D, with more circuits to follow.
+          apex, how the wet changes the braking points. Spa, Interlagos and Imola can also be watched in 3D, with more circuits to follow.
         </p>
       </header>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">

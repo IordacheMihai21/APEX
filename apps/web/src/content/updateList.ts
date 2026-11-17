@@ -7,6 +7,13 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-17",
+    title: "Imola joins Daily Quali 3D",
+    body: [
+      "Imola now has its full 3D circuit, with real terrain heights, trackside scenery and the same cameras, car and sound as Spa and Interlagos. The 3D view is available by default when you race Imola, including tomorrow's Daily Quali.",
+    ],
+  },
+  {
+    date: "2026-11-17",
     title: "More responsive 3D circuit loading",
     body: [
       "The circuit terrain now builds in smaller steps, keeping the setup screen responsive while its 3D world prepares. Repeated terrain calculations have also been removed without changing the circuit's detail or graphics.",
