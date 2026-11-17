@@ -127,6 +127,10 @@ const near2 = (ax: number, ay: number, bx: number, by: number) => (ax - bx) ** 2
 const yieldToPage = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround | null, osm: SceneryData | null, photo: Surfaces, o: CircuitWorldOptions): Promise<CircuitWorld> {
+  const mark = (stage: string) => {
+    if ((window as Window & { __lap3dDebug?: boolean }).__lap3dDebug) performance.mark(`lap3d:world-${stage}`);
+  };
+  mark("start");
   const group = new THREE.Group();
   const disposables: { dispose(): void }[] = [];
   const keep = <T extends { dispose(): void }>(x: T) => (disposables.push(x), x);
@@ -292,6 +296,7 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
   };
 
   await yieldToPage();
+  mark("distance-ready");
   // ---- the ground: the real terrain, a fine mesh along the track and a coarse one to the edge, and a plain beyond
   const grassMat = keep(new THREE.MeshStandardMaterial({ map: photo.grass.map, normalMap: photo.grass.normal, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 1, vertexColors: true, color: o.wet ? "#a0ae98" : "#e4ead5" }));
   // mown grass: as at a real circuit, the verges are cut in stripes that run with the track, light and dark by the way
@@ -366,7 +371,7 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
     const fineStep = o.detail === "full" ? 5 : 16;
     const coarseStep = 20;
     // the coarse mesh over the whole grid, sunk out of sight where the fine one lies
-    const land = (stepM: number, only: ((x: number, y: number) => boolean) | null, sink: (x: number, y: number) => number) => {
+    const land = async (stepM: number, only: ((x: number, y: number) => boolean) | null, sink: (x: number, y: number) => number) => {
       const nx = Math.floor((gx1 - gx0) / stepM) + 1;
       const ny = Math.floor((gy1 - gy0) / stepM) + 1;
       const index = new Int32Array(nx * ny).fill(-1);
@@ -388,12 +393,14 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
         pos.push(x, h, -y);
         uv.push(x, y);
         const c = tint(x, y);
-        const w = woodAt(x, y) * (trackDist(x, y) > 28 ? 1 : 0);
+        const distance = trackDist(x, y);
+        const w = distance > 28 ? woodAt(x, y) : 0;
         col.push(c * (1 - w * 0.62), c * (1 - w * 0.7), c * 0.97 * (1 - w * 0.78));
-        dist.push(trackDist(x, y));
+        dist.push(distance);
         return (index[k] = pos.length / 3 - 1);
       };
-      for (let j = 0; j < ny - 1; j++)
+      for (let j = 0; j < ny - 1; j++) {
+        if (j > 0 && j % 32 === 0) await yieldToPage();
         for (let i = 0; i < nx - 1; i++) {
           if (only && !only(gx0 + (i + 0.5) * stepM, gy0 + (j + 0.5) * stepM)) continue;
           const a = vert(i, j);
@@ -403,6 +410,7 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
           // faces up (y up, track y is -z)
           idx.push(a, b, c, b, d, c);
         }
+      }
       const g = new THREE.BufferGeometry();
       g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
       g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
@@ -413,11 +421,12 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
       mesh(g, grassMat);
     };
     const nearTrack = (x: number, y: number, r: number) => trackDist(x, y) < r;
-    land(fineStep, (x, y) => nearTrack(x, y, NEAR), () => 0);
-    land(coarseStep, null, (x, y) => (nearTrack(x, y, NEAR - 2 * coarseStep) ? 5 : 0));
+    await land(fineStep, (x, y) => nearTrack(x, y, NEAR), () => 0);
+    await land(coarseStep, null, (x, y) => (nearTrack(x, y, NEAR - 2 * coarseStep) ? 5 : 0));
   }
 
   await yieldToPage();
+  mark("ground-ready");
   // ---- materials of the track
   const asphaltMat = keep(
     new THREE.MeshStandardMaterial({
@@ -534,6 +543,7 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
   }
 
   await yieldToPage();
+  mark("track-ready");
   // ---- where the corners are: each corner's stretch, its direction (+1 left), and what's inside or outside
   const turn = new Int8Array(N); // +1 a left-hander, -1 a right-hander, 0 a straight
   const bites = new Uint8Array(N); // the kerbed part of a corner
@@ -795,6 +805,7 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
   }
 
   await yieldToPage();
+  mark("corners-ready");
   // ---- the start line and the grid: a white line across at the start, and twenty boxes behind it, staggered
   {
     const [nx, ny] = lineNormal(0);
@@ -1015,6 +1026,7 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
   }
 
   await yieldToPage();
+  mark("surroundings-start");
   // ---- the surroundings (OpenStreetMap)
   const inBox = (x: number, y: number) => x > gx0 && x < gx1 && y > gy0 && y < gy1;
   const offTrack = (x: number, y: number, r = 30) => trackDist(x, y) > r;
@@ -1268,6 +1280,7 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
   }
 
   await yieldToPage();
+  mark("trees-start");
   // ---- trees: impostors of real scanned trees (game3d/treeImpostors.ts), the nearest to the track first, up to what
   // the device draws easily
   trees.sort((a, b) => a.d - b.d);
@@ -1288,6 +1301,7 @@ export async function buildCircuitWorld(track: GameTrack, ground: CircuitGround 
   // ---- the line with its heights, for placing the car
   const line = { x: cl.map((p) => p[0]), y: cl.map((p) => p[1]), h: Array.from(profile, (h) => h + 0.03), s: cl.map((_, i) => sAt(i)) };
 
+  mark("done");
   return {
     group,
     barriers,

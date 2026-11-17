@@ -7,6 +7,13 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-17",
+    title: "More responsive 3D circuit loading",
+    body: [
+      "The circuit terrain now builds in smaller steps, keeping the setup screen responsive while its 3D world prepares. Repeated terrain calculations have also been removed without changing the circuit's detail or graphics.",
+    ],
+  },
+  {
+    date: "2026-11-17",
     title: "Steadier 3D lap playback",
     body: [
       "The map stays in control at real-time lap speed until the 3D circuit has finished preparing its shaders, textures and sound. The lap switches over when the scene is ready, avoiding a stutter at the start.",

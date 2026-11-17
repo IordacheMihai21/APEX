@@ -51,13 +51,17 @@ export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visibl
   useEffect(() => {
     let live = true;
     let made: LapScene | null = null;
+    const debug = new URLSearchParams(location.search).has("perf") || (window as Window & { __lap3dDebug?: boolean }).__lap3dDebug === true;
+    const mark = (stage: string) => { if (debug) performance.mark(`lap3d:${stage}`); };
     // the session's hour changes from day to day (the same for everyone on a day): midday, afternoon, qualifying
     // time or the golden evening light
     const day = Math.floor(Date.now() / 86400000);
     const hour = [12, 15, 16.8, 18.6][day % 4];
     const mine = loadGarage();
+    mark("create-start");
     LapScene.create(canvas.current!, game.track.id, game.condition, hour, mine)
       .then(async (s) => {
+        mark("create-done");
         if (!live) return s.dispose();
         made = s;
         // your number; number 1 if you set yesterday's fastest lap (and want it)
@@ -68,18 +72,25 @@ export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visibl
         let audioReady: Promise<void> = Promise.resolve();
         if (!sound.current) {
           sound.current = new LapSound();
-          audioReady = sound.current.start().catch(() => {});
+          mark("audio-start");
+          audioReady = sound.current.start().then(() => mark("audio-done")).catch(() => mark("audio-error"));
           setMuted(sound.current.isMuted);
           if (import.meta.env.DEV) (window as unknown as { __lapSound: LapSound }).__lapSound = sound.current;
         }
         // Keep the map visible until shaders, textures and audio are ready. A
         // tap during preparation starts the lap without this work on its frames.
         s.resize(canvas.current!.clientWidth, canvas.current!.clientHeight);
-        await Promise.all([s.warm().catch(() => {}), audioReady]);
+        mark("warm-start");
+        await Promise.all([s.warm().then(() => mark("warm-done")).catch(() => mark("warm-error")), audioReady]);
         if (!live) return;
+        mark("scene-visible");
         setScene(s);
       })
-      .catch(() => live && setFailed(true));
+      .catch((error) => {
+        mark("create-error");
+        if (debug) console.error("Lap3D preparation failed", error);
+        if (live) setFailed(true);
+      });
     return () => {
       live = false;
       made?.dispose();

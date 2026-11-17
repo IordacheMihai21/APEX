@@ -125,10 +125,15 @@ export class LapScene {
   readonly telemetry = { v: 0, along: 0, vertical: 0, decel: 0, cameraDistance: 0, onboard: false, crowdNear: 0, racing: false };
 
   static async create(canvas: HTMLCanvasElement, trackId: string, condition: Condition, hour = 16.8, look: { paint: string; paint2: string } | null = null): Promise<LapScene> {
+    const debug = new URLSearchParams(location.search).has("perf") || (window as Window & { __lap3dDebug?: boolean }).__lap3dDebug === true;
+    const mark = (stage: string) => { if (debug) performance.mark(`lap3d:${stage}`); };
     const detail = carDetail();
     const [track, osm, photo, ground, skyline, treeAtlases] = await Promise.all([loadTrack(trackId), loadScenery(trackId), loadSurfaces(), loadCircuitGround(trackId), loadTrackSkyline(trackId), loadTreeAtlases(trackId)]);
+    mark("assets-ready");
     const scene = new LapScene(canvas, detail, condition === "wet", hour);
+    mark("renderer-ready");
     const world = await buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street: false, detail, treeAtlases, city: CITY_CIRCUITS.has(trackId) });
+    mark("world-ready");
     scene.scene.add(world.group);
     // this circuit's ground, kept: the corner view sets the shared one to its own corner when it opens
     scene.ground = currentGround();
@@ -187,6 +192,7 @@ export class LapScene {
     scene.scene.add(scene.car.car);
     scene.disposables.push(scene.car);
     await scene.car.ready;
+    mark("car-ready");
     return scene;
   }
 
@@ -337,11 +343,15 @@ export class LapScene {
    * all at once and freezes the page for seconds on a phone. Safe to skip; the lap then just starts slower.
    */
   async warm() {
+    const debug = new URLSearchParams(location.search).has("perf") || (window as Window & { __lap3dDebug?: boolean }).__lap3dDebug === true;
+    const mark = (stage: string) => { if (debug) performance.mark(`lap3d:${stage}`); };
     const ghost = this.makeGhost();
     await Promise.all([this.car.ready, ghost.ready]);
+    mark("cars-ready");
     const wasGhost = ghost.car.visible;
     ghost.car.visible = true;
     await this.renderer.compileAsync(this.scene, this.camera);
+    mark("shaders-ready");
     const seen = new Set<THREE.Texture>();
     this.scene.traverse((o) => {
       const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
@@ -354,8 +364,10 @@ export class LapScene {
       // Uploading many textures in one task makes the setup map unresponsive.
       if (++uploaded % 2 === 0) await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
+    mark("textures-ready");
     await new Promise((r) => setTimeout(r, 0));
     this.composer?.render(0.016);
+    mark("first-render-done");
     ghost.car.visible = wasGhost;
   }
 
