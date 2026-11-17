@@ -134,43 +134,45 @@ export default function Lap3D({ game, visible }: { game: Game; visible: boolean 
     <div className={`absolute inset-0 ${visible ? "" : "pointer-events-none invisible"}`} aria-hidden={!visible}>
       <canvas ref={canvas} className="h-full w-full" aria-label={t("The lap in 3D")} />
       {!scene && !failed && visible && <p className="absolute inset-0 grid place-items-center bg-night/70 text-[14px] text-steel">{t("Loading the circuit in 3D…")}</p>}
-      {/* one column above the Skip button (RaceHud: 112 px up on a phone, 12 px on a computer), so nothing overlaps */}
+      {/* broadcast-style: a slim row of chips just above the Skip button (bottom right), so the picture stays the show */}
       {scene && visible && (
-        <div className="absolute right-3 bottom-[calc(max(12px,env(safe-area-inset-bottom))+56px)] flex flex-col items-end gap-2 max-[520px]:bottom-[164px]">
+        <div className="absolute right-2 bottom-[calc(max(12px,env(safe-area-inset-bottom))+52px)] flex flex-col items-end gap-1.5">
           {ghostName !== null && (
-            <p className="border border-paint/25 bg-night/70 px-3 py-1.5 text-[13px] font-semibold text-paint backdrop-blur-sm">
-              {t("Ghost: {name}, the day's fastest", { name: ghostName || t("the leader") })}
-            </p>
+            <p className="wide border border-paint/20 bg-night/65 px-2 py-1 text-[11px] uppercase tracking-wide text-paint backdrop-blur-sm normal-case">{t("Ghost: {name}, the day's fastest", { name: ghostName || t("the leader") })}</p>
           )}
-          <button
-            className="border border-paint/25 bg-night/70 px-3 py-2 text-[13px] font-semibold text-paint backdrop-blur-sm"
-            onClick={() => {
-              const next = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
-              setSpeed(next);
-              try {
-                localStorage.setItem(SPEED_KEY, String(next));
-              } catch {
-                // private mode: the choice lasts the visit
-              }
-            }}
-            aria-label={t("Change speed")}
-          >
-            {t("Speed")}: {speed === 1 ? t("real time") : `${speed}×`}
-          </button>
-          <button
-            className="border border-paint/25 bg-night/70 px-3 py-2 text-[13px] font-semibold text-paint backdrop-blur-sm"
-            onClick={() => {
-              const next = !muted;
-              sound.current?.setMuted(next);
-              setMuted(next);
-            }}
-            aria-pressed={!muted}
-          >
-            {muted ? t("Sound: off") : t("Sound: on")}
-          </button>
-          <button className="border border-paint/25 bg-night/70 px-3 py-2 text-[13px] font-semibold text-paint backdrop-blur-sm" onClick={() => setCam((c) => CAMERAS[(CAMERAS.indexOf(c) + 1) % CAMERAS.length])} aria-label={t("Change camera")}>
-            {t("Camera")}: {t(CAMERA_NAME[cam])}
-          </button>
+          <div className="flex gap-1.5">
+            <button className="wide border border-paint/20 bg-night/65 px-2 py-1 text-[11px] uppercase tracking-wide text-paint backdrop-blur-sm" onClick={() => setCam((c) => CAMERAS[(CAMERAS.indexOf(c) + 1) % CAMERAS.length])} aria-label={`${t("Change camera")}: ${t(CAMERA_NAME[cam])}`}>
+              <span className="text-steel">{t("Cam")} </span>
+              {t(CAMERA_NAME[cam])}
+            </button>
+            <button
+              className="wide border border-paint/20 bg-night/65 px-2 py-1 text-[11px] uppercase tracking-wide text-paint backdrop-blur-sm"
+              onClick={() => {
+                const next = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
+                setSpeed(next);
+                try {
+                  localStorage.setItem(SPEED_KEY, String(next));
+                } catch {
+                  // private mode: the choice lasts the visit
+                }
+              }}
+              aria-label={`${t("Change speed")}: ${speed === 1 ? t("real time") : `${speed}×`}`}
+            >
+              {speed}×
+            </button>
+            <button
+              className={`wide border border-paint/20 bg-night/65 px-2 py-1 text-[11px] uppercase tracking-wide text-paint backdrop-blur-sm ${muted ? "text-steel line-through" : ""}`}
+              onClick={() => {
+                const next = !muted;
+                sound.current?.setMuted(next);
+                setMuted(next);
+              }}
+              aria-pressed={!muted}
+              aria-label={muted ? t("Sound: off") : t("Sound: on")}
+            >
+              {t("Sound")}
+            </button>
+          </div>
         </div>
       )}
     </div>

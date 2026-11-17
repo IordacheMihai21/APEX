@@ -6,6 +6,14 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-11-17",
+    title: "A cleaner 3D lap on phones, and the map answers your finger everywhere",
+    body: [
+      "On a phone the 3D lap now looks more like a broadcast: the corner list folds away while the lap runs, the camera, speed and sound controls are a slim row of chips, and the speed and gear sit in a compact graphic with Skip beside it, so the car fills the screen.",
+      "Before Lights out, dragging the map on the right-hand side of the screen did nothing: the 3D and Garage buttons were catching the touches around them. They don't any more.",
+    ],
+  },
+  {
     date: "2026-11-16",
     title: "Daily Quali 3D is live",
     body: [

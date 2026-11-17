@@ -282,7 +282,7 @@ function GameView({
           <ChevronDown className={`h-3.5 w-3.5 text-steel transition-transform ${towerOpen ? "rotate-180" : ""}`} />
         </button>
       )}
-      <div ref={tower} className={game.focus !== null || (phone && (!towerOpen || s.phase === "result")) ? "hidden" : ""}>
+      <div ref={tower} className={game.focus !== null || (phone && (!towerOpen || s.phase === "result" || racing)) ? "hidden" : ""}>
         <CornerTower
           rows={rows}
           active={s.activeGroup}
@@ -333,7 +333,8 @@ function useInset(game: Game, side: "bottom" | "right") {
 function ViewControls({ game, view3D, onToggle3D, onGarage }: { game: Game; view3D: boolean | null; onToggle3D: () => void; onGarage: () => void }) {
   const car = loadGarage();
   return (
-    <div className="absolute top-[140px] right-2 flex flex-col items-end">
+    // the column itself lets touches through to the map (it is as wide as its widest button); only the buttons take them
+    <div className="pointer-events-none absolute top-[140px] right-2 flex flex-col items-end [&>*]:pointer-events-auto">
       {view3D !== null && (
         <>
           {/* the lap's view as a broadcast-style switch: the lit side is the one you'll watch */}

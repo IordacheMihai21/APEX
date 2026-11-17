@@ -1245,6 +1245,8 @@ export const ES: Record<string, string> = {
   "Your lap vs the leader": "Tu vuelta contra el líder",
   "Change speed": "Cambiar velocidad",
   View: "Vista",
+  Cam: "Cám",
+  Sound: "Sonido",
   "Drag to turn the car": "Arrastra para girar el coche",
   "real time": "tiempo real",
   "Special livery": "Decoración especial",

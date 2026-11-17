@@ -159,21 +159,22 @@ export function RaceHud({ s, onSkip }: { s: Snapshot; onSkip: () => void }) {
 
       {/* onboard cluster, bottom centre */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center px-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-        <div className="w-full max-w-[320px] border border-line bg-night/90 px-3 pt-2.5 pb-2">
+        {/* compact on a phone, as a broadcast's speed graphic, so the picture and the Skip button beside it have room */}
+        <div className="w-full max-w-[320px] border border-line bg-night/90 px-3 pt-2.5 pb-2 max-[520px]:max-w-[210px] max-[520px]:px-2 max-[520px]:pt-1.5 max-[520px]:pb-1.5">
           <RevLights leds={moving ? s.drive.leds : 0} shift={moving && s.drive.shift} />
           <div className="mt-2 flex items-end justify-between">
             <div className="flex items-end gap-2.5">
-              <span className="wide num w-8 text-[44px] leading-[0.85] text-paint">{moving ? s.drive.gear : "N"}</span>
+              <span className="wide num w-8 text-[44px] leading-[0.85] text-paint max-[520px]:w-6 max-[520px]:text-[30px]">{moving ? s.drive.gear : "N"}</span>
               <span className="label pb-0.5">{t("Gear")}</span>
             </div>
             <div className="flex items-end gap-2">
-              <Segments text={String(speed).padStart(3, " ")} className="h-8 text-paint" ghost={0.1} />
+              <Segments text={String(speed).padStart(3, " ")} className="h-8 text-paint max-[520px]:h-5" ghost={0.1} />
               <span className="label pb-0.5">km/h</span>
             </div>
           </div>
         </div>
       </div>
-      <button className={`${secondaryBtn} absolute right-2 bg-night/85 bottom-[max(12px,env(safe-area-inset-bottom))] max-[520px]:bottom-[112px]`} onClick={onSkip}>
+      <button className={`${secondaryBtn} absolute right-2 bg-night/85 bottom-[max(12px,env(safe-area-inset-bottom))] max-[520px]:px-3 max-[520px]:py-1.5 max-[520px]:text-[13px]`} onClick={onSkip}>
         {t("Skip")}
       </button>
     </>
