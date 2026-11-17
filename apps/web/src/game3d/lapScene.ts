@@ -201,6 +201,8 @@ export class LapScene {
   private dashGear = 0;
   /** Same one-based gear shown on the steering wheel. */
   get wheelGear() { return this.dashGear + 1; }
+  /** Same 0–1 rev fraction used by the steering wheel's lights. */
+  get wheelRevs() { return Math.min(1, Math.max(0, (this.telemetry.v / GEAR_TOP[this.dashGear]))); }
   private ers = 0.9;
   private readonly fx = new LapEffects();
   private haze: HeatHazeEffect | null = null;
@@ -638,7 +640,7 @@ export class LapScene {
       this.car.setDash({
         gear: this.wheelGear,
         kmh: v * 3.6,
-        rpm: Math.min(1, Math.max(0, rpmIn(this.dashGear) / 12500)),
+        rpm: this.wheelRevs,
         lapMs: Math.max(0, Math.min(tMs, path.lapMs)),
         deltaMs: ghostMs != null && tMs > 500 ? path.timeAt(d) - ghostMs : null,
         ers: this.ers,

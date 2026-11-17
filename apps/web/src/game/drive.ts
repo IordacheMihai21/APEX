@@ -27,3 +27,12 @@ export function driveState(kmh: number): DriveState {
   const leds = Math.round(((rpm - RPM_MIN) / (RPM_MAX - RPM_MIN)) * REV_LEDS);
   return { gear: g, rpm, leds, shift: f > 0.97 && g < SHIFT_KMH.length - 1 };
 }
+
+/** The 3D race HUD uses the steering wheel's gear and rev fraction, not speed-based shift bands. */
+export function wheelDriveState(gear: number, revFraction: number): DriveState {
+  const rev = Math.max(0, Math.min(1, revFraction));
+  // Match the 15 thresholds drawn by the wheel in carF1.ts.
+  let leds = 0;
+  for (let i = 0; i < REV_LEDS; i++) if (rev > 0.55 + (i / REV_LEDS) * 0.42) leds++;
+  return { gear, rpm: rev * 12500, leds, shift: rev > 0.97 };
+}

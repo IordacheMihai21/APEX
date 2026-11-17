@@ -7,6 +7,14 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-18",
+    title: "Rev lights match the steering wheel; Braking Point retires",
+    body: [
+      "During a Daily Quali 3D lap, the green and blue rev lights on the race screen now follow the steering wheel through every gear, including fifth and above.",
+      "Braking Point has been removed from the games and its old links now lead to Make the corner. Past Braking Point results still count toward your streak.",
+    ],
+  },
+  {
+    date: "2026-11-18",
     title: "The Daily Quali gear display follows the steering wheel",
     body: ["During a 3D lap, the gear shown on the race screen now changes with the steering wheel's gear on both upshifts and downshifts."],
   },

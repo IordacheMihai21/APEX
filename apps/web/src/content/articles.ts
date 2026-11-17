@@ -182,7 +182,7 @@ export const ARTICLES: Article[] = [
         h: "Brake, release, turn",
         p: [
           "The braking point is only half of the stop. The other half is the release: when the driver comes off the brakes as the car reaches the corner's speed. Release too early and the car is still too fast; release too late and it slows more than it needs to and loses time in the middle of the corner.",
-          "Lapdle's Make the corner game is built on exactly these calls: when to brake, when to let go, and when to get back on the throttle, in one famous corner a day in 3D. Braking point is the purer version: five of the biggest stops in racing, one pedal, and a score for how close you came to the perfect point.",
+          "Lapdle's Make the corner game is built on exactly these calls: when to brake, when to let go, and when to get back on the throttle, in one famous corner a day in 3D.",
         ],
       },
     ],

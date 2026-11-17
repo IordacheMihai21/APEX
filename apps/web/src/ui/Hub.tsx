@@ -317,7 +317,6 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
   const answer = OUTLINES[mysteryAnswer(mystery.key)];
   const hl = loadHigherLower();
   const hlToday = game("higher-lower").today();
-  const bpToday = game("braking-point").today();
   const orderToday = game("corner-order").today();
   const mcToday = game("make-the-corner").today();
   const trapToday = game("speed-trap").today();
@@ -370,22 +369,6 @@ function GameCards({ onAction, group }: { onAction: (a: HubAction) => void; grou
           {["S", "K", "F", "J"].map((k, i) => (
             <span key={k} className={`pit-key wide !static !animate-none !text-[20px] ${i === 0 ? "" : "opacity-40"}`}>
               {k}
-            </span>
-          ))}
-        </span>
-      ),
-    },
-    {
-      game: "braking-point" as const,
-      title: game("braking-point").name,
-      blurb: game("braking-point").blurb,
-      status: bpToday.state === "done" ? t("Today {result}. Back tomorrow.", { result: bpToday.label }) : bpToday.state === "playing" ? bpToday.label : t("New today"),
-      cta: bpToday.state === "done" ? t("Practice stops") : bpToday.state === "playing" ? t("Finish today's stops") : t("Hit the brakes"),
-      art: (
-        <span className="flex items-end gap-1.5" aria-hidden="true">
-          {[300, 200, 100].map((m, i) => (
-            <span key={m} className="wide num grid place-items-center border-2 border-night bg-paint px-1.5 text-night" style={{ fontSize: 22 - i * 3, height: 36 - i * 5 }}>
-              {m}
             </span>
           ))}
         </span>

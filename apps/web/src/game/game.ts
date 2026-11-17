@@ -28,7 +28,7 @@ import type { SceneryData } from "./surroundings";
 import { C, lossColor } from "./palette";
 import { type PersonalBest, loadPB, loadSectorBests, logEvent, savePB, saveSectorBests } from "./storage";
 import { type Grade, type GroupGrade, gradeFor } from "../modes/grading";
-import { type DriveState, driveState } from "./drive";
+import { type DriveState, driveState, wheelDriveState } from "./drive";
 import { stretchOf } from "./stretch";
 import type { CornerData } from "../modes/makeCorner";
 
@@ -208,12 +208,15 @@ export class Game {
   private dirty = true;
   /** the 3D lap is over the map: the map's frames go undrawn (on a phone they'd halve the 3D's frame rate) */
   private covered = false;
-  private wheelGear: number | null = null;
-  /** Use the 3D steering wheel's gear for the race HUD while that view is active. */
-  setWheelGear(gear: number | null) {
-    if (this.wheelGear === gear) return;
-    this.wheelGear = gear;
-    this.emit();
+  private wheelDrive: DriveState | null = null;
+  /** Use the 3D steering wheel's gear and rev lights for the race HUD. */
+  setWheelDrive(gear: number, revFraction: number): void;
+  setWheelDrive(gear: null): void;
+  setWheelDrive(gear: number | null, revFraction = 0) {
+    const next = gear === null ? null : wheelDriveState(gear, revFraction);
+    const prev = this.wheelDrive;
+    this.wheelDrive = next;
+    if (prev?.gear !== next?.gear || prev?.leds !== next?.leds || prev?.shift !== next?.shift) this.emit();
   }
   setCovered(on: boolean) {
     this.covered = on;
@@ -393,7 +396,7 @@ export class Game {
             ? this.sectorPlan
             : this.sectorPlan.filter((x) => x.doneAtMs <= this.raceT)
           : [],
-      drive: { ...driveState(speed), ...(this.wheelGear === null ? {} : { gear: this.wheelGear }) },
+      drive: this.wheelDrive ?? driveState(speed),
       lapsUsed: this.lapsUsed,
       lapLimit: this.opts.lapLimit,
       locked: this.locked,

@@ -33,13 +33,6 @@ export const GAME_ABOUT: Record<GameId, { about: string[]; learn: string[] }> = 
     ],
     learn: ["why-monaco-is-slow", "learning-a-circuit"],
   },
-  "braking-point": {
-    about: [
-      "The biggest stops on a racing circuit take a car from well over 300 km/h to under 100 km/h in about three seconds. Drivers pick a fixed point to brake at, often a marker board counting down to the corner, and the best of them brake at the same spot to within a metre or two, lap after lap.",
-      "Brake a few metres too early and the time is gone for good. Brake a few metres too late and the car runs wide, or off. Braking point gives you the real approach to five of those stops a day, with the car at its real speed, and asks you to find the last moment you can still make the corner.",
-    ],
-    learn: ["braking-points", "trail-braking", "racing-in-the-wet"],
-  },
   "make-the-corner": {
     about: [
       "A corner is three moments. The car brakes hard in a straight line, rolls into the corner as the brakes come off and the steering goes on, and then the driver squeezes the throttle back on as the car unwinds towards the exit. Each moment comes at a single point on the road, and getting one wrong spoils the other two.",

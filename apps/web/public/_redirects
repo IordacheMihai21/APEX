@@ -3,3 +3,7 @@
 # address needs rewriting. Anything else falls through to a real 404 (404.html),
 # so a script from an old build fails cleanly and the app reloads into the new
 # one instead of receiving the home page in its place.
+/braking-point /make-the-corner 301
+/how-to-play/braking-point /how-to-play/make-the-corner 301
+/es/braking-point /es/make-the-corner 301
+/es/how-to-play/braking-point /es/how-to-play/make-the-corner 301

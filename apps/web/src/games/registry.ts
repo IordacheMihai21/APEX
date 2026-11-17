@@ -14,7 +14,6 @@ import { MYSTERY_TRIES, isOver, isSolved, loadMystery, mysteryDoneDays } from ".
 import { loadPitStop, secs, todaysStop } from "../modes/pitstop";
 import { DAILY_CALLS, dailyCalls, dailyDone, dailyDoneDays, dailyScore } from "../modes/higherLower";
 import { loadReaction } from "../modes/reaction";
-import { STOPS_PER_DAY, brakingDone, brakingDoneDays, brakingScore, dayStops } from "../modes/braking";
 import { CIRCUITS, GUIDE_CIRCUITS, circuitSlug } from "../modes/circuits";
 import { ARTICLES } from "../content/articles";
 import { CORNER_TEXT } from "../content/cornerText";
@@ -24,7 +23,7 @@ import { AERIAL_TRIES, aerialDoneDays, aerialGuesses, aerialOver, aerialSolved }
 import { MAX_POINTS as CORNER_MAX, RUNS_PER_DAY, cornerDoneDays, cornerDone, cornerScore, dayRuns } from "../modes/makeCornerDay";
 import { ORDER_TRIES, orderDoneDays, orderOver, orderSolved, orderTries } from "../modes/order";
 
-export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "braking-point" | "make-the-corner" | "corner-order" | "speed-trap" | "line-up" | "aerial" | "reaction";
+export type GameId = "quali" | "mystery" | "pit-stop" | "higher-lower" | "make-the-corner" | "corner-order" | "speed-trap" | "line-up" | "aerial" | "reaction";
 
 /** Where a game stands today, for the "Today" bar and the hub. */
 export interface TodayStatus {
@@ -45,8 +44,6 @@ export interface GameDef {
   cadence: "daily" | "endless";
   /** counts towards "x of y played today" */
   inDailySet: boolean;
-  /** a game that left the daily set on this day: the days it was finished before still count for the play streak */
-  dailyUntil?: string;
   /** one line, for "Play next" lists */
   tagline: string;
   /** two lines, for the hub card */
@@ -203,44 +200,6 @@ export const GAMES: GameDef[] = [
       return calls.length ? { state: "playing", label: tn(DAILY_CALLS - calls.length, "{n} call left", "{n} calls left") } : { state: "new", label: t("Not started") };
     },
     doneDays: dailyDoneDays,
-  },
-  {
-    id: "braking-point",
-    name: "Braking point",
-    short: "Braking",
-    route: "/braking-point",
-    cadence: "daily",
-    // a daily extra since Make the corner took its place in the set
-    inDailySet: false,
-    dailyUntil: "2026-10-17",
-    tagline: "Five big stops, brake as late as you dare",
-    blurb: "Flat out down the straight, then hit the brakes for the corner. Five real stops a day; too late and you're off.",
-    title: "Braking point: brake for the corner | Lapdle",
-    howTo: {
-      steps: [
-        "The car comes down a straight flat out, towards a real corner. The boards count down the metres to it.",
-        "Hit Brake (or Space) at the last moment you dare. The car then brakes as hard as the physics allows.",
-        "Score on how close you got to the perfect braking point. Too early costs time; too late and you arrive too fast, or go off.",
-      ],
-      tip: "Five stops a day, the same for everyone, out of 500 points. Practice stops are unlimited.",
-    },
-    guide: {
-      intro: "Braking point is a daily timing game: five of the biggest stops on real circuits, and one brake pedal.",
-      scoring:
-        "Each stop is scored out of 100 on how far you braked from the perfect braking point, the one the physics engine's perfect lap uses. Early costs less than late: 30 m early scores nothing, and so does 15 m late. Brake more than 20 m late, or arrive at the corner more than a quarter over its speed, and you go off the road for zero. Each stop gets a colour: purple within 2 m, green within 6 m, yellow within 12 m.",
-      tips: [
-        "The faster the straight, the earlier the braking point: speed takes distance to lose.",
-        "Use the boards. Most big stops start between the 150 and the 100 m boards.",
-        "Slow hairpins punish late braking the most: a few metres late is a lot of extra speed.",
-        "Early is safer than late. A late stop can score zero.",
-      ],
-    },
-    today(day = dateKey()) {
-      const stops = dayStops(day);
-      if (brakingDone(stops)) return { state: "done", label: `${brakingScore(stops)}/${STOPS_PER_DAY * 100}` };
-      return stops.length ? { state: "playing", label: tn(STOPS_PER_DAY - stops.length, "{n} stop left", "{n} stops left") } : { state: "new", label: t("Not started") };
-    },
-    doneDays: brakingDoneDays,
   },
   {
     id: "make-the-corner",

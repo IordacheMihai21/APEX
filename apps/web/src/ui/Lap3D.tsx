@@ -139,7 +139,7 @@ export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visibl
         sound.current?.resume();
       }
       scene.frame(lv.tMs);
-      game.setWheelGear(scene.wheelGear);
+      game.setWheelDrive(scene.wheelGear, scene.wheelRevs);
       const tele = scene.telemetry;
       // by the game's phase, not the scene's lap clock: on the first frame of the race that clock still reads 0, and
       // fading then silenced the whole lap until the next tap
@@ -149,7 +149,7 @@ export default function Lap3D({ game, visible, onTooSlow }: { game: Game; visibl
     raf = requestAnimationFrame(loop);
     return () => {
       cancelAnimationFrame(raf);
-      game.setWheelGear(null);
+      game.setWheelDrive(null);
       ro.disconnect();
       document.removeEventListener("visibilitychange", resetTiming);
       window.removeEventListener("pageshow", resetTiming);

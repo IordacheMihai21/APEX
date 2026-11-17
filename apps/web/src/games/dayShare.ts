@@ -16,7 +16,6 @@ const DONE_MARK: Partial<Record<GameId, string>> = {
   "pit-stop": "🔧",
   "higher-lower": "↕️",
   "make-the-corner": "🎯",
-  "braking-point": "🛑",
   "corner-order": "🔢",
   "speed-trap": "📸",
   "line-up": "🧩",

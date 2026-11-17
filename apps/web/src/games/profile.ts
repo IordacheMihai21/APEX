@@ -6,8 +6,9 @@
  * finished; a "perfect day" is the whole set.
  */
 import { dateKey } from "../modes/daily";
-import { DAILY_SET, GAMES, type GameId } from "./registry";
+import { DAILY_SET, type GameId } from "./registry";
 import { restoredDays } from "../online";
+import { brakingDoneDays } from "../modes/braking";
 
 export interface PlayStreak {
   /** days in a row with a daily game finished, up to today (or yesterday, until today is played) */
@@ -28,23 +29,21 @@ const previous = (key: string) => {
 };
 
 /** Which games of the daily set were finished on each day. */
-export function playedDays(): Map<string, GameId[]> {
-  const days = new Map<string, GameId[]>();
+export function playedDays(): Map<string, (GameId | "braking-point")[]> {
+  const days = new Map<string, (GameId | "braking-point")[]>();
   for (const g of DAILY_SET)
     for (const day of g.doneDays?.() ?? []) {
       const list = days.get(day) ?? [];
       list.push(g.id);
       days.set(day, list);
     }
-  // a game that has left the set still counts on the days it was part of it
-  for (const g of GAMES)
-    if (g.dailyUntil && !g.inDailySet)
-      for (const day of g.doneDays?.() ?? []) {
-        if (day >= g.dailyUntil) continue;
-        const list = days.get(day) ?? [];
-        list.push(g.id);
-        days.set(day, list);
-      }
+  // Retired Braking Point still counts for streaks on the days it belonged to the daily set.
+  for (const day of brakingDoneDays()) {
+    if (day >= "2026-10-17") continue;
+    const list = days.get(day) ?? [];
+    list.push("braking-point");
+    days.set(day, list);
+  }
   // days played on this player's other browser, brought back by a restore link (online.ts)
   for (const day of restoredDays()) if (!days.has(day)) days.set(day, []);
   return days;

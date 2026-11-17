@@ -4,7 +4,6 @@
   <url><loc>https://lapdle.com/mystery</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/pit-stop</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/higher-lower</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://lapdle.com/braking-point</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/make-the-corner</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/corner-order</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/speed-trap</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
@@ -17,7 +16,6 @@
   <url><loc>https://lapdle.com/how-to-play/mystery</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/pit-stop</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/higher-lower</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://lapdle.com/how-to-play/braking-point</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/make-the-corner</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/corner-order</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/speed-trap</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -84,7 +82,6 @@
   <url><loc>https://lapdle.com/es/mystery</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/es/pit-stop</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/es/higher-lower</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://lapdle.com/es/braking-point</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/es/make-the-corner</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/es/corner-order</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/es/speed-trap</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
@@ -97,7 +94,6 @@
   <url><loc>https://lapdle.com/es/how-to-play/mystery</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/es/how-to-play/pit-stop</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/es/how-to-play/higher-lower</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://lapdle.com/es/how-to-play/braking-point</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/es/how-to-play/make-the-corner</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/es/how-to-play/corner-order</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/es/how-to-play/speed-trap</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

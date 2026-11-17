@@ -11,7 +11,6 @@ import {
   CloudRain,
   CornersOut,
   FlagCheckered,
-  Gauge,
   type Icon,
   List,
   MapTrifold,
@@ -66,5 +65,4 @@ export const GameMarks = {
   mystery: make(Question),
   "pit-stop": make(Wrench),
   "higher-lower": make(ArrowsDownUp),
-  "braking-point": make(Gauge),
 } as const;

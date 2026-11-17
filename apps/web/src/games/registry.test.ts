@@ -34,6 +34,18 @@ describe("game registry", () => {
     }
   });
 
+  it("retires Braking Point routes and redirects old links to Make the corner", () => {
+    for (const prefix of ["", "/es"]) {
+      for (const segment of ["", "/how-to-play"]) {
+        const oldRoute = `${prefix}${segment}/braking-point`;
+        const newRoute = `${prefix}${segment}/make-the-corner`;
+        expect(PUBLIC_ROUTES).not.toContain(oldRoute);
+        expect(sitemap).not.toContain(`<loc>https://lapdle.com${oldRoute}</loc>`);
+        expect(redirects).toContain(`${oldRoute} ${newRoute} 301`);
+      }
+    }
+  });
+
   it("lists every pre-rendered content page in the sitemap, and gives each game a guide", () => {
     for (const route of CONTENT_ROUTES) expect(sitemap, `${route} in public/sitemap.xml`).toContain(`<loc>https://lapdle.com${route}</loc>`);
     for (const g of GAMES) {
