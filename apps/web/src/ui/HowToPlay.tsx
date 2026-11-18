@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { t, withLang } from "../i18n";
-import { type GameId, game as gameDef } from "../games/registry";
+import { guideFor, type GuideId } from "../content/guideCatalog";
 import { primaryBtn } from "./styles";
 
-type Game = Exclude<GameId, "quali">;
+type Game = Exclude<GuideId, "quali">;
 
 /** Whether a game's card (how-to or finish) is open: game keys stay off while one is. */
 export const modalOpen = () => typeof document !== "undefined" && !!document.querySelector('[aria-modal="true"]');
@@ -32,7 +32,7 @@ function markSeen(g: Game) {
 export function HowToPlay({ game, onOpenChange }: { game: Game; onOpenChange?: (open: boolean) => void }) {
   const [open, setOpen] = useState(() => !seen(game));
   const close = useRef<HTMLButtonElement>(null);
-  const def = gameDef(game);
+  const def = guideFor(game);
   const g = { name: def.name, steps: def.howTo?.steps ?? [], tip: def.howTo?.tip ?? "" };
 
   useEffect(() => {

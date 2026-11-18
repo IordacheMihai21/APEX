@@ -26,6 +26,10 @@
   <url><loc>https://lapdle.com/how-to-play/line-up</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/aerial</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/how-to-play/reaction</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/how-to-play/season</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/how-to-play/setup-season</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/how-to-play/fast-detective</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://lapdle.com/how-to-play/racing-context</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/circuits</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://lapdle.com/circuits/monza</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://lapdle.com/circuits/spa</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

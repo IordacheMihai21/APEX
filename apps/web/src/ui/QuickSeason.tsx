@@ -5,6 +5,7 @@ import { t } from "../i18n";
 import { evaluateQuick, readQuick, recordQuick, roundWet, SETUPS, setupLeft, startQuick, type QuickResult, type Setup } from "../modes/quickSeason";
 import { primaryBtn, secondaryBtn } from "./styles";
 import { SUPPORT_URL, supportClicked } from "../support";
+import { HowToPlay } from "./HowToPlay";
 
 const NAMES: Record<Setup, string> = { "low-drag": "Low drag", balanced: "Balanced", "high-grip": "High grip" };
 const NOTES: Record<Setup, string> = { "low-drag": "Straight-line speed", balanced: "All-round pace", "high-grip": "Cornering grip" };
@@ -58,7 +59,7 @@ export function QuickSeason({ onClassic }: { onClassic: () => void }) {
 
   return <div className="h-full overflow-y-auto bg-night text-paint">
     <div className="mx-auto max-w-[880px] px-4 pt-7 pb-16 md:px-8 md:pt-12">
-      <h1 className="wide text-[clamp(34px,8vw,72px)] leading-none">SETUP SPRINT</h1>
+      <div className="flex items-start justify-between gap-3"><h1 className="wide text-[clamp(34px,8vw,72px)] leading-none">SETUP SPRINT</h1><HowToPlay game="setup-season" /></div>
       <p className="mt-4 max-w-[55ch] text-[16px] leading-relaxed text-steel">{t("Twelve circuits. One setup call at each. Win every round to go 12-0. You have four of each setup for the whole season.")}</p>
 
       <div className="mt-5 grid grid-cols-[1fr_auto] items-end gap-4 border-y border-line py-3">

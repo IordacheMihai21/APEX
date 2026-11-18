@@ -1,4 +1,4 @@
-import { GAMES, type GameId, game } from "../games/registry";
+import { ALL_GUIDES, guideFor, type GuideId } from "./guideCatalog";
 import { t } from "../i18n";
 import { GUIDE_CIRCUITS, circuit, circuitBySlug, circuitSlug, factsOf, guideBySlug } from "../modes/circuits";
 import { CIRCUIT_TEXT } from "./circuitText";
@@ -7,7 +7,7 @@ import { article } from "./articles";
 import { cornerBySlug } from "./cornerText";
 
 /** A content page's address, parsed: About, How to play (the index or one game's guide), or Circuits (the index or one circuit's guide). */
-export type ContentPage = { page: "about" } | { page: "howto"; game?: GameId } | { page: "circuits"; id?: string } | { page: "trivia"; id?: string } | { page: "learn"; slug?: string } | { page: "corners"; slug?: string } | { page: "updates" };
+export type ContentPage = { page: "about" } | { page: "howto"; game?: GuideId } | { page: "circuits"; id?: string } | { page: "trivia"; id?: string } | { page: "learn"; slug?: string } | { page: "corners"; slug?: string } | { page: "updates" };
 
 export function parseContent(path: string): ContentPage | null {
   const p = path.replace(/^\/+|\/+$/g, "");
@@ -15,7 +15,7 @@ export function parseContent(path: string): ContentPage | null {
   if (p === "updates") return { page: "updates" };
   if (p === "how-to-play") return { page: "howto" };
   const m = /^how-to-play\/([a-z-]+)$/.exec(p);
-  if (m && GAMES.some((g) => g.id === m[1])) return { page: "howto", game: m[1] as GameId };
+  if (m && ALL_GUIDES.some((g) => g.id === m[1])) return { page: "howto", game: m[1] as GuideId };
   if (p === "circuits") return { page: "circuits" };
   const c = /^circuits\/([a-z-]+)$/.exec(p);
   const found = c && guideBySlug(c[1]);
@@ -101,8 +101,8 @@ export function contentMeta(c: ContentPage): { title: string; description: strin
   if (!c.game)
     return {
       title: t("How to play Lapdle: rules, scoring and tips | Lapdle"),
-      description: clip(t("Rules, scoring and tips for every Lapdle game: {games}.", { games: GAMES.map((g) => g.name).join(", ") })),
+      description: clip(t("Rules, scoring and tips for every Lapdle game: {games}.", { games: ALL_GUIDES.map((g) => g.name).join(", ") })),
     };
-  const g = game(c.game);
+  const g = guideFor(c.game);
   return { title: t("How to play {game}: rules, scoring and tips | Lapdle", { game: g.name }), description: clip(`${g.guide.intro} ${g.guide.scoring}`) };
 }

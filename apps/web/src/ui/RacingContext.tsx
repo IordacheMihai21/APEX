@@ -4,6 +4,7 @@ import { gameFinished, gameStarted, shared } from "../games/events";
 import { CONTEXT_SOURCE, DRIVERS, contextClues, contextGuesses, ranksFor, recordContextGuess, revealContextClue, secretDriver, type Driver } from "../modes/racingContext";
 import { primaryBtn } from "./styles";
 import { SUPPORT_URL, supportClicked } from "../support";
+import { HowToPlay } from "./HowToPlay";
 
 export function RacingContext() {
   const secret = useMemo(secretDriver, []);
@@ -58,7 +59,7 @@ export function RacingContext() {
   };
   return <div className="h-full overflow-y-auto bg-night text-paint">
     <div className="mx-auto max-w-[760px] px-4 pt-7 pb-16 md:px-8 md:pt-12">
-      <h1 className="wide text-[clamp(34px,8vw,64px)] leading-none">RACING CONTEXT</h1>
+      <div className="flex items-start justify-between gap-3"><h1 className="wide text-[clamp(34px,8vw,64px)] leading-none">RACING CONTEXT</h1><HowToPlay game="racing-context" /></div>
       <p className="mt-4 max-w-[58ch] text-[16px] leading-relaxed text-steel">{t("Find today's secret racing driver. Every guess gets a similarity rank: #1 is the answer. You have unlimited guesses.")}</p>
       <div className="mt-7 border-y border-line py-4 text-[14px] text-steel">{t("Closeness uses nationality, teams, years raced and career records. A lower rank is closer.")} <span className="block mt-2 text-paint">{t("Green is very close; yellow is close; orange is warm; red is far.")}</span></div>
       {!solved && <div className="relative mt-8">

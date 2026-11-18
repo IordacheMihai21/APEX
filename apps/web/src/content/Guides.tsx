@@ -1,4 +1,5 @@
-import { GAMES, type GameDef, type GameId, game } from "../games/registry";
+import { GAMES } from "../games/registry";
+import { ALL_GUIDES, guideFor, type GuideId } from "./guideCatalog";
 import { t, withLang } from "../i18n";
 import { SUPPORT_URL, supportClicked } from "../support";
 
@@ -30,7 +31,7 @@ export function Section({ title, children }: { title: string; children: React.Re
 }
 
 /** Where a game is played: its own page, or the hub for the Daily Quali. */
-const playHref = (g: GameDef) => withLang(g.route ?? "/");
+const playHref = (g: { route: string | null }) => withLang(g.route ?? "/");
 
 export function HowToPlayIndex() {
   return (
@@ -43,13 +44,13 @@ export function HowToPlayIndex() {
         </p>
       </header>
       <ul className="divide-y divide-line border-y border-line">
-        {GAMES.map((g) => (
+        {ALL_GUIDES.map((g) => (
           <li key={g.id}>
             <a href={withLang(`/how-to-play/${g.id}`)} className="group flex items-start gap-4 py-4">
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
                   <span className="wide text-[20px] leading-tight text-paint">{g.name}</span>
-                  {g.inDailySet && <span className="bg-ink px-1.5 py-px text-[11px] font-bold tracking-[0.04em] text-night uppercase">{t("Daily")}</span>}
+                  {g.cadence === "daily" && <span className="bg-ink px-1.5 py-px text-[11px] font-bold tracking-[0.04em] text-night uppercase">{t("Daily")}</span>}
                 </span>
                 <span className="mt-1 block text-[15px] leading-snug text-steel">{g.guide.intro}</span>
               </span>
@@ -62,9 +63,9 @@ export function HowToPlayIndex() {
   );
 }
 
-export function HowToPlayGuide({ id }: { id: GameId }) {
-  const g = game(id);
-  const others = GAMES.filter((x) => x.id !== id);
+export function HowToPlayGuide({ id }: { id: GuideId }) {
+  const g = guideFor(id);
+  const others = ALL_GUIDES.filter((x) => x.id !== id);
   return (
     <Page>
       <header>

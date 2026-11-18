@@ -7,6 +7,12 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-18",
+    title: "Guides for the new racing games",
+    body: ["Perfect Season, Setup Sprint, The Fast Detective and Racing Context now have the same in-game How to play card and full guide as the other Lapdle games. Each guide covers the rules, scoring and tips."],
+    links: [["Browse the guides", "/how-to-play"]],
+  },
+  {
+    date: "2026-11-18",
     title: "Corner clues come alive",
     body: [
       "The Fast Detective now shows the actual corner shape. Weather, approach speed, braking, apex and power appear on the same diagram as each clue unlocks, followed by a replay you can watch again.",

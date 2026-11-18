@@ -5,6 +5,7 @@ import { t } from "../i18n";
 import { clearDraft, currentSquad, DEFAULT_CONFIG, DRAFT_SOURCE, draftComplete, eligibleSquads, finishDraft, optionsFor, pickDraft, readDraft, REROLLS, saveRun, seasonStandings, simulateDraft, SLOT_NAME, SLOTS, spinDraft, startDraft, teamRating, wins, type Candidate, type DraftConfig, type DraftRun, type Slot } from "../modes/draftSeason";
 import { SUPPORT_URL, supportClicked } from "../support";
 import { primaryBtn, secondaryBtn } from "./styles";
+import { HowToPlay } from "./HowToPlay";
 
 const PHILOSOPHY = [
   { id: "balanced", name: "Balanced", note: "A little pace everywhere" },
@@ -80,7 +81,7 @@ export function DraftSeason({ onSetup, onClassic }: { onSetup: () => void; onCla
   const validPool = eligibleSquads(config).length >= SLOTS.length;
 
   return <div ref={scroll} className="h-full overflow-y-auto bg-night text-paint"><div className="mx-auto max-w-[880px] px-4 pt-7 pb-16 md:px-8 md:pt-12">
-    <h1 className="wide text-[clamp(34px,8vw,70px)] leading-none">PERFECT SEASON</h1>
+    <div className="flex items-start justify-between gap-3"><h1 className="wide text-[clamp(34px,8vw,70px)] leading-none">PERFECT SEASON</h1><HowToPlay game="season" /></div>
     <p className="mt-4 max-w-[60ch] text-[16px] leading-relaxed text-steel">{t("Spin a constructor and season. Draft one piece of that team. Build seven slots, then simulate twelve races. Can you go 12-0?")}</p>
 
     {!run && <section className="mt-8 border-t border-line pt-5" aria-label={t("Set up your draft")}>

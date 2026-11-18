@@ -5,6 +5,7 @@ import { buildDetectiveCase, detectiveAnswer, gradeDetective, saveDetective, typ
 import { primaryBtn, secondaryBtn } from "./styles";
 import { SUPPORT_URL, supportClicked } from "../support";
 import { DetectiveVisual } from "./DetectiveVisual";
+import { HowToPlay } from "./HowToPlay";
 
 export function FastDetective() {
   const [case_, setCase] = useState<DetectiveCase | null>(null);
@@ -51,7 +52,7 @@ export function FastDetective() {
 
   return <div className="h-full overflow-y-auto bg-night text-paint">
     <div className="mx-auto max-w-[760px] px-4 pt-7 pb-16 md:px-8 md:pt-12">
-      <h1 className="wide text-[clamp(34px,8vw,64px)] leading-none">THE FAST DETECTIVE</h1>
+      <div className="flex items-start justify-between gap-3"><h1 className="wide text-[clamp(34px,8vw,64px)] leading-none">THE FAST DETECTIVE</h1><HowToPlay game="fast-detective" /></div>
       <p className="mt-4 max-w-[55ch] text-[16px] leading-relaxed text-steel">{t("Five clues. One car approaching a corner. Decide if it makes the turn, then guess the speed it actually carries.")}</p>
       {error && <p className="mt-7 text-kerb" role="alert">{t("The case could not load. Reload to try again.")}</p>}
       {!case_ && !error && <p className="mt-7 text-steel" role="status">{t("Loading today's case…")}</p>}

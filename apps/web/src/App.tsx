@@ -4,6 +4,7 @@ import { Pitlane } from "./ui/Pitlane";
 import { InAppBanner, RestoreArrival } from "./ui/Restore";
 import { GAME_PAGES, type GameId, type GamePage, type InfoPage, PAGES, game } from "./games/registry";
 import { type ContentPage, contentMeta, contentPath, parseContent } from "./content/meta";
+import type { GuideId } from "./content/guideCatalog";
 import { flushSync } from "react-dom";
 import { colourBlind, setColourBlind } from "./game/palette";
 import { CATALOG, loadScenery, loadTrack } from "./game/catalog";
@@ -78,7 +79,7 @@ const RacingContext = lazy(() => fresh(() => import("./ui/RacingContext")).then(
 
 /** A screen with its own address: a game's page or an info page (both declared in games/registry). */
 type Mini = GamePage | InfoPage;
-type Screen = { kind: "hub" } | { kind: "draft-season" } | { kind: "quick-season" } | { kind: "fast-detective" } | { kind: "racing-context" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "learn"; slug?: string } | { kind: "corners"; slug?: string } | { kind: "updates" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "make-the-corner" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "aerial" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "championship" } | { kind: "fastest" } | { kind: "team" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+type Screen = { kind: "hub" } | { kind: "draft-season" } | { kind: "quick-season" } | { kind: "fast-detective" } | { kind: "racing-context" } | { kind: "about" } | { kind: "howto"; game?: GuideId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "learn"; slug?: string } | { kind: "corners"; slug?: string } | { kind: "updates" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "make-the-corner" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "aerial" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "championship" } | { kind: "fastest" } | { kind: "team" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 /** A practice link (?play=practice&track=…&cond=…), as the circuit guides use. */
 function practiceFromQuery(search: string): Screen | null {
