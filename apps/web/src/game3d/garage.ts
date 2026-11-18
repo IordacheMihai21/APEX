@@ -21,6 +21,8 @@ export interface Garage {
 /** the paints on offer: no team's colours copied, all bright enough to read on a track */
 export const PAINTS = ["#ff6a13", "#e10600", "#1e5bc6", "#00a19c", "#2fa84f", "#ffd400", "#ff2d8a", "#7a3cff", "#f2f2ee", "#141518"];
 export const PAINTS2 = ["#141518", "#f2f2ee", "#3b4048", "#c9a227", "#0d2a5c"];
+/** One friend who plays from your link unlocks this ultraviolet and acid-lime car. */
+export const PULSE_LIVERY = { paint: "#6945ff", paint2: "#b8ff3b" };
 /** the special livery, for three friends who played from your link: hot pink with turquoise, as the Neon grid car */
 export const NEON_LIVERY = { paint: "#ff2d95", paint2: "#19e3d6" };
 

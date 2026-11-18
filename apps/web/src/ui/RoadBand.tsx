@@ -30,7 +30,7 @@ export function RoadBand() {
 
   const pct = road ? Math.min(100, (road.today / ROAD_GOAL) * 100) : 0;
   const rewards: [number, string][] = [
-    [1, t("{colour} line colour", { colour: "Magenta" })],
+    [1, t("Magenta line colour and Pulse livery")],
     [3, dateKey() <= "2026-11-23" ? t("The Neon car on the team grid, this week only, or any colour") : t("Pick your car colour on the team grid")],
     [BADGE_FRIENDS, t("Gold star on the board")],
   ];

@@ -3,8 +3,9 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { buildPaddock } from "../game3d/paddock";
 import { SOFT_RED, buildCarF1, carDetail } from "../game3d/carF1";
-import { unlocks } from "../community";
-import { type Garage, NEON_LIVERY, PAINTS, PAINTS2, isChampion, loadGarage, numberToday, saveGarage, validNumber } from "../game3d/garage";
+import { refreshInvites, useCommunity } from "../community";
+import { type Garage, NEON_LIVERY, PULSE_LIVERY, PAINTS, PAINTS2, isChampion, loadGarage, numberToday, saveGarage, validNumber } from "../game3d/garage";
+import { syncGarageLook } from "../online";
 import { t } from "../i18n";
 
 /**
@@ -21,8 +22,13 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
   const [typed, setTyped] = useState(() => (g.number ? String(g.number) : ""));
   const car = useRef<ReturnType<typeof buildCarF1> | null>(null);
   const look = useRef<((paint: string, number: number | null) => void) | null>(null);
-  const neonOn = unlocks().friends >= 3;
+  const { friends } = useCommunity();
+  const neonOn = friends >= 3;
   const neonPicked = g.paint === NEON_LIVERY.paint && g.paint2 === NEON_LIVERY.paint2;
+  const pulseOn = friends >= 1;
+  const pulsePicked = g.paint === PULSE_LIVERY.paint && g.paint2 === PULSE_LIVERY.paint2;
+
+  useEffect(() => { void refreshInvites(); }, []);
 
   useEffect(() => {
     let live = true;
@@ -138,7 +144,8 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
     car.current?.setNumber(numberToday(g, champion));
     look.current?.(g.paint, numberToday(g, champion));
     saveGarage(g);
-  }, [g, champion]);
+    void syncGarageLook();
+  }, [g, champion, friends]);
 
   const pickNumber = (s: string) => {
     const clean = s.replace(/\D/g, "").slice(0, 2);
@@ -193,6 +200,19 @@ export function Garage3D({ onClose }: { onClose: () => void }) {
         </fieldset>
         <fieldset>
           <legend className="mb-2 text-[12px] font-semibold text-steel uppercase">{t("Special livery")}</legend>
+          <div className="mb-3 flex items-center gap-3">
+            <button
+              className={`h-9 w-16 border-2 ${pulsePicked ? "border-paint" : "border-transparent"} disabled:opacity-35`}
+              style={{ background: `linear-gradient(90deg, ${PULSE_LIVERY.paint} 55%, ${PULSE_LIVERY.paint2} 55%)` }}
+              disabled={!pulseOn}
+              onClick={() => setG((x) => ({ ...x, ...PULSE_LIVERY }))}
+              aria-label={t("Pulse livery")}
+              aria-pressed={pulsePicked}
+            />
+            <p className="text-[13px] text-steel">
+              {pulseOn ? t("Pulse: unlocked when one invited friend plays.") : <><span>{t("Invite one friend who plays to unlock Pulse.")}</span>{" "}<a className="underline" href="/team">{t("Invite friends")}</a></>}
+            </p>
+          </div>
           <div className="flex items-center gap-3">
             <button
               className={`h-9 w-16 border-2 ${neonPicked ? "border-paint" : "border-transparent"} disabled:opacity-35`}

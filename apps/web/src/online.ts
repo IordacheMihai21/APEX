@@ -109,6 +109,7 @@ export async function submitDailyLine(b: Board, knots: number[]): Promise<Standi
     if (!res.ok) return null;
     const s = (await res.json()) as Standing;
     writeCache(b, s);
+    void syncGarageLook();
     return s;
   } catch {
     return null;
@@ -209,6 +210,8 @@ export interface BoardRow {
   nickname: string;
   lapMs: number;
   badge: boolean;
+  paint?: string;
+  paint2?: string;
 }
 
 /** The nickname this device put on the board (null: none). */
@@ -223,7 +226,16 @@ export function myNickname(): string | null {
 /** Today's named board: each named player's position among all of the day's players (null: unreachable). */
 export async function fetchBoard(b: Board, limit = 10): Promise<BoardRow[] | null> {
   const rows = await rpc<{ pos: number; nickname: string; lap_ms: number; badge: boolean }[]>("daily_board", { p_day: b.day, p_track: b.trackId, p_condition: b.condition, p_limit: limit });
-  return rows && rows.map((r) => ({ pos: r.pos, nickname: r.nickname, lapMs: r.lap_ms, badge: r.badge }));
+  return withGarageLooks(rows && rows.map((r) => ({ pos: r.pos, nickname: r.nickname, lapMs: r.lap_ms, badge: r.badge })));
+}
+
+/** Publish the local 3D car colours for this device's named standings entry. */
+export async function syncGarageLook(): Promise<void> {
+  if (!ONLINE || !myNickname()) return;
+  const [{ loadGarage }, { myInviteCode }] = await Promise.all([import("./game3d/garage"), import("./community")]);
+  const { paint, paint2 } = loadGarage();
+  await rpc<string>("set_garage_look", { p_device: deviceId(), p_code: myInviteCode(), p_paint: paint, p_paint2: paint2 });
+  window.dispatchEvent(new CustomEvent(EVENT, { detail: "garage" }));
 }
 
 /**
@@ -241,6 +253,7 @@ export async function setNickname(nickname: string | null): Promise<"ok" | "take
     if (saved) localStorage.setItem(NICK_KEY, saved);
     else localStorage.removeItem(NICK_KEY);
     window.dispatchEvent(new CustomEvent(EVENT, { detail: "nickname" }));
+    if (saved) void syncGarageLook();
     return "ok";
   } catch {
     return "failed";
@@ -257,11 +270,26 @@ export interface ChampionRow {
   streak: number;
   total: number;
   badge: boolean;
+  paint?: string;
+  paint2?: string;
+}
+
+type PaintedRow = { nickname: string | null; paint?: string; paint2?: string };
+
+/** Named drivers' public Garage colours, with the default look when the optional RPC is not deployed yet. */
+async function withGarageLooks<T extends PaintedRow>(rows: T[] | null): Promise<T[] | null> {
+  if (!rows?.length) return rows;
+  const names = [...new Set(rows.map((r) => r.nickname).filter((name): name is string => !!name))];
+  if (!names.length) return rows;
+  const looks = await rpc<{ nickname: string; paint: string; paint2: string }[]>("standings_looks", { p_names: names });
+  if (!looks) return rows;
+  const byName = new Map(looks.map((look) => [look.nickname, look]));
+  return rows.map((row) => ({ ...row, ...(row.nickname ? byName.get(row.nickname) : undefined) }));
 }
 
 /** This month's Championship: the named players with the most Grands Prix (null: unreachable). */
 export async function fetchChampionship(today: string, limit = 10): Promise<ChampionRow[] | null> {
-  return rpc<ChampionRow[]>("championship", { p_today: today, p_limit: limit });
+  return withGarageLooks(await rpc<ChampionRow[]>("championship", { p_today: today, p_limit: limit }));
 }
 
 // ---- restore: the same player on another browser -------------------------------------------------------------------
@@ -337,12 +365,14 @@ export interface DayRow {
   nickname: string | null;
   lapMs: number;
   badge: boolean;
+  paint?: string;
+  paint2?: string;
 }
 
 /** Everyone who set a lap on a day's Daily Quali, one place each (the standings page). */
 export async function fetchDayBoard(day: string, trackId: string, condition: Condition, limit = 200): Promise<DayRow[] | null> {
   const rows = await rpc<{ pos: number; nickname: string | null; lap_ms: number; badge: boolean }[]>("day_board", { p_day: day, p_track: trackId, p_condition: condition, p_limit: limit });
-  return rows ? rows.map((r) => ({ pos: r.pos, nickname: r.nickname, lapMs: r.lap_ms, badge: r.badge })) : null;
+  return withGarageLooks(rows ? rows.map((r) => ({ pos: r.pos, nickname: r.nickname, lapMs: r.lap_ms, badge: r.badge })) : null);
 }
 
 /** A daily game finished today: noted on today's row (only splits ties in the Championship). */

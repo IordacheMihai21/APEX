@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { t } from "../i18n";
+import { CarColours } from "./CarColours";
 
 /** Podium colours for the position tabs: gold, silver, bronze. */
 export const PODIUM = ["#f5c518", "#c0c7d1", "#cd8a4a"];
@@ -14,6 +15,8 @@ export interface TowerRowData {
   note?: string;
   mine?: boolean;
   badge?: boolean;
+  paint?: string;
+  paint2?: string;
 }
 
 /** Plays the tower's build-up once, when it first comes into view (rows stay put afterwards). */
@@ -72,6 +75,7 @@ export function Tower({ rows, hot, label }: { rows: TowerRowData[]; hot?: string
               {r.pos}
             </span>
             <span className="flex min-w-0 flex-1 items-center gap-2 pl-2">
+              <CarColours paint={r.name ? r.paint : "#8a9099"} paint2={r.name ? r.paint2 : "#3b4048"} />
               <span className={`truncate text-[15px] font-semibold ${r.name ? (r.mine ? "text-ink" : "text-paint") : "text-steel italic"}`}>{r.name ?? t("Unnamed driver")}</span>
               {r.badge && <span className="text-[#f5c518]" aria-label={t("Brought 10 friends to Lapdle")}>★</span>}
               {r.mine && <span className="shrink-0 bg-ink px-1.5 py-px text-[10px] font-bold tracking-[0.06em] text-night uppercase">{t("You")}</span>}

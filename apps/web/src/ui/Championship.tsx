@@ -62,7 +62,7 @@ export function Championship() {
             }
             subtitle={t("A Grand Prix is a day you play a daily game. Resets on the 1st.")}
             accent="var(--color-ink)"
-            rows={rows?.map((r) => ({ pos: r.pos, name: r.nickname, value: `${r.gps} GP`, note: r.streak > 1 ? t("{n} in a row", { n: r.streak }) : undefined, mine: r.nickname === mine, badge: r.badge }))}
+            rows={rows?.map((r) => ({ pos: r.pos, name: r.nickname, value: `${r.gps} GP`, note: r.streak > 1 ? t("{n} in a row", { n: r.streak }) : undefined, mine: r.nickname === mine, badge: r.badge, paint: r.paint, paint2: r.paint2 }))}
             empty={t("No names in this month's standings yet. Be the first.")}
             footer={<FullLink href="/championship" />}
           />
@@ -71,7 +71,7 @@ export function Championship() {
             subtitle={`${t("Daily Quali #{n}", { n: dailyNumber(today) })} · ${info?.flag ?? ""} ${info?.name ?? ""}, ${condName}`}
             accent="var(--color-purple)"
             hot="var(--color-purple)"
-            rows={fast?.map((r) => ({ pos: r.pos, name: r.nickname, value: lapTime(r.lapMs), note: gap(r.lapMs, lead) || undefined, mine: !!mine && r.nickname === mine, badge: r.badge }))}
+            rows={fast?.map((r) => ({ pos: r.pos, name: r.nickname, value: lapTime(r.lapMs), note: gap(r.lapMs, lead) || undefined, mine: !!mine && r.nickname === mine, badge: r.badge, paint: r.paint, paint2: r.paint2 }))}
             empty={t("No laps yet today. Be the first on the podium.")}
             footer={<FullLink href="/fastest" />}
           />

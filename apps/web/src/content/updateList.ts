@@ -7,6 +7,14 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-18",
+    title: "Pulse livery and your car colours in the standings",
+    body: [
+      "When one friend you invited plays a daily game, the ultraviolet and lime Pulse livery unlocks in your 3D Garage. Neon still unlocks after three friends.",
+      "Named drivers' chosen Garage paint and second colour now appear on their cars in the Daily Quali and Championship standings.",
+    ],
+  },
+  {
+    date: "2026-11-18",
     title: "Rev lights match the steering wheel; Braking Point retires",
     body: [
       "During a Daily Quali 3D lap, the green and blue rev lights on the race screen now follow the steering wheel through every gear, including fifth and above.",

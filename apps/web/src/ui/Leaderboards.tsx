@@ -150,10 +150,10 @@ export function FastestPage() {
             <Stat label={t("Your place")} value={me ? `P${me.pos}` : "-"} tone={me ? "var(--color-ink)" : undefined} />
           </Stats>
           <div className="mt-10">
-            <Podium hot="var(--color-purple)" entries={rows.slice(0, 3).map((r) => ({ name: r.nickname, value: lapTime(r.lapMs), sub: gap(r.lapMs, lead), mine: !!mine && r.nickname === mine }))} />
+            <Podium hot="var(--color-purple)" entries={rows.slice(0, 3).map((r) => ({ name: r.nickname, value: lapTime(r.lapMs), sub: gap(r.lapMs, lead), mine: !!mine && r.nickname === mine, paint: r.paint, paint2: r.paint2 }))} />
           </div>
           <Classification
-            rows={rows.map((r) => ({ pos: r.pos, name: r.nickname, value: lapTime(r.lapMs), note: gap(r.lapMs, lead) || undefined, mine: !!mine && r.nickname === mine, badge: r.badge }))}
+            rows={rows.map((r) => ({ pos: r.pos, name: r.nickname, value: lapTime(r.lapMs), note: gap(r.lapMs, lead) || undefined, mine: !!mine && r.nickname === mine, badge: r.badge, paint: r.paint, paint2: r.paint2 }))}
             hot="var(--color-purple)"
             label={t("Fastest today")}
             mine={mine}
@@ -197,9 +197,9 @@ export function ChampionshipPage() {
             <Stat label={t("Your place")} value={me ? `P${me.pos}` : "-"} tone={me ? "var(--color-ink)" : undefined} />
           </Stats>
           <div className="mt-10">
-            <Podium entries={rows.slice(0, 3).map((r) => ({ name: r.nickname, value: value(r), sub: note(r), mine: r.nickname === mine }))} />
+            <Podium entries={rows.slice(0, 3).map((r) => ({ name: r.nickname, value: value(r), sub: note(r), mine: r.nickname === mine, paint: r.paint, paint2: r.paint2 }))} />
           </div>
-          <Classification rows={rows.map((r) => ({ pos: r.pos, name: r.nickname, value: value(r), note: note(r), mine: r.nickname === mine, badge: r.badge }))} label={t("Championship")} mine={mine} />
+          <Classification rows={rows.map((r) => ({ pos: r.pos, name: r.nickname, value: value(r), note: note(r), mine: r.nickname === mine, badge: r.badge, paint: r.paint, paint2: r.paint2 }))} label={t("Championship")} mine={mine} />
         </>
       ) : (
         <Status state={rows === undefined ? undefined : rows === null ? null : "empty"} empty={t("No names in this month's standings yet. Be the first.")} />

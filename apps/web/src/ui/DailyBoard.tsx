@@ -5,6 +5,7 @@ import { t } from "../i18n";
 import { unlocks } from "../community";
 import { lapTime } from "./format";
 import { secondaryBtn } from "./styles";
+import { CarColours } from "./CarColours";
 
 type Board = { day: string; trackId: string; condition: "dry" | "wet" | "lowdf" };
 
@@ -43,8 +44,9 @@ export function DailyBoard({ board }: { board: Board }) {
       {rows && rows.length > 0 ? (
         <ol className="mt-2 divide-y divide-line">
           {rows.map((r) => (
-            <li key={r.nickname} className={`flex items-baseline gap-3 py-1.5 text-[14px] ${r.nickname === mine ? "text-ink" : "text-paint"}`}>
+            <li key={r.nickname} className={`flex items-center gap-3 py-1.5 text-[14px] ${r.nickname === mine ? "text-ink" : "text-paint"}`}>
               <span className="num w-7 shrink-0 text-right text-steel">P{r.pos}</span>
+              <CarColours paint={r.paint} paint2={r.paint2} />
               <span className="min-w-0 flex-1 truncate font-semibold">
                 {r.nickname}
                 {r.badge && (

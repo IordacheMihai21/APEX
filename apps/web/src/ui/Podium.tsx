@@ -1,5 +1,6 @@
 import { t } from "../i18n";
 import { PODIUM } from "./Tower";
+import { CarColours } from "./CarColours";
 
 export interface PodiumEntry {
   name: string | null;
@@ -8,6 +9,8 @@ export interface PodiumEntry {
   /** small line under it: the gap to P1, "4 in a row" */
   sub?: string;
   mine?: boolean;
+  paint?: string;
+  paint2?: string;
 }
 
 /**
@@ -29,6 +32,7 @@ export function Podium({ entries, hot }: { entries: (PodiumEntry | undefined)[];
           <div key={pos} className="flex min-w-0 flex-col items-center text-center">
             {e ? (
               <div className="podium-name flex w-full flex-col items-center px-1" style={{ animationDelay: `${delay + 550}ms` }}>
+                <CarColours paint={e.name ? e.paint : "#8a9099"} paint2={e.name ? e.paint2 : "#3b4048"} />
                 <span className={`w-full truncate text-[14px] leading-tight font-semibold sm:text-[17px] ${e.name ? (e.mine ? "text-ink" : "text-paint") : "text-steel italic"}`}>{e.name ?? t("Unnamed driver")}</span>
                 <span className="num mt-1 text-[16px] font-bold sm:text-[22px]" style={{ color: pos === 1 && hot ? hot : "var(--color-paint)" }}>
                   {e.value}
