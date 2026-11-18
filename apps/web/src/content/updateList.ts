@@ -7,6 +7,15 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-18",
+    title: "Corner clues come alive",
+    body: [
+      "The Fast Detective now shows the actual corner shape. Weather, approach speed, braking, apex and power appear on the same diagram as each clue unlocks, followed by a replay you can watch again.",
+      "Racing Context now animates each new similarity bar and moves guesses smoothly into rank order. Reduced-motion settings are respected.",
+    ],
+    links: [["Solve The Fast Detective", "/fast-detective"], ["Find the driver", "/racing-context"]],
+  },
+  {
+    date: "2026-11-18",
     title: "Perfect Season now starts with a team draft",
     body: [
       "Spin a real constructor and season, draft two drivers and five parts of your team's performance, then simulate twelve races to chase 12-0. Choose an era, difficulty, car philosophy and draft order before you start. The one-choice-per-circuit prototype is now Setup Sprint.",

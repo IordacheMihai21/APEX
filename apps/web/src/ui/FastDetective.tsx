@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { t } from "../i18n";
 import { gameFinished, gameStarted, shared } from "../games/events";
 import { buildDetectiveCase, detectiveAnswer, gradeDetective, saveDetective, type DetectiveCase, type DetectiveAnswer } from "../modes/fastDetective";
 import { primaryBtn, secondaryBtn } from "./styles";
 import { SUPPORT_URL, supportClicked } from "../support";
+import { DetectiveVisual } from "./DetectiveVisual";
 
 export function FastDetective() {
   const [case_, setCase] = useState<DetectiveCase | null>(null);
@@ -13,6 +14,8 @@ export function FastDetective() {
   const [verdict, setVerdict] = useState<boolean | null>(null);
   const [speed, setSpeed] = useState(120);
   const [copied, setCopied] = useState(false);
+  const [replayKey, setReplayKey] = useState(0);
+  const visualRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let live = true;
     void buildDetectiveCase().then((c) => { if (live) { setCase(c); setSpeed(c.carryKmh); } }, () => { if (live) setError(true); });
@@ -53,6 +56,7 @@ export function FastDetective() {
       {error && <p className="mt-7 text-kerb" role="alert">{t("The case could not load. Reload to try again.")}</p>}
       {!case_ && !error && <p className="mt-7 text-steel" role="status">{t("Loading today's case…")}</p>}
       {case_ && <>
+        <div ref={visualRef}><DetectiveVisual key={`${case_.day}-${replayKey}`} case_={case_} clues={clues} answered={!!answer} /></div>
         <ol className="mt-8 border-t border-line" aria-label={t("Clues")}>{clueLines.slice(0, clues).map((line, i) => <li key={i} className="grid grid-cols-[40px_1fr] gap-3 border-b border-line py-4"><span className="num text-[14px] font-bold text-ink">{String(i + 1).padStart(2, "0")}</span><span className="text-[16px] leading-snug text-paint">{line}</span></li>)}</ol>
         {!answer && clues < 5 && <button className={`${primaryBtn} mt-6`} onClick={revealNext}>{t("Reveal clue {n} of 5", { n: clues + 1 })}</button>}
         {!answer && clues === 5 && <section className="mt-8" aria-label={t("Your verdict")}>
@@ -67,7 +71,7 @@ export function FastDetective() {
           <p className="mt-3 text-[17px] leading-relaxed text-paint">{case_.tookCorner ? t("The car made the corner.") : t("The car went off the road.")} {t("Lowest speed: {n} km/h.", { n: case_.actualKmh })}</p>
           <p className="mt-2 text-[15px] text-steel">{t("Your estimate: {n} km/h. Score: {score}/1000.", { n: answer.guessKmh, score: answer.score })}</p>
           <p className="mt-2 text-[14px] text-steel">{case_.tookCorner ? t("The tyres had enough grip to hold the line at that speed.") : case_.offAtM !== null && case_.offAtM < 0 ? t("The car ran out of grip before the apex.") : t("The car ran wide as it tried to exit the turn.")}</p>
-          <button className={`${primaryBtn} mt-6`} onClick={() => void share()}>{copied ? t("Copied") : t("Share result")}</button>
+          <div className="mt-6 flex flex-wrap gap-3"><button className={secondaryBtn} onClick={() => { setReplayKey((x) => x + 1); visualRef.current?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" }); }}>{t("Watch replay")}</button><button className={primaryBtn} onClick={() => void share()}>{copied ? t("Copied") : t("Share result")}</button></div>
           {SUPPORT_URL && <p className="mt-5 text-[13px] text-steel">{t("Enjoying Lapdle?")} <a className="text-paint underline underline-offset-2" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer" onClick={() => supportClicked("detective")}>{t("Support the game")}</a></p>}
         </section>}
       </>}
