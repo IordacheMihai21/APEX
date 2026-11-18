@@ -109,7 +109,7 @@ function Hub() {
         <GameList />
       </Section>
       <Section title={t("More racing games")}>
-        <p><a className={link} href={withLang("/season")}>{t("Perfect Season")}</a>: {t("Make one setup choice at each of twelve circuits and try to win every round.")}</p>
+        <p><a className={link} href={withLang("/season")}>{t("Perfect Season")}</a>: {t("Draft an all-time racing team from historic constructor seasons, then simulate twelve races.")}</p>
         <p><a className={link} href={withLang("/fast-detective")}>{t("The Fast Detective")}</a>: {t("Five clues reveal a car's approach to a corner. Decide if it makes the turn.")}</p>
         <p><a className={link} href={withLang("/racing-context")}>{t("Racing Context")}</a>: {t("Find the secret driver with similarity ranks after every guess.")}</p>
       </Section>
@@ -180,12 +180,22 @@ function Corner() {
 const SPECIAL = {
   "/season": {
     name: "Perfect Season",
-    title: "Perfect Season: can you go 12-0? | Lapdle",
-    description: "Twelve real circuits and twelve setup choices. Pick low drag, balanced or high grip, simulate each lap and chase a perfect 12-0 season.",
+    title: "Perfect Season: build your F1 team and chase 12-0 | Lapdle",
+    description: "Spin a historic constructor and season, draft drivers and car strengths, then simulate a twelve-race season. Can your team go 12-0?",
     paragraphs: [
-      "Perfect Season is a quick racing strategy game. Twelve real circuits appear in a shuffled order. Before each race you get a simple choice: set the car for straight-line speed, a balanced lap, or extra grip through the corners. You can use each setup four times across the whole season, so a choice now changes what you have available later.",
-      "The lap is simulated with the same deterministic car and circuit model used by Lapdle's Daily Quali. The rival gets tougher as the season goes on. After every choice you see your time, the rival's time and which setup was fastest on that circuit. A win or loss goes on your season record immediately. Finish all twelve races to share your result and challenge a friend to go 12-0.",
-      "If you want to drive every racing line yourself, Classic Season is still available from the game. Perfect Season is free in the browser, works on a phone, and needs no account.",
+      "Perfect Season is a historic racing team draft. Choose a car philosophy, difficulty, era, year range, draft order and whether to see ratings. You can also limit every spin to one constructor's history. Each spin lands on a real constructor from a specific F1 season, using F1DB's historic roster. Draft one driver or team strength from that squad into your seven-slot garage. Easy gives three rerolls, Normal gives one, and Hard hides ratings and gives none.",
+      "Once the garage is full, simulate twelve real circuits against nine fictional rival constructors. The lap model used by Lapdle provides the base pace; your drafted team's ratings, car philosophy and the rivals' race-by-race pace decide each position. You can turn on a midseason upgrade to pause after six races and choose a final-half advantage. Share the win-loss record and championship place when the season ends, then chase 12-0.",
+      "Setup Sprint keeps the earlier one-choice-per-circuit prototype, while Classic Season lets you drive every racing line yourself. Perfect Season is free, works on a phone and needs no account. Historic roster data is from F1DB under CC BY 4.0; the game ratings are Lapdle's interpretation of those results.",
+    ],
+  },
+  "/setup-season": {
+    name: "Setup Sprint",
+    title: "Setup Sprint: twelve setup calls | Lapdle",
+    description: "Choose low drag, balanced or high grip at each of twelve circuits. Make four uses of each setup count and chase a perfect season.",
+    paragraphs: [
+      "Setup Sprint is a short racing strategy game. Twelve real circuits appear in a shuffled order. Before each race you choose low drag, balanced or high grip. Each setup has four uses across the whole season.",
+      "The same deterministic lap physics decides which setup is fastest at each track. After every choice, see your time, the rival's time, and whether you won the round. A perfect 12-0 season is possible with smart choices.",
+      "For a deeper draft, play Perfect Season and build an all-time racing team. For direct control of the racing line, Classic Season remains in the game.",
     ],
   },
   "/fast-detective": {

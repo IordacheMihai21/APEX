@@ -454,4 +454,4 @@ export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/h
 export const NOINDEX_ROUTES = ["/archive", "/records", "/championship", "/fastest", "/team"];
 
 /** Every public address of the app itself; each is a pre-rendered page (content/Landing.tsx) that the app takes over. */
-export const PUBLIC_ROUTES = ["/", ...GAMES.flatMap((g) => (g.route ? [g.route] : [])), "/season", "/fast-detective", "/racing-context", "/corner", ...Object.keys(PAGES).map((p) => `/${p}`)];
+export const PUBLIC_ROUTES = ["/", ...GAMES.flatMap((g) => (g.route ? [g.route] : [])), "/season", "/setup-season", "/fast-detective", "/racing-context", "/corner", ...Object.keys(PAGES).map((p) => `/${p}`)];

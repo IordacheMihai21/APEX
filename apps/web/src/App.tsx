@@ -72,12 +72,13 @@ const Lineup = lazy(() => fresh(() => import("./ui/Lineup")).then((m) => ({ defa
 const AerialView = lazy(() => fresh(() => import("./ui/AerialView")).then((m) => ({ default: m.AerialView })));
 const HigherLower = lazy(() => fresh(() => import("./ui/HigherLower")).then((m) => ({ default: m.HigherLower })));
 const QuickSeason = lazy(() => fresh(() => import("./ui/QuickSeason")).then((m) => ({ default: m.QuickSeason })));
+const DraftSeason = lazy(() => fresh(() => import("./ui/DraftSeason")).then((m) => ({ default: m.DraftSeason })));
 const FastDetective = lazy(() => fresh(() => import("./ui/FastDetective")).then((m) => ({ default: m.FastDetective })));
 const RacingContext = lazy(() => fresh(() => import("./ui/RacingContext")).then((m) => ({ default: m.RacingContext })));
 
 /** A screen with its own address: a game's page or an info page (both declared in games/registry). */
 type Mini = GamePage | InfoPage;
-type Screen = { kind: "hub" } | { kind: "quick-season" } | { kind: "fast-detective" } | { kind: "racing-context" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "learn"; slug?: string } | { kind: "corners"; slug?: string } | { kind: "updates" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "make-the-corner" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "aerial" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "championship" } | { kind: "fastest" } | { kind: "team" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
+type Screen = { kind: "hub" } | { kind: "draft-season" } | { kind: "quick-season" } | { kind: "fast-detective" } | { kind: "racing-context" } | { kind: "about" } | { kind: "howto"; game?: GameId } | { kind: "circuits"; id?: string } | { kind: "trivia"; id?: string } | { kind: "learn"; slug?: string } | { kind: "corners"; slug?: string } | { kind: "updates" } | { kind: "reaction" } | { kind: "mystery" } | { kind: "higher-lower" } | { kind: "make-the-corner" } | { kind: "corner-order" } | { kind: "speed-trap" } | { kind: "line-up" } | { kind: "aerial" } | { kind: "pit-stop" } | { kind: "archive" } | { kind: "records" } | { kind: "championship" } | { kind: "fastest" } | { kind: "team" } | { kind: "privacy" } | { kind: "legal" } | { kind: "play"; mode: Mode; trackId: string; nonce?: number; challenge?: number[]; watch?: boolean; day?: string; condition?: Condition };
 
 /** A practice link (?play=practice&track=…&cond=…), as the circuit guides use. */
 function practiceFromQuery(search: string): Screen | null {
@@ -113,7 +114,8 @@ function screenFromPath(pathname: string): Screen | null {
   const p = stripLang(pathname).replace(/^\/+|\/+$/g, "");
   if (p === "") return { kind: "hub" };
   if (p === "corner") return { kind: "play", mode: "corner", trackId: weeklyCorner().trackId };
-  if (p === "season") return { kind: "quick-season" };
+  if (p === "season") return { kind: "draft-season" };
+  if (p === "setup-season") return { kind: "quick-season" };
   if (p === "fast-detective") return { kind: "fast-detective" };
   if (p === "racing-context") return { kind: "racing-context" };
   if (isMini(p)) return { kind: p };
@@ -173,8 +175,8 @@ export function App() {
     const mini = isMini(screen.kind) ? screen.kind : null;
     const corner = screen.kind === "play" && screen.mode === "corner";
     const content = asContent(screen);
-    url.pathname = withLang(mini ? `/${mini}` : screen.kind === "quick-season" ? "/season" : screen.kind === "fast-detective" ? "/fast-detective" : screen.kind === "racing-context" ? "/racing-context" : corner ? "/corner" : content ? contentPath(content) : "/");
-    document.title = content ? contentMeta(content).title : mini ? miniTitle(mini) : screen.kind === "quick-season" ? t("Perfect Season: can you go 12-0? | Lapdle") : screen.kind === "fast-detective" ? t("The Fast Detective: will the car make the corner? | Lapdle") : screen.kind === "racing-context" ? t("Racing Context: find the secret driver | Lapdle") : corner ? t("Corner of the week: {corner} | Lapdle", { corner: weeklyCorner().name }) : game("quali").title;
+    url.pathname = withLang(mini ? `/${mini}` : screen.kind === "draft-season" ? "/season" : screen.kind === "quick-season" ? "/setup-season" : screen.kind === "fast-detective" ? "/fast-detective" : screen.kind === "racing-context" ? "/racing-context" : corner ? "/corner" : content ? contentPath(content) : "/");
+    document.title = content ? contentMeta(content).title : mini ? miniTitle(mini) : screen.kind === "draft-season" ? t("Perfect Season: build your F1 team and chase 12-0 | Lapdle") : screen.kind === "quick-season" ? t("Setup Sprint: twelve setup calls | Lapdle") : screen.kind === "fast-detective" ? t("The Fast Detective: will the car make the corner? | Lapdle") : screen.kind === "racing-context" ? t("Racing Context: find the secret driver | Lapdle") : corner ? t("Corner of the week: {corner} | Lapdle", { corner: weeklyCorner().name }) : game("quali").title;
     // each page is its own canonical address (practice and challenge links point back at the page they belong to)
     const canonical = `https://lapdle.com${url.pathname === "/" ? "/" : url.pathname}`;
     document.querySelector('link[rel="canonical"]')?.setAttribute("href", canonical);
@@ -248,6 +250,7 @@ export function App() {
     else if (a.kind === "stats") setStats(true);
     else if (a.kind === "practice-track") setScreen({ kind: "play", mode: "practice", trackId: a.trackId });
     else if (a.kind === "quick-season") setScreen({ kind: "quick-season" });
+    else if (a.kind === "draft-season") setScreen({ kind: "draft-season" });
     else if (a.kind === "fast-detective") setScreen({ kind: "fast-detective" });
     else if (a.kind === "racing-context") setScreen({ kind: "racing-context" });
     else {
@@ -383,6 +386,8 @@ export function App() {
           <MakeCorner />
         ) : screen.kind === "higher-lower" ? (
           <HigherLower onPlayDaily={() => act({ kind: "daily" })} />
+        ) : screen.kind === "draft-season" ? (
+          <DraftSeason onSetup={() => setScreen({ kind: "quick-season" })} onClassic={() => act({ kind: "season", fresh: !loadSeason().run })} />
         ) : screen.kind === "quick-season" ? (
           <QuickSeason onClassic={() => act({ kind: "season", fresh: !loadSeason().run })} />
         ) : screen.kind === "fast-detective" ? (

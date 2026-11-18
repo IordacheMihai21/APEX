@@ -14,7 +14,7 @@ import { cachedStanding, submitDailyLine } from "../online";
 import { CONDITION_NOTE, DAILY_LAPS, CONDITION_NAME, bestMedal, conditionOf, dailyNumber, qualifyingDay, raceWeek, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
 import { type Grade, bestPerGroup } from "../modes/grading";
 import { SEASON_ROUNDS } from "../modes/season";
-import { readQuick } from "../modes/quickSeason";
+import { readDraft } from "../modes/draftSeasonStore";
 import { cornerLabel, dailyCorner, raceWeekCorner } from "../modes/makeCornerDay";
 import { fromClips } from "../analytics";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
@@ -42,6 +42,7 @@ export type HubAction =
   | { kind: "daily-summary" }
   | { kind: "season"; fresh: boolean }
   | { kind: "quick-season" }
+  | { kind: "draft-season" }
   | { kind: "fast-detective" }
   | { kind: "racing-context" }
   | { kind: "practice" }
@@ -674,7 +675,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
     if (!cachedStanding(board)) void submitDailyLine(board, daily.bestKnots);
   }, [daily]);
   const stats = useMemo(() => dailyStats(), []);
-  const season = useMemo(() => readQuick(), []);
+  const season = useMemo(() => readDraft(), []);
 
   const info = CATALOG.find((c) => c.id === daily.trackId)!;
   // the official figures, the same ones the minigames use (our corner groups can differ)
@@ -870,16 +871,16 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
             </h2>
             <p className="mt-3 max-w-[38ch] text-[15px] leading-snug text-steel">
               {run
-                ? t("Round {n} of {total}: {circuit}. Pick a setup, then see if you beat the rival.", { n: run.results.length + 1, total: SEASON_ROUNDS, circuit: CATALOG.find((c) => c.id === run.order[run.results.length])?.name ?? "" })
-                : t("Twelve circuits. One setup choice per round. Can you go 12-0?")}
+                ? run.results.length ? t("Round {n} of {total}: {circuit}. Keep chasing 12-0.", { n: run.results.length + 1, total: SEASON_ROUNDS, circuit: CATALOG.find((c) => c.id === run.order[run.results.length])?.name ?? "" }) : t("Your team is in the garage. Finish the draft, then race twelve circuits.")
+                : t("Spin a constructor and season. Build your F1 team, then race for 12-0.")}
             </p>
             <div className="mt-6 flex items-center gap-4">
               <Roll text={run ? `${wins}-${losses}` : season.played ? `${season.bestWins}-${12 - season.bestWins}` : "12-0"} className="wide text-[44px] text-paint" />
               <span className="text-[13px] leading-tight text-steel">{run ? t("this season") : season.played ? t("best season") : t("the target")}</span>
             </div>
             <div className="mt-6 flex flex-wrap gap-2">
-              <button className={run ? primaryBtn : secondaryBtn} onClick={() => onAction({ kind: "quick-season" })}>
-                {run ? t("Continue season") : t("Start a season")}
+              <button className={run ? primaryBtn : secondaryBtn} onClick={() => onAction({ kind: "draft-season" })}>
+                {run ? t("Continue draft") : t("Build your team")}
               </button>
             </div>
           </div>

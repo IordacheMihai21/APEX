@@ -6,6 +6,8 @@ export interface Driver { id: string; name: string; nation: string; first: numbe
 export const DRIVERS = DATA.drivers as Driver[];
 export const CONTEXT_SOURCE = DATA.source;
 const KEY = "apex.racing-context.v1";
+const CLUE_KEY = "apex.racing-context-clues.v1";
+const clueMemory = new Map<string, number>();
 const TARGETS = DRIVERS.filter((d) => d.starts >= 50 || d.wins > 0);
 
 function shuffledCycle(cycle: number) {
@@ -55,5 +57,22 @@ export function recordContextGuess(id: string, day = dateKey()): string[] {
     all[day] = next;
     localStorage.setItem(KEY, JSON.stringify(all));
   } catch { /* still works during this visit */ }
+  return next;
+}
+
+export function contextClues(day = dateKey()): number {
+  if (clueMemory.has(day)) return clueMemory.get(day)!;
+  try { return Math.min(3, Math.max(0, (JSON.parse(localStorage.getItem(CLUE_KEY) ?? "{}") as Record<string, number>)[day] ?? 0)); }
+  catch { return 0; }
+}
+
+export function revealContextClue(day = dateKey()): number {
+  const next = Math.min(3, contextClues(day) + 1);
+  clueMemory.set(day, next);
+  try {
+    const all = JSON.parse(localStorage.getItem(CLUE_KEY) ?? "{}") as Record<string, number>;
+    all[day] = next;
+    localStorage.setItem(CLUE_KEY, JSON.stringify(all));
+  } catch { /* visible for this visit */ }
   return next;
 }

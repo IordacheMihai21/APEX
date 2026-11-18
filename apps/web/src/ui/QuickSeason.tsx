@@ -48,7 +48,7 @@ export function QuickSeason({ onClassic }: { onClassic: () => void }) {
     finally { setBusy(false); }
   };
   const share = async () => {
-    const text = `Lapdle Perfect Season ${wins}-${12 - wins}\n${run?.results.map((r) => r.won ? "🟩" : "🟥").join("")}\nCan you go 12-0? https://lapdle.com/season`;
+    const text = `Lapdle Setup Sprint ${wins}-${12 - wins}\n${run?.results.map((r) => r.won ? "🟩" : "🟥").join("")}\nCan you go 12-0? https://lapdle.com/setup-season`;
     try {
       if (navigator.share) await navigator.share({ text });
       else { await navigator.clipboard.writeText(text); setCopied(true); }
@@ -58,7 +58,7 @@ export function QuickSeason({ onClassic }: { onClassic: () => void }) {
 
   return <div className="h-full overflow-y-auto bg-night text-paint">
     <div className="mx-auto max-w-[880px] px-4 pt-7 pb-16 md:px-8 md:pt-12">
-      <h1 className="wide text-[clamp(34px,8vw,72px)] leading-none">PERFECT SEASON</h1>
+      <h1 className="wide text-[clamp(34px,8vw,72px)] leading-none">SETUP SPRINT</h1>
       <p className="mt-4 max-w-[55ch] text-[16px] leading-relaxed text-steel">{t("Twelve circuits. One setup call at each. Win every round to go 12-0. You have four of each setup for the whole season.")}</p>
 
       <div className="mt-5 grid grid-cols-[1fr_auto] items-end gap-4 border-y border-line py-3">

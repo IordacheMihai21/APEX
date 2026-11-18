@@ -42,7 +42,7 @@ buckets worked out on the device from what it already stores (see
 
 `game` is one of `quali`, `mystery`, `pit-stop`, `higher-lower`,
 `braking-point`, `make-the-corner`, `corner-order`, `speed-trap`, `line-up`,
-`aerial`, `reaction`, `trivia`, `quick-season`, `fast-detective`,
+`aerial`, `reaction`, `trivia`, `quick-season`, `draft-season`, `fast-detective`,
 `racing-context`. Make the corner's daily finish carries `score`
 (the best of three runs, bucketed: `0`, `1-399`, `400-699`, `700-899`,
 `900-1000`) and `condition`; a practice run carries `outcome` (`done`, `off`,
@@ -57,7 +57,7 @@ buckets worked out on the device from what it already stores (see
 2. Site settings > Custom properties: add `game`, `mode`, `player`,
    `last_played`, `today`, `medal`, `score`, `streak`, `solved`, `guesses`,
    `penalty`, `off`, `band`, `circuit`, `what`, `beat`, `condition`,
-   `attempt`, `app`, `from`, `outcome`, `way`, `wins`, `correct`.
+   `attempt`, `app`, `from`, `outcome`, `way`, `wins`, `correct`, `rating`.
 
 ## The numbers partners ask for
 

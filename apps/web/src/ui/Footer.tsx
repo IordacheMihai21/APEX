@@ -20,7 +20,7 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
   const play: [string, HubAction][] = [
     [t("Daily Quali"), { kind: "daily" }],
     [t("Corner of the week"), { kind: "corner" }],
-    [t("Perfect Season"), { kind: "quick-season" }],
+    [t("Perfect Season"), { kind: "draft-season" }],
     [t("The Fast Detective"), { kind: "fast-detective" }],
     [t("Racing Context"), { kind: "racing-context" }],
     [t("Free Practice"), { kind: "practice" }],

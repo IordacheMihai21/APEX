@@ -7,6 +7,15 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-18",
+    title: "Perfect Season now starts with a team draft",
+    body: [
+      "Spin a real constructor and season, draft two drivers and five parts of your team's performance, then simulate twelve races to chase 12-0. Choose an era, difficulty, car philosophy and draft order before you start. The one-choice-per-circuit prototype is now Setup Sprint.",
+      "Racing Context guesses now have a coloured proximity bar: green is closest, then yellow, orange and red. The best-ranked guesses appear first. Optional career diagrams unlock after every four guesses.",
+    ],
+    links: [["Build your team", "/season"], ["Play Setup Sprint", "/setup-season"], ["Find the driver", "/racing-context"]],
+  },
+  {
+    date: "2026-11-18",
     title: "Four quicker ways to race and guess",
     body: [
       "Perfect Season is now a quick 12-round strategy game: choose one of three car setups at each circuit and chase 12-0. The original lap-by-lap season is still available as Classic Season.",

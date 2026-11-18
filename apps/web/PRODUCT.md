@@ -38,9 +38,10 @@ Modes (confirmed 2026-10-01):
   0.75 m, Gold 0.3 m of gate error); **Pole = a lap with every corner purple**,
   the impossible tier, and it ends the day. The streak counts days with at
   least Bronze. Shareable medal + emoji grid.
-- **Perfect Season:** a quick 12-round setup game. Pick low drag, balanced or
-  high grip once per circuit, with four uses of each setup. The same lap engine
-  resolves each round. The original three-lap version remains as Classic Season.
+- **Perfect Season:** draft an all-time team from historic constructor-seasons:
+  two drivers and five car-performance slots. Choose a philosophy and era,
+  then simulate twelve circuits and chase 12-0. Setup Sprint keeps the earlier
+  one-setup-per-circuit prototype; the lap-by-lap version is Classic Season.
 - **The Fast Detective:** five clues to judge whether a car makes a corner,
   then a bonus estimate of its lowest speed. One deterministic case each day.
 - **Racing Context:** find a daily secret driver with unlimited guesses and

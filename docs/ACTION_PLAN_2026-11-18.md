@@ -4,7 +4,7 @@
 
 ## Stadiul implementării
 
-Prototipurile funcționale pentru Perfect Season simplificat, The Fast Detective și Racing Context sunt în cod. Racing Connections folosește mecanica și progresul vechiului Line-up. Paginile publice și evenimentele Plausible sunt pregătite. Butonul de susținere apare în footer, About și după rezultate numai când proprietarul configurează `VITE_SUPPORT_URL` cu un link HTTPS de checkout. Urmează testarea cu jucători reali, verificarea conversiilor și activarea linkului de plată; nu presupunem că pragurile de acceptare sunt deja atinse.
+Prototipurile funcționale pentru Perfect Season, Setup Sprint, The Fast Detective și Racing Context sunt în cod. Perfect Season are acum un draft de echipă inspirat de 38-0; [matricea de funcții](PERFECT_SEASON_38_0_FEATURE_MAP.md) spune ce este implementat și ce încă cere date sau backend. Racing Connections folosește mecanica și progresul vechiului Line-up. Paginile publice și evenimentele Plausible sunt pregătite. Butonul de susținere apare în footer, About și după rezultate numai când proprietarul configurează `VITE_SUPPORT_URL` cu un link HTTPS de checkout. Urmează testarea cu jucători reali, verificarea conversiilor și activarea linkului de plată; nu presupunem că pragurile de acceptare sunt deja atinse.
 
 ## Ce arată cercetarea
 
