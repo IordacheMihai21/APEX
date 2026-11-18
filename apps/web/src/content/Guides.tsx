@@ -1,5 +1,6 @@
 import { GAMES, type GameDef, type GameId, game } from "../games/registry";
 import { t, withLang } from "../i18n";
+import { SUPPORT_URL, supportClicked } from "../support";
 
 /**
  * The content pages: How to play (an index and one guide per game) and About.
@@ -169,6 +170,13 @@ export function About() {
           .
         </p>
       </Section>
+
+      {SUPPORT_URL && (
+        <Section title={t("Support Lapdle")}>
+          <p>{t("Lapdle is free to play. If you enjoy it, you can help cover the cost of keeping the games online and making new ones.")}</p>
+          <p><a className={link} href={SUPPORT_URL} target="_blank" rel="noopener noreferrer" onClick={() => supportClicked("about")}>{t("Make a one-time contribution")}</a></p>
+        </Section>
+      )}
 
       <Section title="Contact">
         <p>

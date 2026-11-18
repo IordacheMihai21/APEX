@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://lapdle.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://lapdle.com/season</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lapdle.com/fast-detective</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://lapdle.com/racing-context</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/mystery</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/pit-stop</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://lapdle.com/higher-lower</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>

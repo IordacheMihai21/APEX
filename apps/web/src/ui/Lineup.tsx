@@ -91,7 +91,7 @@ export function Lineup() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-[720px] px-4 pt-4 pb-12 md:px-8 md:pt-6 lg:pt-10">
         <div className="flex items-center gap-3">
-          <h1 className="wide text-[clamp(26px,6vw,52px)] leading-none text-paint">{t("Line-up")}</h1>
+          <h1 className="wide text-[clamp(26px,6vw,52px)] leading-none text-paint">{t("Racing Connections")}</h1>
           <HowToPlay game="line-up" />
         </div>
         <p className="mt-1.5 text-[14px] text-steel md:mt-2 md:text-[15px]">

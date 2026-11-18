@@ -311,24 +311,24 @@ export const GAMES: GameDef[] = [
   },
   {
     id: "line-up",
-    name: "Line-up",
-    short: "Line-up",
+    name: "Racing Connections",
+    short: "Connections",
     route: "/line-up",
     cadence: "daily",
     inDailySet: false,
     tagline: "Sixteen tiles, four groups of four",
     blurb: "Drivers, teams, cars and circuits: find the four groups of four, from easy yellow to tricky purple. Four mistakes allowed.",
-    title: "Line-up: find four groups of four drivers, teams, cars and circuits | Lapdle",
+    title: "Racing Connections: find four groups of four | Lapdle",
     howTo: {
       steps: [
         "Sixteen tiles: drivers, teams, title-winning cars, circuits and famous corners. They make four groups of four.",
         "Pick four that belong together and submit. A right group locks in with its name; three right out of four says \"one away\".",
         "Find all four groups before you make four mistakes.",
       ],
-      tip: "One group of each colour: yellow is the easiest, purple the trickiest. A new line-up every day, the same for everyone.",
+      tip: "One group of each colour: yellow is the easiest, purple the trickiest. A new puzzle every day, the same for everyone.",
     },
     guide: {
-      intro: "Line-up is a daily grouping puzzle: sixteen drivers, teams, cars, circuits and corners, four groups of four.",
+      intro: "Racing Connections is a daily grouping puzzle: sixteen drivers, teams, cars, circuits and corners, four groups of four.",
       scoring:
         "Each group shares one fact: world champions with a team, drivers who raced for two teams, cars that won the title, circuits named after a driver, corners of the same circuit and many more. Every tile fits exactly one of the day's groups. Submit four at a time: a right group locks in, a wrong one is a mistake, and three right out of four tells you you're one away. Four mistakes end the day. There is one group of each colour, from the easiest (yellow) to the trickiest (purple). The facts come from F1DB, the open Formula 1 database (CC BY 4.0).",
       tips: [
@@ -454,4 +454,4 @@ export const CONTENT_ROUTES = ["/about", "/how-to-play", ...GAMES.map((g) => `/h
 export const NOINDEX_ROUTES = ["/archive", "/records", "/championship", "/fastest", "/team"];
 
 /** Every public address of the app itself; each is a pre-rendered page (content/Landing.tsx) that the app takes over. */
-export const PUBLIC_ROUTES = ["/", ...GAMES.flatMap((g) => (g.route ? [g.route] : [])), "/corner", ...Object.keys(PAGES).map((p) => `/${p}`)];
+export const PUBLIC_ROUTES = ["/", ...GAMES.flatMap((g) => (g.route ? [g.route] : [])), "/season", "/fast-detective", "/racing-context", "/corner", ...Object.keys(PAGES).map((p) => `/${p}`)];

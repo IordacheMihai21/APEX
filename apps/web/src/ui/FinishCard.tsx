@@ -11,6 +11,7 @@ import { ShareDayButton, canSharePicture, sharePicture, shareOrCopy } from "./Sh
 import { primaryBtn, secondaryBtn } from "./styles";
 import { ReminderOffer } from "./Reminder";
 import { challengeFor, challengeMessage } from "../games/scoreChallenge";
+import { SUPPORT_URL, supportClicked } from "../support";
 
 /** Where a finished game can send the player next (App listens for this). */
 export type GoTo = GameId;
@@ -260,6 +261,10 @@ export function FinishCard({
         <div className="mt-3 flex">
           <ShareDayButton className={`${secondaryBtn} flex-1`} />
         </div>
+
+        {SUPPORT_URL && <p className="mt-4 text-[13px] text-steel">
+          {t("Enjoying Lapdle?")} <a className="font-semibold text-paint underline underline-offset-2 hover:text-ink" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer" onClick={() => supportClicked("finish")}>{t("Support the game")}</a>
+        </p>}
 
         <h3 className="caption mt-4">{progress.done === progress.total ? t("All of today's done. Play more") : t("Play next")}</h3>
         <ul className="mt-2 divide-y divide-line border-y border-line">

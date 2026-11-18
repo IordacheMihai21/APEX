@@ -7,6 +7,15 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 export const UPDATES: Update[] = [
   {
     date: "2026-11-18",
+    title: "Four quicker ways to race and guess",
+    body: [
+      "Perfect Season is now a quick 12-round strategy game: choose one of three car setups at each circuit and chase 12-0. The original lap-by-lap season is still available as Classic Season.",
+      "The Fast Detective gives you five clues to decide if a car makes a corner. Racing Context asks you to find a secret driver from similarity ranks. Line-up is now called Racing Connections, with the same daily puzzle and saved progress.",
+    ],
+    links: [["Play Perfect Season", "/season"], ["Solve The Fast Detective", "/fast-detective"], ["Find the driver", "/racing-context"], ["Play Racing Connections", "/line-up"]],
+  },
+  {
+    date: "2026-11-18",
     title: "Pulse livery and your car colours in the standings",
     body: [
       "When one friend you invited plays a daily game, the ultraviolet and lime Pulse livery unlocks in your 3D Garage. Neon still unlocks after three friends.",

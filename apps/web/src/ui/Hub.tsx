@@ -13,7 +13,8 @@ import { OUTLINES, type Outline, type OutlineDetail, loadOutlineDetail } from ".
 import { cachedStanding, submitDailyLine } from "../online";
 import { CONDITION_NOTE, DAILY_LAPS, CONDITION_NAME, bestMedal, conditionOf, dailyNumber, qualifyingDay, raceWeek, dailyStats, dateKey, loadDaily, msToNextDay } from "../modes/daily";
 import { type Grade, bestPerGroup } from "../modes/grading";
-import { SEASON_ROUNDS, currentTrack, loadSeason, seasonDone } from "../modes/season";
+import { SEASON_ROUNDS } from "../modes/season";
+import { readQuick } from "../modes/quickSeason";
 import { cornerLabel, dailyCorner, raceWeekCorner } from "../modes/makeCornerDay";
 import { fromClips } from "../analytics";
 import { MEDAL_NAME, type Medal, nextMedal } from "../modes/medals";
@@ -40,6 +41,9 @@ export type HubAction =
   | { kind: "daily" }
   | { kind: "daily-summary" }
   | { kind: "season"; fresh: boolean }
+  | { kind: "quick-season" }
+  | { kind: "fast-detective" }
+  | { kind: "racing-context" }
   | { kind: "practice" }
   | { kind: "practice-track"; trackId: string }
   | { kind: "mini"; game: GamePage | InfoPage }
@@ -670,7 +674,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
     if (!cachedStanding(board)) void submitDailyLine(board, daily.bestKnots);
   }, [daily]);
   const stats = useMemo(() => dailyStats(), []);
-  const season = useMemo(() => loadSeason(), []);
+  const season = useMemo(() => readQuick(), []);
 
   const info = CATALOG.find((c) => c.id === daily.trackId)!;
   // the official figures, the same ones the minigames use (our corner groups can differ)
@@ -703,8 +707,8 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
   const lit = Math.min(5, Math.floor(((86_400_000 - left) / 86_400_000) * 5) + 1);
   const cols = daily.laps[0]?.grades.length ?? 8;
   const finished = daily.status !== "playing";
-  const run = season.run && !seasonDone(season.run) ? season.run : null;
-  const wins = run?.results.filter((r) => r === "W").length ?? 0;
+  const run = season.run && season.run.results.length < SEASON_ROUNDS ? season.run : null;
+  const wins = run?.results.filter((r) => r.won).length ?? 0;
   const losses = (run?.results.length ?? 0) - wins;
   const lapsLeft = DAILY_LAPS - daily.laps.length;
   const week = raceWeek(today);
@@ -844,6 +848,19 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
       {/* the corner of the week */}
       {!week && <CornerBand onAction={onAction} />}
 
+      <section className="border-t border-line bg-night">
+        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-5 px-4 py-8 md:px-8">
+          <div><h2 className="wide text-[28px] leading-none text-paint">THE FAST DETECTIVE</h2><p className="mt-2 max-w-[50ch] text-[14px] leading-relaxed text-steel">{t("Five clues. One corner. Decide if the car makes it, then predict its speed.")}</p></div>
+          <button className={secondaryBtn} onClick={() => onAction({ kind: "fast-detective" })}>{t("Solve today's case")}</button>
+        </div>
+      </section>
+      <section className="border-t border-line bg-board/60">
+        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-5 px-4 py-8 md:px-8">
+          <div><h2 className="wide text-[28px] leading-none text-paint">RACING CONTEXT</h2><p className="mt-2 max-w-[50ch] text-[14px] leading-relaxed text-steel">{t("Guess the secret racing driver. Every name gets a similarity rank; #1 is the answer.")}</p></div>
+          <button className={secondaryBtn} onClick={() => onAction({ kind: "racing-context" })}>{t("Find today's driver")}</button>
+        </div>
+      </section>
+
       {/* perfect season */}
       <section aria-labelledby="season-h" className="border-t border-line bg-board/60">
         <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1fr)] gap-8 px-4 py-12 md:px-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:items-center lg:py-16">
@@ -853,24 +870,17 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
             </h2>
             <p className="mt-3 max-w-[38ch] text-[15px] leading-snug text-steel">
               {run
-                ? t("Round {n} of {total}: {circuit}. Beat the rival's pole in three laps.", { n: run.results.length + 1, total: SEASON_ROUNDS, circuit: CATALOG.find((c) => c.id === currentTrack(run))?.name ?? "" })
-                : season.best
-                  ? t("Your best is {score}. Twelve circuits, three laps each, one rival on pole.", { score: `${season.best.wins}-${season.best.losses}` })
-                  : t("Twelve circuits, three laps each, one rival on pole. Win all twelve.")}
+                ? t("Round {n} of {total}: {circuit}. Pick a setup, then see if you beat the rival.", { n: run.results.length + 1, total: SEASON_ROUNDS, circuit: CATALOG.find((c) => c.id === run.order[run.results.length])?.name ?? "" })
+                : t("Twelve circuits. One setup choice per round. Can you go 12-0?")}
             </p>
             <div className="mt-6 flex items-center gap-4">
-              <Roll text={run ? `${wins}-${losses}` : season.best ? `${season.best.wins}-${season.best.losses}` : "12-0"} className="wide text-[44px] text-paint" />
-              <span className="text-[13px] leading-tight text-steel">{run ? t("this season") : season.best ? t("best season") : t("the target")}</span>
+              <Roll text={run ? `${wins}-${losses}` : season.played ? `${season.bestWins}-${12 - season.bestWins}` : "12-0"} className="wide text-[44px] text-paint" />
+              <span className="text-[13px] leading-tight text-steel">{run ? t("this season") : season.played ? t("best season") : t("the target")}</span>
             </div>
             <div className="mt-6 flex flex-wrap gap-2">
-              <button className={run ? primaryBtn : secondaryBtn} onClick={() => onAction({ kind: "season", fresh: !run })}>
-                {run ? t("Next race") : t("Start a season")}
+              <button className={run ? primaryBtn : secondaryBtn} onClick={() => onAction({ kind: "quick-season" })}>
+                {run ? t("Continue season") : t("Start a season")}
               </button>
-              {run && (
-                <button className={secondaryBtn} onClick={() => onAction({ kind: "season", fresh: true })}>
-                  {t("Restart")}
-                </button>
-              )}
             </div>
           </div>
 
@@ -880,7 +890,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
               const id = run?.order[i] ?? POOL[i];
               const r = run?.results[i];
               const current = !!run && i === run.results.length;
-              const tone = r === "W" ? "text-paint" : r === "L" ? "text-steel/40" : current ? "text-ink" : "text-[#3a3f49]";
+              const tone = r?.won ? "text-paint" : r ? "text-steel/40" : current ? "text-ink" : "text-[#3a3f49]";
               return (
                 <li key={i} className="in-view flex flex-col items-center" style={d(i * 40)}>
                   <div className={`aspect-square w-full max-w-[84px] ${tone}`}>
@@ -888,7 +898,7 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
                   </div>
                   <span className={`num mt-1.5 text-[12px] font-semibold ${current ? "text-ink" : "text-steel"}`}>
                     R{i + 1}
-                    {r ? ` ${r === "W" ? t("Pole") : "P2"}` : ""}
+                    {r ? ` ${r.won ? t("Win") : t("Loss")}` : ""}
                   </span>
                 </li>
               );

@@ -89,6 +89,9 @@ function MoreLinks() {
       <a className={link} href="/about">
         {t("About Lapdle")}
       </a>
+      <a className={link} href={withLang("/season")}>{t("Perfect Season")}</a>
+      <a className={link} href={withLang("/fast-detective")}>{t("The Fast Detective")}</a>
+      <a className={link} href={withLang("/racing-context")}>{t("Racing Context")}</a>
     </p>
   );
 }
@@ -104,6 +107,11 @@ function Hub() {
       </header>
       <Section title={t("Today's games")}>
         <GameList />
+      </Section>
+      <Section title={t("More racing games")}>
+        <p><a className={link} href={withLang("/season")}>{t("Perfect Season")}</a>: {t("Make one setup choice at each of twelve circuits and try to win every round.")}</p>
+        <p><a className={link} href={withLang("/fast-detective")}>{t("The Fast Detective")}</a>: {t("Five clues reveal a car's approach to a corner. Decide if it makes the turn.")}</p>
+        <p><a className={link} href={withLang("/racing-context")}>{t("Racing Context")}</a>: {t("Find the secret driver with similarity ranks after every guess.")}</p>
       </Section>
       <GameAbout id="quali" className="space-y-8" />
       <MoreLinks />
@@ -169,6 +177,44 @@ function Corner() {
   );
 }
 
+const SPECIAL = {
+  "/season": {
+    name: "Perfect Season",
+    title: "Perfect Season: can you go 12-0? | Lapdle",
+    description: "Twelve real circuits and twelve setup choices. Pick low drag, balanced or high grip, simulate each lap and chase a perfect 12-0 season.",
+    paragraphs: [
+      "Perfect Season is a quick racing strategy game. Twelve real circuits appear in a shuffled order. Before each race you get a simple choice: set the car for straight-line speed, a balanced lap, or extra grip through the corners. You can use each setup four times across the whole season, so a choice now changes what you have available later.",
+      "The lap is simulated with the same deterministic car and circuit model used by Lapdle's Daily Quali. The rival gets tougher as the season goes on. After every choice you see your time, the rival's time and which setup was fastest on that circuit. A win or loss goes on your season record immediately. Finish all twelve races to share your result and challenge a friend to go 12-0.",
+      "If you want to drive every racing line yourself, Classic Season is still available from the game. Perfect Season is free in the browser, works on a phone, and needs no account.",
+    ],
+  },
+  "/fast-detective": {
+    name: "The Fast Detective",
+    title: "The Fast Detective: will the car make the corner? | Lapdle",
+    description: "Five clues about a car approaching a corner. Decide whether it makes the turn and predict how much speed it carries. A new case every day.",
+    paragraphs: [
+      "A car approaches a real racing corner. You get five clues, one at a time: the circuit and corner, the track condition, the approach speed, the braking point and the driver's plan for carrying speed and getting back on the power. Read them carefully, then decide whether the car makes the turn or runs out of road.",
+      "Your verdict is worth most of the points. For a bonus, predict the lowest speed the car reaches. The answer is calculated by the same grip, braking and power model used in Make the corner, so the case has a consistent result on every device. After you answer, the game reveals what happened and how close your speed estimate was.",
+      "There is one case each day, the same for everyone. The result can be shared without revealing the answer to your friends. The Fast Detective is free, and you can play without an account.",
+    ],
+  },
+  "/racing-context": {
+    name: "Racing Context",
+    title: "Racing Context: find the secret driver | Lapdle",
+    description: "Guess a secret racing driver. Every guess gets a similarity rank based on nationality, teams, racing years and career results. New answer daily.",
+    paragraphs: [
+      "Racing Context is a daily driver guessing game. Type any driver in the searchable list and the game gives that driver a rank. The secret driver is number one; a smaller number means you are closer. You can make as many guesses as you need, using each result to narrow the field.",
+      "The similarity calculation considers nationality, teams, the years a driver raced and career results. After a guess, you can see whether the drivers share a nationality or team and whether they raced in the same era. A close rank can point to a teammate, a contemporary or a driver with a similar career. The data comes from F1DB, credited in the game under its CC BY 4.0 licence.",
+      "Everyone gets the same secret driver each day. Share how many guesses you needed without naming the answer. The game is free in the browser and requires no account.",
+    ],
+  },
+} as const;
+
+function Special({ route }: { route: keyof typeof SPECIAL }) {
+  const s = SPECIAL[route];
+  return <Page><header><p className="caption"><a className={link} href={withLang("/")}>Lapdle</a></p><h1 className="wide mt-2 text-[clamp(32px,6vw,52px)] leading-none text-paint">{t(s.name)}</h1><p className="mt-4 text-[17px] leading-relaxed text-paint/90">{t(s.description)}</p></header><Section title={t("How it works")}>{s.paragraphs.map((p) => <p key={p}>{t(p)}</p>)}</Section><Section title={t("More to play")}><GameList /></Section><MoreLinks /></Page>;
+}
+
 function Info({ page }: { page: InfoPage }) {
   const p = INFO[page];
   return (
@@ -194,6 +240,7 @@ export const LANDING_ROUTES = PUBLIC_ROUTES;
 export function landing(route: string): { node: React.ReactNode; title: string; description: string } {
   const quali = game("quali");
   if (route === "/") return { node: <Hub />, title: quali.title, description: quali.blurb };
+  if (route in SPECIAL) { const s = SPECIAL[route as keyof typeof SPECIAL]; return { node: <Special route={route as keyof typeof SPECIAL} />, title: t(s.title), description: t(s.description) }; }
   if (route === "/corner")
     return {
       node: <Corner />,

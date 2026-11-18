@@ -22,6 +22,8 @@ function detect(): Lang {
   if (built) return built;
   if (typeof location === "undefined") return "en";
   if (ES_PATH.test(location.pathname)) return "es";
+  // These three new modes currently have English-only copy and one public URL.
+  if (/^\/(season|fast-detective|racing-context)(\/|$)/.test(location.pathname)) return "en";
   try {
     const saved = localStorage.getItem(KEY);
     if (saved === "en" || saved === "es") return saved;
@@ -37,7 +39,7 @@ export const LANG: Lang = detect();
 /** A path without its language prefix: "/es/mystery" → "/mystery", "/es" → "/". */
 export const stripLang = (path: string) => path.replace(ES_PATH, "") || "/";
 /** The pages written in English only (the circuit guides, trivia, About, the Learn articles, the corner guides and What's new): they keep their one address. */
-const ENGLISH_ONLY = /^\/(circuits|trivia|about|learn|corners|updates)(\/|$)/;
+const ENGLISH_ONLY = /^\/(circuits|trivia|about|learn|corners|updates|season|fast-detective|racing-context)(\/|$)/;
 /** An app path in the current language: "/mystery" → "/es/mystery" in Spanish. */
 export const withLang = (path: string, lang: Lang = LANG) => (lang === "es" && !ENGLISH_ONLY.test(path) ? (path === "/" ? "/es" : `/es${path}`) : path);
 /** Whether a page has a Spanish version at /es (for the prerender, hreflang and the sitemap). */

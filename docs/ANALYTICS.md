@@ -38,10 +38,12 @@ buckets worked out on the device from what it already stores (see
 | `Challenge opened` | a "beat my lap" link is opened (once per page load) | `circuit`, `player` |
 | `Challenge raced` | the first lap against that challenge | `circuit`, `beat` (true/false), `player` |
 | `Challenge beaten` | the first lap that beats it | `circuit`, `player` |
+| `Support clicked` | a player follows the hosted donation link | `from` (footer, about or a result screen) |
 
 `game` is one of `quali`, `mystery`, `pit-stop`, `higher-lower`,
 `braking-point`, `make-the-corner`, `corner-order`, `speed-trap`, `line-up`,
-`aerial`, `reaction`, `trivia`. Make the corner's daily finish carries `score`
+`aerial`, `reaction`, `trivia`, `quick-season`, `fast-detective`,
+`racing-context`. Make the corner's daily finish carries `score`
 (the best of three runs, bucketed: `0`, `1-399`, `400-699`, `700-899`,
 `900-1000`) and `condition`; a practice run carries `outcome` (`done`, `off`,
 `stopped`) and `condition`.
@@ -51,11 +53,11 @@ buckets worked out on the device from what it already stores (see
 1. Site settings > Goals: add custom event goals `Visit`, `Game started`,
    `Game finished`, `Daily set done`, `Share`, `Challenge opened`,
    `Challenge raced`, `Challenge beaten`, `Lap started`, `Lap finished`,
-   `App installed`, `Install prompt`, `Install button`.
+   `App installed`, `Install prompt`, `Install button`, `Support clicked`.
 2. Site settings > Custom properties: add `game`, `mode`, `player`,
    `last_played`, `today`, `medal`, `score`, `streak`, `solved`, `guesses`,
    `penalty`, `off`, `band`, `circuit`, `what`, `beat`, `condition`,
-   `attempt`, `app`, `from`, `outcome`, `way`.
+   `attempt`, `app`, `from`, `outcome`, `way`, `wins`, `correct`.
 
 ## The numbers partners ask for
 

@@ -265,5 +265,5 @@ const SQUARE = ["🟨", "🟩", "🟦", "🟪"];
 export function lineupShare(p: Puzzle, guesses: string[][], link: string, key = dateKey()): string {
   const rows = guesses.map((g) => g.map((id) => SQUARE[p.groups.findIndex((gr) => gr.items.includes(id))]).join(""));
   const s = lineupState(p, guesses);
-  return `${t("Lapdle Line-up #{n}", { n: dailyNumber(key) })} ${s.won ? tn(s.mistakes, "{n} mistake", "{n} mistakes") : "X"}\n${rows.join("\n")}\n${link}`;
+  return `${t("Lapdle Racing Connections #{n}", { n: dailyNumber(key) })} ${s.won ? tn(s.mistakes, "{n} mistake", "{n} mistakes") : "X"}\n${rows.join("\n")}\n${link}`;
 }

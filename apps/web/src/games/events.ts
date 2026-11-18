@@ -26,7 +26,7 @@ import { playedDays } from "./profile";
 import { type GameId, todayProgress } from "./registry";
 
 /** Games outside the registry that report too. */
-export type Tracked = GameId | "trivia";
+export type Tracked = GameId | "trivia" | "quick-season" | "fast-detective" | "racing-context";
 export type Mode = "daily" | "practice" | "endless" | "archive";
 type Props = Record<string, string | number | boolean>;
 

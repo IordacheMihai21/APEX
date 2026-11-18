@@ -25,6 +25,7 @@
     "build:functions": "tsx tools/functions/build.ts",
     "deploy:functions": "npm run build:functions && npx -y supabase@2 functions deploy submit-lap push --project-ref acglshyvgeikyrvjfjue --no-verify-jwt --use-api",
     "build:lineup": "tsx tools/track-builder/src/build-lineup.ts",
+    "build:racing-context": "tsx tools/track-builder/src/build-racing-context.ts",
     "build:corners": "tsx tools/track-builder/src/build-corners.ts",
     "build:car": "tsx tools/track-builder/src/build-car.ts",
     "build:car-f1": "tsx tools/track-builder/src/build-car-f1.ts",

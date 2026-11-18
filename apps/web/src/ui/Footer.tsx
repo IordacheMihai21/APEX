@@ -2,9 +2,9 @@ import { DiscordLogo, EnvelopeSimple, type Icon, InstagramLogo, TiktokLogo, XLog
 import { t, withLang } from "../i18n";
 import { ADS_CONSENT, OPERATOR, SOCIAL, openConsent } from "../legal";
 import { GAMES, type GamePage } from "../games/registry";
-import { loadSeason, seasonDone } from "../modes/season";
 import type { HubAction } from "./Hub";
 import { InstallLink } from "./Install";
+import { SUPPORT_URL, supportClicked } from "../support";
 
 const ICON: Record<(typeof SOCIAL)[number]["id"], Icon> = { x: XLogo, instagram: InstagramLogo, tiktok: TiktokLogo, youtube: YoutubeLogo, discord: DiscordLogo };
 
@@ -17,13 +17,12 @@ const heading = "caption text-steel";
  * choices. Square, hairline-divided, like the rest of the grid.
  */
 export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
-  // carry on a season under way, otherwise start one
-  const run = loadSeason().run;
-  const underWay = !!run && !seasonDone(run);
   const play: [string, HubAction][] = [
     [t("Daily Quali"), { kind: "daily" }],
     [t("Corner of the week"), { kind: "corner" }],
-    [t("Perfect Season"), { kind: "season", fresh: !underWay }],
+    [t("Perfect Season"), { kind: "quick-season" }],
+    [t("The Fast Detective"), { kind: "fast-detective" }],
+    [t("Racing Context"), { kind: "racing-context" }],
     [t("Free Practice"), { kind: "practice" }],
     [t("Past dailies"), { kind: "mini", game: "archive" }],
   ];
@@ -120,6 +119,11 @@ export function Footer({ onAction }: { onAction: (a: HubAction) => void }) {
                   {t("About")}
                 </a>
               </li>
+              {SUPPORT_URL && (
+                <li>
+                  <a className={link} href={SUPPORT_URL} target="_blank" rel="noopener noreferrer" onClick={() => supportClicked("footer")}>{t("Support Lapdle")}</a>
+                </li>
+              )}
               <li>
                 <button className={link} onClick={() => onAction({ kind: "mini", game: "privacy" })}>
                   {t("Privacy")}
