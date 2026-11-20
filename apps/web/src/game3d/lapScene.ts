@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { BloomEffect, BrightnessContrastEffect, EffectComposer, EffectPass, HueSaturationEffect, RenderPass, SMAAEffect, SMAAPreset, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
 import type { Condition, SimulationResult } from "@apex/engine";
-import { loadScenery, loadTrack } from "../game/catalog";
+import { CATALOG, loadScenery, loadTrack } from "../game/catalog";
 import { DEFAULT_LOOK, type RearLights, buildCarF1, carDetail } from "./carF1";
 import { CITY_CIRCUITS, buildCircuitWorld, loadCircuitGround } from "./circuitWorld";
 import { HeatHazeEffect, LapEffects, LensFlareEffect, RainField } from "./lapEffects";
@@ -132,7 +132,8 @@ export class LapScene {
     mark("assets-ready");
     const scene = new LapScene(canvas, detail, condition === "wet", hour);
     mark("renderer-ready");
-    const world = await buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street: false, detail, treeAtlases, city: CITY_CIRCUITS.has(trackId) });
+    const street = CATALOG.find((c) => c.id === trackId)?.style === "street";
+    const world = await buildCircuitWorld(track, ground, osm, photo, { wet: condition === "wet", street, detail, treeAtlases, city: CITY_CIRCUITS.has(trackId) });
     mark("world-ready");
     scene.scene.add(world.group);
     // this circuit's ground, kept: the corner view sets the shared one to its own corner when it opens
