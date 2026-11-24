@@ -6,6 +6,13 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-11-24",
+    title: "Dare a friend after any Daily Quali lap",
+    body: [
+      "After each Daily Quali lap, a Beat my time button sends a friend a link to race your best lap so far, and the result shows tomorrow's circuit. You no longer have to finish all your laps to share or set a reminder.",
+    ],
+  },
+  {
     date: "2026-11-18",
     title: "Rev lights match the steering wheel; Braking Point retires",
     body: [
