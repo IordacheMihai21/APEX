@@ -237,6 +237,8 @@ function GameView({
   const [view3D, setView3D] = useState(() => can3D && lap3DOn());
   const [prepare3D, setPrepare3D] = useState(false);
   const [garage, setGarage] = useState(false);
+  // bumped when the garage closes, so the 3D lap rebuilds with the new paint and number
+  const [carRev, setCarRev] = useState(0);
   const toggle3D = () => {
     setLap3D(!view3D);
     setView3D(!view3D);
@@ -289,7 +291,7 @@ function GameView({
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-label={t("{circuit} circuit", { circuit: game.track.name })} />
       {view3D && (prepare3D || racing) && (
         <Suspense fallback={null}>
-          <Lap3D game={game} visible={racing} onTooSlow={tooSlow} />
+          <Lap3D key={carRev} game={game} visible={racing} onTooSlow={tooSlow} />
         </Suspense>
       )}
       {slow3D && (
@@ -337,7 +339,7 @@ function GameView({
       {s.phase === "setup" && !s.locked && <ViewControls game={game} view3D={can3D ? view3D : null} onToggle3D={toggle3D} onGarage={() => setGarage(true)} />}
       {garage && (
         <Suspense fallback={null}>
-          <Garage3D onClose={() => setGarage(false)} />
+          <Garage3D onClose={() => { setGarage(false); setCarRev((r) => r + 1); }} />
         </Suspense>
       )}
       {s.phase === "setup" && !s.locked && <ControlBar s={s} game={game} coach={coach} />}
