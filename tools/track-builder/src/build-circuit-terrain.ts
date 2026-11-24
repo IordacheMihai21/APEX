@@ -11,9 +11,10 @@
  *   back to the real terrain by FLAT_TO.
  *
  * Output:
- * - apps/web/src/game/circuit3d/<id>.bin: Int16 centimetres relative to the start line, row by row from the south-west
- *   (x east, y north, track metres);
- * - <id>.json: the grid (x0, y0, step, nx, ny) and the road's height at every centre-line point (centimetres).
+ * - apps/web/src/game/circuit3d/<id>.bin: Int16 heights relative to the start line, row by row from the south-west
+ *   (x east, y north, track metres), in the unit declared by the JSON (1 cm or more for mountain circuits);
+ * - <id>.json: the grid (x0, y0, step, nx, ny, unit) and the road's height at every centre-line point.
+ * The fictional Kestrel test circuit has a flat grid because it has no geographic source.
  * Usage: npm run build:circuit-terrain -- spa
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -38,11 +39,26 @@ const ids = process.argv.slice(2);
 if (!ids.length) throw new Error("usage: build:circuit-terrain -- <track id> [...]");
 
 for (const id of ids) {
+  const track: GameTrack = JSON.parse(readFileSync(resolve(root, `data/tracks/${id}.v1.json`), "utf8"));
+  if (id === "kestrel") {
+    // The fictional test circuit has no geographic elevation or OSM scenery.
+    const xs = track.centerline.map(([x]) => x);
+    const ys = track.centerline.map(([, y]) => y);
+    const x0 = Math.floor((Math.min(...xs) - MARGIN) / COARSE) * COARSE;
+    const y0 = Math.floor((Math.min(...ys) - MARGIN) / COARSE) * COARSE;
+    const x1 = Math.ceil((Math.max(...xs) + MARGIN) / COARSE) * COARSE;
+    const y1 = Math.ceil((Math.max(...ys) + MARGIN) / COARSE) * COARSE;
+    const nx = Math.round((x1 - x0) / STEP) + 1;
+    const ny = Math.round((y1 - y0) / STEP) + 1;
+    writeFileSync(resolve(outDir, `${id}.bin`), Buffer.from(new Int16Array(nx * ny).buffer));
+    writeFileSync(resolve(outDir, `${id}.json`), JSON.stringify({ x0, y0, step: STEP, nx, ny, unit: 0.01, road: track.centerline.map(() => 0) }));
+    console.log(`${id}: ${nx} x ${ny} at ${STEP} m, flat fictional terrain`);
+    continue;
+  }
   const rc = REAL_CIRCUITS.find((r) => r.id === id);
   if (!rc) throw new Error(`no real circuit ${id}`);
   const frame = circuitFrame(features.get(rc.sourceId)!, rc);
   const ll = (x: number, y: number) => frame.toLonLat(x, y);
-  const track: GameTrack = JSON.parse(readFileSync(resolve(root, `data/tracks/${id}.v1.json`), "utf8"));
   const scenery = JSON.parse(readFileSync(resolve(root, `data/scenery/${id}.json`), "utf8")) as { box: [number, number, number, number] };
   const cl = track.centerline;
   const N = cl.length;
@@ -119,7 +135,7 @@ for (const id of ids) {
 
   const nx = Math.round(((cnx - 1) * COARSE) / STEP) + 1;
   const ny = Math.round(((cny - 1) * COARSE) / STEP) + 1;
-  const out = new Int16Array(nx * ny);
+  const centimetres = new Int32Array(nx * ny);
   let lo = Infinity;
   let hi = -Infinity;
   for (let j = 0; j < ny; j++)
@@ -132,14 +148,18 @@ for (const id of ids) {
       const blend = t * t * (3 - 2 * t);
       const h = g * (1 - blend) + (ni < 0 ? g : profile[ni]) * blend;
       const v = Math.round((h - zero) * 100);
-      out[j * nx + i] = v;
+      centimetres[j * nx + i] = v;
       lo = Math.min(lo, v);
       hi = Math.max(hi, v);
     }
+  // Int16 centimetres can only hold ±327 m. Keep centimetres where possible and
+  // use a coarser unit for mountain circuits, so distant hills cannot wrap below the ground.
+  const cmPerUnit = Math.max(1, Math.ceil(Math.max(Math.abs(lo), Math.abs(hi)) / 32767));
+  const out = Int16Array.from(centimetres, (v) => Math.round(v / cmPerUnit));
   writeFileSync(resolve(outDir, `${id}.bin`), Buffer.from(out.buffer));
   writeFileSync(
     resolve(outDir, `${id}.json`),
-    JSON.stringify({ x0, y0, step: STEP, nx, ny, unit: 0.01, road: profile.map((p) => Math.round((p - zero) * 100)) }),
+    JSON.stringify({ x0, y0, step: STEP, nx, ny, unit: cmPerUnit / 100, road: profile.map((p) => Math.round(((p - zero) * 100) / cmPerUnit)) }),
   );
   const pl = Math.min(...profile) - zero;
   const ph = Math.max(...profile) - zero;
