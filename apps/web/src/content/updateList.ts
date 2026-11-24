@@ -6,6 +6,11 @@ export type Update = { date: string; title: string; body: string[]; links?: [str
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-11-24",
+    title: "One Lights out button",
+    body: ["The home page button now says Set your line. It opens the circuit, and Lights out there starts your lap with one tap, so the start no longer looks like it needs two taps."],
+  },
+  {
     date: "2026-11-18",
     title: "Rev lights match the steering wheel; Braking Point retires",
     body: [

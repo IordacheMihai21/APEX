@@ -816,7 +816,8 @@ export function Hub({ onAction }: { onAction: (a: HubAction) => void }) {
                 </span>
               ) : (
                 <button className={`${primaryBtn} w-full sm:w-auto sm:min-w-[260px]`} onClick={() => onAction({ kind: "daily" })}>
-                  {daily.laps.length ? t("Continue") : t("Lights out")}
+                  {/* not "Lights out": that button is on the next screen, and two of them read as a tap that did nothing */}
+                  {daily.laps.length ? t("Continue") : t("Set your line")}
                 </button>
               )}
             </div>

@@ -742,6 +742,7 @@ export const ES: Record<string, string> = {
   "See today's speeds": "Ver las velocidades de hoy",
   "See your record": "Ver tu historial",
   "Set the speed you think the car does there on the perfect lap, with the slider or the + and − buttons, and lock it in.": "Elige la velocidad que crees que lleva el coche ahí en la vuelta perfecta, con el deslizador o los botones + y −, y confírmala.",
+  "Set your line": "Elige tu trazada",
   "Set your line one corner at a time. Pick how you take this one: early, classic or late apex.": "Elige tu trazada curva a curva. Decide cómo tomas esta: vértice temprano, clásica o vértice tardío.",
   "Share": "Compartir",
   "Share card: {result} at {circuit}": "Tarjeta para compartir: {result} en {circuit}",
