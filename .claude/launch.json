@@ -26,6 +26,18 @@
         "--strictPort"
       ],
       "port": 4173
+    },
+    {
+      "name": "lapdle-main",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5174",
+        "--strictPort",
+        "/Users/mi/APEX/.wt-main/apps/web"
+      ],
+      "port": 5174
     }
   ]
 }
