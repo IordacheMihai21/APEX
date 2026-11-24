@@ -78,6 +78,7 @@ export const ES: Record<string, string> = {
   "Back to the grid": "Volver a la parrilla",
   "Back to the onboards": "A repasar las cámaras a bordo",
   "Back to the selected corner": "Volver a la curva elegida",
+  "Beat my {time}": "Bate mi {time}",
   "Beat my {time} at {circuit} in Lapdle: {link}": "Bate mi {time} en {circuit} en Lapdle: {link}",
   "Beat the real 2025 pole": "Bate la pole real de 2025",
   "Beat {time} to take pole.": "Bate {time} para llevarte la pole.",

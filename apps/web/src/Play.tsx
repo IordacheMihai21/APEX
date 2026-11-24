@@ -913,6 +913,24 @@ function ResultSheet({
           {t("Improve line")}
         </button>
         {s.mode === "daily" && daily && daily.status === "playing" && daily.laps.length > 0 && <EndDayButton onEnd={onEndDay} />}
+        {/* most players leave mid-day: the dare and tomorrow's circuit show after every daily lap, not only at the end */}
+        {s.mode === "daily" && daily && daily.status === "playing" && !daily.archive && daily.bestKnots && (
+          <>
+            <ShareButton
+              label={t("Beat my {time}", { time: lapTime(Math.min(...daily.laps.map((l) => l.lapTimeMs))) })}
+              variant="secondary"
+              text={t("Beat my {time} at {circuit} in Lapdle: {link}", {
+                time: lapTime(Math.min(...daily.laps.map((l) => l.lapTimeMs))),
+                circuit: info.name,
+                link: challengeUrl({ trackId: daily.trackId, knots: daily.bestKnots }),
+              })}
+            />
+            <p className="basis-full text-[13px] text-steel">
+              {t("Tomorrow's Daily Quali:")} <span className="font-semibold text-paint">{tomorrowQuali(daily.key)}</span>.
+            </p>
+            <ReminderOffer from="quali-lap" className="mt-0 basis-full" />
+          </>
+        )}
         {s.mode === "practice" && (
           <ShareButton
             label={t("Challenge")}
